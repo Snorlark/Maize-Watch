@@ -134,3 +134,37 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# --------------------
+
+# Web (React, Vue, etc.)
+node_modules/
+build/
+dist/
+.env
+*.log
+
+# Flutter (Mobile)
+.flutter-plugins
+.packages
+build/
+.dart_tool
+.pub-cache
+android/.gradle/
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+
+# Backend (Node.js)
+node_modules/
+.env
+npm-debug.log*
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.sublime-workspace
