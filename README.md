@@ -1,13 +1,13 @@
 ![MAIZE WATCH](https://github.com/user-attachments/assets/55088bfb-4cbb-469c-a148-11fa4654b44a)
 
 
-# MAIZE WATCH: IoT-Driven Corn Monitoring and Prescriptive Analytics System
+# Maize Watch: IoT-Driven Corn Monitoring and Prescriptive Analytics System
 
-**MAIZE WATCH** is a real-time, IoT-powered monitoring and analytics system developed to support corn farmers in optimizing crop yield, improving sustainability, and making data-driven agricultural decisions. It collects field data through sensors and provides actionable insights using machine learning.
+**Maize Watch** is a real-time, IoT-powered monitoring and analytics system developed to support corn farmers in optimizing crop yield, improving sustainability, and making data-driven agricultural decisions. It collects field data through sensors and provides actionable insights using machine learning.
 
 ## Project Overview
 
-MAIZE WATCH utilizes a network of environmental sensors to monitor real-time field conditions such as:
+Maize Watch utilizes a network of environmental sensors to monitor real-time field conditions such as:
 
 - Temperature and Humidity (DHT11)
 - Soil Moisture (YL-69)
