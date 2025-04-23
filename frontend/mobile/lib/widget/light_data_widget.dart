@@ -1,0 +1,86 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:maize_watch/custom/constants.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+
+import '../custom/custom_dialog.dart';
+import '../custom/custom_font.dart';
+import '../model/chart_data.dart';
+
+class LightDataWidget extends StatefulWidget {
+
+  final double lightIntensityData;
+
+  const LightDataWidget({
+    super.key, 
+    required this.lightIntensityData
+  });
+
+  @override
+  State<LightDataWidget> createState() => _LightDataWidgetState();
+}
+
+class _LightDataWidgetState extends State<LightDataWidget> {
+  @override
+  Widget build(BuildContext context) {
+
+    List<ChartData> chartData = [
+      ChartData("Light Intensity", widget.lightIntensityData, const Color.fromARGB(255, 225, 207, 48))
+    ];
+
+    return Flexible(
+      child: Card(
+        color: MAIZE_PRIMARY_LIGHT,
+        child: Padding(
+          padding: EdgeInsets.all(ScreenUtil().setSp(15)),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Flexible(child: CustomFont(text: "Light Intensity", color: Colors.black, fontWeight: FontWeight.bold,)),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz),
+                    onPressed: () {
+                      CustomDialog(
+                        context, 
+                        title: "Light Intensity", 
+                        content: "Ornare tortor sagittis quis pretium sit elit eu consequat. Adipiscing fringilla penatibus pellentesque eget nisi purus. Nec enim dolor vestibulum tempor quam dui ipsum adipiscing. Neque tristique ullamcorper egestas nulla venenatis facilisis non eleifend nulla. Tempus imperdiet amet fringilla risus aliquam ipsum ultrices."
+                      );
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: ScreenUtil().setHeight(10)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CustomFont(text: '${widget.lightIntensityData}%', color: Colors.black),
+                  Flexible(
+                    child: SizedBox(
+                      width: ScreenUtil().setWidth(200),
+                      height: ScreenUtil().setHeight(70),
+                      child: SfCircularChart(
+                        margin: EdgeInsets.zero,
+                        series: <CircularSeries>[
+                          RadialBarSeries<ChartData, String>(
+                              dataSource: chartData,
+                              xValueMapper: (ChartData data, _) => data.label,
+                              yValueMapper: (ChartData data, _) => data.value,
+                              pointColorMapper: (data, _) => data.color,
+                              trackColor: const Color.fromARGB(237, 241, 241, 241),
+                              maximumValue: 100, 
+                          )
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
