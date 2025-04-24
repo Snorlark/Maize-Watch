@@ -20,7 +20,7 @@ export default function Index() {
   
               <div>
                 <ul className="flex items-center font-bold space-x-4 md:space-x-15">
-                  <li><button onClick={() => navigate('/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Sign Up</button></li>
+                  <li><button onClick={() => navigate('/auth/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Sign Up</button></li>
                   <li>
                     <button>
                   

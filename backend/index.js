@@ -2,13 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import userRoutes from './routes/user.route.js';
 
-const app = express();
-const port = process.env.PORT || 8080;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Connect to MongoDB with error handling
-mongoose.connect('mongodb://localhost:27017/mydb', {
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const app = express();
+const port = process.env.PORT;
+
+// Connect to MongoDB using URI from environment
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
@@ -16,14 +25,18 @@ mongoose.connect('mongodb://localhost:27017/mydb', {
 .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || '*',
+}));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Routes
-app.use('/api/auth', userRoutes);  // Prefix all auth routes with /api/auth
+app.use(express.json());
 
-// Basic route for testing
+// Routes
+app.use('/auth', userRoutes);
+
+// Test route
 app.get('/', (req, res) => {
     res.send('Maize Watch API is running');
 });
@@ -37,6 +50,18 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(port, () => {
+app.get('/health', (req, res) => {
+    // Check MongoDB connection
+    const isMongoConnected = mongoose.connection.readyState === 1;
+    
+    res.status(200).json({
+      status: 'ok',
+      message: 'Server is running',
+      mongodb: isMongoConnected ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
 });

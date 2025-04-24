@@ -23,7 +23,7 @@ const Navbar: React.FC = () => {
         {/* Navigation Links */}
         <nav className="hidden md:flex mt-3 gap-10 items-center text-[#1E441E] text-sm font-medium">
           <NavLink 
-            to="/dashboard"
+            to="/dashboard/data-history"
             className=  {({ isActive }) =>
               isActive
                 ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
             
           </NavLink>
           <NavLink
-            to="/livedata"
+            to="/dashboard/live-data"
             className={({ isActive }) =>
               isActive
                 ? "relative  pb-2  after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
             Live Data
           </NavLink>
           <NavLink
-            to="/accountmngmt"
+            to="/dashboard/account-management"
             className={({ isActive }) =>
               isActive
                 ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"

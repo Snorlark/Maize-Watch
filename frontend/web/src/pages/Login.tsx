@@ -67,14 +67,14 @@ export default function LoginPage() {
               
               <button
                 type="submit"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/dashboard/data-history')}
                 className="w-full py-2 mt-4 bg-green-500 hover:bg-green-600 rounded-full font-semibold text-white bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250"
               >
                 Log In
               </button>
             </form>
           </div>
-          <p className='text-white'>Don't have an account yet? <u onClick={() => navigate('/signup')} className="cursor-pointer hover:text-blue-400">Register here</u></p>
+          <p className='text-white'>Don't have an account yet? <u onClick={() => navigate('/auth/signup')} className="cursor-pointer hover:text-blue-400">Register here</u></p>
         </div>
       </section>
     </main>
