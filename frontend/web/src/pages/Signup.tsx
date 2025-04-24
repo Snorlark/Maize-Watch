@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 
 export default function SignUpPage() {
   const navigate = useNavigate();

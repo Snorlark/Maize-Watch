@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:maize_watch/services/api_service.dart'; // Import API service
 import '../model/user.dart';
 
@@ -149,72 +150,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Future<void> _handleRegistration() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        isLoading = true;
-      });
+Future<void> _handleRegistration() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() {
+      isLoading = true;
+    });
 
-      try {
-        // Create user object with all details
-        final userData = {
-          'fullName': nameController.text,
-          'contactNumber': contactController.text,
-          'address': addressController.text,
-          'username': usernameController.text,
-          'password': passwordController.text,
-        };
-        
-        // Call register API
-        final response = await _apiService.register(userData);
-        
-        setState(() {
-          isLoading = false;
-        });
-        
-        if (response.success) {
-          // Registration successful
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Registration successful! You can now log in.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // Navigate back to login screen after a short delay
-          Future.delayed(const Duration(seconds: 2), () {
-            Navigator.pop(context);
-          });
-        } else {
-          // Registration failed
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response.message ?? 'Registration failed. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } catch (e) {
-        setState(() {
-          isLoading = false;
-        });
-        
+    try {
+      // Create user object with all details
+      final userData = {
+        'fullName': nameController.text,
+        'contactNumber': contactController.text,
+        'address': addressController.text,
+        'username': usernameController.text,
+        'password': passwordController.text,
+      };
+      
+      // Call register API
+      final response = await _apiService.register(userData);
+      
+      setState(() {
+        isLoading = false;
+      });
+      
+      if (response.success) {
+        // Registration successful
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connection error. Please check your internet connection and try again.'),
+            content: Text('Registration successful! Please log in.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate to landing screen with login overlay flag
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LandingScreen(showLoginOnLoad: true),
+          ),
+        );
+      } else {
+        // Registration failed
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message ?? 'Registration failed. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } else {
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fix the errors and try again.'),
+          content: Text('Connection error. Please check your internet connection and try again.'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Please fix the errors and try again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
 
   Widget _buildInputField(String label, String hint, TextEditingController controller, {bool isMultiline = false, String? Function(String?)? validator}) {
     return Column(
