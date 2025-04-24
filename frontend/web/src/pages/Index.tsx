@@ -1,7 +1,23 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Index() {
     const navigate = useNavigate();
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    
+    const images = [
+        '/images/healthycorn.png',
+        '/images/prescriptions.png',
+        '/images/detailedtables.png'
+    ];
+
+    const handlePrevImage = () => {
+        setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    };
+
+    const handleNextImage = () => {
+        setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    };
 
     return (
     <>
@@ -20,7 +36,7 @@ export default function Index() {
   
               <div>
                 <ul className="flex items-center font-bold space-x-4 md:space-x-15">
-                  <li><button onClick={() => navigate('/auth/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Sign Up</button></li>
+                  <li><button onClick={() => navigate('/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Sign Up</button></li>
                   <li>
                     <button>
                   
@@ -41,7 +57,7 @@ export default function Index() {
                 <img src="/images/mainlogo.png" alt="Maize Watch Logo" className=" w-80 md:w-100 lg:w-180 xl:w-250 m-auto rounded-full transition-all duration-300 hover:scale-105" />
               </div>
   
-              <button  onClick={() => navigate('/login')} className="mt-2 md:mt-4 px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in duration-300 text-base md:text-lg font-medium align-text-center">
+              <button  onClick={() => navigate('/login')} className="mt-2 md:mt-4 px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center">
                 Monitor now →
               </button>
             </div>
@@ -50,7 +66,7 @@ export default function Index() {
             {/* ABOUT PART */}
           <div className="relative -mt-12 pb-8 md:pb-4 ">
               <div className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
-                <div onClick={() => navigate('/products')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99  hover:text-white cursor-pointer">
+                <div onClick={() => navigate('/products')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
                   <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
                     <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
                     <div>
@@ -72,7 +88,7 @@ export default function Index() {
             <div className="py-8 md:py-15 px-4 md:px-30">
               <div className="container mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                  <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:scale-99 hover:opacity-90 hover:text-dgreen">
+                  <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-40 lg:mr-10 ml-2 md:ml-8">
                       <p className="text-sm md:text-base">
@@ -82,7 +98,7 @@ export default function Index() {
                     </div>
                   </div>
   
-                  <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:scale-99 hover:opacity-90 hover:text-dgreen">
+                  <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-45 lg:mr-10 ml-2 md:ml-8">
                       <p className="text-sm md:text-base">
@@ -92,7 +108,7 @@ export default function Index() {
                     </div>
                   </div>
   
-                  <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:scale-99 hover:opacity-90 hover:text-dgreen">
+                  <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-35 mb-3 md:mr-45 lg:mr-10 ml-2 md:ml-8">
                       <p className="text-sm md:text-base">
@@ -124,19 +140,24 @@ export default function Index() {
                     </p>
                     
                     <div className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90  ">
-                      <button onClick={() => navigate('/solutions')} className="flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) pb-1 cursor-pointer">
+                      <button onClick={() => navigate('/solutions')} className="cursor-pointer flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1">
                         LEARN MORE
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </button>
+                      
                       <div className="flex gap-4">
-                        <button className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center">
+                        <button 
+                          onClick={handlePrevImage}
+                          className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
-                        <button className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center">
+                        <button 
+                          onClick={handleNextImage}
+                          className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -146,11 +167,11 @@ export default function Index() {
                   </div>
                   
                   <div className="relative flex justify-center items-center">
-                    <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15"></div>
+                    <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15 transition-discrete ease-in-out duration-500"></div>
                     <img
-                      src="/images/mobapp.png"
+                      src={images[currentImageIndex]}
                       alt="Maize Watch App Preview"
-                      className="relative  w-[280px] md:w-[400px] mx-auto"
+                      className="relative w-[280px] md:w-[400px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
                     />
                   </div>
                 </div>
@@ -169,7 +190,7 @@ export default function Index() {
                        <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold leading-tight">
                          The Technology<br />Behind.
                        </h2>
-                       <button onClick={() => navigate('/technology')} className="flex items-center gap-2 text-sm md:text-lg font-semibold text-white border-b-2 border-white pb-1 hover:opacity-80 transition-all duration-300 cursor-pointer">
+                       <button onClick={() => navigate('/technology')} className="flex items-center gap-2 text-sm md:text-lg font-semibold text-(--color-white) border-b-2 border-(--color-white) pb-1 hover:text-(--color-lgreen) hover:border-(--color-lgreen) transition-all duration-300 cursor-pointer">
                          LEARN MORE
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
                            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />

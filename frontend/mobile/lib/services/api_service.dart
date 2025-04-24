@@ -15,7 +15,7 @@ class ApiResponse {
 }
 
 class ApiService {
-  final String baseUrl = 'http://localhost:8080';
+  final String baseUrl = 'https://maize-watch.onrender.com';
 
   // Get token from shared preferences
   Future<String?> _getToken() async {
