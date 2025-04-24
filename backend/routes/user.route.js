@@ -65,14 +65,14 @@ router.post('/register', async (req, res) => {
         const savedUser = await newUser.save();
         
         // Don't send password back in response
-        const userResponse = savedUser.toObject();
-        delete userResponse.password;
+        // const userResponse = savedUser.toObject();
+        // delete userResponse.password;
         
-        res.status(201).json({
-            success: true,
-            message: 'Registration successful',
-            data: userResponse
-        });
+        // res.status(201).json({
+        //     success: true,
+        //     message: 'Registration successful',
+        //     data: userResponse
+        // });
     } catch (err) {
         console.log(err);
         res.status(500).json({ 
