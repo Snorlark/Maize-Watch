@@ -25,7 +25,7 @@ export default function Index() {
           <main>
             
           <div className="bg-[url(/images/background.png)] rounded-bl-[50px] rounded-br-[50px] rounded-tl-none rounded-tr-none relative h-197 bg-cover bg-center flex items-center justify-center">
-            <nav className="fixed top-0 w-full container z-10 bg-transparent backdrop-blur-[3px] px-2 md:px-10 py-1 flex items-center justify-between">
+            <nav className="fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   src="/images/smalllogo.png"

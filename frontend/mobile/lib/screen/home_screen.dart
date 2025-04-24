@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
        controller: _pageController,
-        children: const <Widget>[
+        children: <Widget>[
           PrescriptionScreen(),
           CropConditionScreen(),
           ProfileScreen()

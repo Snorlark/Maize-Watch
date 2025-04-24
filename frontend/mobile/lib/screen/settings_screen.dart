@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:maize_watch/custom/custom_font.dart';
+import 'package:maize_watch/widget/sensor_status_widget.dart';
 
+// ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  
+  bool isNotificationsEnabled;
+
+  bool isHelpExpanded;
+  bool isFAQsExpanded;
+
+  SettingsScreen({
+    super.key, 
+    this.isNotificationsEnabled = false, 
+    this.isHelpExpanded = false, 
+    this.isFAQsExpanded = false
+  });
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool isLDRSensorEnabled = false;
-  bool isDHT11Enabled = false;
-  bool isYL69Enabled = false;
-  bool isHelpExpanded = false;
-  bool isFAQsExpanded = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +73,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               const SizedBox(height: 20),
+              
+              SensorStatusWidget(),
+              
+              const SizedBox(height: 20),
+              
+              //Notification Container
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -75,7 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0),
                       child: Text(
-                        "Sensors",
+                        "Notification",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -87,10 +103,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Row(
                       children: [
                         Switch(
-                          value: isLDRSensorEnabled,
+                          value: widget.isNotificationsEnabled,
                           onChanged: (bool value) {
                             setState(() {
-                              isLDRSensorEnabled = value;
+                              widget.isNotificationsEnabled = value;
                             });
                           },
                           activeColor: Colors.white,
@@ -99,73 +115,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           inactiveTrackColor: Color(0xFFC9C9C9),
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          "Light Dependent Resistor Sensor",
-                          style: TextStyle(
-                              fontFamily: 'Montserrat',
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold),
+                        CustomFont(
+                          text: "On",
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Other Sensors
-                    Row(
-                      children: [
-                        Switch(
-                          value: isDHT11Enabled,
-                          onChanged: (bool value) {
-                            setState(() {
-                              isDHT11Enabled = value;
-                            });
-                          },
-                          activeColor: Colors.white,
-                          activeTrackColor: Color(0xFF418036),
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: Color(0xFFC9C9C9),
-                        ),
-                        const SizedBox(width: 5),
-                        const Text("DHT11",
-                            style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(width: 20),
-                        Switch(
-                          value: isYL69Enabled,
-                          onChanged: (bool value) {
-                            setState(() {
-                              isYL69Enabled = value;
-                            });
-                          },
-                          activeColor: Colors.white,
-                          activeTrackColor: Color(0xFF418036),
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: Color(0xFFC9C9C9),
-                        ),
-                        const SizedBox(width: 5),
-                        const Text("YL-69",
-                            style: TextStyle(
-                                fontFamily: 'Montserrat',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              buildExpandableSection("Help", isHelpExpanded,
+              buildExpandableSection("Help", widget.isHelpExpanded,
                   "Lorem ipsum dolor sit amet consectetur. Massa tincidunt sed mauris quam sed. Sagittis dolor facilisis tortor vitae tortor felis a rhoncus. \n\nFeugiat quam non cum eros. Nullam mattis sapien quam risus. \n\nAmet hac integer sodales. Sed vestibulum lorem nisi in turpis urna sit. Pellentesque pellentesque. ",
                   () {
                 setState(() {
-                  isHelpExpanded = !isHelpExpanded;
+                  widget.isHelpExpanded = !widget.isHelpExpanded;
                 });
               }),
-              buildExpandableSection("FAQs", isFAQsExpanded,
+              buildExpandableSection("FAQs", widget.isFAQsExpanded,
                   "Frequently asked questions and answers about the app.", () {
                 setState(() {
-                  isFAQsExpanded = !isFAQsExpanded;
+                  widget.isFAQsExpanded = !widget.isFAQsExpanded;
                 });
               }),
             ],

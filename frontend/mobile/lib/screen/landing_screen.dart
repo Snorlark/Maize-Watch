@@ -5,8 +5,27 @@ import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/custom/custom_login_overlay.dart';
 import 'package:maize_watch/screen/register_screen.dart';
 
-class LandingScreen extends StatelessWidget {
-  const LandingScreen({super.key});
+class LandingScreen extends StatefulWidget {
+  final bool showLoginOnLoad;
+  
+  const LandingScreen({super.key, this.showLoginOnLoad = false});
+
+  @override
+  State<LandingScreen> createState() => _LandingScreenState();
+}
+
+class _LandingScreenState extends State<LandingScreen> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Show login overlay after the widget is built if showLoginOnLoad is true
+    if (widget.showLoginOnLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showLoginOverlay(context);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
