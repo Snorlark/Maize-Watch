@@ -10,26 +10,6 @@ export default function SignUpPage() {
   return (
     <main className="bg-white">
       <section className="bg-[url(/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
-        {/* Navbar */}
-        {/* <nav className="bg-green-800/70 fixed top-0 w-full z-10 backdrop-blur-md px-4 md:px-10 py-3 flex items-center justify-between text-white">
-          <div className="flex items-center space-x-2">
-            <img
-              src="/images/smalllogo.png"
-              alt="Logo"
-              className="h-12 w-12 md:h-16 md:w-16 object-cover"
-            />
-            <p className="text-lg md:text-xl font-bold">Maize Watch</p>
-          </div>
-          <ul className="flex space-x-4 md:space-x-10 font-bold">
-            <li><button className="hover:text-green-300">Contact</button></li>
-            <li><button className="hover:text-green-300">Login</button></li>
-          </ul>
-        </nav> */}
-
-        {/* Background Logo */}
-        {/* <div className="fixed bottom-0 left-0 p-2 z-0">
-          <img src="/images/biglogo.png" alt="Maize Watch Logo" className="w-60 md:w-80 lg:w-160" />
-        </div> */}
 
         {/* Header Logo */}
         <div className="mt-5 md:mt-5 flex flex-col items-center justify-center z-10 space-y-6  pt-0 pb-20">
@@ -64,9 +44,9 @@ export default function SignUpPage() {
                 </div>
               </div>
               <div>
-                <label className="block mb-1 text-sm font-medium">E-Mail Address</label>
+                <label className="block mb-1 text-sm font-medium">Username</label>
                 <input
-                  type="email"
+                  type="username"
                   className="w-full px-4 py-2 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
               </div>
