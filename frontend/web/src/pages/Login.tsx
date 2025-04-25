@@ -44,9 +44,9 @@ export default function LoginPage() {
             <form className="space-y-4">
               
               <div>
-                <label className="block mb-1 text-sm font-medium">E-Mail Address</label>
+                <label className="block mb-1 text-sm font-medium">Username</label>
                 <input
-                  type="email"
+                  type="username"
                   className="w-full px-4 py-2 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
               </div>
