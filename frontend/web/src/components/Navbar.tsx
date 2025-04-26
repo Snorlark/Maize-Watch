@@ -45,7 +45,7 @@ const Navbar: React.FC = () => {
             Live Data
           </NavLink>
           <NavLink
-            to="/accountmngmt"
+            to="/accountmanagement"
             className={({ isActive }) =>
               isActive
                 ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
