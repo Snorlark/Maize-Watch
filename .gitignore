@@ -158,6 +158,7 @@ ios/Flutter/Generated.xcconfig
 node_modules/
 .env
 npm-debug.log*
+seedAdmin.js
 
 # Operating System
 .DS_Store
