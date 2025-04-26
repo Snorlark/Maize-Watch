@@ -13,7 +13,6 @@ export default function ProductPage() {
       
       const images = [
           '/images/Phealthycorn.png',
-          '/images/Pprescription.png',
           '/images/Pdetailedtables.png'
       ];
   
@@ -34,7 +33,7 @@ export default function ProductPage() {
       <body className="bg-(--color-white) min-h-screen">
         <main>
           <div className=" relative h-10 bg-cover bg-center flex items-center justify-center">
-            <nav className="bg-(--color-dgreen) fixed top-0 w-full container z-10 bg-transparent backdrop-blur-[3px] px-2 md:px-10 py-1 flex items-center justify-between">
+            <nav className="bg-(--color-dgreen) fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   onClick={() => navigate('/')}
@@ -48,6 +47,7 @@ export default function ProductPage() {
                   <li><button onClick={() => navigate('/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Sign Up</button></li>
                   <li><button>
                     <img
+                      onClick={() => navigate('/headermenu')}
                       src="/images/menu-green.png"
                       alt="Logo"
                       className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
@@ -110,7 +110,7 @@ export default function ProductPage() {
             </div>
           </section>
 
-          <div className="container mx-auto 2xl:px-40 ">
+              <div className="container mx-auto 2xl:px-40 ">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   
                   <div className="px-15 2xl:pl-35 mx-auto  space-y-10">
