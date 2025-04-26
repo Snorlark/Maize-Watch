@@ -39,11 +39,11 @@ export default function Index() {
                   <li><button onClick={() => navigate('/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Sign Up</button></li>
                   <li>
                     <button>
-                  
                     <img
-                    src="/images/menu.png"
+                    onClick={() => navigate('/headermenu')}
+                    src="/images/menu-green.png"
                     alt="Logo"
-                    className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
+                    className="h-8 w-8 md:h-10 md:w-10 object-cover opacity-80 hover:opacity-100 duration-300"
                     />
                     </button>
                   </li>
