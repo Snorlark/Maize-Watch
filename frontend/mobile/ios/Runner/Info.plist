@@ -45,5 +45,22 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string> <!-- Added for background fetch support -->
+	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
+	<key>UNUserNotificationCenter</key>
+	<string>YES</string>
+
+	<!-- Add these to enable permissions for local notifications -->
+	<key>UIUserNotificationUsageDescription</key>
+	<string>This app uses notifications to alert you of sensor events.</string> <!-- Description of notification usage -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location for sensor data.</string> <!-- Optional if you're accessing location data -->
 </dict>
 </plist>

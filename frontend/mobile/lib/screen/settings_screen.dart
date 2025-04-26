@@ -1,20 +1,25 @@
+// settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/widget/sensor_status_widget.dart';
+import 'package:maize_watch/widget/notification_settings_widget.dart';
+import 'package:maize_watch/widget/help_section_widget.dart';
+import 'package:maize_watch/widget/faq_section_widget.dart';
+import 'package:maize_watch/services/notification_service.dart';
 
-// ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
-  
   bool isNotificationsEnabled;
-
   bool isHelpExpanded;
   bool isFAQsExpanded;
+  bool isVibrationOnly;
 
   SettingsScreen({
-    super.key, 
-    this.isNotificationsEnabled = false, 
-    this.isHelpExpanded = false, 
-    this.isFAQsExpanded = false
+    super.key,
+    this.isNotificationsEnabled = false,
+    this.isHelpExpanded = false,
+    this.isFAQsExpanded = false,
+    this.isVibrationOnly = false,
   });
 
   @override
@@ -22,13 +27,38 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool ldr = false;
+  bool ph = false;
+  bool dht = false;
+  bool soil = false;
+  
+  final NotificationService _notificationService = NotificationService();
+  
+  Map<String, bool> previousSensorState = {
+    'ldr': false,
+    'ph': false,
+    'dht': false,
+    'soil': false,
+  };
+
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationService.initialize();
+
+    // Run fetch after widget is mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchSensorData();
+    });
+  }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/GRADIENT.png'),
             fit: BoxFit.cover,
@@ -73,73 +103,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              
-              SensorStatusWidget(),
-              
-              const SizedBox(height: 20),
-              
-              //Notification Container
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10.0),
-                      child: Text(
-                        "Notification",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Montserrat',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Switch(
-                          value: widget.isNotificationsEnabled,
-                          onChanged: (bool value) {
-                            setState(() {
-                              widget.isNotificationsEnabled = value;
-                            });
-                          },
-                          activeColor: Colors.white,
-                          activeTrackColor: Color(0xFF418036),
-                          inactiveThumbColor: Colors.white,
-                          inactiveTrackColor: Color(0xFFC9C9C9),
-                        ),
-                        const SizedBox(width: 10),
-                        CustomFont(
-                          text: "On",
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+
+              // Sensor Status Widget
+              SensorStatusWidget(
+                ldrSensor: ldr,
+                phLevelSensor: ph,
+                tempAndHumidSensor: dht,
+                soilLevelSensor: soil,
               ),
+
               const SizedBox(height: 20),
-              buildExpandableSection("Help", widget.isHelpExpanded,
-                  "Lorem ipsum dolor sit amet consectetur. Massa tincidunt sed mauris quam sed. Sagittis dolor facilisis tortor vitae tortor felis a rhoncus. \n\nFeugiat quam non cum eros. Nullam mattis sapien quam risus. \n\nAmet hac integer sodales. Sed vestibulum lorem nisi in turpis urna sit. Pellentesque pellentesque. ",
-                  () {
-                setState(() {
-                  widget.isHelpExpanded = !widget.isHelpExpanded;
-                });
-              }),
-              buildExpandableSection("FAQs", widget.isFAQsExpanded,
-                  "Frequently asked questions and answers about the app.", () {
-                setState(() {
-                  widget.isFAQsExpanded = !widget.isFAQsExpanded;
-                });
-              }),
+
+              // Notification Settings Widget
+              NotificationSettingsWidget(
+                isNotificationsEnabled: widget.isNotificationsEnabled,
+                isVibrationOnly: widget.isVibrationOnly,
+                onNotificationToggled: (value) {
+                  setState(() {
+                    widget.isNotificationsEnabled = value;
+                  });
+                },
+                onVibrationOnlyToggled: (value) {
+                  setState(() {
+                    widget.isVibrationOnly = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Help Section Widget
+              HelpSectionWidget(
+                isExpanded: widget.isHelpExpanded,
+                onToggle: () {
+                  setState(() {
+                    widget.isHelpExpanded = !widget.isHelpExpanded;
+                  });
+                },
+              ),
+
+              // FAQ Section Widget
+              FAQSectionWidget(
+                isExpanded: widget.isFAQsExpanded,
+                onToggle: () {
+                  setState(() {
+                    widget.isFAQsExpanded = !widget.isFAQsExpanded;
+                  });
+                },
+              ),
             ],
           ),
         ),
@@ -147,54 +158,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget buildExpandableSection(
-      String title, bool isExpanded, String content, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          children: [
-            ListTile(
-              title: Padding(
-                padding: const EdgeInsets.only(left: 15.0),
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              trailing: Icon(
-                isExpanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                size: 18,
-                color: Colors.black54,
-              ),
-              onTap: onTap,
-            ),
-            if (isExpanded)
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                child: Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Montserrat',
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+  Future<void> fetchSensorData() async {
+  await Future.delayed(const Duration(seconds: 2));
+
+  setState(() {
+    ldr = !ldr; // Toggle for demonstration
+    ph = false;
+    dht = false;
+    soil = false;
+  });
+
+  print("Sensor Status Updated: LDR=$ldr");
+
+  if (widget.isNotificationsEnabled) {
+    if (previousSensorState['ldr'] != ldr) {
+      print("Sending notification...");
+      await _notificationService.showNotification(
+        title: 'Sensor Status Changed',
+        body: 'LDR Sensor is now: ${ldr ? "Active" : "Inactive"}',
+        playSound: !widget.isVibrationOnly,
+      );
+      print("Notification sent.");
+    }
   }
+
+  previousSensorState = {
+    'ldr': ldr,
+    'ph': ph,
+    'dht': dht,
+    'soil': soil,
+  };
+
+  Future.delayed(const Duration(seconds: 5), fetchSensorData);
+}
+
 }
