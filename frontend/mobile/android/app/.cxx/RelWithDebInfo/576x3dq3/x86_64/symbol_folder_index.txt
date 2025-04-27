@@ -1,0 +1,1 @@
+/Users/larkbabao/Desktop/Maize-Watch/frontend/mobile/build/app/intermediates/cxx/RelWithDebInfo/576x3dq3/obj/x86_64
