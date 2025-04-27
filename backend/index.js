@@ -2,10 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
+
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 import userRoutes from './routes/user.route.js';
+import dummyDataRoutes from './routes/dummy_data.route.js';
+import MqttService from './services/mqtt.service.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,13 +19,10 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 8080;
 
 // Connect to MongoDB using URI from environment
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
+await mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log('Connected to MongoDB successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
@@ -33,8 +35,12 @@ app.use(bodyParser.json());
 
 app.use(express.json());
 
+// Initialize MQTT service
+const mqttService = new MqttService(process.env.MQTT_BROKER);
+
 // Routes
 app.use('/auth', userRoutes);
+app.use('/api', dummyDataRoutes);
 
 // Test route
 app.get('/', (req, res) => {
