@@ -5,7 +5,6 @@ import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
 import 'package:maize_watch/services/notification_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'screen/home_screen.dart';
 import 'screen/splash_screen.dart';
@@ -67,19 +66,6 @@ Future<void> _requestPermissions() async {
           badge: true,
           sound: true,
         );
-  } else if (Platform.isAndroid) {
-    // For Android, request the notification permission if running on API level 33 or higher
-    if (await Permission.notification.isGranted) {
-      return; // Permissions already granted
-    }
-
-    if (await Permission.notification.request().isGranted) {
-      // Permissions granted
-      print("Notification permission granted");
-    } else {
-      // Handle the case when permission is denied
-      print("Notification permission denied");
-    }
   }
 }
 
@@ -97,7 +83,7 @@ class MaizeWatch extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
           title: 'Maize Watch',
-          initialRoute: '/splash',
+          initialRoute: '/test',
           routes: {
             '/splash': (context) => const SplashScreen(),
             '/landing': (context) => const LandingScreen(),
