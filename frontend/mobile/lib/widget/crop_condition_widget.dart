@@ -30,7 +30,7 @@ class CropConditionWidget extends StatelessWidget {
         iconColor = Colors.green;
       } else if (avg >= 40) {
         message = "Your crops are doing okay. Monitor closely.";
-        icon = FlutterIcons.meh_ant;
+        icon = FlutterIcons.meho_ant;
         iconColor = Colors.orange;
       } else {
         message = "Crops are at risk! Immediate action needed.";

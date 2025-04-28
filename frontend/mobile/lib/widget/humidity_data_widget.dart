@@ -21,6 +21,19 @@ class HumidityDataWidget extends StatefulWidget {
 }
 
 class _HumidityDataWidgetState extends State<HumidityDataWidget> {
+  
+  String getHumidityDescription(double humidity) {
+    if (humidity < 30) {
+      return "The air is very dry, typical of arid environments.";
+    } else if (humidity >= 30 && humidity < 60) {
+      return "The air has moderate humidity, comfortable for plant transpiration.";
+    } else if (humidity >= 60 && humidity < 80) {
+      return "The air is quite humid, often associated with moist environments.";
+    } else {
+      return "The air is very humid, common before rainfall or in tropical climates.";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -45,7 +58,7 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
                       CustomDialog(
                         context, 
                         title: "Humidity", 
-                        content: "Ornare tortor sagittis quis pretium sit elit eu consequat. Adipiscing fringilla penatibus pellentesque eget nisi purus. Nec enim dolor vestibulum tempor quam dui ipsum adipiscing. Neque tristique ullamcorper egestas nulla venenatis facilisis non eleifend nulla. Tempus imperdiet amet fringilla risus aliquam ipsum ultrices."
+                        content: getHumidityDescription(widget.humidityData), // 👈 dynamic description here
                       );
                     },
                   ),
@@ -55,7 +68,7 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CustomFont(text: '${widget.humidityData}%', color: Colors.black),
+                  CustomFont(text: '${widget.humidityData.toStringAsFixed(2)}%', color: Colors.black),
                   Flexible(
                     child: Center(
                       child: SizedBox(
