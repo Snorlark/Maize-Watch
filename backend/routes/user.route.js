@@ -1,7 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
-
 const router = express.Router();
 
 /**
@@ -141,6 +140,5 @@ router.post('/login', async (req, res) => {
         });
     }
 });
-
 
 export default router;
