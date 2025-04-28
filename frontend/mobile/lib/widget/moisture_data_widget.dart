@@ -21,8 +21,21 @@ class MoistureDataWidget extends StatefulWidget {
 }
 
 class _MoistureDataWidgetState extends State<MoistureDataWidget> {
-
   
+  String getMoistureDescription(double moisture) {
+    if (moisture < 20) {
+      return "The soil is too dry. Irrigation is highly recommended to prevent plant stress.";
+    } else if (moisture >= 20 && moisture < 40) {
+      return "The soil moisture is low. Consider watering soon to maintain healthy growth.";
+    } else if (moisture >= 40 && moisture < 60) {
+      return "The soil moisture is at an optimal level. Plants are in good condition.";
+    } else if (moisture >= 60 && moisture < 80) {
+      return "The soil is fairly moist. Monitor for potential overwatering.";
+    } else {
+      return "The soil is too wet. Risk of root rot and fungal diseases is high.";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -46,7 +59,7 @@ class _MoistureDataWidgetState extends State<MoistureDataWidget> {
                     CustomDialog(
                       context, 
                       title: "Soil Moisture", 
-                      content: "Ornare tortor sagittis quis pretium sit elit eu consequat. Adipiscing fringilla penatibus pellentesque eget nisi purus. Nec enim dolor vestibulum tempor quam dui ipsum adipiscing. Neque tristique ullamcorper egestas nulla venenatis facilisis non eleifend nulla. Tempus imperdiet amet fringilla risus aliquam ipsum ultrices."
+                      content: getMoistureDescription(widget.moistureData), // <<== dynamic description here
                     );
                   },
                 ),
@@ -56,7 +69,7 @@ class _MoistureDataWidgetState extends State<MoistureDataWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                CustomFont(text: '${widget.moistureData}%', color: Colors.black),
+                CustomFont(text: '${widget.moistureData.toStringAsFixed(2)}%', color: Colors.black),
                 SizedBox(
                   width: ScreenUtil().setWidth(200),
                   height: ScreenUtil().setHeight(50),
@@ -69,9 +82,9 @@ class _MoistureDataWidgetState extends State<MoistureDataWidget> {
                       BarSeries<ChartData, num>(
                         color: Colors.green.withOpacity(0.8),
                         dataSource: chartData,
-                        xValueMapper: (data, _) => data.value,  // Label (e.g., "Moisture", "Humidity")
-                        yValueMapper: (data, _) => data.value,  // Corresponding value
-                        pointColorMapper: (data, _) => data.color, // Assign color
+                        xValueMapper: (data, _) => data.value,
+                        yValueMapper: (data, _) => data.value,
+                        pointColorMapper: (data, _) => data.color,
                       )               
                     ],
                   ),
