@@ -21,11 +21,24 @@ class LightDataWidget extends StatefulWidget {
 }
 
 class _LightDataWidgetState extends State<LightDataWidget> {
+  
+  String getLightIntensityDescription(double intensity) {
+    if (intensity < 20) {
+      return "The light intensity is very low, resembling evening or dense shade.";
+    } else if (intensity >= 20 && intensity < 50) {
+      return "The light intensity is moderate, similar to cloudy daylight.";
+    } else if (intensity >= 50 && intensity < 80) {
+      return "The light intensity is bright, close to clear daytime conditions.";
+    } else {
+      return "The light intensity is very strong, similar to direct midday sunlight.";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
 
     List<ChartData> chartData = [
-      ChartData("Light Intensity", widget.lightIntensityData, const Color.fromARGB(255, 225, 207, 48))
+      ChartData("Light Intensity", widget.lightIntensityData, const Color.fromARGB(255, 225, 207, 48)),
     ];
 
     return Flexible(
@@ -45,7 +58,7 @@ class _LightDataWidgetState extends State<LightDataWidget> {
                       CustomDialog(
                         context, 
                         title: "Light Intensity", 
-                        content: "Ornare tortor sagittis quis pretium sit elit eu consequat. Adipiscing fringilla penatibus pellentesque eget nisi purus. Nec enim dolor vestibulum tempor quam dui ipsum adipiscing. Neque tristique ullamcorper egestas nulla venenatis facilisis non eleifend nulla. Tempus imperdiet amet fringilla risus aliquam ipsum ultrices."
+                        content: getLightIntensityDescription(widget.lightIntensityData), // 👈 dynamic description here
                       );
                     },
                   ),
@@ -55,7 +68,7 @@ class _LightDataWidgetState extends State<LightDataWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CustomFont(text: '${widget.lightIntensityData}%', color: Colors.black),
+                  CustomFont(text: '${widget.lightIntensityData.toStringAsFixed(2)}%', color: Colors.black),
                   Flexible(
                     child: SizedBox(
                       width: ScreenUtil().setWidth(200),

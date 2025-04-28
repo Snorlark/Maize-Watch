@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../model/sensor_data_model.dart';
 
 class ApiResponse {
   final bool success;
@@ -18,7 +19,7 @@ class ApiResponse {
 }
 
 class ApiService {
-  final String baseUrl = 'https://maize-watch.onrender.com';
+  final String baseUrl = 'http://localhost:8080';
   
   static Map<String, dynamic>? currentUser;
 
@@ -202,4 +203,41 @@ class ApiService {
     
     return '$greeting, $name';
   }
+
+  Future<List<String>> getFields() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/fields'));
+    
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data.map((field) => field.toString()).toList();
+    } else {
+      throw Exception('Failed to load fields');
+    }
+  }
+
+    Future<List<SensorReading>> getLatestReadings() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/latest'));
+    
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data.map((item) => SensorReading.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load latest readings');
+    }
+  }
+
+  Future<List<SensorReading>> getHistoricalData(String fieldId, int hours) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/historical/$fieldId?hours=$hours')
+    );
+    
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data.map((item) => SensorReading.fromJson(item)).toList();
+    } else {
+      throw Exception('Failed to load historical data');
+    }
+  }
+
+
 }
