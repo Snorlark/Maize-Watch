@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/custom_button.dart';
 import 'package:maize_watch/custom/custom_font.dart';
@@ -17,22 +19,27 @@ class DashboardWidget extends StatefulWidget {
   State<DashboardWidget> createState() => _DashboardWidgetState();
 }
 
+
 class _DashboardWidgetState extends State<DashboardWidget> {
   final ApiService _apiService = ApiService();
   List<String> _fields = [];
   String _selectedField = '';
   final ValueNotifier<SensorReading?> _currentDataNotifier = ValueNotifier(null);
   bool _isLoading = true;
+  Timer? _dataRefreshTimer;  // Timer for periodic data fetch
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    // Periodic refresh every 30s
-    Future.delayed(const Duration(seconds: 30), () {
-      if (mounted) {
-        _loadLatestData();
-      }
+    _loadData(); // Initial data load
+    // Start listening to live data updates
+    _startDataPolling();
+  }
+
+  void _startDataPolling() {
+    // Set a timer to fetch data at regular intervals
+    _dataRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _loadLatestData();  // This will trigger the data fetch
     });
   }
 
@@ -58,7 +65,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
   Future<void> _loadLatestData() async {
     try {
       final latestReadings = await _apiService.getLatestReadings();
-      _updateCurrentData(latestReadings);
+      _updateCurrentData(latestReadings); // Immediately update the UI
     } catch (e) {
       print('Error loading latest data: $e');
     }
@@ -76,10 +83,17 @@ class _DashboardWidgetState extends State<DashboardWidget> {
   void _updateCurrentData(List<SensorReading> readings) {
     try {
       final current = readings.firstWhere((reading) => reading.fieldId == _selectedField);
-      _currentDataNotifier.value = current;
+      _currentDataNotifier.value = current;  // Update live data immediately
     } catch (e) {
       _currentDataNotifier.value = null;
     }
+  }
+
+  @override
+  void dispose() {
+    _currentDataNotifier.dispose();
+    _dataRefreshTimer?.cancel();  // Cancel the polling when widget is disposed
+    super.dispose();
   }
 
   @override
@@ -121,11 +135,5 @@ class _DashboardWidgetState extends State<DashboardWidget> {
               );
             },
           );
-  }
-
-  @override
-  void dispose() {
-    _currentDataNotifier.dispose();
-    super.dispose();
   }
 }
