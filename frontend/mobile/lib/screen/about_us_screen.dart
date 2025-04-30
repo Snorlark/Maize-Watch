@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:maize_watch/services/translation_service.dart';
 
 class AboutUsScreen extends StatelessWidget {
-  const AboutUsScreen({super.key});
+
+  final TranslationService _translationService = TranslationService();
+  
+  AboutUsScreen({super.key});
+
+  
+
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -35,8 +43,8 @@ class AboutUsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        "About",
+                      Text(
+                        _translationService.translate("about"),
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -66,7 +74,7 @@ class AboutUsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -79,7 +87,7 @@ class AboutUsScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 10),
                     Text(
-                      "\nThe aaamobile app proposes an innovative, IoT-driven corn monitoring system enhanced by prescriptive analytics. This system will not only provide real-time data on crop health and environmental conditions but also use these data to offer practical advice, further optimizing maize quality and yield.\n",
+                      _translationService.translate("about_app"),
                       style: TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',

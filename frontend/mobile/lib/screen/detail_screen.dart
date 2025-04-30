@@ -22,7 +22,7 @@ class DetailScreen extends StatelessWidget {
         child: Center()),
         Padding(
           padding: EdgeInsets.fromLTRB(ScreenUtil().setSp(30),
-              ScreenUtil().setSp(50), ScreenUtil().setSp(30), ScreenUtil().setSp(50)),
+              ScreenUtil().setSp(50), ScreenUtil().setSp(30), ScreenUtil().setSp(10)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
