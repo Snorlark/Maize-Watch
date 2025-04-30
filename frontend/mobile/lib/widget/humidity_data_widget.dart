@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
+import 'package:maize_watch/model/chart_data.dart';
+import 'package:maize_watch/services/translation_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../custom/custom_dialog.dart';
 import '../custom/custom_font.dart';
-import '../model/chart_data.dart';
 
 class HumidityDataWidget extends StatefulWidget {
-
   final double humidityData;
+  final TranslationService translationService;
 
   const HumidityDataWidget({
-    super.key, 
-    required this.humidityData
+    super.key,
+    required this.humidityData, required this.translationService,
   });
 
   @override
@@ -21,22 +22,20 @@ class HumidityDataWidget extends StatefulWidget {
 }
 
 class _HumidityDataWidgetState extends State<HumidityDataWidget> {
-  
-  String getHumidityDescription(double humidity) {
+  String getHumidityDescription(double humidity, TranslationService translationService) {
     if (humidity < 30) {
-      return "The air is very dry, typical of arid environments.";
+      return translationService.translate("humidity_very_dry");
     } else if (humidity >= 30 && humidity < 60) {
-      return "The air has moderate humidity, comfortable for plant transpiration.";
+      return translationService.translate("humidity_moderate");
     } else if (humidity >= 60 && humidity < 80) {
-      return "The air is quite humid, often associated with moist environments.";
+      return translationService.translate("humidity_quite_humid");
     } else {
-      return "The air is very humid, common before rainfall or in tropical climates.";
+      return translationService.translate("humidity_very_humid");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     List<ChartData> chartData = [
       ChartData("Humidity", widget.humidityData, Colors.blue),
     ];
@@ -45,22 +44,31 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
       child: Card(
         color: MAIZE_PRIMARY_LIGHT,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(ScreenUtil().setSp(15), ScreenUtil().setSp(18.5), ScreenUtil().setSp(15), ScreenUtil().setSp(18.5)),
+          padding: EdgeInsets.fromLTRB(
+            ScreenUtil().setSp(15),
+            ScreenUtil().setSp(26.5),
+            ScreenUtil().setSp(15),
+            ScreenUtil().setSp(26.5),
+          ),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const CustomFont(text: "Humidity", color: Colors.black, fontWeight: FontWeight.bold,),
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz),
-                    onPressed: () {
+                  CustomFont(
+                    text: widget.translationService.translate("humidity_title"),
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  GestureDetector(
+                    onTap: () {
                       CustomDialog(
-                        context, 
-                        title: "Humidity", 
-                        content: getHumidityDescription(widget.humidityData), // 👈 dynamic description here
+                        context,
+                        title: widget.translationService.translate("humidity_title"),
+                        content: getHumidityDescription(widget.humidityData, widget.translationService),
                       );
                     },
+                    child: const Icon(Icons.more_horiz),
                   ),
                 ],
               ),
@@ -68,7 +76,10 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CustomFont(text: '${widget.humidityData.toStringAsFixed(2)}%', color: Colors.black),
+                  CustomFont(
+                    text: '${widget.humidityData.toStringAsFixed(2)}%',
+                    color: Colors.black,
+                  ),
                   Flexible(
                     child: Center(
                       child: SizedBox(
@@ -78,12 +89,13 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
                           margin: EdgeInsets.zero,
                           series: <CircularSeries>[
                             RadialBarSeries<ChartData, String>(
-                                dataSource: chartData,
-                                xValueMapper: (ChartData data, _) => data.label,
-                                yValueMapper: (ChartData data, _) => data.value,
-                                pointColorMapper: (data, _) => data.color,
-                                trackColor: const Color.fromARGB(237, 241, 241, 241),
-                                maximumValue: 100, 
+                              dataSource: chartData,
+                              xValueMapper: (ChartData data, _) => data.label,
+                              yValueMapper: (ChartData data, _) => data.value,
+                              pointColorMapper: (data, _) => data.color,
+                              trackColor:
+                                  const Color.fromARGB(237, 241, 241, 241),
+                              maximumValue: 100,
                             )
                           ],
                         ),
@@ -99,3 +111,4 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
     );
   }
 }
+
