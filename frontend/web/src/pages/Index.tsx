@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import apiClient from '../api/client';
 
 export default function Index() {
     const navigate = useNavigate();
@@ -17,6 +18,40 @@ export default function Index() {
 
     const handleNextImage = () => {
         setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    };
+
+    const [status, setStatus] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+    const testConnection = async () => {
+      setIsLoading(true);
+      setStatus('Testing connection...');
+      
+      try {
+        // Test the root endpoint
+        const response = await apiClient.get('/');
+        setStatus(`✅ Connected successfully! Server response: ${JSON.stringify(response.data)}`);
+      } catch (error: any) {
+        console.error('Connection error:', error);
+        
+        let errorMessage = 'Failed to connect to server';
+        
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          errorMessage = `Server error: ${error.response.status} ${error.response.statusText}`;
+        } else if (error.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response from server. Check if the server is running and the URL is correct.';
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          errorMessage = `Error: ${error.message}`;
+        }
+        
+        setStatus(`❌ ${errorMessage}`);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     return (
@@ -62,6 +97,36 @@ export default function Index() {
               </button>
             </div>
           </div>
+
+          <div style={{ margin: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
+      <h3>API Connection Test</h3>
+      <p>Server URL: {import.meta.env.VITE_API_URL || 'Not set'}</p>
+      <button 
+        onClick={testConnection}
+        disabled={isLoading}
+        style={{ 
+          padding: '8px 16px',
+          backgroundColor: '#4CAF50',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: isLoading ? 'not-allowed' : 'pointer'
+        }}
+      >
+        {isLoading ? 'Testing...' : 'Test Connection'}
+      </button>
+      
+      {status && (
+        <div style={{ 
+          marginTop: '10px', 
+          padding: '10px', 
+          backgroundColor: status.includes('✅') ? '#e7f7e7' : '#ffebee',
+          borderRadius: '4px'
+        }}>
+          {status}
+        </div>
+      )}
+    </div>
             
             {/* ABOUT PART */}
           <div className="relative -mt-12 pb-8 md:pb-4 ">
