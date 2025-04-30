@@ -5,7 +5,9 @@ import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
 import 'package:maize_watch/services/notification_service.dart';
+import 'package:maize_watch/services/translation_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screen/home_screen.dart';
 import 'screen/splash_screen.dart';
@@ -18,6 +20,19 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 void main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize translation service with English as default
+  final translationService = TranslationService();
+  await translationService.init();
+  
+  // Force English on first run
+  final prefs = await SharedPreferences.getInstance();
+  bool isFirstRun = prefs.getBool('first_run') ?? true;
+  
+  if (isFirstRun) {
+    await translationService.changeLanguage('en');
+    await prefs.setBool('first_run', false);
+  }
   
   // Initialize notifications
   const AndroidInitializationSettings initializationSettingsAndroid =
@@ -50,10 +65,10 @@ void main() async {
   NotificationService().initialize();
   
   FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
-  alert: true,
-  badge: true,
-  sound: true,
-);
+    alert: true,
+    badge: true,
+    sound: true,
+  );
 
   runApp(const MaizeWatch());
 }
@@ -88,22 +103,29 @@ class MaizeWatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TranslationService translationService = TranslationService();
+
     return ScreenUtilInit(
       designSize: const Size(412, 715),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (_, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
-          title: 'Maize Watch',
-          initialRoute: '/splash',
-          routes: {
-            '/splash': (context) => const SplashScreen(),
-            '/landing': (context) => const LandingScreen(),
-            '/home': (context) => const HomeScreen(),
-            '/test': (context) => const TestNotificationScreen(),
-          },
+        return ValueListenableBuilder<Map<String, dynamic>>(
+          valueListenable: translationService.translationNotifier,
+          builder: (context, translations, _) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
+              title: 'Maize Watch',
+              initialRoute: '/splash',
+              routes: {
+                '/splash': (context) => const SplashScreen(),
+                '/landing': (context) => const LandingScreen(),
+                '/home': (context) => const HomeScreen(),
+                '/test': (context) => const TestNotificationScreen()
+              },
+            );
+          }
         );
       }
     );

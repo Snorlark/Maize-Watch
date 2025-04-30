@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:icons_flutter/icons_flutter.dart';
-import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/model/sensor_data_model.dart';
+import 'package:maize_watch/services/translation_service.dart';
 
 class CropConditionWidget extends StatelessWidget {
   final SensorReading? currentData;
+  final TranslationService translationService;
 
-  const CropConditionWidget({super.key, required this.currentData});
+  const CropConditionWidget({
+    super.key, 
+    required this.currentData, 
+    required this.translationService
+  });
 
   @override
   Widget build(BuildContext context) {
-    String message = "No Data";
+    String messageKey = "no_data";
     IconData icon = FlutterIcons.smile_circle_ant;
     Color iconColor = Colors.green;
 
@@ -25,15 +30,15 @@ class CropConditionWidget extends StatelessWidget {
       double avg = (temp + moisture + humidity + light) / 4;
 
       if (avg >= 70) {
-        message = "Your crops are in excellent condition.";
+        messageKey = "crop_excellent";
         icon = FlutterIcons.smile_circle_ant;
         iconColor = Colors.green;
       } else if (avg >= 40) {
-        message = "Your crops are doing okay. Monitor closely.";
+        messageKey = "crop_okay";
         icon = FlutterIcons.meho_ant;
         iconColor = Colors.orange;
       } else {
-        message = "Crops are at risk! Immediate action needed.";
+        messageKey = "crop_risk";
         icon = FlutterIcons.frown_ant;
         iconColor = Colors.red;
       }
@@ -66,13 +71,13 @@ class CropConditionWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CustomFont(
-                text: message,
+                text: translationService.translate(messageKey),
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
               SizedBox(height: ScreenUtil().setHeight(2)),
-              const CustomFont(
-                text: 'Stay updated with your farm!',
+              CustomFont(
+                text: translationService.translate("stay_updated"),
                 fontSize: 15,
               ),
             ],

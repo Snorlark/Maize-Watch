@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:maize_watch/services/translation_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../model/sensor_data_model.dart';
 
@@ -19,6 +20,8 @@ class ApiResponse {
 }
 
 class ApiService {
+   final TranslationService _translationService = TranslationService();
+   
   final String baseUrl = 'http://localhost:8080';
   
   static Map<String, dynamic>? currentUser;
@@ -69,10 +72,28 @@ class ApiService {
   
   // Logout and clear all user data
   Future<void> logout() async {
-    await clearToken();
-    currentUser = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_data');
+    try {
+      // Clear API tokens or session data
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Keep language preference
+      final translationService = TranslationService();
+      final currentLang = await translationService.getSavedLanguage();
+      
+      // Clear user-related data but keep necessary app settings
+      await prefs.remove('user_token');
+      await prefs.remove('user_data');
+      await prefs.remove('user_id');
+      await prefs.remove('login_timestamp');
+      
+      // Optionally, make an API call to invalidate the session server-side
+      // await _dio.post('/logout');
+      
+      print('User logged out successfully');
+    } catch (e) {
+      print('Error during logout: $e');
+      throw Exception('Failed to logout');
+    }
   }
 
   // Login method
@@ -189,18 +210,19 @@ class ApiService {
   }
   
   // Get user greeting based on time of day
-  String getGreeting(String name) {
+String getGreeting(String name) {
     final hour = DateTime.now().hour;
-    String greeting;
-    
+    String greetingKey;
+
     if (hour < 12) {
-      greeting = 'Good morning';
+      greetingKey = 'greeting_morning';
     } else if (hour < 17) {
-      greeting = 'Good afternoon';
+      greetingKey = 'greeting_afternoon';
     } else {
-      greeting = 'Good evening';
+      greetingKey = 'greeting_evening';
     }
-    
+
+    final greeting = _translationService.translate(greetingKey);
     return '$greeting, $name';
   }
 
@@ -238,6 +260,8 @@ class ApiService {
       throw Exception('Failed to load historical data');
     }
   }
+
+  
 
 
 }
