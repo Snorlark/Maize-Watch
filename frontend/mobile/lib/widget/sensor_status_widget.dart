@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:maize_watch/services/translation_service.dart';
 
 class SensorStatusWidget extends StatelessWidget {
   final bool ldrSensor;
   final bool phLevelSensor;
   final bool tempAndHumidSensor;
   final bool soilLevelSensor;
+  final TranslationService translationService;
 
   const SensorStatusWidget({
     super.key,
@@ -14,9 +16,10 @@ class SensorStatusWidget extends StatelessWidget {
     required this.phLevelSensor,
     required this.tempAndHumidSensor,
     required this.soilLevelSensor,
+    required this.translationService,
   });
 
-  Widget sensorRow(String label, bool isActive) {
+  Widget sensorRow(String labelKey, bool isActive) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -32,7 +35,7 @@ class SensorStatusWidget extends StatelessWidget {
             ),
             SizedBox(width: ScreenUtil().setWidth(10)),
             CustomFont(
-              text: label,
+              text: translationService.translate(labelKey),
               color: Colors.black,
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -40,7 +43,7 @@ class SensorStatusWidget extends StatelessWidget {
           ],
         ),
         CustomFont(
-          text: isActive ? 'On' : 'Off',
+          text: translationService.translate(isActive ? 'on' : 'off'),
           color: isActive ? Colors.green : Colors.red,
           fontSize: 15,
           fontWeight: FontWeight.bold,
@@ -66,19 +69,19 @@ class SensorStatusWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomFont(
-              text: "Sensors",
+              text: translationService.translate('sensors'),
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
             SizedBox(height: ScreenUtil().setHeight(15)),
-            sensorRow("Light Dependent Resistor", ldrSensor),
+            sensorRow('ldr_sensor', ldrSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("PH Level of Soil", phLevelSensor),
+            sensorRow("ph_sensor", phLevelSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("Temperature and Humidity", tempAndHumidSensor),
+            sensorRow("temp_humid_sensor", tempAndHumidSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("Soil Moisture", soilLevelSensor),
+            sensorRow("soil_moisture_sensor", soilLevelSensor),
           ],
         ),
       ),

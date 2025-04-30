@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/model/chart_data.dart';
+import 'package:maize_watch/services/translation_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../custom/custom_dialog.dart';
 import '../custom/custom_font.dart';
 
 class MoistureDataWidget extends StatefulWidget {
-
   final double moistureData;
+  final TranslationService translationService;
 
   const MoistureDataWidget({
     super.key, 
-    required this.moistureData
+    required this.moistureData, 
+    required this.translationService
   });
 
   @override
@@ -22,23 +24,22 @@ class MoistureDataWidget extends StatefulWidget {
 
 class _MoistureDataWidgetState extends State<MoistureDataWidget> {
   
-  String getMoistureDescription(double moisture) {
+  String getMoistureDescriptionKey(double moisture) {
     if (moisture < 20) {
-      return "The soil is too dry. Irrigation is highly recommended to prevent plant stress.";
+      return "moisture_too_dry";
     } else if (moisture >= 20 && moisture < 40) {
-      return "The soil moisture is low. Consider watering soon to maintain healthy growth.";
+      return "moisture_low";
     } else if (moisture >= 40 && moisture < 60) {
-      return "The soil moisture is at an optimal level. Plants are in good condition.";
+      return "moisture_optimal";
     } else if (moisture >= 60 && moisture < 80) {
-      return "The soil is fairly moist. Monitor for potential overwatering.";
+      return "moisture_fairly_moist";
     } else {
-      return "The soil is too wet. Risk of root rot and fungal diseases is high.";
+      return "moisture_too_wet";
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     List<ChartData> chartData = [
       ChartData("Moisture", widget.moistureData, Colors.green),
     ];
@@ -52,14 +53,20 @@ class _MoistureDataWidgetState extends State<MoistureDataWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const CustomFont(text: "Soil Moisture", color: Colors.black, fontWeight: FontWeight.bold,),
+                CustomFont(
+                  text: widget.translationService.translate("soil_moisture"), 
+                  color: Colors.black, 
+                  fontWeight: FontWeight.bold,
+                ),
                 IconButton(
                   icon: const Icon(Icons.more_horiz),
                   onPressed: () {
                     CustomDialog(
                       context, 
-                      title: "Soil Moisture", 
-                      content: getMoistureDescription(widget.moistureData), // <<== dynamic description here
+                      title: widget.translationService.translate("soil_moisture"), 
+                      content: widget.translationService.translate(
+                        getMoistureDescriptionKey(widget.moistureData)
+                      ),
                     );
                   },
                 ),
@@ -69,7 +76,10 @@ class _MoistureDataWidgetState extends State<MoistureDataWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                CustomFont(text: '${widget.moistureData.toStringAsFixed(2)}%', color: Colors.black),
+                CustomFont(
+                  text: '${widget.moistureData.toStringAsFixed(2)}%', 
+                  color: Colors.black
+                ),
                 SizedBox(
                   width: ScreenUtil().setWidth(200),
                   height: ScreenUtil().setHeight(50),
