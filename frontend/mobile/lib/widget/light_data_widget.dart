@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
+import 'package:maize_watch/model/chart_data.dart';
+import 'package:maize_watch/services/translation_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 import '../custom/custom_dialog.dart';
 import '../custom/custom_font.dart';
-import '../model/chart_data.dart';
 
 class LightDataWidget extends StatefulWidget {
-
   final double lightIntensityData;
+  final TranslationService translationService;
 
   const LightDataWidget({
-    super.key, 
-    required this.lightIntensityData
+    super.key,
+    required this.lightIntensityData, required this.translationService,
   });
 
   @override
@@ -21,11 +22,26 @@ class LightDataWidget extends StatefulWidget {
 }
 
 class _LightDataWidgetState extends State<LightDataWidget> {
+  String getLightIntensityDescription(double intensity, TranslationService translationService) {
+    if (intensity < 20) {
+      return translationService.translate("light_intensity_very_low");
+    } else if (intensity >= 20 && intensity < 50) {
+      return translationService.translate("light_intensity_moderate");
+    } else if (intensity >= 50 && intensity < 80) {
+      return translationService.translate("light_intensity_bright");
+    } else {
+      return translationService.translate("light_intensity_very_strong");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-
     List<ChartData> chartData = [
-      ChartData("Light Intensity", widget.lightIntensityData, const Color.fromARGB(255, 225, 207, 48))
+      ChartData(
+        "Light Intensity",
+        widget.lightIntensityData,
+        const Color.fromARGB(255, 225, 207, 48),
+      )
     ];
 
     return Flexible(
@@ -38,16 +54,22 @@ class _LightDataWidgetState extends State<LightDataWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Flexible(child: CustomFont(text: "Light Intensity", color: Colors.black, fontWeight: FontWeight.bold,)),
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz),
-                    onPressed: () {
+                  Flexible(
+                    child: CustomFont(
+                      text: widget.translationService.translate("light_intensity_title"),
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
                       CustomDialog(
-                        context, 
-                        title: "Light Intensity", 
-                        content: "Ornare tortor sagittis quis pretium sit elit eu consequat. Adipiscing fringilla penatibus pellentesque eget nisi purus. Nec enim dolor vestibulum tempor quam dui ipsum adipiscing. Neque tristique ullamcorper egestas nulla venenatis facilisis non eleifend nulla. Tempus imperdiet amet fringilla risus aliquam ipsum ultrices."
+                        context,
+                        title: widget.translationService.translate("light_intensity_title"),
+                        content: getLightIntensityDescription(widget.lightIntensityData, widget.translationService),
                       );
                     },
+                    child: const Icon(Icons.more_horiz),
                   ),
                 ],
               ),
@@ -55,7 +77,10 @@ class _LightDataWidgetState extends State<LightDataWidget> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CustomFont(text: '${widget.lightIntensityData}%', color: Colors.black),
+                  CustomFont(
+                    text: '${widget.lightIntensityData.toStringAsFixed(2)}%',
+                    color: Colors.black,
+                  ),
                   Flexible(
                     child: SizedBox(
                       width: ScreenUtil().setWidth(200),
@@ -64,12 +89,12 @@ class _LightDataWidgetState extends State<LightDataWidget> {
                         margin: EdgeInsets.zero,
                         series: <CircularSeries>[
                           RadialBarSeries<ChartData, String>(
-                              dataSource: chartData,
-                              xValueMapper: (ChartData data, _) => data.label,
-                              yValueMapper: (ChartData data, _) => data.value,
-                              pointColorMapper: (data, _) => data.color,
-                              trackColor: const Color.fromARGB(237, 241, 241, 241),
-                              maximumValue: 100, 
+                            dataSource: chartData,
+                            xValueMapper: (ChartData data, _) => data.label,
+                            yValueMapper: (ChartData data, _) => data.value,
+                            pointColorMapper: (data, _) => data.color,
+                            trackColor: const Color.fromARGB(237, 241, 241, 241),
+                            maximumValue: 100,
                           )
                         ],
                       ),

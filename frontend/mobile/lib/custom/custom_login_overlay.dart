@@ -1,22 +1,22 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/model/user.dart';
-import 'package:maize_watch/services/api_service.dart'; // Import for API service
+import 'package:maize_watch/services/api_service.dart';
 import '../screen/home_screen.dart';
 import 'custom_font.dart';
+import 'package:url_launcher/url_launcher.dart'; // for hyperlinks
 
 void showLoginOverlay(BuildContext context) {
-  final originalContext = context; // Capture the original context
+  final originalContext = context;
   bool isPasswordVisible = false;
-  bool isChecked = false;
-  
   User user = User('', '');
 
   final TextEditingController usernameController = TextEditingController(text: user.email);
   final TextEditingController passwordController = TextEditingController(text: user.password);
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final ApiService apiService = ApiService(); // Create instance of API service
+  final ApiService apiService = ApiService();
 
   showModalBottomSheet(
     context: context,
@@ -57,7 +57,7 @@ void showLoginOverlay(BuildContext context) {
                     SizedBox(height: 5.h),
                     TextFormField(
                       controller: usernameController,
-                      onChanged: (value){
+                      onChanged: (value) {
                         user.email = value;
                       },
                       decoration: InputDecoration(
@@ -83,12 +83,12 @@ void showLoginOverlay(BuildContext context) {
                     SizedBox(height: 5.h),
                     TextFormField(
                       controller: passwordController,
-                      onChanged: (value){
+                      onChanged: (value) {
                         user.password = value;
                       },
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: MAIZE_PRIMARY_LIGHT,                   
+                        fillColor: MAIZE_PRIMARY_LIGHT,
                         border: OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -111,27 +111,50 @@ void showLoginOverlay(BuildContext context) {
                       },
                     ),
                     SizedBox(height: 20.h),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: isChecked,
-                          activeColor: MAIZE_ACCENT,
-                          onChanged: (value) {
-                            setState(() {
-                              isChecked = value ?? false;
-                            });
-                          },
+
+                    // AGREEMENT TEXT
+                    Center(
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: TextStyle(color: MAIZE_ACCENT, fontSize: 14.sp),
+                          children: [
+                            TextSpan(text: 'By logging in, you agree to our '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: Colors.blueAccent,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () async {
+                                  final url = Uri.parse('https://maize-watch-0l7s.onrender.com/');
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url);
+                                  }
+                                },
+                            ),
+                            TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: TextStyle(
+                                color: Colors.blueAccent,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () async {
+                                  final url = Uri.parse('https://maize-watch-0l7s.onrender.com/');
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url);
+                                  }
+                                },
+                            ),
+                            TextSpan(text: '.'),
+                          ],
                         ),
-                        Expanded(
-                          child: CustomFont(
-                            text: 'I accept the terms and privacy policy',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            color: MAIZE_ACCENT,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+
                     SizedBox(height: 20.h),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -143,10 +166,9 @@ void showLoginOverlay(BuildContext context) {
                         ),
                       ),
                       onPressed: () async {
-                        if (formKey.currentState!.validate() && isChecked) {
+                        if (formKey.currentState!.validate()) {
                           user = User(usernameController.text, passwordController.text);
 
-                          // Show loading indicator
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -156,17 +178,11 @@ void showLoginOverlay(BuildContext context) {
                           );
 
                           try {
-                            // Call login API
                             final loginResponse = await apiService.login(user.email, user.password);
-                            
-                            // Close loading indicator
                             Navigator.pop(context);
-                            
+
                             if (loginResponse.success) {
-                              // Close the overlay
                               Navigator.pop(context);
-                              
-                              // Navigate to HomeScreen using original context
                               Navigator.push(
                                 originalContext,
                                 MaterialPageRoute(builder: (context) => HomeScreen()),
@@ -183,9 +199,7 @@ void showLoginOverlay(BuildContext context) {
                               );
                             }
                           } catch (e) {
-                            // Close loading indicator
                             Navigator.pop(context);
-                            
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: CustomFont(
@@ -196,16 +210,6 @@ void showLoginOverlay(BuildContext context) {
                               ),
                             );
                           }
-                        } else if (!isChecked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: CustomFont(
-                                text: 'You must accept the terms and privacy policy',
-                                color: Colors.white,
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
                         }
                       },
                       child: CustomFont(

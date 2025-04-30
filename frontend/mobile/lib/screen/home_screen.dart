@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: PageView(
        controller: _pageController,
+       physics: NeverScrollableScrollPhysics(),
         children: <Widget>[
           PrescriptionScreen(),
           CropConditionScreen(),
@@ -63,10 +64,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     );
   }
-    void _onTappedBar(int value) {
-    setState(() {
-      _currentIndex = value;
-    });
-    _pageController.jumpToPage(value);
-  }
+void _onTappedBar(int value) {
+  setState(() {
+    _currentIndex = value;
+  });
+  _pageController.animateToPage(
+    value,
+    duration: Duration(milliseconds: 300), // You can adjust the speed
+    curve: Curves.easeInOut, // Smooth easing
+  );
+}
 }
