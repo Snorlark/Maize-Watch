@@ -4,6 +4,18 @@ import User from '../models/user.model.js';
 
 const router = express.Router();
 
+const isAdmin = async (req, res, next) => {
+  try {
+    // This assumes you have authentication middleware that sets req.user
+    // You can adjust according to your authentication system
+    if (req.user && req.user.role === 'admin') {
+      return next();
+    }
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
 // /**
 //  * @route POST /api/auth/register
 //  * @desc Register a new user
@@ -275,5 +287,95 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get user by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Create new user
+router.post('/', async (req, res) => {
+  try {
+    // Check if username already exists
+    const existingUser = await User.findOne({ username: req.body.username });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Create new user
+    const newUser = new User(req.body);
+    await newUser.save();
+    
+    // Return user without password
+    const userResponse = newUser.toObject();
+    delete userResponse.password;
+    
+    res.status(201).json(userResponse);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user
+router.put('/:id', async (req, res) => {
+  try {
+    // If password is empty, remove it from the update object
+    if (req.body.password === '') {
+      delete req.body.password;
+    }
+
+    // Find user and update
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    ).select('-password');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete user
+router.delete('/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+  
 
 export default router;

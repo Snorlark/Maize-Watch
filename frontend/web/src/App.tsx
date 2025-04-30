@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { UserProvider } from './contexts/UserContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Your existing pages
@@ -36,7 +37,12 @@ const App: React.FC = () => {
         {/* Protected Routes - Require Authentication */}
         <Route element={<ProtectedRoute redirectPath="/login" />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/accountmanagement" element={<AccountManagement />} />
+          {/* Wrap AccountManagement with UserProvider */}
+          <Route path="/accountmanagement" element={
+            <UserProvider>
+              <AccountManagement />
+            </UserProvider>
+          } />
           <Route path="/livedata" element={<LiveData />} />
         </Route>
 

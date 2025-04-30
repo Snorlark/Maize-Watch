@@ -1,18 +1,77 @@
-import { Pencil, Trash2, PlusCircle } from "lucide-react";
+import { useState } from "react";
+import { PlusCircle } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-
-const accounts = Array.from({ length: 11 }).map(() => ({
-  lot: 1,
-  name: "Juan Dela Cruz",
-  address: "123 Espana St. Brgy 44, Batangas City",
-  email: "juandelacruz@gmail.com",
-  contact: "09123456789",
-  username: "juandc",
-}));
-
+import UserTable from "../components/UserTable";
+import UserForm from "../components/UserForm";
+import DeleteConfirmation from "../components/DeleteConfirmation";
+import { User } from "../api/userService";
+import { useUserContext } from "../contexts/UserContext";
 
 export default function AccountManagement() {
+  const { users, loading, error, fetchUsers, addUser, updateUserById, deleteUserById } = useUserContext();
+  
+  // State for modals
+  const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
+
+  // Open create user modal
+  const handleOpenCreateModal = () => {
+    setCurrentUser(null);
+    setFormMode('create');
+    setIsFormModalOpen(true);
+  };
+
+  // Open edit user modal
+  const handleOpenEditModal = (user: User) => {
+    setCurrentUser(user);
+    setFormMode('edit');
+    setIsFormModalOpen(true);
+  };
+
+  // Open delete confirmation modal
+  const handleOpenDeleteModal = (user: User) => {
+    setCurrentUser(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Handle user form submission (create or edit)
+  const handleFormSubmit = async (formData: Omit<User, '_id'>) => {
+    setActionLoading(true);
+    try {
+      if (formMode === 'create') {
+        await addUser(formData);
+      } else if (currentUser?._id) {
+        await updateUserById(currentUser._id, formData);
+      }
+      setIsFormModalOpen(false);
+      await fetchUsers(); // Refresh user list
+    } catch (err) {
+      console.error('Error submitting form:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle user deletion
+  const handleDeleteConfirm = async () => {
+    if (!currentUser?._id) return;
+    
+    setActionLoading(true);
+    try {
+      await deleteUserById(currentUser._id);
+      setIsDeleteModalOpen(false);
+      await fetchUsers(); // Refresh user list
+    } catch (err) {
+      console.error('Error deleting user:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
       <Navbar />
@@ -20,45 +79,50 @@ export default function AccountManagement() {
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-2xl font-semibold mb-6">Account Management</h1>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-(--color-rwhite) rounded-xl shadow-md overflow-hidden">
-            <thead className="bg-[#cce3bb] text-[#123b1f] text-left">
-              <tr>
-                <th className="px-6 py-3">Lot #</th>
-                <th className="px-6 py-3">Name</th>
-                <th className="px-6 py-3">Address</th>
-                <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Contact No.</th>
-                <th className="px-6 py-3">Username</th>
-                <th className="px-6 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((acc, idx) => (
-                <tr key={idx} className="border-b hover:bg-[#f2fbe7]">
-                  <td className="px-6 py-4">{acc.lot}</td>
-                  <td className="px-6 py-4">{acc.name}</td>
-                  <td className="px-6 py-4">{acc.address}</td>
-                  <td className="px-6 py-4">{acc.email}</td>
-                  <td className="px-6 py-4">{acc.contact}</td>
-                  <td className="px-6 py-4">{acc.username}</td>
-                  <td className="px-6 py-4 flex gap-2">
-                    <Pencil className="w-5 h-5 text-green-600 cursor-pointer hover:scale-110 transition-transform" />
-                    <Trash2 className="w-5 h-5 text-red-600 cursor-pointer hover:scale-110 transition-transform" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
-        <div className="mt-6 flex items-center text-green-700 cursor-pointer hover:underline">
+        <UserTable 
+          users={users} 
+          loading={loading} 
+          onEdit={handleOpenEditModal} 
+          onDelete={handleOpenDeleteModal} 
+        />
+
+        <div 
+          className="mt-6 flex items-center text-green-700 cursor-pointer hover:underline"
+          onClick={handleOpenCreateModal}
+        >
           <PlusCircle className="w-5 h-5 mr-2" />
           <span>Create new account</span>
         </div>
       </main>
 
       <Footer />
+
+      {/* User Form Modal */}
+      {isFormModalOpen && (
+        <UserForm
+          mode={formMode}
+          initialData={currentUser}
+          onSubmit={handleFormSubmit}
+          onCancel={() => setIsFormModalOpen(false)}
+          isLoading={actionLoading}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <DeleteConfirmation
+          user={currentUser}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          isLoading={actionLoading}
+        />
+      )}
     </div>
   );
 }
