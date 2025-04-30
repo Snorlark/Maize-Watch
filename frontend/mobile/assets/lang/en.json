@@ -1,0 +1,120 @@
+{
+    "welcome": "Welcome to Maize Watch",
+    "settings": "Settings",
+
+    "language": "Language",
+    "notifications": "Notifications",
+    "enable notifications": "Enable Notifications",
+    "vibration only": "Vibration Only",
+    "vibrate": "Vibrate",
+    "sound & vibrate": "Sound & Vibrate",
+
+    "sensors": "Sensors",
+    "ldr_sensor": "Light Dependent Resistor",
+    "ph_sensor": "PH Level of Soil",
+    "temp_humid_sensor": "Temperature and Humidity",
+    "soil_moisture_sensor": "Soil Moisture",
+    "on": "On",
+    "off": "Off",
+
+
+    "help_title": "Help",
+    "help_description": "This section provides information to help users understand the app features and usage. Learn how to monitor your plants, configure settings, and interpret sensor data.",
+    
+    "faq_title": "FAQs",
+    "faq_q1": "What do the sensor indicators mean?",
+    "faq_a1": "Green indicates the sensor is working properly, while red means there may be an issue.",
+    "faq_q2": "How often does the app update sensor data?",
+    "faq_a2": "Sensor data is updated every 5 seconds automatically.",
+
+    "account": "Account",
+    "about_user": "About User",
+    "about": "About",
+    "about_app": "The maize-watch mobile app proposes an innovative, IoT-driven corn monitoring system enhanced by prescriptive analytics. This system will not only provide real-time data on crop health and environmental conditions but also use these data to offer practical advice, further optimizing maize quality and yield.",
+    "logout": "Log out",
+  
+    "logout_title": "Logout Confirmation",
+    "logout_message": "Are you sure you want to logout from your account?",
+    "exit_app_title": "Exit Application",
+    "exit_app_message": "Are you sure you want to exit the application?",
+    "error": "Error",
+    "logout_error": "There was a problem logging out. Please try again.",
+    "okay": "Okay",
+    "yes": "Yes",
+    "no": "No",   
+
+    "greeting_morning": "Good Morning",
+    "greeting_afternoon": "Good Afternoon",
+    "greeting_evening": "Good Evening",
+    "default_user": "farmer",
+    "crop_condition_title": "Crop Condition",
+    "crop_condition_subtitle": "Check the current status of your maize crop and get personalized recommendations.",
+    "dashboard_title": "Dashboard",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "soil_moisture": "Soil Moisture",
+    "rainfall": "Rainfall",
+    "refresh": "Refresh",
+    "last_updated": "Last updated",
+    "minutes_ago": "minutes ago",
+    "hours_ago": "hours ago",
+    "days_ago": "days ago",
+    "just_now": "just now",
+    "crop_health": "Crop Health",
+    "excellent": "Excellent",
+    "good": "Good",
+    "fair": "Fair",
+    "poor": "Poor",
+    "critical": "Critical",
+    "recommendation_title": "Recommendations",
+    "view_details": "View Details",
+    "see_more": "See More",
+
+    "live": "LIVE",
+  "view_more_details": "View more details",
+  "seconds_ago": "seconds ago",
+  
+  "no_data": "No Data",
+  "crop_excellent": "Your crops are in excellent condition.",
+  "crop_okay": "Your crops are doing okay. Monitor closely.",
+  "crop_risk": "Crops are at risk! Immediate action needed.",
+  "stay_updated": "Stay updated with your farm!",
+  
+  "moisture_too_dry": "The soil is too dry. Irrigation is highly recommended to prevent plant stress.",
+  "moisture_low": "The soil moisture is low. Consider watering soon to maintain healthy growth.",
+  "moisture_optimal": "The soil moisture is at an optimal level. Plants are in good condition.",
+  "moisture_fairly_moist": "The soil is fairly moist. Monitor for potential overwatering.",
+  "moisture_too_wet": "The soil is too wet. Risk of root rot and fungal diseases is high.",
+  
+  "light_intensity": "Light Intensity",
+  
+  "very_dry": "Very Dry",
+  "dry": "Dry",
+  "normal": "Normal",
+  "moist": "Moist",
+  "wet": "Wet",
+  
+  "low": "Low",
+  "high": "High",
+  "very_high": "Very High",
+  
+  "dim": "Dim",
+  "low_light": "Low Light",
+  "bright": "Bright",
+  "very_bright": "Very Bright",
+
+  "humidity_title": "Humidity",
+    "humidity_very_dry": "The air is very dry, typical of arid environments.",
+    "humidity_moderate": "The air has moderate humidity, comfortable for plant transpiration.",
+    "humidity_quite_humid": "The air is quite humid, often associated with moist environments.",
+    "humidity_very_humid": "The air is very humid, common before rainfall or in tropical climates.",
+
+    "light_intensity_title": "Light Intensity",
+"light_intensity_very_low": "The light intensity is very low, resembling evening or dense shade.",
+"light_intensity_moderate": "The light intensity is moderate, similar to cloudy daylight.",
+"light_intensity_bright": "The light intensity is bright, close to clear daytime conditions.",
+"light_intensity_very_strong": "The light intensity is very strong, similar to direct midday sunlight."
+
+
+
+}
