@@ -11,7 +11,7 @@ import Dashboard from './pages/Dashboard';
 import AccountManagement from "./pages/AccountManagement";
 import LiveData from "./pages/LiveData";
 import HeaderMenuPage from './pages/HeaderMenu';
-
+import GetAppPage from './pages/GetApp';
 
 
 const App: React.FC = () => {
@@ -27,6 +27,7 @@ const App: React.FC = () => {
       <Route path="/solutions" element={<SolutionsPage />} />
       <Route path="/products" element={<ProductPage />} />
       <Route path="/headermenu" element={<HeaderMenuPage />} />
+      <Route path="/getapp" element={<GetAppPage/>} />
     </Routes>
   );
 };
