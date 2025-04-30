@@ -32,13 +32,14 @@
 import axios from 'axios';
 import https from 'https';
 
-const apiBaseUrl = 'https://maize-watch.onrender.com';
+// const apiBaseUrl = 'https://maize-watch.onrender.com';
+const apiBaseUrl = 'http://localhost:8080';
 console.log('API Base URL being used:', apiBaseUrl); // Verify URL in console
 
 // Create an HTTPS agent that ignores SSL errors
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false, // <-- Accept invalid SSL certs
-});
+// const httpsAgent = new https.Agent({
+//   rejectUnauthorized: false, // <-- Accept invalid SSL certs
+// });
 
 // Create the Axios instance
 const apiClient = axios.create({
@@ -47,7 +48,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds timeout
-  httpsAgent, // <-- Attach the custom HTTPS agent here
+  // httpsAgent, // <-- Attach the custom HTTPS agent here
 });
 
 // Add auth token to requests if available

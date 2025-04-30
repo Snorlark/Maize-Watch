@@ -1,3 +1,4 @@
+import { MongoClient, ObjectId } from 'mongodb';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -12,7 +13,7 @@ import dummyDataRoutes from './routes/dummy_data.route.js';
 import MqttService from './services/mqtt.service.js';
 
 
-
+let db;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -24,14 +25,16 @@ const port = process.env.PORT || 8080;
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173', // Vite's default port
+  'http://localhost:5173',// Vite's default port
   // Add your frontend deployment URL here
 ];
 
 // Connect to MongoDB using URI from environment
-await mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('Connected to MongoDB successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+const client = new MongoClient(process.env.MONGODB_URI);
+await client.connect();
+db = client.db(); // <-- assign to the global variable
+console.log('Connected to MongoDB successfully');
+
 
 // Middleware
 app.use(cors({
@@ -45,6 +48,7 @@ app.use(cors({
     }
     return callback(null, true);
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -87,6 +91,68 @@ app.get('/health', (req, res) => {
       timestamp: new Date().toISOString()
     });
   });
+
+  // API Routes
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await db.collection('users').find({}).toArray();
+    res.json(users);
+  } catch (err) {
+    console.error('Error getting users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Create user
+app.post('/api/users', async (req, res) => {
+  try {
+    const result = await db.collection('users').insertOne(req.body);
+    res.status(201).json({ ...req.body, _id: result.insertedId });
+  } catch (err) {
+    console.error('Error creating user:', err);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Get single user
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error('Error getting user:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Update user
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: req.body }
+    );
+    if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'User updated successfully' });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
