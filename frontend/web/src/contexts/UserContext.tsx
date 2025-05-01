@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { userService, User } from "../api/client";
+import { useAuth } from './AuthContext';
 
 // Define the context shape
 interface UserContextType {
   users: User[];
   loading: boolean;
   error: string | null;
+  currentUser: User | null;
+  isAdmin: boolean;
   fetchUsers: () => Promise<void>;
   addUser: (userData: Omit<User, "_id">) => Promise<User>;
   updateUserById: (id: string, userData: Partial<User>) => Promise<User>;
@@ -22,8 +25,10 @@ interface UserProviderProps {
 
 // Provider component
 export function UserProvider({ children }: UserProviderProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch users on component mount
@@ -86,7 +91,6 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   };
 
-  // Create the context value object
   const contextValue: UserContextType = {
     users,
     loading,
@@ -95,10 +99,14 @@ export function UserProvider({ children }: UserProviderProps) {
     addUser,
     updateUserById,
     deleteUserById,
+    currentUser: user,      
+    isAdmin                
   };
 
   return (
-    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
+    <UserContext.Provider value={contextValue}>
+      {children}
+    </UserContext.Provider>
   );
 }
 

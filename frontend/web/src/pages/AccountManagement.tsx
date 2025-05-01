@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
+import { Navigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
@@ -9,32 +10,53 @@ import { User } from "../api/client";
 import { useUserContext } from "../contexts/UserContext";
 
 export default function AccountManagement() {
-  const { users, loading, error, fetchUsers, addUser, updateUserById, deleteUserById } = useUserContext();
+
+  const { 
+    users, 
+    loading, 
+    error, 
+    fetchUsers, 
+    addUser, 
+    updateUserById, 
+    deleteUserById,
+    currentUser,
+    isAdmin
+  } = useUserContext();
   
   // State for modals
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentEditUser, setCurrentEditUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+
+  // Check if user is admin, redirect if not
+  if (!isAdmin) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // Open create user modal
   const handleOpenCreateModal = () => {
-    setCurrentUser(null);
+    setCurrentEditUser(null);
     setFormMode('create');
     setIsFormModalOpen(true);
   };
 
   // Open edit user modal
   const handleOpenEditModal = (user: User) => {
-    setCurrentUser(user);
+    setCurrentEditUser(user);
     setFormMode('edit');
     setIsFormModalOpen(true);
   };
 
   // Open delete confirmation modal
   const handleOpenDeleteModal = (user: User) => {
-    setCurrentUser(user);
+    setCurrentEditUser(user);
     setIsDeleteModalOpen(true);
   };
 
@@ -44,8 +66,8 @@ export default function AccountManagement() {
     try {
       if (formMode === 'create') {
         await addUser(formData);
-      } else if (currentUser?._id) {
-        await updateUserById(currentUser._id, formData);
+      } else if (currentEditUser?._id) {
+        await updateUserById(currentEditUser._id, formData);
       }
       setIsFormModalOpen(false);
       await fetchUsers(); // Refresh user list
@@ -58,11 +80,11 @@ export default function AccountManagement() {
 
   // Handle user deletion
   const handleDeleteConfirm = async () => {
-    if (!currentUser?._id) return;
+    if (!currentEditUser?._id) return;
     
     setActionLoading(true);
     try {
-      await deleteUserById(currentUser._id);
+      await deleteUserById(currentEditUser._id);
       setIsDeleteModalOpen(false);
       await fetchUsers(); // Refresh user list
     } catch (err) {
@@ -77,7 +99,12 @@ export default function AccountManagement() {
       <Navbar />
 
       <main className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-semibold mb-6">Account Management</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">Account Management</h1>
+          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+            Admin Access
+          </div>
+        </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -107,7 +134,7 @@ export default function AccountManagement() {
       {isFormModalOpen && (
         <UserForm
           mode={formMode}
-          initialData={currentUser}
+          initialData={currentEditUser}
           onSubmit={handleFormSubmit}
           onCancel={() => setIsFormModalOpen(false)}
           isLoading={actionLoading}
@@ -117,12 +144,15 @@ export default function AccountManagement() {
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
         <DeleteConfirmation
-          user={currentUser}
+          user={currentEditUser}
           onConfirm={handleDeleteConfirm}
           onCancel={() => setIsDeleteModalOpen(false)}
           isLoading={actionLoading}
         />
       )}
     </div>
+    
   );
+
 }
+
