@@ -91,6 +91,28 @@ const authService = {
       return JSON.parse(userString);
     }
     return null;
+  },
+
+  // Check if current user is an admin
+  isAdmin: (): boolean => {
+    const user = authService.getCurrentUser();
+    return user?.role === 'admin';
+  },
+
+  // Setup admin account (one-time use)
+  setupAdmin: async (adminData?: Partial<RegisterPayload>): Promise<AuthResponse> => {
+    try {
+      const response = await apiClient.post('/setup/create-admin', adminData || {});
+      return response.data;
+    } catch (error: any) {
+      if (error.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
   }
 };
 

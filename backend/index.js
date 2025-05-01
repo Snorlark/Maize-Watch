@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import userRoutes from './routes/user.route.js';
 import dummyDataRoutes from './routes/dummy_data.route.js';
 import MqttService from './services/mqtt.service.js';
+import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
 let db;
 const __filename = fileURLToPath(import.meta.url);
@@ -100,9 +101,9 @@ app.get('/health', (req, res) => {
     });
   });
 
-// API Routes
-// Get all users
-app.get('/api/users', async (req, res) => {
+// API Routes - Protected by admin middleware
+// Get all users - admin only
+app.get('/api/users', isAdmin, async (req, res) => {
   try {
     const users = await db.collection('users').find({}).toArray();
     res.json(users);
@@ -112,8 +113,8 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Create user
-app.post('/api/users', async (req, res) => {
+// Create user - admin only
+app.post('/api/users', isAdmin, async (req, res) => {
   try {
     const result = await db.collection('users').insertOne(req.body);
     res.status(201).json({ ...req.body, _id: result.insertedId });
@@ -123,8 +124,8 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Get single user
-app.get('/api/users/:id', async (req, res) => {
+// Get single user - admin only
+app.get('/api/users/:id', isAdmin, async (req, res) => {
   try {
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -135,8 +136,8 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
-// Update user
-app.put('/api/users/:id', async (req, res) => {
+// Update user - admin only
+app.put('/api/users/:id', isAdmin, async (req, res) => {
   try {
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(req.params.id) },
@@ -150,8 +151,8 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-// Delete user
-app.delete('/api/users/:id', async (req, res) => {
+// Delete user - admin only
+app.delete('/api/users/:id', isAdmin, async (req, res) => {
   try {
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
@@ -159,6 +160,52 @@ app.delete('/api/users/:id', async (req, res) => {
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Create an admin user programmatically (only for initial setup)
+app.post('/setup/create-admin', async (req, res) => {
+  // Check if admin already exists
+  try {
+    const adminExists = await db.collection('users').findOne({ role: 'admin' });
+    if (adminExists) {
+      return res.status(400).json({ 
+        message: 'Admin account already exists',
+        info: 'For security reasons, you can only create one admin account'
+      });
+    }
+    
+    // Create admin with provided credentials or default ones
+    const adminUser = {
+      username: req.body.username || 'admin',
+      password: req.body.password || 'adminPassword123', // You should hash this in production
+      fullName: req.body.fullName || 'System Administrator',
+      contactNumber: req.body.contactNumber || '1234567890',
+      address: req.body.address || 'Admin Address',
+      email: req.body.email || 'admin@example.com',
+      role: 'admin', // This is fixed and cannot be changed
+      createdAt: new Date().toISOString()
+    };
+    
+    const result = await db.collection('users').insertOne(adminUser);
+    
+    // For security, don't return the password
+    const { password, ...adminWithoutPassword } = adminUser;
+    
+    res.status(201).json({
+      message: 'Admin account created successfully',
+      admin: { ...adminWithoutPassword, _id: result.insertedId }
+    });
+    
+    // Delete this route after use for security
+    // NOTE: In production, you should set up the admin via database directly
+    delete app._router.stack.find(layer => 
+      layer.route && layer.route.path === '/setup/create-admin'
+    );
+    
+  } catch (err) {
+    console.error('Error creating admin:', err);
+    res.status(500).json({ error: 'Failed to create admin user' });
   }
 });
 
