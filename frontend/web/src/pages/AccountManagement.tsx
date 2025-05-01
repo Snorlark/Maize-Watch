@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
 import UserForm from "../components/UserForm";
 import DeleteConfirmation from "../components/DeleteConfirmation";
-import { User } from "../api/userService";
+import { User } from "../api/client";
 import { useUserContext } from "../contexts/UserContext";
 
 export default function AccountManagement() {
