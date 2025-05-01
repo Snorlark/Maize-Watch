@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { User } from '../api/userService';
+import { User } from '../api/client';
 
 interface DeleteConfirmationProps {
   user: User | null;
