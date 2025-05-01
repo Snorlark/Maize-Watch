@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import * as userService from "../api/userService";
-import { User } from "../api/userService";
+import { userService, User } from "../api/client";
 
 // Define the context shape
 interface UserContextType {

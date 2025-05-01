@@ -12,7 +12,6 @@ import userRoutes from './routes/user.route.js';
 import dummyDataRoutes from './routes/dummy_data.route.js';
 import MqttService from './services/mqtt.service.js';
 
-
 let db;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,12 +28,22 @@ const allowedOrigins = [
   // Add your frontend deployment URL here
 ];
 
-// Connect to MongoDB using URI from environment
+// Connect to MongoDB directly for native driver usage
 const client = new MongoClient(process.env.MONGODB_URI);
 await client.connect();
 db = client.db(); // <-- assign to the global variable
-console.log('Connected to MongoDB successfully');
+console.log('Connected to MongoDB successfully using native driver');
 
+// ALSO connect with Mongoose for Mongoose model operations
+try {
+  await mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 15000, // Increase from default 10000
+  });
+  console.log('Connected to MongoDB successfully using Mongoose');
+} catch (err) {
+  console.error('Mongoose connection error:', err);
+  process.exit(1);
+}
 
 // Middleware
 app.use(cors({
@@ -52,7 +61,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -92,7 +100,7 @@ app.get('/health', (req, res) => {
     });
   });
 
-  // API Routes
+// API Routes
 // Get all users
 app.get('/api/users', async (req, res) => {
   try {
@@ -156,4 +164,17 @@ app.delete('/api/users/:id', async (req, res) => {
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
+});
+
+// Handle application shutdown gracefully
+process.on('SIGINT', async () => {
+  try {
+    await mongoose.connection.close();
+    await client.close();
+    console.log('MongoDB connections closed.');
+    process.exit(0);
+  } catch (err) {
+    console.error('Error during shutdown:', err);
+    process.exit(1);
+  }
 });
