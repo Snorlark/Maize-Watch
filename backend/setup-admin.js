@@ -30,7 +30,7 @@ const prompt = (question) => {
 // Main function
 async function setupAdmin() {
   // MongoDB connection
-  const client = new MongoClient('mongodb+srv://larksigmuondbabao:aKO5hHmP0ZZYQPfp@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db');
+  const client = new MongoClient(process.env.MONGODB_URI);
   
   try {
     console.log('\n----- Admin Account Setup -----\n');
