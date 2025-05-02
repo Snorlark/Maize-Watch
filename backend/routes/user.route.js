@@ -488,8 +488,6 @@ router.post('/register', async (req, res) => {
 
 // Login
 router.post('/login', async (req, res) => {
-  const { client, db } = await getDb();
-  
   try {
     const { username, password } = req.body;
     
@@ -501,8 +499,8 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Find user
-    const user = await db.collection('users').findOne({ username });
+    // Find user using Mongoose
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -528,7 +526,8 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
     
     // Return success without sending password
-    const { password: _, ...userWithoutPassword } = user;
+    const userObject = user.toObject();
+    const { password: _, ...userWithoutPassword } = userObject;
     
     res.status(200).json({
       success: true,
@@ -545,8 +544,6 @@ router.post('/login', async (req, res) => {
       success: false,
       message: 'Server error during login'
     });
-  } finally {
-    await client.close();
   }
 });
 
