@@ -10,7 +10,6 @@ import { User } from "../api/client";
 import { useUserContext } from "../contexts/UserContext";
 
 export default function AccountManagement() {
-
   const { 
     users, 
     loading, 
@@ -29,16 +28,18 @@ export default function AccountManagement() {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [currentEditUser, setCurrentEditUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
 
-  // Check if user is admin, redirect if not
-  if (!isAdmin) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  // Fetch users on component mount
+  // Fetch users on component mount and check authentication
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // First set authChecked to true to indicate we've performed the check
+    setAuthChecked(true);
+    
+    // Only fetch users if the user is an admin
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin, fetchUsers]); // Add isAdmin as a dependency to re-run if it changes
 
   // Open create user modal
   const handleOpenCreateModal = () => {
@@ -93,6 +94,11 @@ export default function AccountManagement() {
       setActionLoading(false);
     }
   };
+
+  // Only redirect after we've confirmed the auth status
+  if (authChecked && !isAdmin) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
@@ -151,8 +157,5 @@ export default function AccountManagement() {
         />
       )}
     </div>
-    
   );
-
 }
-

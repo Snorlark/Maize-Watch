@@ -26,15 +26,24 @@ interface UserProviderProps {
 // Provider component
 export function UserProvider({ children }: UserProviderProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch users on component mount
+  // Compute isAdmin whenever user changes
+  const isAdmin = user?.role === 'admin';
+
+  // Fetch users on component mount or when user changes
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // Only fetch users if we have a user and they're an admin
+    if (user && isAdmin) {
+      fetchUsers();
+    } else {
+      // Clear users array when not admin or no user
+      setUsers([]);
+      setLoading(false);
+    }
+  }, [user]); // Add user as a dependency
 
   // Function to fetch all users
   const fetchUsers = async () => {
@@ -99,8 +108,8 @@ export function UserProvider({ children }: UserProviderProps) {
     addUser,
     updateUserById,
     deleteUserById,
-    currentUser: user,      
-    isAdmin                
+    currentUser: user,
+    isAdmin
   };
 
   return (

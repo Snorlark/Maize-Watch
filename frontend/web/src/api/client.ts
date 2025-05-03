@@ -49,7 +49,7 @@ export const userService = {
   // Get all users
   getUsers: async (): Promise<User[]> => {
     try {
-      const response = await apiClient.get('/api/users');
+      const response = await apiClient.get('/auth');
       return response.data;
     } catch (error) {
       console.error('Error in getUsers:', error);
@@ -60,7 +60,7 @@ export const userService = {
   // Get a single user by ID
   getUserById: async (id: string): Promise<User> => {
     try {
-      const response = await apiClient.get(`/api/users/${id}`);
+      const response = await apiClient.get(`/auth/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error getting user ${id}:`, error);
@@ -71,7 +71,7 @@ export const userService = {
   // Create a new user
   createUser: async (userData: Omit<User, "_id">): Promise<User> => {
     try {
-      const response = await apiClient.post('/api/users', userData);
+      const response = await apiClient.post('/auth', userData);
       return response.data;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -85,7 +85,7 @@ export const userService = {
     userData: Partial<User>
   ): Promise<User> => {
     try {
-      const response = await apiClient.put(`/api/users/${id}`, userData);
+      const response = await apiClient.put(`/auth/${id}`, userData);
       return response.data;
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
@@ -96,7 +96,7 @@ export const userService = {
   // Delete a user
   deleteUser: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/api/users/${id}`);
+      await apiClient.delete(`/auth/${id}`);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
       throw error;

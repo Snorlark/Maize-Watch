@@ -32,7 +32,7 @@ export default function Unauthorized() {
           </p>
           
           <Link 
-            to="/" 
+            to="/dashboard" 
             className="bg-[#356B2C] text-white py-2 px-4 rounded hover:bg-[#2A5623] transition-colors"
           >
             Return to Home
