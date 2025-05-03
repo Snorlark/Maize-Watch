@@ -38,9 +38,9 @@ const LiveData: React.FC = () => {
       }
     };
 
-    fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    fetchData(); // Initial fetch
+    // Refresh data every 3 seconds for more real-time updates
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, []);
 

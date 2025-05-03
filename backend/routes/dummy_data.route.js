@@ -7,15 +7,16 @@ const router = express.Router();
 // Get latest reading for all fields
 router.get('/latest', async (req, res) => {
   try {
-    const latestData = await DummyData.aggregate([
-      { $sort: { timestamp: -1 } },
-      { $group: {
-          _id: "$field_id",
-          latestReading: { $first: "$$ROOT" }
-      }}
-    ]);
+    // Get the absolute latest reading from the database
+    const latestData = await DummyData.findOne()
+      .sort({ timestamp: -1 })  // Sort by timestamp in descending order
+      .lean();  // Convert to plain JavaScript object for better performance
     
-    res.json(latestData.map(item => item.latestReading));
+    if (!latestData) {
+      return res.json([]);
+    }
+    
+    res.json([latestData]);  // Return as array to maintain compatibility
   } catch (error) {
     console.error('Error fetching latest data:', error);
     res.status(500).json({ error: 'Server error' });
