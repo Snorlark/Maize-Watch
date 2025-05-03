@@ -681,6 +681,12 @@ router.post('/', isAuthenticated, isAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Username already exists' });
     }
 
+    // Hash password before saving
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      req.body.password = await bcrypt.hash(req.body.password, salt);
+    }
+
     const newUser = new User(req.body);
     await newUser.save();
 
