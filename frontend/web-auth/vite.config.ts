@@ -8,11 +8,17 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      // Proxy all /auth requests to your backend
+      '/auth': {
+        target: 'https://maize-watch.onrender.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // Keep existing /api proxy
+      '/api': {
+        target: 'https://maize-watch.onrender.com',
+        changeOrigin: true,
+        secure: false,
       }
     }
   }
