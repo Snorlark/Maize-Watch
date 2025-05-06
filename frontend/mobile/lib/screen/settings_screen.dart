@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:maize_watch/custom/custom_font.dart';
+import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/services/translation_service.dart';
-import 'package:maize_watch/widget/language_toggle_widget.dart';
+import 'package:maize_watch/widget/language_toggle.dart';
 import 'package:maize_watch/widget/sensor_status_widget.dart';
 import 'package:maize_watch/widget/notification_settings_widget.dart';
 import 'package:maize_watch/widget/help_section_widget.dart';
 import 'package:maize_watch/widget/faq_section_widget.dart';
 import 'package:maize_watch/services/notification_service.dart';
 
+// ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
   bool isNotificationsEnabled;
   bool isHelpExpanded;
@@ -118,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Expanded(
                         child: SingleChildScrollView(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               SensorStatusWidget(
                                 ldrSensor: ldr,
@@ -143,8 +144,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 translationService: _translationService,
                               ),
                               const SizedBox(height: 20),
-                              const LanguageToggle(),
-                              const SizedBox(height: 20),
                               HelpSectionWidget(
                                 isExpanded: widget.isHelpExpanded,
                                 onToggle: () {
@@ -163,6 +162,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 },
                                 translationService: _translationService,
                               ),
+
+                               Padding(
+                                 padding: EdgeInsets.only(bottom: 20),
+                                 child: LanguageToggleLocale(color_toggle: MAIZE_PRIMARY_LIGHT),
+                               ),
                             ],
                           ),
                         ),

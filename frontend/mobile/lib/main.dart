@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,70 +7,73 @@ import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
 import 'package:maize_watch/services/notification_service.dart';
-import 'package:maize_watch/services/translation_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:maize_watch/l10n/l10n.dart';
 
 import 'screen/home_screen.dart';
 import 'screen/splash_screen.dart';
 import 'screen/test_notification_screen.dart';
 
-// Initialize the plugin at the global level
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = 
+// Allow disabling swipe-back gesture for specific routes
+class NoSwipePageRoute<T> extends MaterialPageRoute<T> {
+  NoSwipePageRoute({required WidgetBuilder builder}) : super(builder: builder);
+
+  @override
+  bool get popGestureEnabled => false;
+}
+
+// Notifications
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
+// Dynamic locale support
+final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('en'));
+
 void main() async {
-  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize translation service with English as default
-  final translationService = TranslationService();
-  await translationService.init();
-  
-  // Force English on first run
+
+  // Optional: Force English on first run
   final prefs = await SharedPreferences.getInstance();
   bool isFirstRun = prefs.getBool('first_run') ?? true;
-  
+
   if (isFirstRun) {
-    await translationService.changeLanguage('en');
+    localeNotifier.value = const Locale('en');
     await prefs.setBool('first_run', false);
   }
-  
-  // Initialize notifications
+
+  // Notifications setup
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-      
+
   const DarwinInitializationSettings initializationSettingsIOS =
       DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
-      
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+
   const InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
     iOS: initializationSettingsIOS,
   );
-  
+
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (NotificationResponse details) {
-      // Handle notification taps here
       print('Notification clicked: ${details.payload}');
     },
   );
-  
-  // Request permissions
+
   await _requestPermissions();
-  
-  // Create and initialize the notification service
   NotificationService().initialize();
-  
-  FlutterLocalNotificationsPlugin().resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+
+  FlutterLocalNotificationsPlugin()
+      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      ?.requestPermissions(alert: true, badge: true, sound: true);
 
   runApp(const MaizeWatch());
 }
@@ -77,22 +82,13 @@ Future<void> _requestPermissions() async {
   if (Platform.isIOS || Platform.isMacOS) {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   } else if (Platform.isAndroid) {
-    // For Android, request the notification permission if running on API level 33 or higher
-    if (await Permission.notification.isGranted) {
-      return; // Permissions already granted
-    }
+    if (await Permission.notification.isGranted) return;
 
     if (await Permission.notification.request().isGranted) {
-      // Permissions granted
       print("Notification permission granted");
     } else {
-      // Handle the case when permission is denied
       print("Notification permission denied");
     }
   }
@@ -103,31 +99,37 @@ class MaizeWatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TranslationService translationService = TranslationService();
-
     return ScreenUtilInit(
       designSize: const Size(412, 715),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (_, child) {
-        return ValueListenableBuilder<Map<String, dynamic>>(
-          valueListenable: translationService.translationNotifier,
-          builder: (context, translations, _) {
+        return ValueListenableBuilder<Locale>(
+          valueListenable: localeNotifier,
+          builder: (context, locale, _) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
+              supportedLocales: L10n.all,
+              locale: locale,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate
+              ],
               title: 'Maize Watch',
               initialRoute: '/splash',
               routes: {
                 '/splash': (context) => const SplashScreen(),
                 '/landing': (context) => const LandingScreen(),
                 '/home': (context) => const HomeScreen(),
-                '/test': (context) => const TestNotificationScreen()
+                '/test': (context) => const TestNotificationScreen(),
               },
             );
-          }
+          },
         );
-      }
+      },
     );
   }
 }

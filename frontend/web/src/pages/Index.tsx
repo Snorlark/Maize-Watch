@@ -99,11 +99,11 @@ export default function Index() {
           </div>
 
           <div style={{ margin: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
-      <h3>API Connection Test</h3>
+      {/* <h3>API Connection Test</h3>
       <p>Server URL: {import.meta.env.VITE_API_URL || 'Not set'}</p>
       <button 
         onClick={testConnection}
-        disabled={isLoading}
+        disabled={isLoading}a
         style={{ 
           padding: '8px 16px',
           backgroundColor: '#4CAF50',
@@ -114,7 +114,7 @@ export default function Index() {
         }}
       >
         {isLoading ? 'Testing...' : 'Test Connection'}
-      </button>
+      </button> */}
       
       {status && (
         <div style={{ 

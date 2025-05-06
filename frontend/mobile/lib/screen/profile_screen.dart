@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:maize_watch/custom/custom_button.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/custom/custom_dialog.dart';
@@ -60,20 +59,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   
   // Handle the back button press
   Future<bool> _onWillPop() async {
-    bool shouldPop = false;
-    
+    bool shouldLogout = false;
+
     await customOptionDialog(
       context,
-      title: _translationService.translate("exit_app_title"), 
-      content: _translationService.translate("exit_app_message"),
-      onYes: () {
-        shouldPop = true;
-        SystemNavigator.pop(); // Exit the app
-      }
+      title: _translationService.translate("logout_title"),
+      content: _translationService.translate("logout_message"),
+      onYes: () async {
+        shouldLogout = true;
+
+        try {
+          await _apiService.logout();
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const LandingScreen()),
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          print('Logout error: $e');
+          if (mounted) {
+            CustomDialog(
+              context,
+              title: _translationService.translate("error"),
+              content: _translationService.translate("logout_error"),
+            );
+          }
+        }
+      },
     );
-    
-    return shouldPop;
+
+    return false; // Always return false so navigation is controlled manually
   }
+
   
   // Handle logout with confirmation
   void _handleLogout() async {

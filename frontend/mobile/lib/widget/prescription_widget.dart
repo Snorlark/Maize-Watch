@@ -44,9 +44,8 @@ class _PrescriptionWidgetState extends State<PrescriptionWidget> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isChecked
-            ? const Color.fromARGB(172, 178, 225, 173)
-            : Colors.white,
+        color:
+            isChecked ? const Color.fromARGB(172, 178, 225, 173) : Colors.white,
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
@@ -58,7 +57,7 @@ class _PrescriptionWidgetState extends State<PrescriptionWidget> {
               Row(
                 children: [
                   Transform.scale(
-                    scale: 1.1, 
+                    scale: 1.1,
                     child: Checkbox(
                       activeColor: Colors.green,
                       value: isChecked,
@@ -98,9 +97,8 @@ class _PrescriptionWidgetState extends State<PrescriptionWidget> {
             fontSize: 15,
             fontWeight: FontWeight.normal,
             color: Colors.black,
-            textDecoration: isChecked
-                ? TextDecoration.lineThrough
-                : TextDecoration.none,
+            textDecoration:
+                isChecked ? TextDecoration.lineThrough : TextDecoration.none,
           ),
         ],
       ),
