@@ -17,8 +17,11 @@ export interface User {
 }
 
 // Base URL configuration
-const apiBaseUrl = 'http://localhost:8080';
-console.log('API Base URL being used:', apiBaseUrl); // Verify URL in console
+// For local development, use relative URLs which will be proxied by Vite
+// For production, use the full URL
+const isDevelopment = import.meta.env?.MODE === 'development';
+const apiBaseUrl = isDevelopment ? '' : 'https://maize-watch.onrender.com';
+console.log('API Base URL being used:', apiBaseUrl || 'Using Vite proxy'); // Verify URL in console
 
 // Create the Axios instance
 const apiClient = axios.create({

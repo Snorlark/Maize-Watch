@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
-
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -25,28 +24,33 @@ const port = process.env.PORT || 8080;
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173',// Vite's default port
-  // Add your frontend deployment URL here
+  'http://localhost:5173',
+  'http://localhost:5174', // Vite's default port
+  'https://maize-watch-frontend.vercel.app', // Add your production frontend URL here
+  'https://maize-watch-frontend.netlify.app',
+  'https://maize-watch.vercel.app'
 ];
 
-// Connect to MongoDB directly for native driver usage
-const client = new MongoClient(process.env.MONGODB_URI);
-await client.connect();
-db = client.db(); // <-- assign to the global variable
-console.log('Connected to MongoDB successfully using native driver');
+// CORS configuration
+// const corsOptions = {
+//   origin: function(origin, callback) {
+//     // Allow requests with no origin (like mobile apps or curl requests)
+//     if (!origin) return callback(null, true);
+    
+//     if (allowedOrigins.indexOf(origin) === -1) {
+//       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+//       return callback(new Error(msg), false);
+//     }
+//     return callback(null, true);
+//   },
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// };
 
-// ALSO connect with Mongoose for Mongoose model operations
-try {
-  await mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 15000, // Increase from default 10000
-  });
-  console.log('Connected to MongoDB successfully using Mongoose');
-} catch (err) {
-  console.error('Mongoose connection error:', err);
-  process.exit(1);
-}
+// // Apply CORS middleware (only once)
+// app.use(cors(corsOptions));
 
-// Middleware
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -58,18 +62,43 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Body parser middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use(express.json());
+// Connect to MongoDB
+const connectToMongo = async () => {
+  try {
+    // Connect to MongoDB directly for native driver usage
+    const client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
+    db = client.db(); // <-- assign to the global variable
+    console.log('Connected to MongoDB successfully using native driver');
+
+    // ALSO connect with Mongoose for Mongoose model operations
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000, // Increase from default 10000
+    });
+    console.log('Connected to MongoDB successfully using Mongoose');
+    
+    return { client, db };
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  }
+};
 
 // Initialize MQTT service
-const mqttService = new MqttService(process.env.MQTT_BROKER);
+let mqttService;
+try {
+  mqttService = new MqttService(process.env.MQTT_BROKER);
+} catch (err) {
+  console.error('MQTT service initialization error:', err);
+}
 
 // Routes
 app.use('/auth', userRoutes);
@@ -77,29 +106,21 @@ app.use('/api', dummyDataRoutes);
 
 // Test route
 app.get('/', (req, res) => {
-    res.send('Maize Watch API is running');
+  res.send('Maize Watch API is running');
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        message: 'Internal Server Error',
-        error: process.env.NODE_ENV === 'production' ? null : err.message
-    });
-});
-
+// Health check endpoint
 app.get('/health', (req, res) => {
-    // Check MongoDB connection
-    const isMongoConnected = mongoose.connection.readyState === 1;
-    
-    res.status(200).json({
-      status: 'ok',
-      message: 'Server is running',
-      mongodb: isMongoConnected ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString()
-    });
+  // Check MongoDB connection
+  const isMongoConnected = mongoose.connection.readyState === 1;
+  
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    mongodb: isMongoConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
   });
+});
 
 // API Routes - Protected by admin middleware
 // Get all users - admin only
@@ -197,31 +218,50 @@ app.post('/setup/create-admin', async (req, res) => {
       admin: { ...adminWithoutPassword, _id: result.insertedId }
     });
     
-    // Delete this route after use for security
-    // NOTE: In production, you should set up the admin via database directly
-    delete app._router.stack.find(layer => 
-      layer.route && layer.route.path === '/setup/create-admin'
-    );
-    
   } catch (err) {
     console.error('Error creating admin:', err);
     res.status(500).json({ error: 'Failed to create admin user' });
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on port ${port}`);
+// Error handling middleware - should be after all routes
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'production' ? null : err.message
+  });
 });
 
-// Handle application shutdown gracefully
-process.on('SIGINT', async () => {
+// Start server after connecting to MongoDB
+const startServer = async () => {
+  let client;
   try {
-    await mongoose.connection.close();
-    await client.close();
-    console.log('MongoDB connections closed.');
-    process.exit(0);
+    const connections = await connectToMongo();
+    client = connections.client;
+    
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Server running on port ${port}`);
+    });
+    
+    // Handle application shutdown gracefully
+    process.on('SIGINT', async () => {
+      try {
+        await mongoose.connection.close();
+        await client.close();
+        console.log('MongoDB connections closed.');
+        process.exit(0);
+      } catch (err) {
+        console.error('Error during shutdown:', err);
+        process.exit(1);
+      }
+    });
+    
   } catch (err) {
-    console.error('Error during shutdown:', err);
+    console.error('Failed to start server:', err);
+    if (client) await client.close();
     process.exit(1);
   }
-});
+};
+
+startServer();
