@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class CustomFont extends StatelessWidget {
   final String text;
-  final double fontSize, letterSpacing;
+  final double fontSize, letterSpacing, height;
   final Color color;
   final FontWeight fontWeight;
   final TextAlign textAlign;
@@ -10,7 +10,7 @@ class CustomFont extends StatelessWidget {
   final FontStyle fontStyle;
   final TextDecoration textDecoration;
   final TextDecorationStyle textDecorationStyle;
-  final List<Shadow> shadows; // Added shadows property
+  final List<Shadow> shadows;
 
   const CustomFont({
     super.key,
@@ -21,6 +21,7 @@ class CustomFont extends StatelessWidget {
     this.fontWeight = FontWeight.normal,
     this.textAlign = TextAlign.left,
     this.letterSpacing = 0,
+    this.height = 0,
     this.fontStyle = FontStyle.normal,
     this.textDecoration = TextDecoration.none, 
     this.textDecorationStyle = TextDecorationStyle.solid, 
@@ -39,12 +40,16 @@ class CustomFont extends StatelessWidget {
         fontSize: fontSize,
         color: color,
         fontStyle: fontStyle,
+        height: height,
         fontWeight: fontWeight,
         letterSpacing: letterSpacing,
         decoration: textDecoration,
         decorationStyle: textDecorationStyle,
         shadows: shadows, // Apply shadows here
       ),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      softWrap: true,
     );
   }
 }

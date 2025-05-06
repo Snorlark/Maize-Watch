@@ -18,12 +18,20 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     // Wait for 3.5 seconds (assuming GIF is 3.5 sec long) before navigating
-    Timer(const Duration(seconds: 4, milliseconds: 500), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LandingScreen()), // Replace with actual landing screen
-      );
-    });
+  Timer(const Duration(seconds: 4, milliseconds: 500), () {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 800),
+        pageBuilder: (context, animation, secondaryAnimation) => const LandingScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
+  });
   }
 
   @override
@@ -32,18 +40,22 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         children: [
           Image.asset(
-            'assets/images/GRADIENT.png',
+            'assets/images/background-landing.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
           ),
-          Center(
-            child: Image.asset(
-              'assets/gif/maize_watch_splash.gif',
-              fit: BoxFit.cover,
-              width: 400.w,
-              height: 400.h,
-            ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [ 
+              Image.asset(
+                'assets/gif/maize_watch_splash.gif',
+                fit: BoxFit.cover,
+                width: 450.w,
+                height: 450.h,
+              ),
+              const SizedBox(height: 70),
+            ]
           )
         ],
       ),

@@ -20,7 +20,7 @@ class ApiResponse {
 }
 
 class ApiService {
-   final TranslationService _translationService = TranslationService();
+  final TranslationService _translationService = TranslationService();
    
   final String baseUrl = 'http://localhost:8080';
   
@@ -55,6 +55,9 @@ class ApiService {
   Future<void> _saveUserData(Map<String, dynamic> userData) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', json.encode(userData));
+    
+    // Also store the login timestamp
+    await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
   }
   
   // Get user data from shared preferences
@@ -70,6 +73,13 @@ class ApiService {
     return null;
   }
   
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    final token = await _getToken();
+    final userData = await getUserData();
+    return token != null && userData != null;
+  }
+  
   // Logout and clear all user data
   Future<void> logout() async {
     try {
@@ -81,10 +91,11 @@ class ApiService {
       final currentLang = await translationService.getSavedLanguage();
       
       // Clear user-related data but keep necessary app settings
-      await prefs.remove('user_token');
+      await prefs.remove('auth_token');
       await prefs.remove('user_data');
       await prefs.remove('user_id');
       await prefs.remove('login_timestamp');
+      currentUser = null;
       
       // Optionally, make an API call to invalidate the session server-side
       // await _dio.post('/logout');
@@ -210,7 +221,7 @@ class ApiService {
   }
   
   // Get user greeting based on time of day
-String getGreeting(String name) {
+  String getGreeting(String name) {
     final hour = DateTime.now().hour;
     String greetingKey;
 
@@ -237,7 +248,7 @@ String getGreeting(String name) {
     }
   }
 
-    Future<List<SensorReading>> getLatestReadings() async {
+  Future<List<SensorReading>> getLatestReadings() async {
     final response = await http.get(Uri.parse('$baseUrl/api/latest'));
     
     if (response.statusCode == 200) {
@@ -260,8 +271,4 @@ String getGreeting(String name) {
       throw Exception('Failed to load historical data');
     }
   }
-
-  
-
-
 }
