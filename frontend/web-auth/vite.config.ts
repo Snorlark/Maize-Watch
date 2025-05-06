@@ -8,13 +8,13 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      // Proxy all /auth requests to your backend
+      // Proxy all /auth requests to your backend (for authentication)
       '/auth': {
         target: 'https://maize-watch.onrender.com',
         changeOrigin: true,
         secure: false,
       },
-      // Keep existing /api proxy
+      // Proxy all /api requests to your backend (for data)
       '/api': {
         target: 'https://maize-watch.onrender.com',
         changeOrigin: true,
