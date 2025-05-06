@@ -25,7 +25,8 @@ const port = process.env.PORT || 8080;
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173',// Vite's default port
+  'http://localhost:5173',
+  'http://localhost:5174',// Vite's default port
   // Add your frontend deployment URL here
 ];
 

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
-import authService, { LoginPayload } from '../../api/services/authService';
+import { Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
+import authService, { LoginPayload } from '../../src/api/services/authService';
 
-const LoginForm: React.FC = () => {
+export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -35,13 +35,10 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await authService.login(formData);
-
+      
       if (response.success) {
         // Navigate to dashboard or home page after successful login
-        console.log('Login successful, attempting to navigate to dashboard');
-        console.log('User data:', response.data);
         navigate('/dashboard');
-        console.log('Navigation function called');
       } else {
         setError(response.message || 'Login failed');
       }
@@ -65,12 +62,15 @@ const LoginForm: React.FC = () => {
             />
           </div>
 
-          <div className="login-form w-full max-w-xl bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 text-white shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">Login</h2>
-            {error && <div className="error-message">{error}</div>}
-
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="form-group">
+          {/* Log In Card */}
+          <div className="w-full max-w-xl bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">Log In</h2>
+            <form className="space-y-4">
+              
+              <div>
+                {/* <label className="block mb-1 text-sm font-medium">E-Mail Address</label>
+                <input
+                  type="email" */}
                 <label htmlFor="username">Username</label>
                 <input
                   type="text"
@@ -82,16 +82,16 @@ const LoginForm: React.FC = () => {
                   className="w-full px-4 py-2 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
               </div>
-
-              <div className="form-group relative">
+              <div className="relative">
+                {/* <label className="block mb-1 text-sm font-medium">Password</label> */}
                 <label htmlFor="password">Password</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
                   className="w-full px-4 py-2 pr-10 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
                 <button
@@ -102,9 +102,17 @@ const LoginForm: React.FC = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-
-              <button type="submit" disabled={loading} className="w-full py-2 mt-4 bg-green-500 hover:bg-green-600 rounded-full font-semibold text-white bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">
+              
+              <button
+                type="submit"
+                disabled={loading}
+                // onClick={() => navigate('/dashboard')}
+                
+                className="w-full py-2 mt-4 bg-green-500 hover:bg-green-600 rounded-full font-semibold text-white bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250"
+                
+              >
                 {loading ? 'Logging in...' : 'Login'}
+                Log In
               </button>
             </form>
           </div>
@@ -113,6 +121,4 @@ const LoginForm: React.FC = () => {
       </section>
     </main>
   );
-};
-
-export default LoginForm;
+}
