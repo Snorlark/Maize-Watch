@@ -26,9 +26,6 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174', // Vite's default port
-  'https://maize-watch-frontend.vercel.app', // Add your production frontend URL here
-  'https://maize-watch-frontend.netlify.app',
-  'https://maize-watch.vercel.app'
 ];
 
 // CORS configuration

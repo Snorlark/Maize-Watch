@@ -37,7 +37,7 @@ const authService = {
   // Register a new user
   register: async (userData: RegisterPayload): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post('/auth/register', userData);
+      const response = await apiClient.post('/api/register', userData);
       return response.data;
     } catch (error: any) {
       if (error.response) {
