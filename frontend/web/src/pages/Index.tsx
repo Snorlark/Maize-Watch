@@ -67,7 +67,7 @@ export default function Index() {
             {/* ABOUT PART */}
           <div className="relative -mt-12 pb-8 md:pb-4 ">
               <div className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
-                <div onClick={() => navigate('/products')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
+                <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
                   <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
                     <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
                     <div>

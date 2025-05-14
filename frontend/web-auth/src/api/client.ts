@@ -19,6 +19,8 @@ export interface User {
 // Base URL configuration
 // For local development, use relative URLs which will be proxied by Vite
 // For production, use the full URL
+//http://localhost:8080
+//https://maize-watch.onrender.com
 const isDevelopment = import.meta.env?.MODE === 'development';
 const apiBaseUrl = isDevelopment ? '' : 'https://maize-watch.onrender.com';
 console.log('API Base URL being used:', apiBaseUrl || 'Using Vite proxy'); // Verify URL in console
@@ -52,9 +54,10 @@ export const userService = {
   // Get all users
   getUsers: async (): Promise<User[]> => {
     try {
-      const response = await apiClient.get('/auth');
+      const response = await apiClient.get('/auth/users');
       return response.data;
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error in getUsers:', error);
       throw error;
     }
