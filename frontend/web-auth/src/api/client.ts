@@ -1,5 +1,4 @@
-// src/api/client.ts
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // Define the User interface based on your MongoDB schema
 export interface User {
@@ -17,13 +16,10 @@ export interface User {
 }
 
 // Base URL configuration
-// For local development, use relative URLs which will be proxied by Vite
-// For production, use the full URL
-//http://localhost:8080
-//https://maize-watch.onrender.com
 const isDevelopment = import.meta.env?.MODE === 'development';
-const apiBaseUrl = isDevelopment ? '' : 'https://maize-watch.onrender.com';
-console.log('API Base URL being used:', apiBaseUrl || 'Using Vite proxy'); // Verify URL in console
+// Make sure this URL matches your actual backend server address
+const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'http://localhost:8080';
+console.log('API Base URL being used:', apiBaseUrl);
 
 // Create the Axios instance
 const apiClient = axios.create({
@@ -31,8 +27,8 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
-  withCredentials: true,
+  timeout: 30000, // Increased to 30 seconds timeout
+  withCredentials: false, // Changed to false to avoid CORS issues
 });
 
 // Add auth token to requests if available
@@ -49,24 +45,78 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Handle response errors (including token expiration)
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error: AxiosError) => {
+    // Handle CORS errors
+    if (error.message === 'Network Error') {
+      console.error('CORS or network error detected:', error);
+    }
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      console.log('Authentication error - clearing token');
+      localStorage.removeItem('token');
+      
+      // Don't force redirect here - let the component handle it
+    }
+    return Promise.reject(error);
+  }
+);
+
 // User API services
 export const userService = {
-  // Get all users
+  // Login user
+  login: async (credentials: { username: string; password: string }): Promise<{ token: string; user: User }> => {
+    try {
+      console.log('Making login request to:', `${apiBaseUrl}/auth/login`);
+      // Use the internal apiClient but override the withCredentials setting for this specific request
+      const response = await apiClient.post('/auth/login', credentials, { withCredentials: false });
+      
+      // If login is successful, store the token
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+  
+  // Get all users - Fixed endpoint path
   getUsers: async (): Promise<User[]> => {
     try {
-      const response = await apiClient.get('/auth/users');
+      // Check if token exists before making the request
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token is missing');
+      }
+      
+      console.log('Making getUsers request to:', `${apiBaseUrl}/api/users`);
+      const response = await apiClient.get('/api/users');
       return response.data;
     } 
-    catch (error) {
+    catch (error: any) {
       console.error('Error in getUsers:', error);
+      
+      // Add specific handling for timeout errors
+      if (error.code === 'ECONNABORTED') {
+        console.error('Connection timeout. Is your backend server running at', apiBaseUrl, '?');
+      }
+      
       throw error;
     }
   },
 
-  // Get a single user by ID
+  // Get a single user by ID - Fixed endpoint path
   getUserById: async (id: string): Promise<User> => {
     try {
-      const response = await apiClient.get(`/auth/${id}`);
+      const response = await apiClient.get(`/api/users/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error getting user ${id}:`, error);
@@ -74,10 +124,10 @@ export const userService = {
     }
   },
 
-  // Create a new user
+  // Create a new user - Fixed endpoint path
   createUser: async (userData: Omit<User, "_id">): Promise<User> => {
     try {
-      const response = await apiClient.post('/auth', userData);
+      const response = await apiClient.post('/api/users', userData);
       return response.data;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -85,13 +135,13 @@ export const userService = {
     }
   },
 
-  // Update an existing user
+  // Update an existing user - Fixed endpoint path
   updateUser: async (
     id: string,
     userData: Partial<User>
   ): Promise<User> => {
     try {
-      const response = await apiClient.put(`/auth/${id}`, userData);
+      const response = await apiClient.put(`/api/users/${id}`, userData);
       return response.data;
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
@@ -99,10 +149,10 @@ export const userService = {
     }
   },
 
-  // Delete a user
+  // Delete a user - Fixed endpoint path
   deleteUser: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/auth/${id}`);
+      await apiClient.delete(`/api/users/${id}`);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
       throw error;

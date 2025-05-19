@@ -46,7 +46,7 @@ const LiveData: React.FC = () => {
 
   if (loading) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
+      
       <main className="py-10">
         <div className="text-center">Loading sensor data...</div>
       </main>
@@ -56,7 +56,7 @@ const LiveData: React.FC = () => {
 
   if (error) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
+      
       <main className="py-10">
         <div className="text-center text-red-500">{error}</div>
       </main>
@@ -66,7 +66,7 @@ const LiveData: React.FC = () => {
 
   if (!sensorData) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
+      
       <main className="py-10">
         <div className="text-center">No sensor data available</div>
       </main>
@@ -79,7 +79,7 @@ const LiveData: React.FC = () => {
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
 
-      <Navbar />
+      
 
       <main className="py-10">
         <div className="flex flex-col lg:flex-row gap-10">

@@ -1,5 +1,19 @@
+// auth.middleware.js
 import jwt from 'jsonwebtoken';
 import { MongoClient, ObjectId } from 'mongodb';
+import { isTokenBlacklisted } from './tokenBlacklist.js';
+
+// Token expiration time (1 hour in seconds)
+const TOKEN_EXPIRATION = 3600;
+
+// Function to generate a new JWT token
+export const generateToken = (userId, role) => {
+  return jwt.sign(
+    { userId, role },
+    process.env.JWT_SECRET,
+    { expiresIn: TOKEN_EXPIRATION }
+  );
+};
 
 // Admin authorization middleware
 export const isAdmin = async (req, res, next) => {
@@ -16,6 +30,11 @@ export const isAdmin = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded || !decoded.userId) {
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
+    }
+    
+    // 3. Check if token is blacklisted
+    if (isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: 'Unauthorized - Token revoked' });
     }
     
     // 3. Find user and check if admin
@@ -43,6 +62,10 @@ export const isAdmin = async (req, res, next) => {
     
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Unauthorized - Token expired' });
+    }
+    
     console.error('Auth middleware error:', error);
     return res.status(401).json({ message: 'Unauthorized - Invalid token' });
   }
@@ -63,6 +86,11 @@ export const isAuthenticated = (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
     
+    // Check if token is blacklisted
+    if (isTokenBlacklisted(token)) {
+      return res.status(401).json({ message: 'Unauthorized - Token revoked' });
+    }
+    
     req.user = {
       userId: decoded.userId,
       role: decoded.role
@@ -70,7 +98,20 @@ export const isAuthenticated = (req, res, next) => {
     
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Unauthorized - Token expired' });
+    }
+    
     console.error('Auth middleware error:', error);
     return res.status(401).json({ message: 'Unauthorized - Invalid token' });
   }
+};
+
+// Logout middleware to invalidate token
+export const logout = (req, res) => {
+  // In a stateless JWT system, the client just removes the token
+  // But we can implement a token blacklist for additional security
+  
+  // Return success response
+  return res.status(200).json({ message: 'Logged out successfully' });
 };

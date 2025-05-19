@@ -1,7 +1,6 @@
 // src/api/services/authService.ts
 import apiClient from '../client';
 
-// Define types
 export interface RegisterPayload {
   username: string;
   password: string;
@@ -16,12 +15,14 @@ export interface LoginPayload {
 }
 
 export interface User {
-  _id: string;
+  _id?: string;
+  userId?: string;
   username: string;
-  fullName: string;
-  contactNumber: string;
-  address: string;
+  fullName?: string;
+  contactNumber?: string;
+  address?: string;
   role: string;
+  email?: string;
 }
 
 export interface AuthResponse {
@@ -32,6 +33,9 @@ export interface AuthResponse {
     token: string;
   };
 }
+
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'user_data';
 
 const authService = {
   // Register a new user
@@ -50,17 +54,16 @@ const authService = {
     }
   },
 
-  // Login user
+  // Login user (API version)
   login: async (credentials: LoginPayload): Promise<AuthResponse> => {
     try {
       const response = await apiClient.post('/auth/login', credentials);
-      
-      // Store token and user data if login successful
+
       if (response.data.success && response.data.data?.token) {
-        localStorage.setItem('token', response.data.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
+        localStorage.setItem(TOKEN_KEY, response.data.data.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
       }
-      
+
       return response.data;
     } catch (error: any) {
       if (error.response) {
@@ -75,21 +78,49 @@ const authService = {
 
   // Logout user
   logout: (): void => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   },
 
   // Check if user is authenticated
   isAuthenticated: (): boolean => {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem(TOKEN_KEY);
   },
 
-  // Get current user info
+  // Get stored token
+  getToken: (): string | null => {
+    return localStorage.getItem(TOKEN_KEY);
+  },
+
+  // Get current user info from localStorage
   getCurrentUser: (): User | null => {
-    const userString = localStorage.getItem('user');
+    const userString = localStorage.getItem(USER_KEY);
     if (userString) {
-      return JSON.parse(userString);
+      try {
+        return JSON.parse(userString);
+      } catch (e) {
+        return null;
+      }
     }
+
+    // Fallback: Try decoding from token (mock/demo fallback)
+    const token = authService.getToken();
+    if (token) {
+      const parts = token.split('.');
+      if (parts.length === 2) {
+        try {
+          const payload = JSON.parse(atob(parts[1]));
+          return {
+            userId: payload.userId,
+            role: payload.role,
+            username: payload.username
+          };
+        } catch (e) {
+          return null;
+        }
+      }
+    }
+
     return null;
   },
 

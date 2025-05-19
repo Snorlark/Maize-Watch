@@ -1,18 +1,33 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { Menu, X, ChevronRight, Twitter, Facebook, Linkedin } from "lucide-react";
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { User } from '../api/services/authService';
+import { Menu, X, ChevronRight } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
-  
-  const [accountInfo, setAccountInfo] = useState({
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Helper function to display user identifier
+  const getUserDisplayName = (user: User | null) => {
+    if (!user) return '';
+    return user.username || user.userId || 'User';
+  };
+
+   const [accountInfo, setAccountInfo] = useState({
     firstName: "Juan",
     lastName: "Dela Cruz",
     email: "juandelacruz@gmail.com"
   });
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAccountInfo(prev => ({
@@ -30,7 +45,6 @@ const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-50 bg-[#E6F0D3] py-10 px-1 font-montserrat">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
         <div className="flex items-center gap-2">
           <img
             src="/maizewatch.png"
@@ -39,47 +53,44 @@ const Navbar: React.FC = () => {
           />
         </div>
 
-        {/* Navigation Links */}
         <nav className="hidden md:flex mt-3 gap-10 items-center text-[#1E441E] text-sm font-medium">
-          <NavLink 
+          <NavLink
             to="/dashboard"
             className={({ isActive }) =>
-              isActive
-                ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
-                : "hover:text-[#347928] transition"
+              isActive ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
+                : " hover:text-[#347928] transition"
             }
           >
-            Data History
+            Dashboard
           </NavLink>
+
           <NavLink
             to="/livedata"
             className={({ isActive }) =>
-              isActive
-                ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
+              isActive ? "relative  pb-2  after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
                 : "hover:text-[#347928] transition"
             }
           >
             Live Data
           </NavLink>
-          <NavLink
-            to="/accountmanagement"
-            className={({ isActive }) =>
-              isActive
-                ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
-                : "hover:text-[#456C2D] transition"
-            }
-          >
-            Account Management
-          </NavLink>
-        </nav>
 
-        {/* Menu Icon (Always Visible) */}
+          {user?.role === 'admin' && (
+            <NavLink
+              to="/accountmanagement"
+              className={({ isActive }) =>
+                isActive ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
+                  : "hover:text-[#456C2D] transition"
+              }
+            >
+              Account Management
+            </NavLink>
+          )}
+        </nav>
         <button onClick={() => setMenuOpen(true)} className="text-[#1E441E]">
           <Menu size={28} />
         </button>
       </div>
 
-      {/* Menu Widget */}
       {menuOpen && (
         <div className="absolute top-24 right-4 w-72 bg-white shadow-xl z-50 p-6 rounded-2xl border border-gray-200 animate-fade-in">
           <div className="flex justify-end mb-4">
@@ -106,16 +117,18 @@ const Navbar: React.FC = () => {
             >
               About <ChevronRight size={18} />
             </li>
-            <NavLink to="/">
-              <li className="flex justify-between items-center text-gray-700 hover:opacity-80 cursor-pointer">
-                Log Out <ChevronRight size={18} />
+            <NavLink
+              to="/login"
+              onClick={handleLogout}>
+              <li className="flex justify-between items-center text-gray-700 hover:opacity-80 cursor-pointer text-[#1E441E]">
+                Log out
+                <ChevronRight size={18} />
               </li>
             </NavLink>
           </ul>
         </div>
       )}
 
-      {/* About Modal */}
       {aboutModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-lg mx-4 p-6 relative">
@@ -225,6 +238,8 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      
     </header>
   );
 };
