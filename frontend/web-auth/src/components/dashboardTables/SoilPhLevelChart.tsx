@@ -168,23 +168,33 @@ const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
-  const handleExportClick = () => {
-    const dataToExport = getDataForTimeFrame();
-    const keyToUse = getXKeyForTimeFrame();
+const handleExportClick = () => {
+  const dataToExport = getDataForTimeFrame();
+  const keyToUse = getXKeyForTimeFrame();
 
-    const exportConfig = {
-      format: exportFormat.toLowerCase(),
-      data: dataToExport,
-      key: keyToUse,
-      title: "Soil Ph Level",
-      dateRange: exportType === "custom" ? { from: startDate, to: endDate } : null,
-    };
-
-    console.log("Exporting:", exportConfig);
-
-    handleExport(exportFormat.toLowerCase(), chartRef.current, dataToExport, keyToUse, "Soil Ph Level");
-    onClose();
+  const exportConfig = {
+    format: exportFormat.toLowerCase(),
+    data: dataToExport,
+    key: keyToUse,
+    title: "Soil Ph Level",
+    dateRange: exportType === "custom" ? { from: startDate, to: endDate } : null,
   };
+
+  console.log("Exporting:", exportConfig);
+
+  // Pass the timeFrame parameter to correctly filter date-specific data
+  handleExport(
+    exportFormat.toLowerCase(), 
+    chartRef.current, 
+    dataToExport, 
+    keyToUse, 
+    "Soil Ph Level", 
+    exportType === "custom" ? { from: startDate, to: endDate } : null,
+    timeFrame // Add this parameter
+  );
+  
+  onClose();
+};
 
   if (!isOpen) return null;
 
@@ -357,7 +367,7 @@ const SoilPhLevelChart = () => {
           </label>
           <select
             id="overview"
-            className="text-xs border px-3 py-2 rounded shadow bg-white text-[#356B2C]"
+            className="text-xs border pl-1 py-2 rounded shadow bg-white text-[#356B2C] "
             value={overview}
             onChange={(e) => setOverview(e.target.value)}
           >

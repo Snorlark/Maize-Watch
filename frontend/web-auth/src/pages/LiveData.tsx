@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FaThermometerHalf, FaExclamationCircle, FaMountain } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
