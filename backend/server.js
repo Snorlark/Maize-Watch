@@ -10,7 +10,9 @@ import cron from 'node-cron';
 
 import userRoutes from './routes/user.route.js';
 import sensorDataRoutes from './routes/sensor_data.route.js';
+import historicalDataRoutes from './routes/historical_data.route.js';
 import thingSpeakService from './services/thingspeak.service.js';
+import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -106,6 +108,7 @@ const connectToMongo = async () => {
 // Routes
 app.use('/auth', userRoutes);
 app.use('/api/sensors', sensorDataRoutes);
+app.use('/api/historical-data', historicalDataRoutes);
 
 // Test route
 app.get('/', (req, res) => {
@@ -265,6 +268,33 @@ cron.schedule('*/5 * * * *', async () => {
     console.log('Scheduled sync completed successfully');
   } catch (error) {
     console.error('Error in scheduled ThingSpeak sync:', error);
+  }
+});
+
+// Set up cron job to calculate averages at 11:59:59 PM daily
+cron.schedule('59 59 23 * * *', async () => {
+  try {
+    console.log('Running daily average calculation...');
+    await historicalDataService.calculateDailyAverage();
+    
+    // If it's Sunday, also calculate weekly average
+    const today = new Date();
+    if (today.getDay() === 0) {
+      console.log('Running weekly average calculation...');
+      await historicalDataService.calculateWeeklyAverage();
+    }
+    
+    // If it's the last day of the month, also calculate monthly average
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (tomorrow.getDate() === 1) {
+      console.log('Running monthly average calculation...');
+      await historicalDataService.calculateMonthlyAverage();
+    }
+    
+    console.log('Average calculations completed successfully');
+  } catch (error) {
+    console.error('Error in cron job:', error);
   }
 });
 
