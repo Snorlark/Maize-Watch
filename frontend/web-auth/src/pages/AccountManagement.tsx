@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
 import UserForm from "../components/UserForm";

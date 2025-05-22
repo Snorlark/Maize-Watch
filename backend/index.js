@@ -1,3 +1,4 @@
+// index.js
 import { MongoClient, ObjectId } from 'mongodb';
 import express from 'express';
 import cors from 'cors';
@@ -6,6 +7,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
 
 import userRoutes from './routes/user.route.js';
 import dummyDataRoutes from './routes/dummy_data.route.js';
@@ -87,6 +89,25 @@ const connectToMongo = async () => {
   }
 };
 
+// Helper function to project fields
+const projectFields = (document, fields) => {
+  if (!fields) return document;
+  
+  const fieldArray = fields.split(',');
+  const projected = {};
+  
+  // Always include _id
+  projected._id = document._id;
+  
+  fieldArray.forEach(field => {
+    if (document[field] !== undefined) {
+      projected[field] = document[field];
+    }
+  });
+  
+  return projected;
+};
+
 // Initialize MQTT service
 let mqttService;
 try {
@@ -121,7 +142,15 @@ app.get('/health', (req, res) => {
 // Get all users - admin only
 app.get('/api/users', isAdmin, async (req, res) => {
   try {
+    const { fields } = req.query;
     const users = await db.collection('users').find({}).toArray();
+    
+    // Apply field projection if requested
+    if (fields) {
+      const projectedUsers = users.map(user => projectFields(user, fields));
+      return res.json(projectedUsers);
+    }
+    
     res.json(users);
   } catch (err) {
     console.error('Error getting users:', err);
@@ -132,8 +161,24 @@ app.get('/api/users', isAdmin, async (req, res) => {
 // Create user - admin only
 app.post('/api/users', isAdmin, async (req, res) => {
   try {
-    const result = await db.collection('users').insertOne(req.body);
-    res.status(201).json({ ...req.body, _id: result.insertedId });
+    // Clone the request body to avoid modifying the original
+    const userData = {...req.body};
+    
+    // Hash password if provided
+    if (userData.password) {
+      const salt = await bcrypt.genSalt(10);
+      userData.password = await bcrypt.hash(userData.password, salt);
+    }
+
+    const result = await db.collection('users').insertOne(userData);
+    
+    // Don't return the password in the response
+    const { password, ...userWithoutPassword } = userData;
+    
+    res.status(201).json({ 
+      ...userWithoutPassword, 
+      _id: result.insertedId 
+    });
   } catch (err) {
     console.error('Error creating user:', err);
     res.status(500).json({ error: 'Failed to create user' });
@@ -143,8 +188,17 @@ app.post('/api/users', isAdmin, async (req, res) => {
 // Get single user - admin only
 app.get('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    const { fields } = req.query;
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Apply field projection if requested
+    if (fields) {
+      const projectedUser = projectFields(user, fields);
+      return res.json(projectedUser);
+    }
+    
     res.json(user);
   } catch (err) {
     console.error('Error getting user:', err);
@@ -155,15 +209,80 @@ app.get('/api/users/:id', isAdmin, async (req, res) => {
 // Update user - admin only
 app.put('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    // Add updatedAt timestamp
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(req.params.id) },
-      { $set: req.body }
+      { $set: updateData }
     );
-    if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'User updated successfully' });
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Fetch and return the updated user
+    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = updatedUser;
+    
+    res.json(userWithoutPassword);
   } catch (err) {
     console.error('Error updating user:', err);
     res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Add a route to get current user profile (for authenticated users)
+app.get('/api/profile', isAuthenticated, async (req, res) => {
+  try {
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Remove password from response
+    const { password, ...userProfile } = user;
+    res.json(userProfile);
+  } catch (err) {
+    console.error('Error getting user profile:', err);
+    res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// Update current user profile (for authenticated users)
+app.put('/api/profile', isAuthenticated, async (req, res) => {
+  try {
+    // Prevent users from changing their role
+    const { role, ...allowedUpdates } = req.body;
+    
+    const updateData = {
+      ...allowedUpdates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(req.user.id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Fetch and return the updated user profile
+    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+    const { password, ...userProfile } = updatedUser;
+    
+    res.json(userProfile);
+  } catch (err) {
+    console.error('Error updating user profile:', err);
+    res.status(500).json({ error: 'Failed to update user profile' });
   }
 });
 

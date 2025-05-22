@@ -2,10 +2,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { userService, User as ClientUser } from "../api/client";
 import { useAuth } from './AuthContext';
 import { User as AuthUser } from "../api/services/authService";
+import authService from '../api/services/authService';
 
 // Define the context shape
 interface UserContextType {
   users: ClientUser[];
+  farmers: ClientUser[]; // Added farmers specifically
   loading: boolean;
   error: string | null;
   currentUser: ClientUser | null;
@@ -33,7 +35,6 @@ const convertAuthUserToClientUser = (authUser: AuthUser | null): ClientUser | nu
     username: authUser.username,
     fullName: authUser.fullName || '',
     contactNumber: authUser.contactNumber || '',
-    email: authUser.email || '',
     address: authUser.address || '',
     role: authUser.role
   };
@@ -52,6 +53,9 @@ export function UserProvider({ children }: UserProviderProps) {
 
   // Compute isAdmin whenever user changes
   const isAdmin = user?.role === 'admin';
+
+  // Derive farmers from users whenever users change
+  const farmers = users.filter(user => user.role === 'Farmer');
 
   console.log('UserProvider initialized:', { 
     isAuthenticated, 
@@ -99,7 +103,7 @@ export function UserProvider({ children }: UserProviderProps) {
     }
     
     // Check if token exists
-    const token = localStorage.getItem('token');
+    const token = authService.getToken();
     if (!token) {
       console.warn('No auth token found');
       setError("Authentication token missing. Please log in again.");
@@ -114,20 +118,7 @@ export function UserProvider({ children }: UserProviderProps) {
       const fetchedUsers = await userService.getUsers();
       console.log(`Fetched ${fetchedUsers.length} users successfully`);
       setUsers(fetchedUsers);
-    } catch (err: any) {
-      const errorMessage = err?.code === 'ECONNABORTED' 
-        ? "Connection timeout. Please check if your backend server is running."
-        : err?.message || "Failed to fetch users. Please try again later.";
-        
-      console.error("Error fetching users:", err);
-      setError(errorMessage);
-      
-      // Check if it's an auth error - handle accordingly
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
-        console.error("Authorization error fetching users:", err);
-        setError("Authentication failed. Please log in again.");
-      }
-    } finally {
+    }  finally {
       setLoading(false);
     }
   };
@@ -195,6 +186,7 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const contextValue: UserContextType = {
     users,
+    farmers, // Added farmers to context value
     loading,
     error,
     fetchUsers,

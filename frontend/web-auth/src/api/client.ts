@@ -1,6 +1,8 @@
+// client.ts
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import authService from '../api/services/authService';
 
-// Define the User interface based on your MongoDB schema
+// Define the User interface based on your MongoDB schema - removed unnecessary fields
 export interface User {
   _id?: string;
   username: string;
@@ -11,8 +13,6 @@ export interface User {
   role: string;
   createdAt?: string;
   __v?: number;
-  email?: string;
-  lot?: number;
 }
 
 // Base URL configuration
@@ -34,7 +34,7 @@ const apiClient = axios.create({
 // Add auth token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = authService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -88,17 +88,24 @@ export const userService = {
     }
   },
   
-  // Get all users - Fixed endpoint path
+  // Get all users with field selection (to avoid requesting unused fields)
   getUsers: async (): Promise<User[]> => {
     try {
       // Check if token exists before making the request
-      const token = localStorage.getItem('token');
+      const token = authService.getToken();
       if (!token) {
         throw new Error('Authentication token is missing');
       }
       
       console.log('Making getUsers request to:', `${apiBaseUrl}/api/users`);
-      const response = await apiClient.get('/api/users');
+      // Modify to request only needed fields
+      const response = await apiClient.get('/api/users', {
+        params: {
+          fields: 'username,fullName,contactNumber,address,role' // Only request needed fields
+        }
+      });
+      
+      // Filter farmers on the client side
       return response.data;
     } 
     catch (error: any) {
@@ -113,10 +120,14 @@ export const userService = {
     }
   },
 
-  // Get a single user by ID - Fixed endpoint path
+  // Get a single user by ID - request only needed fields
   getUserById: async (id: string): Promise<User> => {
     try {
-      const response = await apiClient.get(`/api/users/${id}`);
+      const response = await apiClient.get(`/api/users/${id}`, {
+        params: {
+          fields: 'username,fullName,contactNumber,address,role'
+        }
+      });
       return response.data;
     } catch (error) {
       console.error(`Error getting user ${id}:`, error);
@@ -124,7 +135,7 @@ export const userService = {
     }
   },
 
-  // Create a new user - Fixed endpoint path
+  // Create a new user
   createUser: async (userData: Omit<User, "_id">): Promise<User> => {
     try {
       const response = await apiClient.post('/api/users', userData);
@@ -135,21 +146,51 @@ export const userService = {
     }
   },
 
-  // Update an existing user - Fixed endpoint path
+  // Update an existing user
   updateUser: async (
     id: string,
     userData: Partial<User>
   ): Promise<User> => {
     try {
       const response = await apiClient.put(`/api/users/${id}`, userData);
-      return response.data;
+      return response.data; // This now returns the updated user object
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
       throw error;
     }
   },
 
-  // Delete a user - Fixed endpoint path
+  getProfile: async (): Promise<User> => {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication token is missing');
+      }
+      
+      const response = await apiClient.get('/api/profile');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      throw error;
+    }
+  },
+
+  updateProfile: async (userData: Partial<User>): Promise<User> => {
+    try {
+      const token = authService.getToken();
+      if (!token) {
+        throw new Error('Authentication token is missing');
+      }
+      
+      const response = await apiClient.put('/api/profile', userData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  },
+
+  // Delete a user
   deleteUser: async (id: string): Promise<void> => {
     try {
       await apiClient.delete(`/api/users/${id}`);
