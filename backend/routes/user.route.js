@@ -1,6 +1,17 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
+import pkg from 'jsonwebtoken';
+
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { sign } = pkg;
+
 
 const router = express.Router();
 
@@ -223,57 +234,62 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Username and password are required'
-            });
-        }
-
-        const user = await User.findOne({ username });
-
-        if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid username or password'
-            });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid username or password'
-            });
-        }
-
-        // (Optional) Generate a token if you have JWT setup
-        // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        const userResponse = user.toObject();
-        delete userResponse.password;
-
-        res.status(200).json({
-            success: true,
-            message: 'Login successful',
-            data: {
-                user: userResponse,
-                token: 'dummy-token-for-now' // replace with real JWT token later
-            }
+      const { username, password } = req.body;
+  
+      if (!username || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
         });
-
+      }
+  
+      const user = await User.findOne({ username });
+  
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid username or password'
+        });
+      }
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+  
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid username or password'
+        });
+      }
+  
+      // ✅ Generate JWT token
+      const token = sign(
+        { id: user._id },                      // payload
+        process.env.JWT_SECRET,               // secret
+        { expiresIn: '1h' }                   // options
+      );
+  
+      const userResponse = user.toObject();
+      delete userResponse.password;
+  
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: userResponse,
+          token
+        }
+      });
+  
     } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            success: false,
-            message: 'Server error',
-            error: err.message
-        });
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: err.message
+      });
     }
-});
+  });
+  
 
 
 export default router;

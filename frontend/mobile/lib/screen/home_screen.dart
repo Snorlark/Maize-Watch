@@ -70,20 +70,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         bottomNavigationBar: CurvedNavigationBar(
           index: _currentIndex,
-          backgroundColor: MAIZE_PRIMARY,
+          backgroundColor: MAIZE_BOTTOM_OVERLAY,
+          color: MAIZE_PRIMARY,
           items: <Widget>[
             Icon(
               Icons.checklist,
-              color: MAIZE_LOGO_ICON,
+              color: MAIZE_PRIMARY_LIGHT,
               size: ScreenUtil().setSp(35),
             ),
             Icon(
               FlutterIcons.corn_mco,
-              color: MAIZE_LOGO_ICON,
+              color: MAIZE_PRIMARY_LIGHT,
               size: ScreenUtil().setSp(35),
             ),
             Image.asset(
-              'assets/images/farmers_nav_bar.png',
+              'assets/images/farmers_nav_bar_white.png',
               width: ScreenUtil().setSp(30),
               height: ScreenUtil().setSp(30),
             ),

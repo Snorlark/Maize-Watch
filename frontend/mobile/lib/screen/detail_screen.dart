@@ -42,14 +42,14 @@ class DetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      CustomFont(text: 'Lot 1', fontSize: 28, fontWeight: FontWeight.bold,)
+                      CustomFont(text: 'Lot 1', fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)
                     ],
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CustomFont(text: 'Weekly Overview', fontWeight: FontWeight.bold, fontSize: 16,),
-                      CustomFont(text: 'Feb. 10 - Feb. 16', fontSize: 12,),
+                      CustomFont(text: 'Weekly Overview', fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white,),
+                      CustomFont(text: 'Feb. 10 - Feb. 16', fontSize: 12, color: Colors.white),
                     ],
                   )
                 ],

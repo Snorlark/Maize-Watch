@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
-import 'package:maize_watch/services/translation_service.dart';
 
 class SensorStatusWidget extends StatelessWidget {
   final bool ldrSensor;
   final bool phLevelSensor;
   final bool tempAndHumidSensor;
   final bool soilLevelSensor;
-  final TranslationService translationService;
+  final AppLocalizations localization;
 
   const SensorStatusWidget({
     super.key,
@@ -16,10 +17,10 @@ class SensorStatusWidget extends StatelessWidget {
     required this.phLevelSensor,
     required this.tempAndHumidSensor,
     required this.soilLevelSensor,
-    required this.translationService,
+    required this.localization,
   });
 
-  Widget sensorRow(String labelKey, bool isActive) {
+  Widget sensorRow(String label, bool isActive) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -35,15 +36,15 @@ class SensorStatusWidget extends StatelessWidget {
             ),
             SizedBox(width: ScreenUtil().setWidth(10)),
             CustomFont(
-              text: translationService.translate(labelKey),
-              color: Colors.black,
+              text: label,
+              color: MAIZE_ACCENT,
               fontSize: 15,
               fontWeight: FontWeight.w500,
             ),
           ],
         ),
         CustomFont(
-          text: translationService.translate(isActive ? 'on' : 'off'),
+          text: isActive ? localization.on : localization.off,
           color: isActive ? Colors.green : Colors.red,
           fontSize: 15,
           fontWeight: FontWeight.bold,
@@ -69,19 +70,19 @@ class SensorStatusWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomFont(
-              text: translationService.translate('sensors'),
+              text: localization.sensors,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
             SizedBox(height: ScreenUtil().setHeight(15)),
-            sensorRow('ldr_sensor', ldrSensor),
+            sensorRow(localization.ldrSensor, ldrSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("ph_sensor", phLevelSensor),
+            sensorRow(localization.phSensor, phLevelSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("temp_humid_sensor", tempAndHumidSensor),
+            sensorRow(localization.tempHumidSensor, tempAndHumidSensor),
             SizedBox(height: ScreenUtil().setHeight(10)),
-            sensorRow("soil_moisture_sensor", soilLevelSensor),
+            sensorRow(localization.soilMoistureSensor, soilLevelSensor),
           ],
         ),
       ),

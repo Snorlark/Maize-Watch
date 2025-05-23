@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:maize_watch/services/translation_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class FAQSectionWidget extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
-  final TranslationService translationService;
 
   const FAQSectionWidget({
     Key? key,
     required this.isExpanded,
     required this.onToggle,
-    required this.translationService,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Container(
@@ -28,7 +28,7 @@ class FAQSectionWidget extends StatelessWidget {
               title: Padding(
                 padding: const EdgeInsets.only(left: 15.0),
                 child: Text(
-                  translationService.translate("faq_title"),
+                  loc.faqTitle,
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Montserrat',
@@ -50,7 +50,7 @@ class FAQSectionWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "1. ${translationService.translate("faq_q1")}",
+                      "1. ${loc.faqQ1}",
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
@@ -60,7 +60,7 @@ class FAQSectionWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      translationService.translate("faq_a1"),
+                      loc.faqA1,
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
@@ -69,7 +69,7 @@ class FAQSectionWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 15),
                     Text(
-                      "2. ${translationService.translate("faq_q2")}",
+                      "2. ${loc.faqQ2}",
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
@@ -79,7 +79,7 @@ class FAQSectionWidget extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      translationService.translate("faq_a2"),
+                      loc.faqA2,
                       style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',

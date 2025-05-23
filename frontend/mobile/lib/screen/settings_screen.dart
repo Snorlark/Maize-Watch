@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:maize_watch/custom/constants.dart';
-import 'package:maize_watch/services/translation_service.dart';
+import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/widget/language_toggle.dart';
 import 'package:maize_watch/widget/sensor_status_widget.dart';
 import 'package:maize_watch/widget/notification_settings_widget.dart';
 import 'package:maize_watch/widget/help_section_widget.dart';
 import 'package:maize_watch/widget/faq_section_widget.dart';
 import 'package:maize_watch/services/notification_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
@@ -33,9 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool dht = false;
   bool soil = false;
 
-  final TranslationService _translationService = TranslationService();
   final NotificationService _notificationService = NotificationService();
-  
+
   Map<String, bool> previousSensorState = {
     'ldr': false,
     'ph': false,
@@ -47,164 +47,168 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _notificationService.initialize();
-    
-    // Ensure the translation service is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _translationService.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       fetchSensorData();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, dynamic>>(
-      valueListenable: _translationService.translationNotifier,
-      builder: (context, translationData, _) {
-        // Force rebuild with latest translations
-        final currentLanguage = translationData['currentLanguage'] ?? 'en';
-        return Scaffold(
-          body: Stack(
-            children: [
-              // Background Image
-              Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/GRADIENT.png'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
+    final local = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: MAIZE_BOTTOM_OVERLAY,
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.pop(context);
-                                },
-                                child: const Icon(
-                                  Icons.arrow_back,
-                                  color: Color(0xFF1B5E20),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _translationService.translate('settings'),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1B5E20),
-                                  fontFamily: 'Montserrat',
-                                ),
-                                key: ValueKey('settings_title_$currentLanguage'), // Force rebuild when language changes
-                              ),
-                            ],
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF1B5E20),
+                            ),
                           ),
-                          Image.asset(
-                            'assets/images/maize_watch_logo.png',
-                            height: 50,
+                          const SizedBox(width: 8),
+                          CustomFont(
+                            text: local.settings,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: MAIZE_ACCENT,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-        
-                      // Scrollable Content
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              SensorStatusWidget(
-                                ldrSensor: ldr,
-                                phLevelSensor: ph,
-                                tempAndHumidSensor: dht,
-                                soilLevelSensor: soil, 
-                                translationService: _translationService,
-                              ),
-                              const SizedBox(height: 20),
-                              NotificationSettingsWidget(
-                                isNotificationsEnabled: widget.isNotificationsEnabled,
-                                isVibrationOnly: widget.isVibrationOnly,
-                                onNotificationToggled: (value) {
-                                  setState(() {
-                                    widget.isNotificationsEnabled = value;
-                                  });
-                                },
-                                onVibrationOnlyToggled: (value) {
-                                  setState(() {
-                                    widget.isVibrationOnly = value;
-                                  });
-                                },
-                                translationService: _translationService,
-                              ),
-                              const SizedBox(height: 20),
-                              HelpSectionWidget(
-                                isExpanded: widget.isHelpExpanded,
-                                onToggle: () {
-                                  setState(() {
-                                    widget.isHelpExpanded = !widget.isHelpExpanded;
-                                  });
-                                },
-                                translationService: _translationService,
-                              ),
-                              FAQSectionWidget(
-                                isExpanded: widget.isFAQsExpanded,
-                                onToggle: () {
-                                  setState(() {
-                                    widget.isFAQsExpanded = !widget.isFAQsExpanded;
-                                  });
-                                },
-                                translationService: _translationService,
-                              ),
-
-                               Padding(
-                                 padding: EdgeInsets.only(bottom: 20),
-                                 child: LanguageToggleLocale(color_toggle: MAIZE_PRIMARY_LIGHT),
-                               ),
-                            ],
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/images/maize_watch_logo.png',
+                        height: 50,
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          SensorStatusWidget(
+                            ldrSensor: ldr,
+                            phLevelSensor: ph,
+                            tempAndHumidSensor: dht,
+                            soilLevelSensor: soil,
+                            localization: local,
+                          ),
+                          const SizedBox(height: 20),
+                          NotificationSettingsWidget(
+                            isNotificationsEnabled:
+                                widget.isNotificationsEnabled,
+                            isVibrationOnly: widget.isVibrationOnly,
+                            onNotificationToggled: (value) {
+                              setState(() {
+                                widget.isNotificationsEnabled = value;
+                              });
+                            },
+                            onVibrationOnlyToggled: (value) {
+                              setState(() {
+                                widget.isVibrationOnly = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(15),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: CustomFont(
+                                    text: local.language,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      LanguageToggleLocale(
+                                        color_toggle: MAIZE_ACCENT,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          HelpSectionWidget(
+                            isExpanded: widget.isHelpExpanded,
+                            onToggle: () {
+                              setState(() {
+                                widget.isHelpExpanded = !widget.isHelpExpanded;
+                              });
+                            },
+                          ),
+                          FAQSectionWidget(
+                            isExpanded: widget.isFAQsExpanded,
+                            onToggle: () {
+                              setState(() {
+                                widget.isFAQsExpanded = !widget.isFAQsExpanded;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
-      }
+        ],
+      ),
     );
   }
 
   Future<void> fetchSensorData() async {
     await Future.delayed(const Duration(seconds: 2));
 
-    // Check if the widget is still mounted before calling setState
     if (mounted) {
       setState(() {
-        ldr = !ldr; // Toggle for demonstration
+        ldr = !ldr; // Toggle for demo
         ph = false;
         dht = false;
         soil = false;
       });
 
-      print("Sensor Status Updated: LDR=$ldr");
-
       if (widget.isNotificationsEnabled) {
         if (previousSensorState['ldr'] != ldr) {
-          print("Sending notification...");
           await _notificationService.showNotification(
             title: 'Sensor Status Changed',
             body: 'LDR Sensor is now: ${ldr ? "Active" : "Inactive"}',
             playSound: !widget.isVibrationOnly,
           );
-          print("Notification sent.");
         }
       }
 
@@ -215,7 +219,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'soil': soil,
       };
 
-      // Continue fetching data after 5 seconds, if still mounted
       Future.delayed(const Duration(seconds: 5), fetchSensorData);
     }
   }

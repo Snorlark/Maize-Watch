@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:maize_watch/custom/constants.dart';
 
 class CustomFont extends StatelessWidget {
   final String text;
@@ -16,7 +17,7 @@ class CustomFont extends StatelessWidget {
     super.key,
     required this.text,
     this.fontSize = 18,
-    this.color = Colors.white,
+    this.color = MAIZE_ACCENT,
     this.fontFamily = 'Montserrat',
     this.fontWeight = FontWeight.normal,
     this.textAlign = TextAlign.left,

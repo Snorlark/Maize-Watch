@@ -1,4 +1,3 @@
-// config/mongoDummyData.js
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -11,13 +10,13 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Create connection
-const dummyDataConnection = mongoose.createConnection(
-  process.env.MONGODB_DUMMY_URI
+const cornConnection = mongoose.createConnection(
+  process.env.MONGODB_USERS_URI
 );
 
 // NEW: Wait until connected before exporting
-await dummyDataConnection.asPromise();
+await cornConnection.asPromise();
 
 console.log('Connected to Dummy Data MongoDB');
 
-export default dummyDataConnection;
+export default cornConnection;

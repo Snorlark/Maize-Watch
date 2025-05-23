@@ -31,6 +31,10 @@ class _LandingScreenState extends State<LandingScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    String description_split = AppLocalizations.of(context)!.description;
+    List<String> description_list = description_split.split(",");
+
     return Scaffold(
       body: Stack(
         children: [
@@ -44,6 +48,15 @@ class _LandingScreenState extends State<LandingScreen> {
             padding: EdgeInsets.all(ScreenUtil().setSp(30)),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [ 
+                    CustomFont(
+                      text: 'v.1.0',
+                      color: const Color.fromARGB(209, 255, 255, 255),
+                    ),
+                  ]
+                ),
                 Expanded(
                   child: Center(
                     child: Column(
@@ -70,18 +83,37 @@ class _LandingScreenState extends State<LandingScreen> {
                             ],
                           ),
                         ),
-                        CustomFont(
-                          text: AppLocalizations.of(context)!.description,
-                          fontStyle: FontStyle.normal,
-                          letterSpacing: 1,
-                          color: MAIZE_PRIMARY_LIGHT,
-                          fontSize: 15,
-                          textAlign: TextAlign.center,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.30),
-                              offset: Offset(2, 2),
-                              blurRadius: 10,
+                        Row(
+                          children: [
+                            CustomFont(
+                              text: "${description_list.first}, ",
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 1,
+                              color: MAIZE_PRIMARY_LIGHT,
+                              fontSize: 15,
+                              textAlign: TextAlign.center,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.30),
+                                  offset: Offset(2, 2),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            CustomFont(
+                              text: description_list.last,
+                              fontStyle: FontStyle.normal,
+                              letterSpacing: 1,
+                              color: MAIZE_PRIMARY_LIGHT,
+                              fontSize: 15,
+                              textAlign: TextAlign.center,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.30),
+                                  offset: Offset(2, 2),
+                                  blurRadius: 10,
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -103,6 +135,7 @@ class _LandingScreenState extends State<LandingScreen> {
                           child: CustomFont(
                             text: AppLocalizations.of(context)!.login,
                             fontWeight: FontWeight.bold,
+                            color: MAIZE_PRIMARY_LIGHT,
                           ),
                         ),
                         SizedBox(height: ScreenUtil().setHeight(20)),

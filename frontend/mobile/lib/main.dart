@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:maize_watch/screen/corn_registration_screen.dart';
 import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
@@ -16,7 +17,6 @@ import 'package:maize_watch/l10n/l10n.dart';
 
 import 'screen/home_screen.dart';
 import 'screen/splash_screen.dart';
-import 'screen/test_notification_screen.dart';
 
 // Allow disabling swipe-back gesture for specific routes
 class NoSwipePageRoute<T> extends MaterialPageRoute<T> {
@@ -123,8 +123,7 @@ class MaizeWatch extends StatelessWidget {
               routes: {
                 '/splash': (context) => const SplashScreen(),
                 '/landing': (context) => const LandingScreen(),
-                '/home': (context) => const HomeScreen(),
-                '/test': (context) => const TestNotificationScreen(),
+                '/home': (context) => const HomeScreen()
               },
             );
           },

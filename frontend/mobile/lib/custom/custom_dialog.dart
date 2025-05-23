@@ -1,14 +1,12 @@
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/material.dart';
 import 'package:maize_watch/custom/constants.dart';
-import 'package:maize_watch/services/translation_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'custom_font.dart';
 
 // For simple dialogs with an 'OK' button
 // ignore: non_constant_identifier_names
 CustomDialog(BuildContext context, {required String title, required String content}) {
-  final TranslationService _translationService = TranslationService();
   
   AlertDialog alertDialog = AlertDialog(
     title: Padding(
@@ -28,7 +26,7 @@ CustomDialog(BuildContext context, {required String title, required String conte
         onPressed: () {
           Navigator.of(context).pop();
         },
-        child: Text(_translationService.translate('okay'))
+        child: Text(AppLocalizations.of(context)!.okay)
       ),
     ],
   );
@@ -46,7 +44,7 @@ Future<void> customOptionDialog(
   BuildContext context,
   {required String title, required String content, required Function onYes}
 ) async {
-  final TranslationService _translationService = TranslationService();
+  
   
   AlertDialog alertDialog = AlertDialog(
     title: Padding(
@@ -70,7 +68,7 @@ Future<void> customOptionDialog(
         style: OutlinedButton.styleFrom(
            side: BorderSide(width: 1.0, color: MAIZE_PRIMARY),
         ),
-        child: CustomFont(text: _translationService.translate('no'), color: MAIZE_PRIMARY,),
+        child: CustomFont(text: AppLocalizations.of(context)!.no, color: MAIZE_PRIMARY,),
       ),
       ElevatedButton(
         style: ElevatedButton.styleFrom(
@@ -82,7 +80,7 @@ Future<void> customOptionDialog(
           onYes();
         },
         child: CustomFont(
-          text: _translationService.translate('yes'),
+          text: AppLocalizations.of(context)!.yes,
           color: Colors.white,
         ),
       ),

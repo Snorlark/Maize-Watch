@@ -1,42 +1,54 @@
+// This is what the Flutter app is expecting based on sensor_data_model.dart
 class SensorReading {
+  final String id;
   final DateTime timestamp;
   final String fieldId;
-  final Measurements measurements;
-
-  SensorReading({
-    required this.timestamp,
-    required this.fieldId,
-    required this.measurements,
-  });
-
-  factory SensorReading.fromJson(Map<String, dynamic> json) {
-    return SensorReading(
-      timestamp: DateTime.parse(json['timestamp']),
-      fieldId: json['field_id'],
-      measurements: Measurements.fromJson(json['measurements']),
-    );
-  }
-}
-
-class Measurements {
   final double temperature;
   final double humidity;
-  final double soilMoisture;
-  final double lightLevel;
+  final int soilMoisture;
+  final double soilPh;
+  final int lightIntensity;
 
-  Measurements({
+  SensorReading({
+    required this.id,
+    required this.timestamp,
+    required this.fieldId,
     required this.temperature,
     required this.humidity,
     required this.soilMoisture,
-    required this.lightLevel,
+    required this.soilPh,
+    required this.lightIntensity,
   });
 
-  factory Measurements.fromJson(Map<String, dynamic> json) {
-    return Measurements(
-      temperature: json['temperature'].toDouble(),
-      humidity: json['humidity'].toDouble(),
-      soilMoisture: json['soil_moisture'].toDouble(),
-      lightLevel: json['light_level'].toDouble(),
-    );
+  factory SensorReading.fromJson(Map<String, dynamic> json) {
+  final measurements = json['measurements'] ?? {};
+  return SensorReading(
+    id: json['_id'] ?? '',
+    timestamp: json['timestamp'] != null 
+        ? DateTime.parse(json['timestamp']) 
+        : DateTime.now(),
+    fieldId: json['field_id'] ?? '',
+    temperature: measurements['temperature']?.toDouble() ?? 0.0,
+    humidity: measurements['humidity']?.toDouble() ?? 0.0,
+    soilMoisture: measurements['soil_moisture'] ?? 0,
+    soilPh: measurements['soil_ph']?.toDouble() ?? 0.0,
+    lightIntensity: measurements['light_intensity'] ?? 0,
+  );
+}
+
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'timestamp': timestamp.toIso8601String(),
+      'field_id': fieldId,
+      'measurements': {
+        'temperature': temperature,
+        'humidity': humidity,
+        'soil_moisture': soilMoisture,
+        'soil_ph': soilPh,
+        'light_intensity': lightIntensity,
+      },
+    };
   }
 }

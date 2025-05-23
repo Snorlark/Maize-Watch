@@ -1,9 +1,6 @@
 import mongoose from 'mongoose';
 
-const { Schema, model } = mongoose;
-
-// Enhanced user schema to match Flutter registration form
-const userSchema = new Schema({
+const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
@@ -32,13 +29,17 @@ const userSchema = new Schema({
     },
     role: {
         type: String,
-        enum: ['farmer', 'admin', 'user'],
-        default: 'farmer'
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
+        enum: ['user', 'admin'],
+        default: 'user'
     }
+}, {
+    timestamps: true,
+    collection: 'users'
 });
 
-export default model('User', userSchema);
+// Add index on username
+userSchema.index({ username: 1 }, { unique: true });
+
+const User = mongoose.model('User', userSchema);
+
+export default User;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:maize_watch/screen/corn_registration_screen.dart';
 import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:maize_watch/services/api_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -137,7 +138,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           CustomFont(
             text: AppLocalizations.of(context)!.register_page1_description,
             color: MAIZE_ACCENT,
-            fontWeight: FontWeight.w300,
           ),
           SizedBox(height: 30.h),
           _buildInputField(AppLocalizations.of(context)!.first_name, 'Juan',
@@ -156,17 +156,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             return null;
           }),
           SizedBox(height: 20.h),
-          _buildInputField(AppLocalizations.of(context)!.contact_number, '+63',
-              contactController, validator: (value) {
-            if (value == null || value.isEmpty) {
-              return AppLocalizations.of(context)!.contact_number_required;
-            }
-            final regex = RegExp(r'^(09\d{9}|\+639\d{9})$');
-            if (!regex.hasMatch(value)) {
-              return AppLocalizations.of(context)!.valid_ph_number_required;
-            }
-            return null;
-          }),
+          _buildInputField(
+            AppLocalizations.of(context)!.contact_number,
+            '9123456789',
+            contactController,
+            showPHPrefix: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return AppLocalizations.of(context)!.contact_number_required;
+              }
+
+              final trimmed = value.trim();
+              final regex = RegExp(r'^\d{10}$'); // Must be exactly 9 digits
+
+              if (!regex.hasMatch(trimmed)) {
+                return AppLocalizations.of(context)!.valid_ph_number_required;
+              }
+
+              return null;
+            },
+          ),
           SizedBox(height: 20.h),
           _buildInputField(AppLocalizations.of(context)!.address,
               'St. Name, House No., Brgy., Province', addressController,
@@ -239,13 +248,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegistration() async {
     // Hide keyboard
     FocusScope.of(context).unfocus();
-    
+
     setState(() => isLoading = true);
 
     try {
       final userData = {
         'fullName': '${firstnameController.text} ${lastnameController.text}',
-        'contactNumber': contactController.text,
+        'contactNumber': '+63${contactController.text.trim()}',
         'address': addressController.text,
         'username': usernameController.text,
         'password': passwordController.text,
@@ -256,9 +265,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (response.success) {
         // Immediately attempt to login with the new credentials
         await _loginAfterRegistration(
-          usernameController.text, 
-          passwordController.text
-        );
+            usernameController.text, passwordController.text);
       } else {
         // Handle different error cases
         _handleRegistrationError(response.message);
@@ -274,49 +281,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     }
   }
-  
+
+  // Update the _loginAfterRegistration function in RegisterScreen
+
+  // Update the _loginAfterRegistration function in RegisterScreen
+
   Future<void> _loginAfterRegistration(String username, String password) async {
     try {
       // Call the login API
       final loginResponse = await _apiService.login(username, password);
-      
+
       if (loginResponse.success) {
-        // Navigate to main screen
         if (mounted) {
-          // Import your main screen and navigate to it
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/main', // Replace with your main screen route
-            (route) => false, // Remove all previous routes
-          );
-          
-          // Show success message after navigation (in the main screen)
-          // We need to delay slightly to ensure the new screen is built
-          Future.delayed(Duration(milliseconds: 300), () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.registration_successful,
-                  style: TextStyle(color: Colors.white),
-                ),
-                backgroundColor: Color(0xFF72AB50),
-                duration: Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.all(10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
+          // Extract user data and user ID
+          final userData = loginResponse.data?['user'] ?? {};
+          final userId = userData['_id'] ?? '';
+
+          if (userId.isEmpty) {
+            _showSnackBar(
+              message: AppLocalizations.of(context)!.user_id_not_found,
+              isError: true,
             );
-          });
+            // Navigate to landing page if user ID is not found
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => LandingScreen(showLoginOnLoad: true)),
+            );
+            return;
+          }
+
+          // Show registration success overlay
+          _showRegistrationSuccessOverlay(
+            userData: {
+              'userId': userId,
+              'fullName': userData['fullName'] ?? '',
+              'username': userData['username'] ?? '',
+              ...userData,
+            },
+          );
         }
       } else {
         // If login fails after registration (should be rare)
         _showSnackBar(
-          message: "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
+          message:
+              "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
           isError: true,
         );
-        
+
         // Navigate back to landing page with login dialog
         if (mounted) {
           Navigator.pushReplacement(
@@ -329,10 +341,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       // Handle login error
       _showSnackBar(
-        message: "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
+        message:
+            "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
         isError: true,
       );
-      
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -343,27 +356,116 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  void _showRegistrationSuccessOverlay(
+      {required Map<String, dynamic> userData}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: EdgeInsets.all(24.w),
+            width: 0.8.sw,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success icon
+                Container(
+                  width: 80.w,
+                  height: 80.w,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF72AB50).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF72AB50),
+                    size: 50.w,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+
+                // Title
+                CustomFont(
+                  text: AppLocalizations.of(context)!.registration_successful,
+                  fontSize: 24.sp,
+                  color: MAIZE_ACCENT,
+                  fontWeight: FontWeight.bold,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12.h),
+
+                // Description
+                CustomFont(
+                  text: AppLocalizations.of(context)!
+                      .register_corn_next, // Add this string to your localization
+                  fontSize: 16.sp,
+                  color: MAIZE_ACCENT,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 24.h),
+
+                // Continue button
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+
+                    // Navigate to corn registration screen
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CornRegistrationScreen(
+                          userData: userData,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF72AB50),
+                    minimumSize: Size(double.infinity, 50.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                  child: CustomFont(
+                    text: AppLocalizations.of(context)!.register_corn_button,
+                    fontSize: 16.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _handleRegistrationError(String? errorMessage) {
     String displayMessage;
-    
+
     // Check for common error cases
     if (errorMessage?.contains('username already exists') ?? false) {
       displayMessage = AppLocalizations.of(context)!.username_already_exists;
-    } 
-    else if (errorMessage?.contains('timeout') ?? false) {
+    } else if (errorMessage?.contains('timeout') ?? false) {
       displayMessage = AppLocalizations.of(context)!.registration_timeout;
-    }
-    else {
+    } else {
       // Generic error if no specific case matched
-      displayMessage = errorMessage ?? AppLocalizations.of(context)!.registration_failed;
+      displayMessage =
+          errorMessage ?? AppLocalizations.of(context)!.registration_failed;
     }
-    
+
     _showSnackBar(message: displayMessage, isError: true);
   }
 
   void _showSnackBar({required String message, required bool isError}) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -383,8 +485,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildInputField(
-      String label, String hint, TextEditingController controller,
-      {bool isMultiline = false, String? Function(String?)? validator}) {
+    String label,
+    String hint,
+    TextEditingController controller, {
+    bool isMultiline = false,
+    bool showPHPrefix = false,
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,13 +505,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: controller,
           maxLines: isMultiline ? 3 : 1,
+          keyboardType: showPHPrefix ? TextInputType.phone : TextInputType.text,
+          style: TextStyle(color: MAIZE_ACCENT, fontSize: 16.sp),
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
             fillColor: MAIZE_PRIMARY_LIGHT,
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
-            errorStyle: TextStyle(color: Colors.red.shade700),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            errorStyle: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: Colors.red.shade700),
+            prefixIcon: showPHPrefix
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 10.0, top: 1.5),
+                    child: Text(
+                      '+63',
+                      style: TextStyle(color: MAIZE_ACCENT, fontSize: 16.sp),
+                    ),
+                  )
+                : null,
+            prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
           ),
           validator: validator,
         ),
@@ -430,10 +553,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               isPasswordField ? !isPasswordVisible : !isConfirmPasswordVisible,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Color(0xFFDDFFD7),
+            fillColor: MAIZE_PRIMARY_LIGHT,
             border:
                 OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
-            errorStyle: TextStyle(color: Colors.red.shade700),
+            errorStyle: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: Colors.red.shade700),
             suffixIcon: IconButton(
               icon: Icon(
                 isPasswordField

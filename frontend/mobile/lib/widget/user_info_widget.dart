@@ -210,6 +210,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.all(10),
                     foregroundColor: MAIZE_PRIMARY_LIGHT,
                     backgroundColor: MAIZE_ACCENT,
                   ),
@@ -224,7 +225,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                       Navigator.pop(context);
                     }
                   },
-                  child: const CustomFont(
+                  child: CustomFont(
                     text: 'Save Changes',
                     fontWeight: FontWeight.w500, 
                     color: MAIZE_PRIMARY_LIGHT, 

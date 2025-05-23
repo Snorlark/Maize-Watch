@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_button.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/custom/custom_dialog.dart';
 import 'package:maize_watch/widget/user_info_widget.dart';
 import 'package:maize_watch/services/api_service.dart';
-import 'package:maize_watch/services/translation_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'about_us_screen.dart';
 import 'landing_screen.dart';
@@ -23,18 +24,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String contactNumber = '+639 023 2311 321';
   String address = '0717 Tolentino St., Sampaloc, Philippines';
   final ApiService _apiService = ApiService();
-  final TranslationService _translationService = TranslationService();
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    
-    // Initialize translation service
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _translationService.init();
-    });
   }
 
   Future<void> _loadUserData() async {
@@ -56,15 +51,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isLoading = false);
     }
   }
-  
-  // Handle the back button press
+
   Future<bool> _onWillPop() async {
     bool shouldLogout = false;
 
     await customOptionDialog(
       context,
-      title: _translationService.translate("logout_title"),
-      content: _translationService.translate("logout_message"),
+      title: AppLocalizations.of(context)!.logout_title,
+      content: AppLocalizations.of(context)!.logout_message,
       onYes: () async {
         shouldLogout = true;
 
@@ -82,36 +76,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (mounted) {
             CustomDialog(
               context,
-              title: _translationService.translate("error"),
-              content: _translationService.translate("logout_error"),
+              title: AppLocalizations.of(context)!.error,
+              content: AppLocalizations.of(context)!.logout_error,
             );
           }
         }
       },
     );
 
-    return false; // Always return false so navigation is controlled manually
+    return false;
   }
 
-  
-  // Handle logout with confirmation
   void _handleLogout() async {
     customOptionDialog(
       context,
-      title: _translationService.translate("logout_title"),
-      content: _translationService.translate("logout_message"),
+      title: AppLocalizations.of(context)!.logout_title,
+      content: AppLocalizations.of(context)!.logout_message,
       onYes: () async {
         setState(() => _isLoading = true);
-        
+
         try {
-          // Clear any stored user data
           await _apiService.logout();
-          
-          // Navigate to landing screen
+
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => LandingScreen()),
+              MaterialPageRoute(builder: (context) => const LandingScreen()),
             );
           }
         } catch (e) {
@@ -120,35 +110,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             setState(() => _isLoading = false);
             CustomDialog(
               context,
-              title: _translationService.translate("error"),
-              content: _translationService.translate("logout_error"),
+              title: AppLocalizations.of(context)!.error,
+              content: AppLocalizations.of(context)!.logout_error,
             );
           }
         }
-      }
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return WillPopScope(
       onWillPop: _onWillPop,
-      child: ValueListenableBuilder<Map<String, dynamic>>(
-        valueListenable: _translationService.translationNotifier,
-        builder: (context, translationData, _) {
-          final currentLanguage = translationData['currentLanguage'] ?? 'en';
-          
-          return Scaffold(
-            body: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/GRADIENT.png'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: _isLoading 
-                ? const Center(child: CircularProgressIndicator(color: Colors.green))
-                : Padding(
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            color: MAIZE_BOTTOM_OVERLAY,
+          ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Colors.green))
+              : Padding(
                   padding: const EdgeInsets.all(30.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,14 +142,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            _translationService.translate("account"),
+                            localizations.account,
                             style: TextStyle(
-                              fontSize: 24, 
-                              fontWeight: FontWeight.bold, 
-                              color: Colors.green.shade900, 
-                              fontFamily: 'Montserrat'
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade900,
+                              fontFamily: 'Montserrat',
                             ),
-                            key: ValueKey('account_title_$currentLanguage'), // Force rebuild with language change
                           ),
                           Image.asset(
                             'assets/images/maize_watch_logo.png',
@@ -175,11 +158,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 5),
                       CustomFont(
-                        text: _translationService.translate("about_user"),
+                        text: localizations.about_user,
                         fontSize: 16,
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
-                        key: ValueKey('about_user_$currentLanguage'), // Force rebuild with language change
                       ),
                       const SizedBox(height: 20),
 
@@ -196,26 +178,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             address = updatedData['address']!;
                           });
                         },
-                      ),             
+                      ),
                       const SizedBox(height: 20),
 
                       CustomButton(
                         context: context,
-                        title: _translationService.translate("settings"),
+                        title: localizations.settings,
                         screen: SettingsScreen(),
-                        key: ValueKey('settings_button_$currentLanguage'), // Force rebuild with language change
                       ),
                       CustomButton(
                         context: context,
-                        title: _translationService.translate("about"),
+                        title: localizations.about,
                         screen: AboutUsScreen(),
-                        key: ValueKey('about_button_$currentLanguage'), // Force rebuild with language change
                       ),
                       const Spacer(),
                       Center(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade500,
+                            backgroundColor: MAIZE_LOGO_ICON,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -223,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           onPressed: _handleLogout,
                           child: Text(
-                            _translationService.translate("logout"),
+                            localizations.logout,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -236,9 +216,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-            ),
-          );
-        }
+        ),
       ),
     );
   }

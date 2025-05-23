@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/model/chart_data.dart';
-import 'package:maize_watch/services/translation_service.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../custom/custom_dialog.dart';
 import '../custom/custom_font.dart';
 
 class HumidityDataWidget extends StatefulWidget {
   final double humidityData;
-  final TranslationService translationService;
+  final AppLocalizations localizedText;
 
   const HumidityDataWidget({
     super.key,
-    required this.humidityData, required this.translationService,
+    required this.humidityData, required this.localizedText,
   });
 
   @override
@@ -22,15 +22,15 @@ class HumidityDataWidget extends StatefulWidget {
 }
 
 class _HumidityDataWidgetState extends State<HumidityDataWidget> {
-  String getHumidityDescription(double humidity, TranslationService translationService) {
+  String getHumidityDescription(double humidity) {
     if (humidity < 30) {
-      return translationService.translate("humidity_very_dry");
+      return widget.localizedText.humidity_very_dry;
     } else if (humidity >= 30 && humidity < 60) {
-      return translationService.translate("humidity_moderate");
+      return widget.localizedText.humidity_moderate;
     } else if (humidity >= 60 && humidity < 80) {
-      return translationService.translate("humidity_quite_humid");
+      return widget.localizedText.humidity_quite_humid;
     } else {
-      return translationService.translate("humidity_very_humid");
+      return widget.localizedText.humidity_very_humid;
     }
   }
 
@@ -56,7 +56,7 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CustomFont(
-                    text: widget.translationService.translate("humidity_title"),
+                    text: widget.localizedText.humidity,
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
@@ -64,8 +64,8 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
                     onTap: () {
                       CustomDialog(
                         context,
-                        title: widget.translationService.translate("humidity_title"),
-                        content: getHumidityDescription(widget.humidityData, widget.translationService),
+                        title: widget.localizedText.humidity,
+                        content: getHumidityDescription(widget.humidityData),
                       );
                     },
                     child: const Icon(Icons.more_horiz),
@@ -80,25 +80,23 @@ class _HumidityDataWidgetState extends State<HumidityDataWidget> {
                     text: '${widget.humidityData.toStringAsFixed(2)}%',
                     color: Colors.black,
                   ),
-                  Flexible(
-                    child: Center(
-                      child: SizedBox(
-                        width: ScreenUtil().setWidth(200),
-                        height: ScreenUtil().setHeight(70),
-                        child: SfCircularChart(
-                          margin: EdgeInsets.zero,
-                          series: <CircularSeries>[
-                            RadialBarSeries<ChartData, String>(
-                              dataSource: chartData,
-                              xValueMapper: (ChartData data, _) => data.label,
-                              yValueMapper: (ChartData data, _) => data.value,
-                              pointColorMapper: (data, _) => data.color,
-                              trackColor:
-                                  const Color.fromARGB(237, 241, 241, 241),
-                              maximumValue: 100,
-                            )
-                          ],
-                        ),
+                  Expanded(
+                    child: SizedBox(
+                      width: ScreenUtil().setWidth(200),
+                      height: ScreenUtil().setHeight(70),
+                      child: SfCircularChart(
+                        margin: EdgeInsets.zero,
+                        series: <CircularSeries>[
+                          RadialBarSeries<ChartData, String>(
+                            dataSource: chartData,
+                            xValueMapper: (ChartData data, _) => data.label,
+                            yValueMapper: (ChartData data, _) => data.value,
+                            pointColorMapper: (data, _) => data.color,
+                            trackColor:
+                                const Color.fromARGB(237, 241, 241, 241),
+                            maximumValue: 100,
+                          )
+                        ],
                       ),
                     ),
                   )

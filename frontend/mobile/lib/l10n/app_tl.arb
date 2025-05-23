@@ -7,7 +7,7 @@
   "register_page1_description": "Tulungan mo kaming makilala ka nang mas mabuti.",
   "first_name": "Pangalan",
   "last_name": "Apelyido",
-  "contact_number": "Numero ng Telepono",
+  "contact_number": "10-digit Numero ng Telepono",
   "address": "Tirahan",
 
   "register_page2_title": "Kamusta, ",
@@ -15,6 +15,7 @@
   "username": "Pangalan ng Gamit",
   "password": "Password",
   "confirm_password": "Kumpirmahin ang Password",
+  "user_id_not_found": "Hindi mahanap ang iyong User ID",
 
   "first_name_required": "Kailangan ang pangalan",
   "last_name_required": "Kailangan ang apelyido",
@@ -23,7 +24,7 @@
   "address_required": "Kailangan ang address",
   "username_required": "Kailangan ang username",
   "username_too_short": "Ang username ay dapat may hindi bababa sa 3 karakter",
-  "registration_successful": "Matagumpay ang pagpaparehistro! Mangyaring mag-login.",
+  "registration_successful": "Matagumpay ang pagpaparehistro! Mangyaring mag-lagay ng impormasyon tungkol sa mais.",
   "connection_error": "May problema sa koneksyon. Pakisuri ang iyong internet at subukang muli.",
   "username_already_exists": "Ginagamit na ang username. Pakisubukang muli gamit ang ibang username.",
   "registration_timeout": "Masyado nang matagal ang paghihintay sa server. Maaaring nalikha na ang iyong account. Subukang mag-login.",
@@ -33,12 +34,148 @@
   "passwords_dont_match": "Hindi magkatugma ang mga password",
   "login_failed": "Hindi matagumpay ang pag-login. Mangyaring mag-login ng manu-mano.",
 
+  "try_again": "Subukang Muli",
+  "no_corn_fields": "Walang natagpuang taniman ng mais",
+  "register_corn_field_prompt": "Mangyaring magrehistro ng taniman ng mais upang masimulan ang pagsubaybay.",
+  "days_since_planting": "Mga Araw Mula Nang Itanim",
+  "current_growth_stage": "Kasalukuyang Yugto ng Paglaki",
+  "growth_timeline": "Takbo ng Paglaki",
+  "days": "araw",
+
   "agreement_prefix": "Sa pag-login, sumasang-ayon ka sa aming ",
   "privacy_policy": "Patakaran sa Privacy",
   "and": " at ",
   "terms_of_service": "Mga Tuntunin ng Serbisyo",
   "agreement_suffix": ".",
   "invalid_credentials": "Di-wastong username o password",
+  "all_fields_required": "Kinakailangang punan ang lahat ng mga patlang.",
+  "done": "Tapos na",
+  "register_corn_next": "I-rehistro ang mais",
+  "register_corn_button": "Magrehistro ng Mais",
+
+  "corn_registration": "Rehistrasyon ng Mais",
+  "field_information": "Impormasyon ng Bukid",
+  "field_name": "Pangalan ng Bukid",
+  "location": "Lokasyon",
+  "soil_type": "Uri ng Lupa",
+  "corn": "Mais",
+  "corn_variety": "Uri ng Mais",
+  "planting_date": "Petsa ng Pagtatanim",
+  "growth_stage": "Yugto ng Paglaki",
+  "review_and_submit": "Suriin at Isumite",
+  "submit": "Isumite",
+  "select_date": "Pumili ng Petsa",
+  "field_name_required": "Kinakailangan ang pangalan ng bukid",
+  "soil_type_required": "Kinakailangan ang uri ng lupa",
+
+  "step1_title": "Bukirin",
+  "step2_title": "Lupa",
+  "step3_title": "Mais",
+  "step4_title": "Panahon",
+  "step5_title": "Edad",
+
+  "field_name_label": "Pangalan ng Bukirin",
+  "location_label": "Lokasyon",
+  "location_default": "Default: Amadeo, Cavite",
+
+  "back_button": "Bumalik",
+  "next_button": "Susunod",
+  "submit_button": "Isumite",
+
+  "soil_type_title": "Piliin ang uri ng lupa ng iyong bukirin",
+  "corn_variety_title": "Piliin ang nais mong uri ng mais",
+  "planting_season_title": "Kailan ka nagtanim?",
+  "planting_season_description": "Piliin and petsa ng pagtatanim ng mais.",
+  "corn_age_title": "Ilang taon na ang iyong pananim na mais?",
+
+  "soil_clay": "Luwad",
+  "soil_silt": "Lamo",
+  "soil_sandy": "Mabuhangin",
+  "soil_loam": "Loam",
+  "soil_peaty": "Pit",
+  "soil_saline": "Alat",
+
+  "variety_glutinous": "Malagkit",
+  "variety_yellow_dent": "Dilaw na Dent",
+  "variety_white_fodder": "Puting Fodder",
+  "variety_flint": "Flint",
+  "variety_sweet": "Matamis",
+  "variety_purple": "Ube",
+  "season_wet": "Panahong Tag-ulan (Hunyo hanggang Nobyembre)",
+  "season_dry": "Panahong Tag-init (Disyembre hanggang Mayo)",
+  "season_both": "Parehong Panahon",
+
+  "ldrSensor": "LDR Sensor",
+  "phSensor": "Sensor ng Antas ng pH",
+  "tempHumidSensor": "Sensor ng Temperatura at Humidity",
+  "soilMoistureSensor": "Sensor ng Halumigmig ng Lupa",
+
+  "enableNotifications": "Paganahin ang Abiso",
+  "vibrationOnly": "Vibrasyon Lamang",
+  "soundAndVibrate": "Tunog at Vibrate",
+
+  "corn_growth": "Paglago ng Mais",
+  "days_to_next_stage": "{days} araw hanggang susunod na yugto ({rate}/araw)",
+  "@days_to_next_stage": {
+    "placeholders": {
+      "days": {
+        "type": "int",
+        "example": "5"
+      },
+      "rate": {
+        "type": "String",
+        "example": "3%"
+      }
+    }
+  },
+
+  "ve_emergence": "Pagsibol (VE)",
+  "v3_early_growth": "Unang Paglago (V3)",
+  "v8_mid_growth": "Gitnang Paglago (V8)",
+  "vt_tasseling": "Pagbubulaklak (VT)",
+  "r1_silking": "Pagsilk (R1)",
+  "r6_mature": "Ganap na Mais (R6)",
+  
+  "just_sprouting_from_soil": "Sumisilang pa lang mula sa lupa",
+  "leaves_3_5_developed": "May 3-5 dahon na",
+  "leaves_8_10_developed": "May 8-10 dahon, lumalaki na",
+  "tassels_appearing": "Lumalabas na ang mga bulaklak sa tuktok",
+  "silks_emerging": "Lumalabas na ang silk mula sa tainga",
+  "fully_developed_corn": "Ganap nang mais",
+  
+  "stable": "Matatag ang paglago",
+  "healthy_growth": "Malusog ang bilis ng paglago",
+  "rapid_growth": "Mabilis ang paglago!",
+  "declining": "Humihina ang paglago",
+  
+  "growth_stage_ve": "Pag-usbong",
+  "growth_stage_ve_desc": "Kakauusbong mula sa lupa",
+  "growth_stage_v3": "Maagang Paglago",
+  "growth_stage_v3_desc": "May 3-5 dahon na",
+  "growth_stage_v8": "Gitnang Paglago",
+  "growth_stage_v8_desc": "8-10 dahon, tumataas",
+  "growth_stage_vt": "Paglabas ng Bulaklak",
+  "growth_stage_vt_desc": "May bulaklak na sa tuktok",
+  "growth_stage_r1": "Paglabas ng Buhok",
+  "growth_stage_r1_desc": "May buhok na sa tenga",
+  "growth_stage_r6": "Ganap na Hinog",
+  "growth_stage_r6_desc": "Lubos nang hinog ang mais",
+
+  "soil_loamy": "Loam",
+  "soil_loamy_desc": "Halo ng buhangin, lamo, luwad",
+  "soil_sandy_desc": "Magaan, mabilis ang daloy ng tubig",
+  "soil_clay_desc": "Mabigat, humahawak ng tubig",
+  "soil_silty": "Lamo",
+  "soil_silty_desc": "Makinis, humahawak ng moisture",
+
+  "variety_sweet_corn": "Matamis na Mais",
+  "variety_sweet_corn_desc": "Para sa pagkain ng tao",
+  "variety_field_corn": "Pang-maisang Bukid",
+  "variety_field_corn_desc": "Para sa hayop o ethanol",
+  "variety_popcorn": "Popcorn",
+  "variety_popcorn_desc": "Para sa popcorn",
+  "variety_flint_corn": "Makintab na Mais",
+  "variety_flint_corn_desc": "Makukulay, palamuti",
 
   "settings": "Mga Setting",
   "language": "Wika",
@@ -105,7 +242,7 @@
   "recommendation_title": "Mga Rekomendasyon",
   "view_details": "Tingnan ang Detalye",
   "see_more": "Tingnan Pa",
-  "live": "LIVE",
+  "live": "ONLINE",
   "view_more_details": "Tingnan ang karagdagang detalye",
   "seconds_ago": "segundo ang nakalipas",
   "no_data": "Walang Datos",
@@ -140,5 +277,20 @@
   "light_intensity_very_low": "Sobrang hina ng liwanag.",
   "light_intensity_moderate": "Katamtamang liwanag.",
   "light_intensity_bright": "Maliwanag ang kapaligiran.",
-  "light_intensity_very_strong": "Napakaliwanag gaya ng tanghaling tapat."
+  "light_intensity_very_strong": "Napakaliwanag gaya ng tanghaling tapat.",
+
+  "helpTitle": "Tulong",
+  "helpDescription": "Narito ang ilang kapaki-pakinabang na impormasyon.",
+  "faqTitle": "Mga Madalas Itanong",
+  "faqQ1": "Paano ko i-on ang mga notipikasyon?",
+  "faqA1": "Pumunta sa mga setting at i-toggle ang switch.",
+  "faqQ2": "Paano i-reset ang aking password?",
+  "faqA2": "I-click ang ‘Nakalimutan ang Password’ sa login screen.",
+
+  "appName": "Maize Watch",
+  "aboutApp": "Ang Maize Watch ay isang crop monitoring application na tumutulong sa mga magsasaka na subaybayan ang paglago ng mais at agad na matukoy ang mga problema.",
+  "versionInfo": "bersyon 1.0.0",
+  "contactUs": "Makipag-ugnayan sa amin sa:",
+  "translate": "Isalin"
+
 }

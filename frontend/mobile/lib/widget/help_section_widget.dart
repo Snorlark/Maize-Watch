@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:maize_watch/services/translation_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HelpSectionWidget extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
-  final TranslationService translationService;
 
   const HelpSectionWidget({
     Key? key,
     required this.isExpanded,
     required this.onToggle,
-    required this.translationService,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Container(
@@ -28,7 +28,7 @@ class HelpSectionWidget extends StatelessWidget {
               title: Padding(
                 padding: const EdgeInsets.only(left: 15.0),
                 child: Text(
-                  translationService.translate("help_title"),
+                  loc.helpTitle,
                   style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Montserrat',
@@ -47,7 +47,7 @@ class HelpSectionWidget extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 child: Text(
-                  translationService.translate("help_description"),
+                  loc.helpDescription,
                   style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Montserrat',
