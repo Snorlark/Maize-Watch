@@ -216,7 +216,7 @@ class ApiService {
   }
 
     Future<List<SensorReading>> getLatestReadings() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/latest'));
+    final response = await http.get(Uri.parse('$baseUrl/api/sensors/latest'));
     
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);

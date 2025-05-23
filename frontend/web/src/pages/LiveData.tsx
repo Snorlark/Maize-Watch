@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FaThermometerHalf, FaExclamationCircle, FaMountain } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
@@ -13,7 +14,6 @@ interface SensorData {
     temperature: number;
     humidity: number;
     soil_moisture: number;
-    soil_ph: number;
     light_level: number;
   };
 }
@@ -27,8 +27,8 @@ const LiveData: React.FC = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get('http://localhost:8080/api/sensors/latest');
-        if (response.data && response.data.data) {
-          setSensorData(response.data.data);
+        if (response.data && response.data.length > 0) {
+          setSensorData(response.data[0]);
         }
         setLoading(false);
       } catch (err) {
@@ -46,7 +46,7 @@ const LiveData: React.FC = () => {
 
   if (loading) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
+      <Navbar />
       <main className="py-10">
         <div className="text-center">Loading sensor data...</div>
       </main>
@@ -56,7 +56,7 @@ const LiveData: React.FC = () => {
 
   if (error) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
+      <Navbar />
       <main className="py-10">
         <div className="text-center text-red-500">{error}</div>
       </main>
@@ -66,7 +66,7 @@ const LiveData: React.FC = () => {
 
   if (!sensorData) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
+      <Navbar />
       <main className="py-10">
         <div className="text-center">No sensor data available</div>
       </main>
@@ -74,18 +74,15 @@ const LiveData: React.FC = () => {
     </div>
   );
 
-  const measurements = {
-    temperature: sensorData.temperature,
-    humidity: sensorData.humidity,
-    soil_moisture: sensorData.soilMoisture,
-    soil_ph: sensorData.soilPh,
-    light_level: sensorData.lightIntensity,
-  };
+  const { measurements } = sensorData;
 
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
 
-      
+      <Navbar />
+
+
+
 
       <main className="py-10">
         <div className="flex flex-col lg:flex-row gap-10">
@@ -128,13 +125,10 @@ const LiveData: React.FC = () => {
               </ul>
             </div>
           </div>
+
+
+
           <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-
-
-
-
-
             {/* Soil Moisture */}
             <div className="bg-(--color-rwhite) rounded-xl p-5 shadow-md text-center">
               <FaMountain className="text-3xl mb-2 mx-auto text-[#7a5c2d]" />
@@ -149,26 +143,19 @@ const LiveData: React.FC = () => {
               </span>            
             </div>
 
-
-
-
-
-            {/* Soil Ph Level */}
+            {/* Soil Humidity */}
             <div className="bg-(--color-rwhite) rounded-xl p-5 shadow-md text-center">
               <FaMountain className="text-3xl mb-2 mx-auto text-[#7a5c2d]" />
-              <p className="text-sm font-semibold uppercase">Soil pH Level:</p>
-              <div className="text-4xl text-(--color-dgreen) font-bold my-2">{measurements.soil_ph}</div>
+              <p className="text-sm font-semibold uppercase">Soil Humidity:</p>
+              <div className="text-4xl text-(--color-dgreen) font-bold my-2">{measurements.humidity}</div>
               <span className={`inline-block ${
-                measurements.soil_ph > 7 
+                measurements.humidity < 40 
                   ? 'bg-(--color-lred) text-(--color-red)' 
                   : 'bg-(--color-llgreen) text-(--color-dgreen)'
               } text-xs font-medium px-3 py-1 rounded-full`}>
-                {measurements.soil_ph < 7 ? 'Good Condition' : 'Soil pH indicates alkalinity'}
+                {measurements.humidity < 40 ? 'Low Humidity' : 'Best Condition'}
               </span>          
             </div>
-
-
-
 
             {/* Humidity */}
             <div className="bg-(--color-rwhite) rounded-2xl p-6 shadow-md text-left space-y-4">
@@ -178,7 +165,7 @@ const LiveData: React.FC = () => {
               </div>
               <div className="relative w-full h-10 bg-[#e0e0e1] rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                  className="bg-[#2d67c4] h-full rounded-full flex items-center justify-start px-2 text-white text-sm font-semibold"
                   style={{ width: `${measurements.humidity}%` }}
                 >
                   {measurements.humidity}%
@@ -195,9 +182,6 @@ const LiveData: React.FC = () => {
               </div>
             </div>
 
-
-
-
             {/* Light Intensity */}
             <div className="bg-(--color-rwhite) rounded-2xl p-6 shadow-md text-left space-y-4">
               <div className="flex items-center gap-2">
@@ -206,14 +190,10 @@ const LiveData: React.FC = () => {
               </div>
               <div className="relative w-full h-10 bg-[#e0e0e1] rounded-full overflow-hidden">
                 <div 
-                  className={`h-full rounded-full flex items-center justify-center text-white text-sm font-semibold" ${
-                    measurements.light_level < 20}`}
-                  style={{
-                    width: `${measurements.light_level} LUX`,
-                    backgroundColor: '#e0bc46',
-                  }}
+                  className="bg-[#e0bc46] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                  style={{ width: `${measurements.light_level}%` }}
                 >
-                  {measurements.light_level} LUX
+                  {measurements.light_level}%
                 </div>
               </div>
               <div className="text-center">
@@ -230,7 +210,13 @@ const LiveData: React.FC = () => {
         </div>
       </main>
 
+
+
+
+
+
       <Footer />
+      
 
     </div>
   )

@@ -1,19 +1,13 @@
-//TemperatureChart.tsx
-import { useState, useRef, RefObject, JSX } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Download, X, Calendar } from "lucide-react";
+import { Download, X } from "lucide-react";
+import { fetchAndFormatData, getDefaultData, DataItem } from "../../utils/dataAveraging";
 import { handleExport } from "../../utils/ExportUtils";
-
-// Data types
-type DataItem = {
-  value: number;
-  [key: string]: string | number;
-};
 
 type ExportModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  chartRef: RefObject<HTMLDivElement | null>;
+  chartRef: React.RefObject<HTMLDivElement | null>;
   chartData: DataItem[];
   xKey: string;
 };
@@ -196,140 +190,36 @@ const handleExportClick = () => {
   onClose();
 };
 
+const ExportModal = ({ isOpen, onClose, chartRef, chartData, xKey }: ExportModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-96 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-4 rounded-lg">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-[#356B2C]">Export Options</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X size={18} />
+          <h3 className="text-lg font-semibold text-[#356B2C]">Export Chart</h3>
+          <button onClick={onClose} className="text-[#356B2C] hover:text-[#79A842]">
+            <X size={20} />
           </button>
         </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-[#356B2C] mb-1">Export Format</label>
-          <div className="flex gap-2">
-            {["PDF", "CSV", "SVG"].map((format) => (
-              <button
-                key={format}
-                onClick={() => setExportFormat(format)}
-                className={`px-3 py-1 rounded-md text-sm flex-1 ${
-                  exportFormat === format
-                    ? "bg-[#79A842] text-white"
-                    : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-                }`}
-              >
-                {format}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-[#356B2C] mb-1">Export Type</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setExportType("predefined")}
-              className={`px-3 py-1 rounded-md text-sm flex-1 ${
-                exportType === "predefined"
-                  ? "bg-[#79A842] text-white"
-                  : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-              }`}
-            >
-              Predefined Period
-            </button>
-            <button
-              onClick={() => setExportType("custom")}
-              className={`px-3 py-1 rounded-md text-sm flex-1 ${
-                exportType === "custom"
-                  ? "bg-[#79A842] text-white"
-                  : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-              }`}
-            >
-              Custom Range
-            </button>
-          </div>
-        </div>
-
-        {exportType === "predefined" ? (
-          <div className="mb-4">
-            <label className="block text-sm text-[#356B2C] mb-1">Time Frame</label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: "days", label: "Day" },
-                { value: "weeks", label: "Week" },
-                { value: "months", label: "Month" },
-                { value: "years", label: "Year" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setTimeFrame(option.value)}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    timeFrame === option.value
-                      ? "bg-[#79A842] text-white"
-                      : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="mb-4">
-            {["Start", "End"].map((label, i) => {
-              const isStart = label === "Start";
-              const value = isStart ? startDate : endDate;
-              const setValue = isStart ? setStartDate : setEndDate;
-              const toggle = isStart ? showStartCalendar : showEndCalendar;
-              const setToggle = isStart ? setShowStartCalendar : setShowEndCalendar;
-              return (
-                <div key={label} className="mb-2">
-                  <label className="block text-sm text-[#356B2C] mb-1">{label} Date</label>
-                  <div className="relative">
-                    <div className="flex items-center">
-                      <input
-                        type="text"
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        placeholder="YYYY-MM-DD"
-                        className="w-full p-2 border border-[#356B2C] rounded text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setToggle(!toggle)}
-                        className="absolute right-2 text-[#356B2C]"
-                      >
-                        <Calendar size={16} />
-                      </button>
-                    </div>
-                    <DatePicker
-                      selectedDate={value}
-                      onDateSelect={setValue}
-                      isVisible={toggle}
-                      setIsVisible={setToggle}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2">
+        <div className="space-y-2">
           <button
-            onClick={onClose}
-            className="px-4 py-2 border border-[#356B2C] rounded-md text-[#356B2C] text-sm hover:bg-gray-50"
+            onClick={() => handleExport("pdf", chartRef.current, chartData, xKey, "Temperature")}
+            className="w-full px-4 py-2 bg-[#356B2C] text-white rounded hover:bg-[#79A842]"
           >
-            Cancel
+            Export as PDF
           </button>
           <button
-            onClick={handleExportClick}
-            className="px-4 py-2 bg-[#356B2C] rounded-md text-white text-sm hover:bg-[#2a5823]"
+            onClick={() => handleExport("csv", chartRef.current, chartData, xKey, "Temperature")}
+            className="w-full px-4 py-2 bg-[#356B2C] text-white rounded hover:bg-[#79A842]"
           >
-            Export
+            Export as CSV
+          </button>
+          <button
+            onClick={() => handleExport("svg", chartRef.current, chartData, xKey, "Temperature")}
+            className="w-full px-4 py-2 bg-[#356B2C] text-white rounded hover:bg-[#79A842]"
+          >
+            Export as SVG
           </button>
         </div>
       </div>
@@ -337,24 +227,50 @@ const handleExportClick = () => {
   );
 };
 
-const TemperatureChart: React.FC = () => {
+const TemperatureChart = () => {
   const [overview, setOverview] = useState<string>("days");
+  const [chartData, setChartData] = useState<DataItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [xKey, setXKey] = useState<string>("day");
 
-  let chartData: DataItem[];
-  let xKey: string;
+  // Fixed X-axis labels for each time period
+  const xAxisLabels = {
+    days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    weeks: ["Week 1", "Week 2", "Week 3", "Week 4"],
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  };
 
-  if (overview === "days") {
-    chartData = dataDay;
-    xKey = "day";
-  } else if (overview === "weeks") {
-    chartData = dataWeek;
-    xKey = "week";
-  } else {
-    chartData = dataMonth;
-    xKey = "month";
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const { chartData: newData, xKey: newXKey } = await fetchAndFormatData(overview, 'temperature');
+        
+        // Ensure data matches the fixed X-axis labels
+        const formattedData = xAxisLabels[overview as keyof typeof xAxisLabels].map((label) => {
+          const matchingData = newData.find(item => item[newXKey] === label);
+          return {
+            [newXKey]: label,
+            value: matchingData ? matchingData.value : 0
+          };
+        });
+
+        setChartData(formattedData);
+        setXKey(newXKey);
+      } catch (error) {
+        console.error("Error fetching temperature data:", error);
+        const { chartData: defaultData, xKey: defaultXKey } = getDefaultData(overview);
+        setChartData(defaultData);
+        setXKey(defaultXKey);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [overview]);
 
   return (
     <div className="bg-[#E6F0D3] p-4 rounded-2xl">
@@ -391,14 +307,45 @@ const TemperatureChart: React.FC = () => {
         className="bg-white py-9 pr-8 rounded-xl border border-[#356B2C]"
         style={{ height: 420 }}
       >
-        <ResponsiveContainer width="100%" height={360}>
-          <BarChart data={chartData}>
-            <XAxis dataKey={xKey} />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="value" fill="#79A842" radius={[100, 100, 100, 100]} barSize={10} />
-          </BarChart>
-        </ResponsiveContainer>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#356B2C]"></div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart data={chartData}>
+              <XAxis 
+                dataKey={xKey} 
+                tick={{ fontSize: 12, fill: '#356B2C' }}
+                axisLine={{ stroke: '#356B2C' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 12, fill: '#356B2C' }}
+                axisLine={{ stroke: '#356B2C' }}
+                label={{ 
+                  value: 'Temperature (°C)', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle', fill: '#356B2C' }
+                }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#E6F0D3',
+                  border: '1px solid #356B2C',
+                  borderRadius: '4px'
+                }}
+                labelStyle={{ color: '#356B2C' }}
+              />
+              <Bar 
+                dataKey="value" 
+                fill="#79A842" 
+                radius={[100, 100, 100, 100]} 
+                barSize={10}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <ExportModal
