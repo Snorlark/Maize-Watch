@@ -1,6 +1,8 @@
-import axios from 'axios';
+// client.ts
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import authService from '../api/services/authService';
 
-// Define the User interface based on your MongoDB schema
+// Define the User interface based on your MongoDB schema - removed unnecessary fields
 export interface User {
   _id?: string;
   username: string;
@@ -11,13 +13,13 @@ export interface User {
   role: string;
   createdAt?: string;
   __v?: number;
-  email?: string;
-  lot?: number;
 }
 
 // Base URL configuration
-const apiBaseUrl = 'http://localhost:8080';
-console.log('API Base URL being used:', apiBaseUrl); // Verify URL in console
+const isDevelopment = import.meta.env?.MODE === 'development';
+// Make sure this URL matches your actual backend server address
+const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'http://localhost:8080';
+console.log('API Base URL being used:', apiBaseUrl);
 
 // Create the Axios instance
 const apiClient = axios.create({
@@ -25,13 +27,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
-  withCredentials: true,
+  timeout: 30000, // Increased to 30 seconds timeout
+  withCredentials: false, // Changed to false to avoid CORS issues
 });
 
 // Add auth token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
+    const token = authService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -112,6 +115,7 @@ export const userService = {
       if (error.code === 'ECONNABORTED') {
         console.error('Connection timeout. Is your backend server running at', apiBaseUrl, '?');
       }
+      
       throw error;
     }
   },
