@@ -48,7 +48,7 @@ const LoginForm: React.FC = () => {
   return (
     <main className="bg-white">
       <section className="bg-[url(/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
-        <div className="mt-10 md:mt-10 flex flex-col items-center justify-center z-10 space-y-6 pt-0 pb-20">
+        <div className="mt-10 md:mt-10 flex flex-col items-center justify-center z-10 space-y-6  pt-0 pb-20">
           <div>
             <img
               src="/images/loginsignuplogo.png"
@@ -62,7 +62,7 @@ const LoginForm: React.FC = () => {
               <span className="block sm:inline">{error}</span>
             </div>}
             
-            <form onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="username">Username</label>
                 <input
@@ -97,7 +97,9 @@ const LoginForm: React.FC = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-              
+              <div className="form-group relative">
+                <p className="float-right underline text-white">Forgot Password?</p>
+              </div>
               <button 
                 type="submit" 
                 disabled={loading} 

@@ -21,11 +21,11 @@ class HistoricalDataService {
       this.client = new MongoClient(this.iotDbUri);
       await this.client.connect();
       this.iotDb = this.client.db();
-      
+
       // Connect to historical database
-      const historyClient = new MongoClient(this.historyDbUri);
-      await historyClient.connect();
-      this.historyDb = historyClient.db();
+      this.historyClient = new MongoClient(this.historyDbUri);
+      await this.historyClient.connect();
+      this.historyDb = this.historyClient.db();
     }
   }
 
@@ -34,6 +34,10 @@ class HistoricalDataService {
       await this.client.close();
       this.client = null;
       this.iotDb = null;
+    }
+    if (this.historyClient) {
+      await this.historyClient.close();
+      this.historyClient = null;
       this.historyDb = null;
     }
   }
@@ -41,7 +45,7 @@ class HistoricalDataService {
   async calculateDailyAverage() {
     try {
       await this.connect();
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -95,12 +99,12 @@ class HistoricalDataService {
   async calculateWeeklyAverage() {
     try {
       await this.connect();
-      
+
       const today = new Date();
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
       startOfWeek.setHours(0, 0, 0, 0);
-      
+
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(endOfWeek.getDate() + 7);
 
@@ -153,7 +157,7 @@ class HistoricalDataService {
   async calculateMonthlyAverage() {
     try {
       await this.connect();
-      
+
       const today = new Date();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -207,10 +211,11 @@ class HistoricalDataService {
   async getHistoricalData(period, limit = 7) {
     try {
       await this.connect();
-      
+      console.log(`[getHistoricalData] period: ${period}, limit: ${limit}`);
+
       let collection;
       let sortField;
-      
+
       switch (period) {
         case 'daily':
           collection = 'daily_averages';
@@ -228,11 +233,15 @@ class HistoricalDataService {
           throw new Error('Invalid period specified');
       }
 
+      console.log(`[getHistoricalData] Using collection: ${collection}, sortField: ${sortField}`);
+
       const data = await this.historyDb.collection(collection)
         .find()
         .sort({ [sortField]: -1 })
         .limit(limit)
         .toArray();
+
+      console.log(`[getHistoricalData] Retrieved ${data.length} records`);
 
       return data;
     } catch (error) {

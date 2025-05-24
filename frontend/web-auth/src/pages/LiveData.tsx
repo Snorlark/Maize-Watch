@@ -27,9 +27,30 @@ const LiveData: React.FC = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get('http://localhost:8080/api/sensors/latest');
+        console.log('Full API response:', response.data); // Debug log
+        
         if (response.data && response.data.data) {
-          setSensorData(response.data.data);
-        }
+  console.log('Sensor data structure:', response.data.data);
+
+  // Transform incoming flat data to match the SensorData interface
+  const raw = response.data.data;
+  const transformedData: SensorData = {
+    _id: '', // If your API doesn't return this, you can omit or generate one
+    field_id: '', // Same here
+    timestamp: raw.timestamp,
+    measurements: {
+      temperature: raw.temperature,
+      humidity: raw.humidity,
+      soil_moisture: raw.soilMoisture,
+      soil_ph: raw.soilPh,
+      light_level: raw.lightIntensity,
+    },
+  };
+
+  setSensorData(transformedData);
+} else {
+  setError('No sensor data received from API');
+}
         setLoading(false);
       } catch (err) {
         setError('Failed to fetch sensor data');
@@ -46,7 +67,6 @@ const LiveData: React.FC = () => {
 
   if (loading) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
       <main className="py-10">
         <div className="text-center">Loading sensor data...</div>
       </main>
@@ -56,7 +76,6 @@ const LiveData: React.FC = () => {
 
   if (error) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
       <main className="py-10">
         <div className="text-center text-red-500">{error}</div>
       </main>
@@ -66,7 +85,6 @@ const LiveData: React.FC = () => {
 
   if (!sensorData) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
       <main className="py-10">
         <div className="text-center">No sensor data available</div>
       </main>
@@ -74,12 +92,13 @@ const LiveData: React.FC = () => {
     </div>
   );
 
+  // Safety check for measurements and provide default values
   const measurements = {
-    temperature: sensorData.temperature,
-    humidity: sensorData.humidity,
-    soil_moisture: sensorData.soilMoisture,
-    soil_ph: sensorData.soilPh,
-    light_level: sensorData.lightIntensity,
+    temperature: sensorData?.measurements?.temperature ?? 0,
+    humidity: sensorData?.measurements?.humidity ?? 0,
+    soil_moisture: sensorData?.measurements?.soil_moisture ?? 0,
+    soil_ph: sensorData?.measurements?.soil_ph ?? 0,
+    light_level: sensorData?.measurements?.light_level ?? 0,
   };
 
   return (

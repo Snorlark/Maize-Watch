@@ -337,24 +337,31 @@ router.post('/', isAuthenticated, isAdmin, async (req, res) => {
 // Admin: Update user
 router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
   try {
-    if (req.body.password === '') {
-      delete req.body.password;
+    // Add updatedAt timestamp
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    ).select('-password');
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ message: 'Server error' });
+    
+    // Fetch and return the updated user
+    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = updatedUser;
+    
+    res.json(userWithoutPassword);
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ error: 'Failed to update user' });
   }
 });
 

@@ -10,12 +10,14 @@ import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
 import cron from 'node-cron';
 
-
 import userRoutes from './routes/user.route.js';
 import sensorDataRoutes from './routes/sensor_data.route.js';
+import historicalDataRoutes from './routes/historical_data.route.js';
 import thingSpeakService from './services/thingspeak.service.js';
+import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
+let db;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -34,15 +36,11 @@ if (missingEnvVars.length > 0) {
 const app = express();
 const port = process.env.PORT || 8080;
 
-// Store database connections
-let mainDb; // Native MongoDB driver connection
-let userDbConnection; // For user operations
-
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174', // Vite's default port
-  'https://maize-watch-dev.onrender.com', // Add your production domain
+  'https://maize-watch-dev.onrender.com', // Production domains
   'https://maize-watch.onrender.com'
 ];
 
@@ -52,27 +50,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configuration
-// Development-friendly CORS options (more permissive)
+// CORS configuration with both development and production settings
 const corsOptions = {
-// CORS configuration
-app.use(cors({
   origin: function(origin, callback) {
-    // In development, we'll be more permissive with CORS
-    // For production, you should restrict this properly
-    callback(null, true);
-    
-    // Original strict checking - uncomment for production
-    /*
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // In development, be more permissive
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // In production, be strict
     if (allowedOrigins.indexOf(origin) === -1) {
       console.warn(`Request from disallowed origin: ${origin}`);
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
-    */
   },
   credentials: true, // Allow cookies/authentication
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -96,14 +91,13 @@ const connectToMongo = async () => {
       serverSelectionTimeoutMS: 15000, // Increase from default 10000
     });
     await client.connect();
-    mainDb = client.db(); // Set the main database
-    
+    db = client.db(); // <-- assign to the global variable
     console.log('Connected to MongoDB successfully using native driver');
 
-    // Also connect with Mongoose for model operations
+    // ALSO connect with Mongoose for Mongoose model operations
     mongoose.set('strictQuery', false); // Recommended setting for Mongoose 7
-    userDbConnection = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 15000,
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000, // Increase from default 10000
     });
     console.log('Connected to MongoDB successfully using Mongoose');
     
@@ -117,13 +111,12 @@ const connectToMongo = async () => {
     // Close this test connection as ThingSpeak service will create its own
     await iotConnection.close();
     
-    return { client, mainDb };
+    return { client, db };
   } catch (err) {
     console.error('MongoDB connection error:', err);
     throw err; // Let the caller handle the error
   }
 };
-
 
 // Helper function to project fields
 const projectFields = (document, fields) => {
@@ -144,10 +137,14 @@ const projectFields = (document, fields) => {
   return projected;
 };
 
-// Initialize MQTT service
+// Initialize MQTT service (if you have one)
 let mqttService;
 try {
-  mqttService = new MqttService(process.env.MQTT_BROKER);
+  // Only initialize if MQTT_BROKER is configured
+  if (process.env.MQTT_BROKER) {
+    // Uncomment and implement if you have MqttService
+    // mqttService = new MqttService(process.env.MQTT_BROKER);
+  }
 } catch (err) {
   console.error('MQTT service initialization error:', err);
 }
@@ -155,22 +152,23 @@ try {
 // Routes
 app.use('/auth', userRoutes);
 app.use('/api/sensors', sensorDataRoutes);
+app.use('/api/historical-data', historicalDataRoutes);
 
 // Test route
 app.get('/', (req, res) => {
   res.send('Maize Watch API is running');
 });
 
-// Health check endpoint
+// Enhanced health check endpoint
 app.get('/health', async (req, res) => {
-  // Check MongoDB connections
+  // Check MongoDB connection
   const isMongoConnected = mongoose.connection.readyState === 1;
   
   // Also check ThingSpeak connection as part of health check
   let thingSpeakStatus = 'not tested';
   try {
-    await thingSpeakService.syncDataFromThingSpeak();
-    thingSpeakStatus = 'connected';
+    const savedCount = await thingSpeakService.syncDataFromThingSpeak();
+    thingSpeakStatus = `connected - ${savedCount} records synced`;
   } catch (error) {
     console.error('ThingSpeak connection error during health check:', error);
     thingSpeakStatus = 'error: ' + error.message;
@@ -189,6 +187,10 @@ app.get('/health', async (req, res) => {
 // Get all users - admin only
 app.get('/api/users', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     const { fields } = req.query;
     const users = await db.collection('users').find({}).toArray();
     
@@ -198,10 +200,6 @@ app.get('/api/users', isAdmin, async (req, res) => {
       return res.json(projectedUsers);
     }
     
-    if (!mainDb) {
-      return res.status(500).json({ error: 'Database connection not established' });
-    }
-    const users = await mainDb.collection('users').find({}).toArray();
     res.json(users);
   } catch (err) {
     console.error('Error getting users:', err);
@@ -212,6 +210,10 @@ app.get('/api/users', isAdmin, async (req, res) => {
 // Create user - admin only
 app.post('/api/users', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     // Clone the request body to avoid modifying the original
     const userData = {...req.body};
     
@@ -230,11 +232,6 @@ app.post('/api/users', isAdmin, async (req, res) => {
       ...userWithoutPassword, 
       _id: result.insertedId 
     });
-    if (!mainDb) {
-      return res.status(500).json({ error: 'Database connection not established' });
-    }
-    const result = await mainDb.collection('users').insertOne(req.body);
-    res.status(201).json({ ...req.body, _id: result.insertedId });
   } catch (err) {
     console.error('Error creating user:', err);
     res.status(500).json({ error: 'Failed to create user' });
@@ -244,15 +241,13 @@ app.post('/api/users', isAdmin, async (req, res) => {
 // Get single user - admin only
 app.get('/api/users/:id', isAdmin, async (req, res) => {
   try {
-
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     const { fields } = req.query;
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
     
-    if (!mainDb) {
-      return res.status(500).json({ error: 'Database connection not established' });
-    }
-    const user = await mainDb.collection('users').findOne({ _id: new ObjectId(req.params.id) });
-
     if (!user) return res.status(404).json({ error: 'User not found' });
     
     // Apply field projection if requested
@@ -271,6 +266,10 @@ app.get('/api/users/:id', isAdmin, async (req, res) => {
 // Update user - admin only
 app.put('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     // Add updatedAt timestamp
     const updateData = {
       ...req.body,
@@ -278,12 +277,6 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
     };
     
     const result = await db.collection('users').updateOne(
-
-    if (!mainDb) {
-      return res.status(500).json({ error: 'Database connection not established' });
-    }
-    const result = await mainDb.collection('users').updateOne(
-
       { _id: new ObjectId(req.params.id) },
       { $set: updateData }
     );
@@ -308,6 +301,10 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
 // Add a route to get current user profile (for authenticated users)
 app.get('/api/profile', isAuthenticated, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
     
     if (!user) {
@@ -326,6 +323,10 @@ app.get('/api/profile', isAuthenticated, async (req, res) => {
 // Update current user profile (for authenticated users)
 app.put('/api/profile', isAuthenticated, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     // Prevent users from changing their role
     const { role, ...allowedUpdates } = req.body;
     
@@ -357,10 +358,11 @@ app.put('/api/profile', isAuthenticated, async (req, res) => {
 // Delete user - admin only
 app.delete('/api/users/:id', isAdmin, async (req, res) => {
   try {
-    if (!mainDb) {
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
     }
-    const result = await mainDb.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
+    
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
@@ -373,11 +375,11 @@ app.delete('/api/users/:id', isAdmin, async (req, res) => {
 app.post('/setup/create-admin', async (req, res) => {
   // Check if admin already exists
   try {
-    if (!mainDb) {
+    if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
     }
     
-    const adminExists = await mainDb.collection('users').findOne({ role: 'admin' });
+    const adminExists = await db.collection('users').findOne({ role: 'admin' });
     if (adminExists) {
       return res.status(400).json({ 
         message: 'Admin account already exists',
@@ -397,7 +399,13 @@ app.post('/setup/create-admin', async (req, res) => {
       createdAt: new Date().toISOString()
     };
     
-    const result = await mainDb.collection('users').insertOne(adminUser);
+    // Hash the password
+    if (adminUser.password) {
+      const salt = await bcrypt.genSalt(10);
+      adminUser.password = await bcrypt.hash(adminUser.password, salt);
+    }
+    
+    const result = await db.collection('users').insertOne(adminUser);
     
     // For security, don't return the password
     const { password, ...adminWithoutPassword } = adminUser;
@@ -424,9 +432,36 @@ cron.schedule('*/5 * * * *', async () => {
   }
 });
 
+// Set up cron job to calculate averages at 11:59:59 PM daily
+cron.schedule('59 59 23 * * *', async () => {
+  try {
+    console.log('Running daily average calculation...');
+    await historicalDataService.calculateDailyAverage();
+    
+    // If it's Sunday, also calculate weekly average
+    const today = new Date();
+    if (today.getDay() === 0) {
+      console.log('Running weekly average calculation...');
+      await historicalDataService.calculateWeeklyAverage();
+    }
+    
+    // If it's the last day of the month, also calculate monthly average
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (tomorrow.getDate() === 1) {
+      console.log('Running monthly average calculation...');
+      await historicalDataService.calculateMonthlyAverage();
+    }
+    
+    console.log('Average calculations completed successfully');
+  } catch (error) {
+    console.error('Error in average calculation cron job:', error);
+  }
+});
+
 // Error handling middleware - should be after all routes
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Unhandled error:', err);
   res.status(500).json({
     message: 'Internal Server Error',
     error: process.env.NODE_ENV === 'production' ? null : err.message

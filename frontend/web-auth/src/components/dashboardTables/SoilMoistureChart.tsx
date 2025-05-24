@@ -1,13 +1,8 @@
-import { useState, useRef, RefObject, JSX } from "react";
+import React, { useState, useRef, useEffect, RefObject, JSX } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Download, X, Calendar } from "lucide-react";
+import { fetchAndFormatData, getDefaultData, DataItem } from "../../utils/dataAveraging";
 import { handleExport } from "../../utils/ExportUtils";
-
-// Data types
-type DataItem = {
-  value: number;
-  [key: string]: string | number;
-};
 
 type ExportModalProps = {
   isOpen: boolean;
@@ -15,6 +10,7 @@ type ExportModalProps = {
   chartRef: RefObject<HTMLDivElement | null>;
   chartData: DataItem[];
   xKey: string;
+  currentOverview: string; // Add this to track current time period
 };
 
 type DatePickerProps = {
@@ -24,7 +20,7 @@ type DatePickerProps = {
   setIsVisible: (visible: boolean) => void;
 };
 
-// Sample data
+// Sample data (kept for fallback purposes)
 const dataDay: DataItem[] = [
   { day: "Monday", value: 75 },
   { day: "Tuesday", value: 60 },
@@ -127,72 +123,92 @@ const ExportModal: React.FC<ExportModalProps> = ({
   chartRef,
   chartData,
   xKey,
+  currentOverview,
 }) => {
   const [exportFormat, setExportFormat] = useState<string>("PDF");
-  const [timeFrame, setTimeFrame] = useState<string>("days");
+  const [timeFrame, setTimeFrame] = useState<string>("current"); // Changed default to "current"
   const [exportType, setExportType] = useState<string>("predefined");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [showStartCalendar, setShowStartCalendar] = useState<boolean>(false);
   const [showEndCalendar, setShowEndCalendar] = useState<boolean>(false);
+  const [isLoadingExport, setIsLoadingExport] = useState<boolean>(false);
 
-  const getDataForTimeFrame = (): DataItem[] => {
-    switch (timeFrame) {
-      case "days":
-        return dataDay;
-      case "weeks":
-        return dataWeek;
-      case "months":
-        return dataMonth;
-      case "years":
-        return dataYear;
-      default:
-        return chartData;
+  // Set timeFrame to current overview when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeFrame("current");
+    }
+  }, [isOpen, currentOverview]);
+
+  const getDataForTimeFrame = async (): Promise<{ data: DataItem[]; key: string }> => {
+    if (timeFrame === "current") {
+      // Use the current chart data that's already loaded
+      return { data: chartData, key: xKey };
+    }
+    
+    // For other time frames, fetch fresh data from the database
+    try {
+      const { chartData: newData, xKey: newKey } = await fetchAndFormatData(timeFrame, 'soilMoisture');
+      return { data: newData, key: newKey };
+    } catch (error) {
+      console.error("Error fetching data for export:", error);
+      // Fallback to sample data if database fetch fails
+      switch (timeFrame) {
+        case "days":
+          return { data: dataDay, key: "day" };
+        case "weeks":
+          return { data: dataWeek, key: "week" };
+        case "months":
+          return { data: dataMonth, key: "month" };
+        case "years":
+          return { data: dataYear, key: "year" };
+        default:
+          return { data: chartData, key: xKey };
+      }
     }
   };
 
-  const getXKeyForTimeFrame = (): string => {
-    switch (timeFrame) {
-      case "days":
-        return "day";
-      case "weeks":
-        return "week";
-      case "months":
-        return "month";
-      case "years":
-        return "year";
-      default:
-        return xKey;
+  const handleExportClick = async () => {
+    setIsLoadingExport(true);
+    
+    try {
+      const { data: dataToExport, key: keyToUse } = await getDataForTimeFrame();
+
+      const exportConfig = {
+        format: exportFormat.toLowerCase(),
+        data: dataToExport,
+        key: keyToUse,
+        title: "Soil Moisture",
+        dateRange: exportType === "custom" ? { from: startDate, to: endDate } : null,
+      };
+
+      console.log("Exporting:", exportConfig);
+
+      // Determine the correct timeFrame for the export utility
+      let exportTimeFrame = timeFrame;
+      if (timeFrame === "current") {
+        exportTimeFrame = currentOverview;
+      }
+
+      await handleExport(
+        exportFormat.toLowerCase(), 
+        chartRef.current, 
+        dataToExport, 
+        keyToUse, 
+        "Soil Moisture", 
+        exportType === "custom" ? { from: startDate, to: endDate } : null,
+        exportTimeFrame
+      );
+      
+      onClose();
+    } catch (error) {
+      console.error("Export failed:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsLoadingExport(false);
     }
   };
-
-  const handleExportClick = () => {
-  const dataToExport = getDataForTimeFrame();
-  const keyToUse = getXKeyForTimeFrame();
-
-  const exportConfig = {
-    format: exportFormat.toLowerCase(),
-    data: dataToExport,
-    key: keyToUse,
-    title: "Soil Moisture",
-    dateRange: exportType === "custom" ? { from: startDate, to: endDate } : null,
-  };
-
-  console.log("Exporting:", exportConfig);
-
-  // Pass the timeFrame parameter to correctly filter date-specific data
-  handleExport(
-    exportFormat.toLowerCase(), 
-    chartRef.current, 
-    dataToExport, 
-    keyToUse, 
-    "Soil Moisture", 
-    exportType === "custom" ? { from: startDate, to: endDate } : null,
-    timeFrame // Add this parameter
-  );
-  
-  onClose();
-};
 
   if (!isOpen) return null;
 
@@ -224,24 +240,26 @@ const ExportModal: React.FC<ExportModalProps> = ({
           </div>
         </div>
 
-        <div className="mb-4">
+<div className="mb-4">
           <label className="block text-sm text-[#356B2C] mb-1">Export Type</label>
           <div className="flex gap-2">
             <button
               onClick={() => setExportType("predefined")}
-              className={`px-3 py-1 rounded-md text-sm flex-1 ${exportType === "predefined"
+              className={`px-3 py-1 rounded-md text-sm flex-1 ${
+                exportType === "predefined"
                   ? "bg-[#79A842] text-white"
                   : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-                }`}
+              }`}
             >
               Predefined Period
             </button>
             <button
               onClick={() => setExportType("custom")}
-              className={`px-3 py-1 rounded-md text-sm flex-1 ${exportType === "custom"
+              className={`px-3 py-1 rounded-md text-sm flex-1 ${
+                exportType === "custom"
                   ? "bg-[#79A842] text-white"
                   : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-                }`}
+              }`}
             >
               Custom Range
             </button>
@@ -253,18 +271,19 @@ const ExportModal: React.FC<ExportModalProps> = ({
             <label className="block text-sm text-[#356B2C] mb-1">Time Frame</label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { value: "days", label: "Day" },
-                { value: "weeks", label: "Week" },
-                { value: "months", label: "Month" },
-                { value: "years", label: "Year" },
+                { value: "current", label: `Current (${currentOverview})` },
+                { value: "days", label: "Days" },
+                { value: "weeks", label: "Weeks" },
+                { value: "months", label: "Months" },
               ].map((option) => (
                 <button
                   key={option.value}
                   onClick={() => setTimeFrame(option.value)}
-                  className={`px-3 py-1 rounded-md text-sm ${timeFrame === option.value
+                  className={`px-3 py-1 rounded-md text-sm ${
+                    timeFrame === option.value
                       ? "bg-[#79A842] text-white"
                       : "bg-gray-100 text-[#356B2C] hover:bg-gray-200"
-                    }`}
+                  }`}
                 >
                   {option.label}
                 </button>
@@ -316,14 +335,23 @@ const ExportModal: React.FC<ExportModalProps> = ({
           <button
             onClick={onClose}
             className="px-4 py-2 border border-[#356B2C] rounded-md text-[#356B2C] text-sm hover:bg-gray-50"
+            disabled={isLoadingExport}
           >
             Cancel
           </button>
           <button
             onClick={handleExportClick}
-            className="px-4 py-2 bg-[#356B2C] rounded-md text-white text-sm hover:bg-[#2a5823]"
+            className="px-4 py-2 bg-[#356B2C] rounded-md text-white text-sm hover:bg-[#2a5823] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            disabled={isLoadingExport}
           >
-            Export
+            {isLoadingExport ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Exporting...
+              </>
+            ) : (
+              "Export"
+            )}
           </button>
         </div>
       </div>
@@ -333,22 +361,48 @@ const ExportModal: React.FC<ExportModalProps> = ({
 
 const SoilMoistureChart = () => {
   const [overview, setOverview] = useState<string>("days");
+  const [chartData, setChartData] = useState<DataItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const chartRef = useRef<HTMLDivElement>(null);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [xKey, setXKey] = useState<string>("day");
 
-  let chartData: DataItem[];
-  let xKey: string;
+  // Fixed X-axis labels for each time period
+  const xAxisLabels = {
+    days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    weeks: ["Week 1", "Week 2", "Week 3", "Week 4"],
+    months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  };
 
-  if (overview === "days") {
-    chartData = dataDay;
-    xKey = "day";
-  } else if (overview === "weeks") {
-    chartData = dataWeek;
-    xKey = "week";
-  } else {
-    chartData = dataMonth;
-    xKey = "month";
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const { chartData: newData, xKey: newXKey } = await fetchAndFormatData(overview, 'soilMoisture');
+        
+        // Ensure data matches the fixed X-axis labels
+        const formattedData = xAxisLabels[overview as keyof typeof xAxisLabels].map((label) => {
+          const matchingData = newData.find(item => item[newXKey] === label);
+          return {
+            [newXKey]: label,
+            value: matchingData ? matchingData.value : 0
+          };
+        });
+
+        setChartData(formattedData);
+        setXKey(newXKey);
+      } catch (error) {
+        console.error("Error fetching soil moisture data:", error);
+        const { chartData: defaultData, xKey: defaultXKey } = getDefaultData(overview);
+        setChartData(defaultData);
+        setXKey(defaultXKey);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [overview]);
 
   return (
     <div className="bg-[#E6F0D3] p-4 rounded-2xl">
@@ -385,14 +439,47 @@ const SoilMoistureChart = () => {
         className="bg-white py-9 pr-8 rounded-xl border border-[#356B2C]"
         style={{ height: 420 }}
       >
-        <ResponsiveContainer width="100%" height={360}>
-          <LineChart data={chartData}>
-            <XAxis dataKey={xKey} />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="value" stroke="#79A842" fill="#D6E8B5" />
-          </LineChart>
-        </ResponsiveContainer>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#356B2C]"></div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={360}>
+            <LineChart data={chartData}>
+              <XAxis 
+                dataKey={xKey} 
+                tick={{ fontSize: 12, fill: '#356B2C' }}
+                axisLine={{ stroke: '#356B2C' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 12, fill: '#356B2C' }}
+                axisLine={{ stroke: '#356B2C' }}
+                label={{ 
+                  value: 'Soil Moisture', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle', fill: '#356B2C' }
+                }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#E6F0D3',
+                  border: '1px solid #356B2C',
+                  borderRadius: '4px'
+                }}
+                labelStyle={{ color: '#356B2C' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#79A842" 
+                strokeWidth={2}
+                dot={{ fill: '#79A842', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, fill: '#356B2C' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <ExportModal
@@ -401,6 +488,7 @@ const SoilMoistureChart = () => {
         chartRef={chartRef}
         chartData={chartData}
         xKey={xKey}
+        currentOverview={overview}
       />
     </div>
   );
