@@ -1,6 +1,7 @@
 // src/api/services/authService.ts
 import apiClient from '../client';
 
+// Define types
 export interface RegisterPayload {
   username: string;
   password: string;
@@ -36,8 +37,6 @@ export interface AuthResponse {
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_data';
-
-const authService = {
   // Register a new user
   register: async (userData: RegisterPayload): Promise<AuthResponse> => {
     try {
@@ -120,7 +119,6 @@ const authService = {
         }
       }
     }
-
     return null;
   },
 
