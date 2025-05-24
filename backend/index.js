@@ -1,16 +1,20 @@
+// index.js
 import { MongoClient, ObjectId } from 'mongodb';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
-
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
+import cron from 'node-cron';
 
 import userRoutes from './routes/user.route.js';
-import dummyDataRoutes from './routes/dummy_data.route.js';
-import MqttService from './services/mqtt.service.js';
+import sensorDataRoutes from './routes/sensor_data.route.js';
+import historicalDataRoutes from './routes/historical_data.route.js';
+import thingSpeakService from './services/thingspeak.service.js';
+import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
 let db;
@@ -20,92 +24,182 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+// Validate required environment variables
+const requiredEnvVars = ['MONGODB_URI', 'MONGODB_IOT_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 const port = process.env.PORT || 8080;
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173',// Vite's default port
-  // Add your frontend deployment URL here
+  'http://localhost:5173',
+  'http://localhost:5174', // Vite's default port
+  'https://maize-watch-dev.onrender.com', // Production domains
+  'https://maize-watch.onrender.com'
 ];
 
-// Connect to MongoDB directly for native driver usage
-const client = new MongoClient(process.env.MONGODB_URI);
-await client.connect();
-db = client.db(); // <-- assign to the global variable
-console.log('Connected to MongoDB successfully using native driver');
+// Debug middleware - log all requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} from origin: ${req.headers.origin || 'no origin'}`);
+  next();
+});
 
-// ALSO connect with Mongoose for Mongoose model operations
-try {
-  await mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 15000, // Increase from default 10000
-  });
-  console.log('Connected to MongoDB successfully using Mongoose');
-} catch (err) {
-  console.error('Mongoose connection error:', err);
-  process.exit(1);
-}
-
-// Middleware
-app.use(cors({
+// CORS configuration with both development and production settings
+const corsOptions = {
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // In development, be more permissive
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // In production, be strict
     if (allowedOrigins.indexOf(origin) === -1) {
+      console.warn(`Request from disallowed origin: ${origin}`);
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
     return callback(null, true);
   },
-  credentials: true,
+  credentials: true, // Allow cookies/authentication
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Body parser middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.use(express.json());
+// Connect to MongoDB
+const connectToMongo = async () => {
+  try {
+    console.log('Connecting to MongoDB...');
+    
+    // Connect to MongoDB directly for native driver usage
+    const client = new MongoClient(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000, // Increase from default 10000
+    });
+    await client.connect();
+    db = client.db(); // <-- assign to the global variable
+    console.log('Connected to MongoDB successfully using native driver');
 
-// Initialize MQTT service
-const mqttService = new MqttService(process.env.MQTT_BROKER);
+    // ALSO connect with Mongoose for Mongoose model operations
+    mongoose.set('strictQuery', false); // Recommended setting for Mongoose 7
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000, // Increase from default 10000
+    });
+    console.log('Connected to MongoDB successfully using Mongoose');
+    
+    // Test the IOT database connection (used by ThingSpeak service)
+    const iotConnection = mongoose.createConnection(process.env.MONGODB_IOT_URI, {
+      serverSelectionTimeoutMS: 15000,
+    });
+    await iotConnection.asPromise();
+    console.log('Connected to IOT MongoDB successfully');
+    
+    // Close this test connection as ThingSpeak service will create its own
+    await iotConnection.close();
+    
+    return { client, db };
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    throw err; // Let the caller handle the error
+  }
+};
+
+// Helper function to project fields
+const projectFields = (document, fields) => {
+  if (!fields) return document;
+  
+  const fieldArray = fields.split(',');
+  const projected = {};
+  
+  // Always include _id
+  projected._id = document._id;
+  
+  fieldArray.forEach(field => {
+    if (document[field] !== undefined) {
+      projected[field] = document[field];
+    }
+  });
+  
+  return projected;
+};
+
+// Initialize MQTT service (if you have one)
+let mqttService;
+try {
+  // Only initialize if MQTT_BROKER is configured
+  if (process.env.MQTT_BROKER) {
+    // Uncomment and implement if you have MqttService
+    // mqttService = new MqttService(process.env.MQTT_BROKER);
+  }
+} catch (err) {
+  console.error('MQTT service initialization error:', err);
+}
 
 // Routes
 app.use('/auth', userRoutes);
-app.use('/api', dummyDataRoutes);
+app.use('/api/sensors', sensorDataRoutes);
+app.use('/api/historical-data', historicalDataRoutes);
 
 // Test route
 app.get('/', (req, res) => {
-    res.send('Maize Watch API is running');
+  res.send('Maize Watch API is running');
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        message: 'Internal Server Error',
-        error: process.env.NODE_ENV === 'production' ? null : err.message
-    });
-});
-
-app.get('/health', (req, res) => {
-    // Check MongoDB connection
-    const isMongoConnected = mongoose.connection.readyState === 1;
-    
-    res.status(200).json({
-      status: 'ok',
-      message: 'Server is running',
-      mongodb: isMongoConnected ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString()
-    });
+// Enhanced health check endpoint
+app.get('/health', async (req, res) => {
+  // Check MongoDB connection
+  const isMongoConnected = mongoose.connection.readyState === 1;
+  
+  // Also check ThingSpeak connection as part of health check
+  let thingSpeakStatus = 'not tested';
+  try {
+    const savedCount = await thingSpeakService.syncDataFromThingSpeak();
+    thingSpeakStatus = `connected - ${savedCount} records synced`;
+  } catch (error) {
+    console.error('ThingSpeak connection error during health check:', error);
+    thingSpeakStatus = 'error: ' + error.message;
+  }
+  
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    mongodb: isMongoConnected ? 'connected' : 'disconnected',
+    thingspeak: thingSpeakStatus,
+    timestamp: new Date().toISOString()
   });
+});
 
 // API Routes - Protected by admin middleware
 // Get all users - admin only
 app.get('/api/users', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    const { fields } = req.query;
     const users = await db.collection('users').find({}).toArray();
+    
+    // Apply field projection if requested
+    if (fields) {
+      const projectedUsers = users.map(user => projectFields(user, fields));
+      return res.json(projectedUsers);
+    }
+    
     res.json(users);
   } catch (err) {
     console.error('Error getting users:', err);
@@ -116,8 +210,28 @@ app.get('/api/users', isAdmin, async (req, res) => {
 // Create user - admin only
 app.post('/api/users', isAdmin, async (req, res) => {
   try {
-    const result = await db.collection('users').insertOne(req.body);
-    res.status(201).json({ ...req.body, _id: result.insertedId });
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    // Clone the request body to avoid modifying the original
+    const userData = {...req.body};
+    
+    // Hash password if provided
+    if (userData.password) {
+      const salt = await bcrypt.genSalt(10);
+      userData.password = await bcrypt.hash(userData.password, salt);
+    }
+
+    const result = await db.collection('users').insertOne(userData);
+    
+    // Don't return the password in the response
+    const { password, ...userWithoutPassword } = userData;
+    
+    res.status(201).json({ 
+      ...userWithoutPassword, 
+      _id: result.insertedId 
+    });
   } catch (err) {
     console.error('Error creating user:', err);
     res.status(500).json({ error: 'Failed to create user' });
@@ -127,8 +241,21 @@ app.post('/api/users', isAdmin, async (req, res) => {
 // Get single user - admin only
 app.get('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    const { fields } = req.query;
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
     if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    // Apply field projection if requested
+    if (fields) {
+      const projectedUser = projectFields(user, fields);
+      return res.json(projectedUser);
+    }
+    
     res.json(user);
   } catch (err) {
     console.error('Error getting user:', err);
@@ -139,21 +266,102 @@ app.get('/api/users/:id', isAdmin, async (req, res) => {
 // Update user - admin only
 app.put('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    // Add updatedAt timestamp
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date().toISOString()
+    };
+    
     const result = await db.collection('users').updateOne(
       { _id: new ObjectId(req.params.id) },
-      { $set: req.body }
+      { $set: updateData }
     );
-    if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'User updated successfully' });
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Fetch and return the updated user
+    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = updatedUser;
+    
+    res.json(userWithoutPassword);
   } catch (err) {
     console.error('Error updating user:', err);
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
+// Add a route to get current user profile (for authenticated users)
+app.get('/api/profile', isAuthenticated, async (req, res) => {
+  try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Remove password from response
+    const { password, ...userProfile } = user;
+    res.json(userProfile);
+  } catch (err) {
+    console.error('Error getting user profile:', err);
+    res.status(500).json({ error: 'Failed to fetch user profile' });
+  }
+});
+
+// Update current user profile (for authenticated users)
+app.put('/api/profile', isAuthenticated, async (req, res) => {
+  try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
+    // Prevent users from changing their role
+    const { role, ...allowedUpdates } = req.body;
+    
+    const updateData = {
+      ...allowedUpdates,
+      updatedAt: new Date().toISOString()
+    };
+    
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(req.user.id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Fetch and return the updated user profile
+    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.user.id) });
+    const { password, ...userProfile } = updatedUser;
+    
+    res.json(userProfile);
+  } catch (err) {
+    console.error('Error updating user profile:', err);
+    res.status(500).json({ error: 'Failed to update user profile' });
+  }
+});
+
 // Delete user - admin only
 app.delete('/api/users/:id', isAdmin, async (req, res) => {
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'User deleted successfully' });
@@ -167,6 +375,10 @@ app.delete('/api/users/:id', isAdmin, async (req, res) => {
 app.post('/setup/create-admin', async (req, res) => {
   // Check if admin already exists
   try {
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+    
     const adminExists = await db.collection('users').findOne({ role: 'admin' });
     if (adminExists) {
       return res.status(400).json({ 
@@ -187,6 +399,12 @@ app.post('/setup/create-admin', async (req, res) => {
       createdAt: new Date().toISOString()
     };
     
+    // Hash the password
+    if (adminUser.password) {
+      const salt = await bcrypt.genSalt(10);
+      adminUser.password = await bcrypt.hash(adminUser.password, salt);
+    }
+    
     const result = await db.collection('users').insertOne(adminUser);
     
     // For security, don't return the password
@@ -197,31 +415,114 @@ app.post('/setup/create-admin', async (req, res) => {
       admin: { ...adminWithoutPassword, _id: result.insertedId }
     });
     
-    // Delete this route after use for security
-    // NOTE: In production, you should set up the admin via database directly
-    delete app._router.stack.find(layer => 
-      layer.route && layer.route.path === '/setup/create-admin'
-    );
-    
   } catch (err) {
     console.error('Error creating admin:', err);
     res.status(500).json({ error: 'Failed to create admin user' });
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on port ${port}`);
-});
-
-// Handle application shutdown gracefully
-process.on('SIGINT', async () => {
+// Schedule data sync with ThingSpeak every 5 minutes
+cron.schedule('*/5 * * * *', async () => {
+  console.log('Running scheduled ThingSpeak sync...');
   try {
-    await mongoose.connection.close();
-    await client.close();
-    console.log('MongoDB connections closed.');
-    process.exit(0);
-  } catch (err) {
-    console.error('Error during shutdown:', err);
-    process.exit(1);
+    const savedCount = await thingSpeakService.syncDataFromThingSpeak();
+    console.log(`Scheduled sync completed successfully: ${savedCount} records saved`);
+  } catch (error) {
+    console.error('Error in scheduled ThingSpeak sync:', error);
   }
 });
+
+// Set up cron job to calculate averages at 11:59:59 PM daily
+cron.schedule('59 59 23 * * *', async () => {
+  try {
+    console.log('Running daily average calculation...');
+    await historicalDataService.calculateDailyAverage();
+    
+    // If it's Sunday, also calculate weekly average
+    const today = new Date();
+    if (today.getDay() === 0) {
+      console.log('Running weekly average calculation...');
+      await historicalDataService.calculateWeeklyAverage();
+    }
+    
+    // If it's the last day of the month, also calculate monthly average
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (tomorrow.getDate() === 1) {
+      console.log('Running monthly average calculation...');
+      await historicalDataService.calculateMonthlyAverage();
+    }
+    
+    console.log('Average calculations completed successfully');
+  } catch (error) {
+    console.error('Error in average calculation cron job:', error);
+  }
+});
+
+// Error handling middleware - should be after all routes
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'production' ? null : err.message
+  });
+});
+
+// Start server after connecting to MongoDB
+const startServer = async () => {
+  let client;
+  try {
+    const connections = await connectToMongo();
+    client = connections.client;
+    
+    // Initial data sync on startup
+    try {
+      console.log('Performing initial ThingSpeak data synchronization...');
+      const savedCount = await thingSpeakService.syncDataFromThingSpeak();
+      console.log(`Initial ThingSpeak sync completed successfully: ${savedCount} records saved`);
+    } catch (syncError) {
+      console.error('Initial ThingSpeak sync failed:', syncError);
+      // Continue starting server despite sync failure
+    }
+    
+    const server = app.listen(port, '0.0.0.0', () => {
+      console.log(`✅ Server running on port ${port}`);
+      console.log(`Health check available at: http://localhost:${port}/health`);
+    });
+    
+    // Handle application shutdown gracefully
+    const gracefulShutdown = async (signal) => {
+      console.log(`Received ${signal}. Shutting down gracefully...`);
+      server.close(async () => {
+        try {
+          console.log('Closing database connections...');
+          if (mongoose.connection) await mongoose.connection.close();
+          if (client) await client.close();
+          console.log('MongoDB connections closed.');
+          process.exit(0);
+        } catch (err) {
+          console.error('Error during shutdown:', err);
+          process.exit(1);
+        }
+      });
+      
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+      }, 10000);
+    };
+    
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    if (client) await client.close();
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();

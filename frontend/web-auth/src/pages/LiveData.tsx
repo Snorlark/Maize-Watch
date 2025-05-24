@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FaThermometerHalf, FaExclamationCircle, FaMountain } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
@@ -14,6 +13,7 @@ interface SensorData {
     temperature: number;
     humidity: number;
     soil_moisture: number;
+    soil_ph: number;
     light_level: number;
   };
 }
@@ -26,10 +26,31 @@ const LiveData: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/latest');
-        if (response.data && response.data.length > 0) {
-          setSensorData(response.data[0]); // Get the first field's data
-        }
+        const response = await axios.get('http://localhost:8080/api/sensors/latest');
+        console.log('Full API response:', response.data); // Debug log
+        
+        if (response.data && response.data.data) {
+  console.log('Sensor data structure:', response.data.data);
+
+  // Transform incoming flat data to match the SensorData interface
+  const raw = response.data.data;
+  const transformedData: SensorData = {
+    _id: '', // If your API doesn't return this, you can omit or generate one
+    field_id: '', // Same here
+    timestamp: raw.timestamp,
+    measurements: {
+      temperature: raw.temperature,
+      humidity: raw.humidity,
+      soil_moisture: raw.soilMoisture,
+      soil_ph: raw.soilPh,
+      light_level: raw.lightIntensity,
+    },
+  };
+
+  setSensorData(transformedData);
+} else {
+  setError('No sensor data received from API');
+}
         setLoading(false);
       } catch (err) {
         setError('Failed to fetch sensor data');
@@ -38,15 +59,14 @@ const LiveData: React.FC = () => {
       }
     };
 
-    fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    fetchData(); // Initial fetch
+    // Refresh data every 3 seconds for more real-time updates
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
       <main className="py-10">
         <div className="text-center">Loading sensor data...</div>
       </main>
@@ -56,7 +76,6 @@ const LiveData: React.FC = () => {
 
   if (error) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
       <main className="py-10">
         <div className="text-center text-red-500">{error}</div>
       </main>
@@ -66,7 +85,6 @@ const LiveData: React.FC = () => {
 
   if (!sensorData) return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
       <main className="py-10">
         <div className="text-center">No sensor data available</div>
       </main>
@@ -74,12 +92,19 @@ const LiveData: React.FC = () => {
     </div>
   );
 
-  const { measurements } = sensorData;
+  // Safety check for measurements and provide default values
+  const measurements = {
+    temperature: sensorData?.measurements?.temperature ?? 0,
+    humidity: sensorData?.measurements?.humidity ?? 0,
+    soil_moisture: sensorData?.measurements?.soil_moisture ?? 0,
+    soil_ph: sensorData?.measurements?.soil_ph ?? 0,
+    light_level: sensorData?.measurements?.light_level ?? 0,
+  };
 
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
 
-      <Navbar />
+      
 
       <main className="py-10">
         <div className="flex flex-col lg:flex-row gap-10">
@@ -122,10 +147,13 @@ const LiveData: React.FC = () => {
               </ul>
             </div>
           </div>
-
-
-
           <div className="w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+
+
+
+
+
             {/* Soil Moisture */}
             <div className="bg-(--color-rwhite) rounded-xl p-5 shadow-md text-center">
               <FaMountain className="text-3xl mb-2 mx-auto text-[#7a5c2d]" />
@@ -140,19 +168,26 @@ const LiveData: React.FC = () => {
               </span>            
             </div>
 
-            {/* Soil Humidity */}
+
+
+
+
+            {/* Soil Ph Level */}
             <div className="bg-(--color-rwhite) rounded-xl p-5 shadow-md text-center">
               <FaMountain className="text-3xl mb-2 mx-auto text-[#7a5c2d]" />
-              <p className="text-sm font-semibold uppercase">Soil Humidity:</p>
-              <div className="text-4xl text-(--color-dgreen) font-bold my-2">{measurements.humidity}</div>
+              <p className="text-sm font-semibold uppercase">Soil pH Level:</p>
+              <div className="text-4xl text-(--color-dgreen) font-bold my-2">{measurements.soil_ph}</div>
               <span className={`inline-block ${
-                measurements.humidity < 40 
+                measurements.soil_ph > 7 
                   ? 'bg-(--color-lred) text-(--color-red)' 
                   : 'bg-(--color-llgreen) text-(--color-dgreen)'
               } text-xs font-medium px-3 py-1 rounded-full`}>
-                {measurements.humidity < 40 ? 'Low Humidity' : 'Best Condition'}
+                {measurements.soil_ph < 7 ? 'Good Condition' : 'Soil pH indicates alkalinity'}
               </span>          
             </div>
+
+
+
 
             {/* Humidity */}
             <div className="bg-(--color-rwhite) rounded-2xl p-6 shadow-md text-left space-y-4">
@@ -162,7 +197,7 @@ const LiveData: React.FC = () => {
               </div>
               <div className="relative w-full h-10 bg-[#e0e0e1] rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#2d67c4] h-full rounded-full flex items-center justify-start px-2 text-white text-sm font-semibold"
+                  className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold"
                   style={{ width: `${measurements.humidity}%` }}
                 >
                   {measurements.humidity}%
@@ -179,6 +214,9 @@ const LiveData: React.FC = () => {
               </div>
             </div>
 
+
+
+
             {/* Light Intensity */}
             <div className="bg-(--color-rwhite) rounded-2xl p-6 shadow-md text-left space-y-4">
               <div className="flex items-center gap-2">
@@ -187,10 +225,14 @@ const LiveData: React.FC = () => {
               </div>
               <div className="relative w-full h-10 bg-[#e0e0e1] rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#e0bc46] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                  style={{ width: `${measurements.light_level}%` }}
+                  className={`h-full rounded-full flex items-center justify-center text-white text-sm font-semibold" ${
+                    measurements.light_level < 20}`}
+                  style={{
+                    width: `${measurements.light_level} LUX`,
+                    backgroundColor: '#e0bc46',
+                  }}
                 >
-                  {measurements.light_level}%
+                  {measurements.light_level} LUX
                 </div>
               </div>
               <div className="text-center">

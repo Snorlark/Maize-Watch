@@ -26,9 +26,9 @@ const LiveData: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/latest');
+        const response = await axios.get('http://localhost:8080/api/sensors/latest');
         if (response.data && response.data.length > 0) {
-          setSensorData(response.data[0]); // Get the first field's data
+          setSensorData(response.data[0]);
         }
         setLoading(false);
       } catch (err) {
@@ -38,9 +38,9 @@ const LiveData: React.FC = () => {
       }
     };
 
-    fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    fetchData(); // Initial fetch
+    // Refresh data every 3 seconds for more real-time updates
+    const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -80,6 +80,9 @@ const LiveData: React.FC = () => {
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
 
       <Navbar />
+
+
+
 
       <main className="py-10">
         <div className="flex flex-col lg:flex-row gap-10">
@@ -207,7 +210,13 @@ const LiveData: React.FC = () => {
         </div>
       </main>
 
+
+
+
+
+
       <Footer />
+      
 
     </div>
   )

@@ -24,8 +24,7 @@ const UserForm: React.FC<UserFormProps> = ({
     contactNumber: '',
     address: '',
     role: 'farmer',
-    email: '',
-    lot: 0,
+    
   });
 
   useEffect(() => {
@@ -37,8 +36,7 @@ const UserForm: React.FC<UserFormProps> = ({
         contactNumber: initialData.contactNumber,
         address: initialData.address,
         role: initialData.role,
-        email: initialData.email || '',
-        lot: initialData.lot || 0,
+        
       });
     }
   }, [initialData, mode]);
@@ -79,17 +77,8 @@ const UserForm: React.FC<UserFormProps> = ({
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lot #</label>
-              <input
-                type="number"
-                name="lot"
-                value={formData.lot}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <div className="col-span-1">
+            
+            <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
               <input
                 type="text"
@@ -138,16 +127,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+           
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
               <input
@@ -170,20 +150,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="farmer">Farmer</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-              </select>
-            </div>
+            
           </div>
           
           <div className="flex justify-end gap-2">

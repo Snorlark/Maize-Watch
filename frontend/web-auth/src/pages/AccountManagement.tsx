@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { PlusCircle } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
 import UserForm from "../components/UserForm";
@@ -102,7 +101,7 @@ export default function AccountManagement() {
 
   return (
     <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <Navbar />
+      
 
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
