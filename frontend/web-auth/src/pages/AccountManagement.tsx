@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
 import UserForm from "../components/UserForm";
 import DeleteConfirmation from "../components/DeleteConfirmation";
-import { User } from "../api/client";
+import { User } from "../api/services/authService";
 import { useUserContext } from "../contexts/UserContext";
 
 export default function AccountManagement() {
@@ -29,16 +29,19 @@ export default function AccountManagement() {
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
 
+  // Check if user has admin or super_admin role
+  const hasAdminAccess = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+
   // Fetch users on component mount and check authentication
   useEffect(() => {
     // First set authChecked to true to indicate we've performed the check
     setAuthChecked(true);
     
-    // Only fetch users if the user is an admin
-    if (isAdmin) {
+    // Only fetch users if the user has admin access
+    if (hasAdminAccess) {
       fetchUsers();
     }
-  }, [isAdmin, fetchUsers]); // Add isAdmin as a dependency to re-run if it changes
+  }, [hasAdminAccess, fetchUsers]); // Add hasAdminAccess as a dependency to re-run if it changes
 
   // Open create user modal
   const handleOpenCreateModal = () => {
@@ -95,7 +98,7 @@ export default function AccountManagement() {
   };
 
   // Only redirect after we've confirmed the auth status
-  if (authChecked && !isAdmin) {
+  if (authChecked && !hasAdminAccess) {
     return <Navigate to="/unauthorized" replace />;
   }
 
@@ -107,7 +110,7 @@ export default function AccountManagement() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold">Account Management</h1>
           <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-            Admin Access
+            {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
           </div>
         </div>
 

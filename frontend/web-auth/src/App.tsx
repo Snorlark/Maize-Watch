@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import AccountManagement from './pages/AccountManagement';
 import LiveData from './pages/LiveData';
+import ActivityLogPage from './pages/ActivityLog'; // <--- Import the ActivityLogPage
 
 // Layout component for authenticated pages with Navbar
 const AuthenticatedLayout = () => {
@@ -24,9 +25,6 @@ const AuthenticatedLayout = () => {
     </>
   );
 };
-
-// Import Outlet
-import { Outlet } from 'react-router-dom';
 
 const App: React.FC = () => {
   return (
@@ -39,25 +37,30 @@ const App: React.FC = () => {
 
         {/* Protected Routes that require authentication */}
         <Route element={<ProtectedRoute />}>
-          {/* Layout with Navbar for authenticated pages */}
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/livedata" element={<LiveData />} />
           </Route>
         </Route>
-        
+
         {/* Admin-only routes */}
         <Route element={<ProtectedRoute requireAdmin={true} redirectPath="/login" />}>
           <Route element={<AuthenticatedLayout />}>
-            {/* Add admin-specific routes here */}
-            <Route 
-              path="/accountmanagement" 
+            <Route
+              path="/accountmanagement"
               element={
                 <UserProvider>
                   <AccountManagement />
                 </UserProvider>
-              } 
+              }
             />
+          </Route>
+        </Route>
+
+        {/* Super Admin-only route */}
+        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="/login" />}>
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="/admin/activity-logs" element={<ActivityLogPage />} />
           </Route>
         </Route>
 

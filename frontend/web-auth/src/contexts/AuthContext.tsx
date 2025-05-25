@@ -35,6 +35,24 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Add to your existing auth utilities
+export const hasRole = (userRole: string, requiredRole: string): boolean => {
+  const roleHierarchy: Record<string, number> = {
+    'farmer': 1,
+    'admin': 2,
+    'super_admin': 3
+  };
+  
+  const userLevel = roleHierarchy[userRole] || 0;
+  const requiredLevel = roleHierarchy[requiredRole] || 0;
+  
+  return userLevel >= requiredLevel;
+};
+
+export const isSuperAdmin = (userRole: string): boolean => {
+  return userRole === 'super_admin';
+};
+
 // Inactivity timeout in milliseconds (15 minutes = 900000ms)
 const INACTIVITY_TIMEOUT = 900000;
 
