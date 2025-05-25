@@ -74,7 +74,7 @@ const Navbar: React.FC = () => {
             Live Data
           </NavLink>
 
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
             <NavLink
               to="/accountmanagement"
               className={({ isActive }) =>
@@ -85,6 +85,17 @@ const Navbar: React.FC = () => {
               Account Management
             </NavLink>
           )}
+          {user?.role === 'super_admin'&& (
+        <NavLink 
+          to="/admin/activity-logs" 
+          className={({ isActive }) =>
+                isActive ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
+                  : "hover:text-[#456C2D] transition"
+              }
+            >
+          Activity Log
+        </NavLink>
+      )}
         </nav>
         <button onClick={() => setMenuOpen(true)} className="text-[#1E441E]">
           <Menu size={28} />
