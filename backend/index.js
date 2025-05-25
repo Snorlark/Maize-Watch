@@ -17,6 +17,11 @@ import thingSpeakService from './services/thingspeak.service.js';
 import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
+// Convert CommonJS requires to ES module imports
+import authRoutes from './routes/authRoutes.js';
+import usersRoutes from './routes/user.route.js';
+import activityLogsRoutes from './routes/activityLogs.js';
+
 let db;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +48,12 @@ const allowedOrigins = [
   'https://maize-watch-dev.onrender.com', // Production domains
   'https://maize-watch.onrender.com'
 ];
+
+// Trust proxy for correct IP addresses (important for activity logging)
+app.set('trust proxy', true);
+
+app.use(cors());
+app.use(express.json());
 
 // Debug middleware - log all requests
 app.use((req, res, next) => {
@@ -149,10 +160,13 @@ try {
   console.error('MQTT service initialization error:', err);
 }
 
-// Routes
+// Routes - Changed from require() to ES module imports
 app.use('/auth', userRoutes);
 app.use('/api/sensors', sensorDataRoutes);
 app.use('/api/historical-data', historicalDataRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/activity-logs', activityLogsRoutes);
 
 // Test route
 app.get('/', (req, res) => {

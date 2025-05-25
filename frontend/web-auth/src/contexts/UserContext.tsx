@@ -1,20 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { userService, User as ClientUser } from "../api/client";
+import { userService } from "../api/client";
 import { useAuth } from './AuthContext';
-import { User as AuthUser } from "../api/services/authService";
+import { User } from "../api/services/authService"; // Single source of truth for User type
 import authService from '../api/services/authService';
 
 // Define the context shape
 interface UserContextType {
-  users: ClientUser[];
-  farmers: ClientUser[]; // Added farmers specifically
+  users: User[];
+  farmers: User[]; // Farmers filtered from users
   loading: boolean;
   error: string | null;
-  currentUser: ClientUser | null;
+  currentUser: User | null;
   isAdmin: boolean;
+  hasAdminAccess: boolean; // New property for both admin and super_admin
   fetchUsers: () => Promise<void>;
-  addUser: (userData: Omit<ClientUser, "_id">) => Promise<ClientUser>;
-  updateUserById: (id: string, userData: Partial<ClientUser>) => Promise<ClientUser>;
+  addUser: (userData: Omit<User, "_id">) => Promise<User>;
+  updateUserById: (id: string, userData: Partial<User>) => Promise<User>;
   deleteUserById: (id: string) => Promise<void>;
 }
 
@@ -26,33 +27,22 @@ interface UserProviderProps {
   children: ReactNode;
 }
 
-// Helper function to convert AuthUser to ClientUser
-const convertAuthUserToClientUser = (authUser: AuthUser | null): ClientUser | null => {
-  if (!authUser) return null;
-  
-  return {
-    _id: authUser._id || authUser.userId || '',
-    username: authUser.username,
-    fullName: authUser.fullName || '',
-    contactNumber: authUser.contactNumber || '',
-    address: authUser.address || '',
-    role: authUser.role
-  };
-};
-
 // Provider component
 export function UserProvider({ children }: UserProviderProps) {
   const { user, isAuthenticated } = useAuth();
-  const [users, setUsers] = useState<ClientUser[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fetchTriggered, setFetchTriggered] = useState(false);
   
-  // Convert AuthUser to ClientUser
-  const clientUser = convertAuthUserToClientUser(user);
+  // Current user is directly from AuthContext (no conversion needed)
+  const currentUser = user;
 
-  // Compute isAdmin whenever user changes
+  // Compute isAdmin for backward compatibility (only admin role)
   const isAdmin = user?.role === 'admin';
+
+  // New property to check for both admin and super_admin access
+  const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin';
 
   // Derive farmers from users whenever users change
   const farmers = users.filter(user => user.role === 'Farmer');
@@ -60,14 +50,15 @@ export function UserProvider({ children }: UserProviderProps) {
   console.log('UserProvider initialized:', { 
     isAuthenticated, 
     isAdmin,
-    userId: user?._id,
+    hasAdminAccess,
+    userId: user?._id || user?.userId,
     userRole: user?.role
   });
 
   // Fetch users only when explicitly called 
   // or when component is mounted with valid admin user
   useEffect(() => {
-    const shouldFetchUsers = isAuthenticated && isAdmin && !fetchTriggered;
+    const shouldFetchUsers = isAuthenticated && hasAdminAccess && !fetchTriggered;
     
     if (shouldFetchUsers) {
       console.log('Initiating fetchUsers in UserProvider effect');
@@ -75,16 +66,16 @@ export function UserProvider({ children }: UserProviderProps) {
       fetchUsers().catch(err => {
         console.error('Failed initial user fetch:', err);
       });
-    } else if (!isAdmin) {
-      // Clear users array when not admin
+    } else if (!hasAdminAccess) {
+      // Clear users array when not admin or super_admin
       setUsers([]);
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, hasAdminAccess]);
 
   // Function to fetch all users
   const fetchUsers = async () => {
-    console.log('fetchUsers called, isAdmin:', isAdmin, 'isAuthenticated:', isAuthenticated);
+    console.log('fetchUsers called, hasAdminAccess:', hasAdminAccess, 'isAuthenticated:', isAuthenticated);
     
     // Verify authentication state before attempting to fetch
     if (!isAuthenticated) {
@@ -94,8 +85,8 @@ export function UserProvider({ children }: UserProviderProps) {
       return;
     }
     
-    // Immediately return if not admin to prevent unauthorized requests
-    if (!isAdmin) {
+    // Immediately return if not admin or super_admin to prevent unauthorized requests
+    if (!hasAdminAccess) {
       console.warn('Non-admin user attempted to fetch users');
       setLoading(false);
       setError("Unauthorized: Admin privileges required");
@@ -118,25 +109,28 @@ export function UserProvider({ children }: UserProviderProps) {
       const fetchedUsers = await userService.getUsers();
       console.log(`Fetched ${fetchedUsers.length} users successfully`);
       setUsers(fetchedUsers);
-    }  finally {
+    } catch (err: any) {
+      
+    } finally {
       setLoading(false);
     }
   };
 
   // Function to add a new user
-  const addUser = async (userData: Omit<ClientUser, "_id">) => {
-    if (!isAdmin) {
+  const addUser = async (userData: Omit<User, "_id">) => {
+    if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
       throw error;
     }
 
     try {
+      setError(null);
       const newUser = await userService.createUser(userData);
       setUsers((prevUsers) => [...prevUsers, newUser]);
       return newUser;
     } catch (err: any) {
-      const errorMessage = err?.message || "Failed to add user. Please try again.";
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to add user. Please try again.";
       setError(errorMessage);
       console.error("Error adding user:", err);
       throw err;
@@ -144,21 +138,22 @@ export function UserProvider({ children }: UserProviderProps) {
   };
 
   // Function to update a user
-  const updateUserById = async (id: string, userData: Partial<ClientUser>) => {
-    if (!isAdmin) {
+  const updateUserById = async (id: string, userData: Partial<User>) => {
+    if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
       throw error;
     }
 
     try {
+      setError(null);
       const updatedUser = await userService.updateUser(id, userData);
       setUsers((prevUsers) =>
         prevUsers.map((user) => (user._id === id ? updatedUser : user))
       );
       return updatedUser;
     } catch (err: any) {
-      const errorMessage = err?.message || "Failed to update user. Please try again.";
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to update user. Please try again.";
       setError(errorMessage);
       console.error("Error updating user:", err);
       throw err;
@@ -167,17 +162,18 @@ export function UserProvider({ children }: UserProviderProps) {
 
   // Function to delete a user
   const deleteUserById = async (id: string) => {
-    if (!isAdmin) {
+    if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
       throw error;
     }
 
     try {
+      setError(null);
       await userService.deleteUser(id);
       setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id));
     } catch (err: any) {
-      const errorMessage = err?.message || "Failed to delete user. Please try again.";
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete user. Please try again.";
       setError(errorMessage);
       console.error("Error deleting user:", err);
       throw err;
@@ -186,15 +182,16 @@ export function UserProvider({ children }: UserProviderProps) {
 
   const contextValue: UserContextType = {
     users,
-    farmers, // Added farmers to context value
+    farmers,
     loading,
     error,
     fetchUsers,
     addUser,
     updateUserById,
     deleteUserById,
-    currentUser: clientUser,
-    isAdmin
+    currentUser,
+    isAdmin,
+    hasAdminAccess
   };
 
   return (

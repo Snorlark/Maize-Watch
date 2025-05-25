@@ -2,22 +2,24 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import authService from '../api/services/authService';
 
-// Define the User interface based on your MongoDB schema - removed unnecessary fields
-export interface User {
-  _id?: string;
-  username: string;
-  password?: string;
-  fullName: string;
-  contactNumber: string;
-  address: string;
-  role: string;
-  createdAt?: string;
-  __v?: number;
-}
+// Import the User interface from authService to ensure consistency
+import type { User } from '../api/services/authService';
+
+// Alternative: If you can't import from authService, define a compatible interface
+// export interface User {
+//   _id?: string;
+//   username: string;
+//   password?: string;
+//   fullName?: string; // Make optional to match authService
+//   contactNumber?: string; // Consider making optional if needed
+//   address?: string; // Consider making optional if needed
+//   role: string;
+//   createdAt?: string;
+//   __v?: number;
+// }
 
 // Base URL configuration
 const isDevelopment = import.meta.env?.MODE === 'development';
-// Make sure this URL matches your actual backend server address
 const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'http://localhost:8080';
 console.log('API Base URL being used:', apiBaseUrl);
 
@@ -27,8 +29,8 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // Increased to 30 seconds timeout
-  withCredentials: false, // Changed to false to avoid CORS issues
+  timeout: 30000,
+  withCredentials: false,
 });
 
 // Add auth token to requests if available
@@ -58,60 +60,61 @@ apiClient.interceptors.response.use(
     
     // Handle authentication errors
     if (error.response?.status === 401) {
-      console.log('Authentication error - clearing token');
-      localStorage.removeItem('token');
+      console.log('Authentication error - clearing tokens');
+      authService.logout(); // Use authService logout for consistency
       
-      // Don't force redirect here - let the component handle it
+      // You can emit an event or use a state management solution to notify components
+      window.dispatchEvent(new CustomEvent('auth:logout'));
     }
+    
     return Promise.reject(error);
   }
 );
 
 // User API services
 export const userService = {
-  // Login user
+  // Login user - now uses authService for consistency
   login: async (credentials: { username: string; password: string }): Promise<{ token: string; user: User }> => {
     try {
       console.log('Making login request to:', `${apiBaseUrl}/auth/login`);
-      // Use the internal apiClient but override the withCredentials setting for this specific request
-      const response = await apiClient.post('/auth/login', credentials, { withCredentials: false });
       
-      // If login is successful, store the token
-      if (response.data && response.data.token) {
-        localStorage.setItem('token', response.data.token);
+      // Use authService for login to maintain consistency
+      const result = await authService.login(credentials);
+      
+      if (result.success && result.data) {
+        return {
+          token: result.data.token,
+          user: result.data.user // This should now match the imported User type
+        };
+      } else {
+        throw new Error(result.message || 'Login failed');
       }
-      
-      return response.data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
   },
   
-  // Get all users with field selection (to avoid requesting unused fields)
+  // Get all users with field selection
   getUsers: async (): Promise<User[]> => {
     try {
-      // Check if token exists before making the request
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication token is missing');
+      // Check authentication first
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
       }
       
       console.log('Making getUsers request to:', `${apiBaseUrl}/api/users`);
-      // Modify to request only needed fields
       const response = await apiClient.get('/api/users', {
         params: {
-          fields: 'username,fullName,contactNumber,address,role' // Only request needed fields
+          fields: 'username,fullName,contactNumber,address,role'
         }
       });
       
-      // Filter farmers on the client side
       return response.data;
     } 
     catch (error: any) {
       console.error('Error in getUsers:', error);
       
-      // Add specific handling for timeout errors
       if (error.code === 'ECONNABORTED') {
         console.error('Connection timeout. Is your backend server running at', apiBaseUrl, '?');
       }
@@ -120,9 +123,13 @@ export const userService = {
     }
   },
 
-  // Get a single user by ID - request only needed fields
+  // Get a single user by ID
   getUserById: async (id: string): Promise<User> => {
     try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
       const response = await apiClient.get(`/api/users/${id}`, {
         params: {
           fields: 'username,fullName,contactNumber,address,role'
@@ -138,6 +145,10 @@ export const userService = {
   // Create a new user
   createUser: async (userData: Omit<User, "_id">): Promise<User> => {
     try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
       const response = await apiClient.post('/api/users', userData);
       return response.data;
     } catch (error) {
@@ -147,27 +158,34 @@ export const userService = {
   },
 
   // Update an existing user
-  updateUser: async (
-    id: string,
-    userData: Partial<User>
-  ): Promise<User> => {
+  updateUser: async (id: string, userData: Partial<User>): Promise<User> => {
     try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
       const response = await apiClient.put(`/api/users/${id}`, userData);
-      return response.data; // This now returns the updated user object
+      return response.data;
     } catch (error) {
       console.error(`Error updating user ${id}:`, error);
       throw error;
     }
   },
 
+  // Get current user profile
   getProfile: async (): Promise<User> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication token is missing');
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
       }
       
       const response = await apiClient.get('/api/profile');
+      
+      // Update stored user data
+      if (response.data) {
+        localStorage.setItem('user_data', JSON.stringify(response.data));
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Error getting user profile:', error);
@@ -175,14 +193,20 @@ export const userService = {
     }
   },
 
+  // Update current user profile
   updateProfile: async (userData: Partial<User>): Promise<User> => {
     try {
-      const token = authService.getToken();
-      if (!token) {
-        throw new Error('Authentication token is missing');
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
       }
       
       const response = await apiClient.put('/api/profile', userData);
+      
+      // Update stored user data
+      if (response.data) {
+        localStorage.setItem('user_data', JSON.stringify(response.data));
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -193,12 +217,79 @@ export const userService = {
   // Delete a user
   deleteUser: async (id: string): Promise<void> => {
     try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
       await apiClient.delete(`/api/users/${id}`);
     } catch (error) {
       console.error(`Error deleting user ${id}:`, error);
       throw error;
     }
   },
+};
+
+// Activity logs API service (matching your utils/api.ts functionality)
+export const activityLogAPI = {
+  getLogs: async (filters: Record<string, any> = {}, page = 1, limit = 50) => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
+      const params: Record<string, string> = {
+        page: page.toString(),
+        limit: limit.toString()
+      };
+
+      // Add filters to params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== '' && value !== false && value !== null && value !== undefined) {
+          params[key] = value.toString();
+        }
+      });
+
+      const response = await apiClient.get('/api/activity-logs', { params });
+      return {
+        success: true,
+        data: response.data,
+        status: response.status
+      };
+    } catch (error: any) {
+      console.error('Error getting activity logs:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+        status: error.response?.status || 0
+      };
+    }
+  },
+
+  getSummary: async (dateRange: { startDate?: string; endDate?: string } = {}) => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      
+      const params: Record<string, string> = {};
+      if (dateRange.startDate) params.startDate = dateRange.startDate;
+      if (dateRange.endDate) params.endDate = dateRange.endDate;
+
+      const response = await apiClient.get('/api/activity-logs', { params });
+      return {
+        success: true,
+        data: response.data,
+        status: response.status
+      };
+    } catch (error: any) {
+      console.error('Error getting activity summary:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+        status: error.response?.status || 0
+      };
+    }
+  }
 };
 
 export default apiClient;

@@ -2,8 +2,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { MongoClient, ObjectId } from 'mongodb';
-import { generateToken } from './auth.middleware';
-import { blacklistToken } from './tokenBlacklist';
+import { generateToken } from './middleware/auth.middleware.js';
+import { blacklistToken } from './middleware/tokenBlacklist.js';
 
 // Connect to MongoDB
 const connectDB = async () => {
