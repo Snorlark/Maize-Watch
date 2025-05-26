@@ -2,14 +2,14 @@
 import express from 'express';
 import ActivityLog from '../models/ActivityLog.js';
 import { login, logout, getUserProfile } from '../authController.js';
-import { isAuthenticated, authorize } from '../middleware/auth.middleware.js';
+import { isAuthenticated, authorize, isAdminOrSuperAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// GET /api/activity-logs - Fetch activity logs (Super Admin only)
+// GET /api/activity-logs - Fetch activity logs (Admin and Super Admin only)
 router.get('/', 
   isAuthenticated, 
-  authorize(['super_admin']), 
+  isAdminOrSuperAdmin, 
   async (req, res) => {
     try {
       const { 
@@ -29,6 +29,12 @@ router.get('/',
       if (userId) filter.userId = userId;
       if (action) filter.action = new RegExp(action, 'i');
       if (resource) filter.resource = new RegExp(resource, 'i');
+      
+      // Role-based filtering - Admins can only see farmer/user activities
+      if (req.user.role === 'admin') {
+        filter.userRole = { $in: ['farmer', 'user'] };
+      }
+      // Super admins can see all activities (no additional filter)
       
       // Date range filter
       if (startDate || endDate) {
@@ -88,18 +94,26 @@ router.get('/',
   }
 );
 
-// GET /api/activity-logs/stats - Get activity statistics
+// GET /api/activity-logs/stats - Get activity statistics (Admin and Super Admin only)
 router.get('/stats',
   isAuthenticated,
-  authorize(['super_admin']),
+  isAdminOrSuperAdmin,
   async (req, res) => {
     try {
       const { days = 30 } = req.query;
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(days));
 
+      // Base filter for role-based access
+      const baseFilter = { timestamp: { $gte: startDate } };
+      
+      // Role-based filtering - Admins can only see farmer/user activities
+      if (req.user.role === 'admin') {
+        baseFilter.userRole = { $in: ['farmer', 'user'] };
+      }
+
       const stats = await ActivityLog.aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
+        { $match: baseFilter },
         {
           $group: {
             _id: {
@@ -113,13 +127,13 @@ router.get('/stats',
       ]);
 
       const actionStats = await ActivityLog.aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
+        { $match: baseFilter },
         { $group: { _id: '$action', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]);
 
       const resourceStats = await ActivityLog.aggregate([
-        { $match: { timestamp: { $gte: startDate } } },
+        { $match: baseFilter },
         { $group: { _id: '$resource', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]);

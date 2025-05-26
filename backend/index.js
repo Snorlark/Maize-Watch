@@ -17,7 +17,6 @@ import thingSpeakService from './services/thingspeak.service.js';
 import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
 
-// Convert CommonJS requires to ES module imports
 import authRoutes from './routes/authRoutes.js';
 import usersRoutes from './routes/user.route.js';
 import activityLogsRoutes from './routes/activityLogs.js';
@@ -54,6 +53,23 @@ app.set('trust proxy', true);
 
 app.use(cors());
 app.use(express.json());
+
+// Custom middleware to check for admin or super_admin privileges
+const isAdminOrSuperAdmin = (req, res, next) => {
+  // First check if user is authenticated
+  isAuthenticated(req, res, (err) => {
+    if (err) return next(err);
+    
+    // Check if user has admin or super_admin role
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin')) {
+      return next();
+    }
+    
+    return res.status(403).json({ 
+      error: 'Access denied. Admin or Super Admin privileges required.' 
+    });
+  });
+};
 
 // Debug middleware - log all requests
 app.use((req, res, next) => {
@@ -197,9 +213,9 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// API Routes - Protected by admin middleware
-// Get all users - admin only
-app.get('/api/users', isAdmin, async (req, res) => {
+// API Routes - Protected by admin OR super_admin middleware
+// Get all users - admin or super_admin only
+app.get('/api/users', isAdminOrSuperAdmin, async (req, res) => {
   try {
     if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -221,8 +237,8 @@ app.get('/api/users', isAdmin, async (req, res) => {
   }
 });
 
-// Create user - admin only
-app.post('/api/users', isAdmin, async (req, res) => {
+// Create user - admin or super_admin only
+app.post('/api/users', isAdminOrSuperAdmin, async (req, res) => {
   try {
     if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -252,8 +268,8 @@ app.post('/api/users', isAdmin, async (req, res) => {
   }
 });
 
-// Get single user - admin only
-app.get('/api/users/:id', isAdmin, async (req, res) => {
+// Get single user - admin or super_admin only
+app.get('/api/users/:id', isAdminOrSuperAdmin, async (req, res) => {
   try {
     if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -277,8 +293,8 @@ app.get('/api/users/:id', isAdmin, async (req, res) => {
   }
 });
 
-// Update user - admin only
-app.put('/api/users/:id', isAdmin, async (req, res) => {
+// Update user - admin or super_admin only
+app.put('/api/users/:id', isAdminOrSuperAdmin, async (req, res) => {
   try {
     if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -369,8 +385,8 @@ app.put('/api/profile', isAuthenticated, async (req, res) => {
   }
 });
 
-// Delete user - admin only
-app.delete('/api/users/:id', isAdmin, async (req, res) => {
+// Delete user - admin or super_admin only
+app.delete('/api/users/:id', isAdminOrSuperAdmin, async (req, res) => {
   try {
     if (!db) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -393,7 +409,9 @@ app.post('/setup/create-admin', async (req, res) => {
       return res.status(500).json({ error: 'Database connection not established' });
     }
     
-    const adminExists = await db.collection('users').findOne({ role: 'admin' });
+    const adminExists = await db.collection('users').findOne({ 
+      $or: [{ role: 'admin' }, { role: 'super_admin' }] 
+    });
     if (adminExists) {
       return res.status(400).json({ 
         message: 'Admin account already exists',
@@ -409,7 +427,7 @@ app.post('/setup/create-admin', async (req, res) => {
       contactNumber: req.body.contactNumber || '1234567890',
       address: req.body.address || 'Admin Address',
       email: req.body.email || 'admin@example.com',
-      role: 'admin', // This is fixed and cannot be changed
+      role: req.body.role === 'super_admin' ? 'super_admin' : 'admin', // Allow creation of super_admin
       createdAt: new Date().toISOString()
     };
     
@@ -425,7 +443,7 @@ app.post('/setup/create-admin', async (req, res) => {
     const { password, ...adminWithoutPassword } = adminUser;
     
     res.status(201).json({
-      message: 'Admin account created successfully',
+      message: `${adminUser.role} account created successfully`,
       admin: { ...adminWithoutPassword, _id: result.insertedId }
     });
     
