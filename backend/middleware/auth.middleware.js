@@ -1,236 +1,272 @@
 // auth.middleware.js
 import jwt from 'jsonwebtoken';
-import { MongoClient, ObjectId } from 'mongodb';
-import { isTokenBlacklisted } from './tokenBlacklist.js';
+import User from '../models/User.js';
 
-// Token expiration time (1 hour in seconds)
-const TOKEN_EXPIRATION = 3600;
-
-// Helper function to validate JWT token format
-const isValidJWTFormat = (token) => {
-  if (!token || typeof token !== 'string') {
-    return false;
-  }
-  
-  const parts = token.split('.');
-  return parts.length === 3 && parts.every(part => part.length > 0);
-};
-
-// Function to generate a new JWT token
+// Token generation utility
 export const generateToken = (userId, role) => {
   return jwt.sign(
-    { userId, role },
+    { 
+      userId: userId,
+      role: role 
+    },
     process.env.JWT_SECRET,
-    { expiresIn: TOKEN_EXPIRATION }
+    { 
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h' 
+    }
   );
 };
 
-export const authorize = (roles) => {
+// Authentication middleware
+export const isAuthenticated = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        error: 'Authentication required. Please provide a valid token.' 
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    if (!token) {
+      return res.status(401).json({ 
+        error: 'Authentication token not found.' 
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'User not found. Token may be invalid.' 
+      });
+    }
+
+    // Check if user account is active
+    if (user.status === 'inactive' || user.status === 'suspended') {
+      return res.status(403).json({ 
+        error: 'Account is inactive or suspended.' 
+      });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        error: 'Invalid authentication token.' 
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        error: 'Authentication token has expired.' 
+      });
+    }
+    return res.status(500).json({ 
+      error: 'Authentication error.',
+      message: error.message 
+    });
+  }
+};
+
+// Generic role authorization middleware
+export const authorize = (allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ 
+        error: 'Authentication required.' 
+      });
     }
-    
-    if (roles && !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Forbidden' });
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: `Access denied. Required roles: ${allowedRoles.join(', ')}.`,
+        userRole: req.user.role 
+      });
     }
-    
+
     next();
   };
 };
 
-// Admin authorization middleware (includes super_admin)
-export const isAdmin = async (req, res, next) => {
-  try {
-    // 1. Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Unauthorized - No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // Validate token format before processing
-    if (!isValidJWTFormat(token)) {
-      console.error('Invalid JWT format received:', token.substring(0, 20) + '...');
-      return res.status(401).json({ message: 'Unauthorized - Malformed token' });
-    }
-    
-    // 2. Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({ message: 'Unauthorized - Invalid token' });
-    }
-    
-    // 3. Check if token is blacklisted
-    if (isTokenBlacklisted(token)) {
-      return res.status(401).json({ message: 'Unauthorized - Token revoked' });
-    }
-    
-    // 4. Find user and check if admin or super_admin
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    const db = client.db();
-    
-    const user = await db.collection('users').findOne({ _id: new ObjectId(decoded.userId) });
-    await client.close();
-    
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized - User not found' });
-    }
-    
-    if (user.role !== 'admin' && user.role !== 'super_admin') {
-      return res.status(403).json({ message: 'Forbidden - Admin access required' });
-    }
-    
-    // Add user info to request object for later use
-    req.user = {
-      userId: user._id,
-      username: user.username,
-      role: user.role
-    };
-    
-    next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Unauthorized - Token expired' });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      console.error('JWT Error:', error.message);
-      return res.status(401).json({ message: 'Unauthorized - Invalid token format' });
-    }
-    
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Unauthorized - Authentication failed' });
+// Individual role middleware
+export const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
   }
-};
 
-// Super Admin only authorization middleware
-export const isSuperAdmin = async (req, res, next) => {
-  try {
-    // 1. Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Unauthorized - No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // Validate token format before processing
-    if (!isValidJWTFormat(token)) {
-      console.error('Invalid JWT format received:', token.substring(0, 20) + '...');
-      return res.status(401).json({ message: 'Unauthorized - Malformed token' });
-    }
-    
-    // 2. Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({ message: 'Unauthorized - Invalid token' });
-    }
-    
-    // 3. Check if token is blacklisted
-    if (isTokenBlacklisted(token)) {
-      return res.status(401).json({ message: 'Unauthorized - Token revoked' });
-    }
-    
-    // 4. Find user and check if super_admin
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    const db = client.db();
-    
-    const user = await db.collection('users').findOne({ _id: new ObjectId(decoded.userId) });
-    await client.close();
-    
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized - User not found' });
-    }
-    
-    if (user.role !== 'super_admin') {
-      return res.status(403).json({ message: 'Forbidden - Super Admin access required' });
-    }
-    
-    // Add user info to request object for later use
-    req.user = {
-      userId: user._id,
-      username: user.username,
-      role: user.role
-    };
-    
-    next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Unauthorized - Token expired' });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      console.error('JWT Error:', error.message);
-      return res.status(401).json({ message: 'Unauthorized - Invalid token format' });
-    }
-    
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Unauthorized - Authentication failed' });
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ 
+      error: 'Access denied. Admin privileges required.',
+      userRole: req.user.role 
+    });
   }
+
+  next();
 };
 
-// Combined admin or super_admin middleware
-export const isAdminOrSuperAdmin = async (req, res, next) => {
-  return isAdmin(req, res, next);
-};
-
-// Basic authentication middleware (for any logged-in user)
-export const isAuthenticated = (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Unauthorized - No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // Validate token format before processing
-    if (!isValidJWTFormat(token)) {
-      console.error('Invalid JWT format received in isAuthenticated:', token.substring(0, 20) + '...');
-      return res.status(401).json({ message: 'Unauthorized - Malformed token' });
-    }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({ message: 'Unauthorized - Invalid token' });
-    }
-    
-    // Check if token is blacklisted
-    if (isTokenBlacklisted(token)) {
-      return res.status(401).json({ message: 'Unauthorized - Token revoked' });
-    }
-    
-    req.user = {
-      userId: decoded.userId,
-      role: decoded.role
-    };
-    
-    next();
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Unauthorized - Token expired' });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      console.error('JWT Error in isAuthenticated:', error.message);
-      return res.status(401).json({ message: 'Unauthorized - Invalid token format' });
-    }
-    
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Unauthorized - Authentication failed' });
+export const isSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
   }
+
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ 
+      error: 'Access denied. Super Admin privileges required.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
 };
 
-// Logout middleware to invalidate token
-export const logout = (req, res) => {
-  // In a stateless JWT system, the client just removes the token
-  // But we can implement a token blacklist for additional security
+export const isFarmer = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
+  }
+
+  if (req.user.role !== 'farmer') {
+    return res.status(403).json({ 
+      error: 'Access denied. Farmer privileges required.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
+};
+
+// Combined admin or super_admin middleware - UPDATED VERSION
+export const isAdminOrSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
+  }
+
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    return res.status(403).json({ 
+      error: 'Access denied. Admin or Super Admin privileges required.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
+};
+
+// Helper middleware to check if user can manage other users
+export const canManageUsers = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
+  }
+
+  const allowedRoles = ['admin', 'super_admin'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ 
+      error: 'Access denied. User management privileges required.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
+};
+
+// Middleware to check if user can access activity logs
+export const canViewActivityLogs = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
+  }
+
+  const allowedRoles = ['admin', 'super_admin'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ 
+      error: 'Access denied. Activity log access requires admin privileges.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
+};
+
+// Middleware to check if user can perform system-wide operations
+export const canPerformSystemOperations = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Authentication required.' 
+    });
+  }
+
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ 
+      error: 'Access denied. System operations require Super Admin privileges.',
+      userRole: req.user.role 
+    });
+  }
+
+  next();
+};
+
+// Middleware to prevent self-actions (like deleting own account)
+export const preventSelfAction = (req, res, next) => {
+  const targetUserId = req.params.id || req.params.userId;
   
-  // Return success response
-  return res.status(200).json({ message: 'Logged out successfully' });
+  if (req.user._id.toString() === targetUserId) {
+    return res.status(400).json({ 
+      error: 'Cannot perform this action on your own account.' 
+    });
+  }
+
+  next();
+};
+
+// Middleware to check resource ownership or admin privileges
+export const isOwnerOrAdmin = async (req, res, next) => {
+  try {
+    const resourceUserId = req.params.userId || req.body.userId;
+    
+    // Super admins and admins can access any resource
+    if (['admin', 'super_admin'].includes(req.user.role)) {
+      return next();
+    }
+
+    // Users can only access their own resources
+    if (req.user._id.toString() === resourceUserId) {
+      return next();
+    }
+
+    return res.status(403).json({ 
+      error: 'Access denied. You can only access your own resources.' 
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      error: 'Authorization error.',
+      message: error.message 
+    });
+  }
+};
+
+export default {
+  isAuthenticated,
+  authorize,
+  isAdmin,
+  isSuperAdmin,
+  isFarmer,
+  isAdminOrSuperAdmin,
+  canManageUsers,
+  canViewActivityLogs,
+  canPerformSystemOperations,
+  preventSelfAction,
+  isOwnerOrAdmin,
+  generateToken
 };

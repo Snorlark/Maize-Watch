@@ -85,17 +85,19 @@ const Navbar: React.FC = () => {
               Account Management
             </NavLink>
           )}
-          {user?.role === 'super_admin'&& (
-        <NavLink 
-          to="/admin/activity-logs" 
-          className={({ isActive }) =>
-                isActive ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
-                  : "hover:text-[#456C2D] transition"
-              }
-            >
-          Activity Log
-        </NavLink>
-      )}
+          
+          {/* Updated: Allow both admin and super_admin to access Activity Logs */}
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
+            <NavLink 
+              to="/admin/activity-logs" 
+              className={({ isActive }) =>
+                    isActive ? "relative pb-2 after:absolute after:-bottom-1 after:left-0 after:w-full after:h-1 after:bg-[#456C2D]"
+                      : "hover:text-[#456C2D] transition"
+                  }
+                >
+              Activity Log
+            </NavLink>
+          )}
         </nav>
         <button onClick={() => setMenuOpen(true)} className="text-[#1E441E]">
           <Menu size={28} />
