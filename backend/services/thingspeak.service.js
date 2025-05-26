@@ -12,9 +12,9 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 // Verify we have the required environment variables
 const MONGODB_IOT_URI = process.env.MONGODB_IOT_URI;
-const THINGSPEAK_CHANNEL_ID = process.env.THINGSPEAK_CHANNEL_ID || '2965485';
-const THINGSPEAK_READ_API_KEY = process.env.THINGSPEAK_READ_API_KEY || 'EQ3MYH5XBDSB6K2A';
-const THINGSPEAK_WRITE_API_KEY = process.env.THINGSPEAK_WRITE_API_KEY || '9T78QG1NCJMGHFH3';
+const THINGSPEAK_CHANNEL_ID = process.env.THINGSPEAK_CHANNEL_ID;
+const THINGSPEAK_READ_API_KEY = process.env.THINGSPEAK_READ_API_KEY;
+const THINGSPEAK_WRITE_API_KEY = process.env.THINGSPEAK_WRITE_API_KEY;
 // Added configuration for automatic fetching
 const FETCH_INTERVAL_SECONDS = process.env.FETCH_INTERVAL_SECONDS || 15;
 

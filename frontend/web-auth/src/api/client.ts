@@ -3,20 +3,20 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import authService from '../api/services/authService';
 
 // Import the User interface from authService to ensure consistency
-import type { User } from '../api/services/authService';
+// import type { User } from '../api/services/authService';
 
 // Alternative: If you can't import from authService, define a compatible interface
-// export interface User {
-//   _id?: string;
-//   username: string;
-//   password?: string;
-//   fullName?: string; // Make optional to match authService
-//   contactNumber?: string; // Consider making optional if needed
-//   address?: string; // Consider making optional if needed
-//   role: string;
-//   createdAt?: string;
-//   __v?: number;
-// }
+export interface User {
+  _id?: string;
+  username: string;
+  password?: string;
+  fullName?: string; // Make optional to match authService
+  contactNumber?: string; // Consider making optional if needed
+  address?: string; // Consider making optional if needed
+  role: string;
+  createdAt?: string;
+  __v?: number;
+}
 
 // Base URL configuration
 const isDevelopment = import.meta.env?.MODE === 'development';

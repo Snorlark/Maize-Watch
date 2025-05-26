@@ -54,12 +54,6 @@ const App: React.FC = () => {
                 </UserProvider>
               }
             />
-          </Route>
-        </Route>
-
-        {/* Super Admin-only route */}
-        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="/login" />}>
-          <Route element={<AuthenticatedLayout />}>
             <Route path="/admin/activity-logs" element={<ActivityLogPage />} />
           </Route>
         </Route>
