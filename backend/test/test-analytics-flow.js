@@ -110,9 +110,9 @@ async function testAnalyticsFlow() {
       timestamp: new Date(),
       field_id: 'test_field_1',
       corn_growth_stage: 'Silking (R1)',
-      userId: userId,  // Changed from user_id to userId
+      userId: userId,
       measurements: {
-        temperature: 35.5,    // High temperature
+        temperature: 26.5,    // High temperature
         humidity: 85.0,       // High humidity
         soil_moisture: 75.0,  // High soil moisture
         soil_ph: 7.8,        // High pH
@@ -127,11 +127,17 @@ async function testAnalyticsFlow() {
 
     // Run Python analytics
     console.log('Running Python analytics...');
-    await AnalyticsService.runPythonAnalytics();
-    console.log('Python analytics completed');
+    try {
+      await AnalyticsService.runPythonAnalytics();
+      console.log('Python analytics completed');
+    } catch (error) {
+      console.error('Error running Python analytics:', error);
+      throw error;
+    }
 
     // Wait a bit for the Python script to finish processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Waiting for analytics to complete...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     // Fetch latest analysis
     console.log('Fetching latest analysis...');
@@ -140,6 +146,17 @@ async function testAnalyticsFlow() {
       .findOne({}, { sort: { timestamp: -1 } });
 
     if (!latestAnalysis) {
+      console.error('No analysis found in database. Checking sensor readings...');
+      const sensorReadings = await mongoose.connection.db
+        .collection('sensor_readings')
+        .find({}, { sort: { timestamp: -1 } })
+        .toArray();
+      
+      console.log(`Found ${sensorReadings.length} sensor readings`);
+      if (sensorReadings.length > 0) {
+        console.log('Latest sensor reading:', sensorReadings[0]);
+      }
+      
       throw new Error('No analysis found after running analytics');
     }
 
@@ -152,7 +169,7 @@ async function testAnalyticsFlow() {
     const verificationResults = {
       hasTimestamp: !!latestAnalysis.timestamp,
       hasFieldId: !!latestAnalysis.field_id,
-      hasUserId: !!latestAnalysis.userId,  // Changed from user_id to userId
+      hasUserId: !!latestAnalysis.userId,
       hasMeasurements: !!latestAnalysis.measurements,
       hasAlerts: Array.isArray(latestAnalysis.alerts),
       hasRecommendations: Array.isArray(latestAnalysis.recommendations),

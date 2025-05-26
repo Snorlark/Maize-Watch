@@ -1,8 +1,6 @@
-import pkg from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import { MongoClient, ObjectId } from 'mongodb';
 import User from '../models/user.model.js';
-
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,10 +8,17 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const { verify } = pkg;
-
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// Export verifyToken function
+export const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    throw error;
+  }
+};
 
 export async function authenticateToken(req, res, next) {
   try {
@@ -27,7 +32,7 @@ export async function authenticateToken(req, res, next) {
       });
     }
 
-    const decoded = verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
 
     const user = await User.findById(decoded.id).select('-password');
 
@@ -77,7 +82,7 @@ export const isAdmin = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     
     // 2. Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     if (!decoded || !decoded.userId) {
       return res.status(401).json({ message: 'Unauthorized - Invalid token' });
     }
@@ -133,7 +138,7 @@ export const isAuthenticated = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
     
     // Check if user exists in database
     const user = await User.findById(decoded.id).select('-password');

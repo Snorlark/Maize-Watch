@@ -109,7 +109,7 @@
   "back_button": "Back",
   "next_button": "Next",
   "submit_button": "Submit",
-  "soil_type_title": "Choose your field’s soil type",
+  "soil_type_title": "Choose your field's soil type",
   "corn_variety_title": "Choose your preferred corn variety",
   "planting_season_title": "When did you plant?",
   "planting_season_description": "Select the date you planted your corn",
@@ -265,15 +265,16 @@
   "light_intensity_bright": "The light intensity is bright, close to clear daytime conditions.",
   "light_intensity_very_strong": "The light intensity is very strong, similar to direct midday sunlight.",
   "helpTitle": "Help",
-  "helpDescription": "Here’s some helpful info.",
+  "helpDescription": "Here's some helpful info.",
   "faqTitle": "FAQs",
   "faqQ1": "How do I enable notifications?",
   "faqA1": "Go to settings and toggle the switch.",
   "faqQ2": "How to reset my password?",
-  "faqA2": "Click ‘Forgot Password’ on the login screen.",
+  "faqA2": "Click 'Forgot Password' on the login screen.",
   "appName": "Maize Watch",
   "aboutApp": "Maize Watch is a crop monitoring application designed to help farmers keep track of maize growth and identify issues quickly.",
   "versionInfo": "version 1.0.0",
   "contactUs": "Contact us at:",
-  "translate": "Translate"
+  "translate": "Translate",
+  "forgot_password": "Forgot Password?"
 }

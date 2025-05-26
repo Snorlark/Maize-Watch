@@ -2,6 +2,7 @@ import express from 'express';
 import AnalyticsService from '../services/analytics.service.js';
 import { isAuthenticated } from '../middleware/auth.middleware.js';
 import mongoose from 'mongoose';
+import { iotConnection } from '../services/cornAnalysis.service.js';
 
 const router = express.Router();
 
@@ -83,20 +84,52 @@ router.post('/mark-notified/:id', async (req, res) => {
 router.get('/latest/:userId', isAuthenticated, async (req, res) => {
   try {
     const userId = req.params.userId;
-    const analysis = await mongoose.connection.db
-      .collection('corn_analyses')
-      .findOne(
-        { userId: userId },
-        { sort: { timestamp: -1 } }
-      );
+    const realtime = req.query.realtime === 'true';
+    console.log('Fetching latest analysis for user:', userId, 'realtime:', realtime);
+    
+    // Use the IoT database connection
+    let analysis;
+    
+    if (realtime) {
+      // First try to get the most recent real-time analysis
+      analysis = await iotConnection.db
+        .collection('corn_analyses')
+        .findOne(
+          { 
+            $or: [
+              { user_id: userId },
+              { userId: userId }
+            ],
+            is_realtime: true
+          },
+          { sort: { timestamp: -1 } }
+        );
+    }
+    
+    // If no real-time analysis found or realtime not requested, get the most recent analysis
+    if (!analysis) {
+      analysis = await iotConnection.db
+        .collection('corn_analyses')
+        .findOne(
+          { 
+            $or: [
+              { user_id: userId },
+              { userId: userId }
+            ]
+          },
+          { sort: { timestamp: -1 } }
+        );
+    }
 
     if (!analysis) {
+      console.log('No analysis found for user:', userId);
       return res.status(404).json({
         success: false,
         message: 'No analysis found for this user'
       });
     }
 
+    console.log('Found analysis:', analysis._id, 'is_realtime:', analysis.is_realtime);
     res.json({
       success: true,
       data: analysis
@@ -120,7 +153,12 @@ router.get('/user/:userId', isAuthenticated, async (req, res) => {
 
     const analyses = await mongoose.connection.db
       .collection('corn_analyses')
-      .find({ userId: userId })
+      .find({
+        $or: [
+          { user_id: userId },
+          { userId: userId }
+        ]
+      })
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(limit)
@@ -128,7 +166,12 @@ router.get('/user/:userId', isAuthenticated, async (req, res) => {
 
     const total = await mongoose.connection.db
       .collection('corn_analyses')
-      .countDocuments({ userId: userId });
+      .countDocuments({
+        $or: [
+          { user_id: userId },
+          { userId: userId }
+        ]
+      });
 
     res.json({
       success: true,
@@ -173,6 +216,97 @@ router.get('/:id', isAuthenticated, async (req, res) => {
       success: false,
       message: 'Error fetching analysis'
     });
+  }
+});
+
+// Update prescription status
+router.put('/prescription/:prescriptionId/status', isAuthenticated, async (req, res) => {
+  try {
+    const { prescriptionId } = req.params;
+    const { is_completed, updated_at } = req.body;
+    
+    console.log('Updating prescription status:', {
+      prescriptionId,
+      is_completed,
+      updated_at
+    });
+
+    // Use the IoT database connection
+    const result = await iotConnection.db
+      .collection('corn_analyses')
+      .updateOne(
+        { _id: new mongoose.Types.ObjectId(prescriptionId) },
+        { 
+          $set: { 
+            is_notified: is_completed,
+            updated_at: new Date(updated_at)
+          }
+        }
+      );
+
+    if (result.matchedCount === 0) {
+      console.log('No prescription found with ID:', prescriptionId);
+      return res.status(404).json({
+        success: false,
+        message: 'Prescription not found'
+      });
+    }
+
+    console.log('Successfully updated prescription status');
+    res.json({
+      success: true,
+      message: 'Prescription status updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating prescription status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating prescription status'
+    });
+  }
+});
+
+// Get latest analysis for a field
+router.get('/latest/field/:fieldId', isAuthenticated, async (req, res) => {
+  try {
+    const fieldId = req.params.fieldId;
+    const realtime = req.query.realtime === 'true';
+    console.log('Fetching latest analysis for field:', fieldId, 'realtime:', realtime);
+    
+    // Debug: Log all analyses in the database
+    const allAnalyses = await iotConnection.db
+      .collection('corn_analyses')
+      .find({})
+      .toArray();
+    
+    console.log('=== DEBUG: All Analyses in Database ===');
+    console.log('Total analyses found:', allAnalyses.length);
+    allAnalyses.forEach(analysis => {
+      console.log(`Field ID: ${analysis.field_id}, Timestamp: ${analysis.timestamp}, Realtime: ${analysis.is_realtime}`);
+    });
+    console.log('=====================================');
+
+    let analysis;
+    if (realtime) {
+      analysis = await iotConnection.db
+        .collection('corn_analyses')
+        .findOne({ field_id: fieldId, is_realtime: true }, { sort: { timestamp: -1 } });
+    }
+    if (!analysis) {
+      analysis = await iotConnection.db
+        .collection('corn_analyses')
+        .findOne({ field_id: fieldId }, { sort: { timestamp: -1 } });
+    }
+
+    if (!analysis) {
+      console.log(`No analysis found for field: ${fieldId}`);
+      return res.status(404).json({ message: 'No analysis found' });
+    }
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error fetching latest analysis:', error);
+    res.status(500).json({ message: 'Error fetching analysis' });
   }
 });
 

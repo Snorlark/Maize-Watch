@@ -2,42 +2,49 @@ import 'package:flutter/material.dart';
 
 class Prescription {
   final String id;
-  final String title;
+  final DateTime timestamp;
+  final String parameter;
   final String value;
-  final String date;
-  final String time;
-  bool isChecked;
+  final String status;
+  final String recommendation;
+  final int priority;
+  final double impactScore;
+  bool isCompleted;
   final String fieldId;
-  final String category; // E.g., "Soil pH", "Moisture", "Temperature", "Nutrition"
-  final int priority; // 1 = high, 2 = medium, 3 = low
-  final String description; // Additional details about the recommendation
+  final String growthStage;
 
   Prescription({
     required this.id,
-    required this.title,
+    required this.timestamp,
+    required this.parameter,
     required this.value,
-    required this.date,
-    required this.time,
-    required this.isChecked,
-    required this.fieldId,
-    required this.category,
+    required this.status,
+    required this.recommendation,
     required this.priority,
-    required this.description,
+    required this.impactScore,
+    required this.isCompleted,
+    required this.fieldId,
+    required this.growthStage,
   });
 
   // Factory method to create from JSON
   factory Prescription.fromJson(Map<String, dynamic> json) {
     return Prescription(
-      id: json['_id'] ?? json['id'] ?? '',
-      title: json['title'] ?? '',
-      value: json['value'] ?? '',
-      date: json['date'] ?? '',
-      time: json['time'] ?? '',
-      isChecked: json['isChecked'] ?? false,
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp: json['timestamp'] is String 
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.fromMillisecondsSinceEpoch(json['timestamp'] ?? DateTime.now().millisecondsSinceEpoch),
+      parameter: json['parameter'] ?? '',
+      value: json['value']?.toString() ?? '',
+      status: json['status'] ?? 'unknown',
+      recommendation: json['recommendation'] ?? '',
+      priority: json['priority'] is int
+          ? json['priority']
+          : (json['priority'] is String ? int.tryParse(json['priority']) ?? 2 : 2),
+      impactScore: json['impactScore'] is num ? (json['impactScore'] as num).toDouble() : 0.0,
+      isCompleted: json['isCompleted'] ?? false,
       fieldId: json['fieldId'] ?? '',
-      category: json['category'] ?? 'General',
-      priority: json['priority'] ?? 2,
-      description: json['description'] ?? '',
+      growthStage: json['growthStage']?.toString() ?? 'Unknown',
     );
   }
 
@@ -45,15 +52,16 @@ class Prescription {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
+      'timestamp': timestamp.toIso8601String(),
+      'parameter': parameter,
       'value': value,
-      'date': date,
-      'time': time,
-      'isChecked': isChecked,
-      'fieldId': fieldId,
-      'category': category,
+      'status': status,
+      'recommendation': recommendation,
       'priority': priority,
-      'description': description,
+      'impactScore': impactScore,
+      'isCompleted': isCompleted,
+      'fieldId': fieldId,
+      'growthStage': growthStage,
     };
   }
 
@@ -85,21 +93,19 @@ class Prescription {
     }
   }
 
-  // Helper method to get category icon
-  IconData getCategoryIcon() {
-    switch (category.toLowerCase()) {
-      case 'soil ph':
+  // Helper method to get parameter icon
+  IconData getParameterIcon() {
+    switch (parameter.toLowerCase()) {
+      case 'soil_ph':
         return Icons.science;
-      case 'moisture':
+      case 'soil_moisture':
         return Icons.water_drop;
       case 'temperature':
         return Icons.thermostat;
-      case 'nutrition':
-        return Icons.eco;
-      case 'pest':
-        return Icons.bug_report;
-      case 'disease':
-        return Icons.coronavirus;
+      case 'humidity':
+        return Icons.water;
+      case 'light_intensity':
+        return Icons.light_mode;
       default:
         return Icons.recommend;
     }

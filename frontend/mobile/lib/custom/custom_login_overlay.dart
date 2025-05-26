@@ -9,6 +9,7 @@ import '../screen/home_screen.dart';
 import 'custom_font.dart';
 import 'package:url_launcher/url_launcher.dart'; // for hyperlinks
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'forgot_password_overlay.dart';
 
 void showLoginOverlay(BuildContext context) {
   // Ensure we dispose any active overlays when the function exits
@@ -190,6 +191,28 @@ void showLoginOverlay(BuildContext context) {
                         return null;
                       },
                     ),
+                    SizedBox(height: 10.h),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Close login overlay
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => const ForgotPasswordOverlay(),
+                          );
+                        },
+                        child: Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: MAIZE_ACCENT,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 20.h),
 
                     // AGREEMENT TEXT
@@ -277,10 +300,11 @@ void showLoginOverlay(BuildContext context) {
 
                             if (loginResponse.success) {
                               Navigator.pop(context); // Dismiss the modal
-                              Navigator.push(
+                              Navigator.pushAndRemoveUntil(
                                 originalContext,
                                 NoSwipePageRoute(
                                     builder: (context) => const HomeScreen()),
+                                (route) => false,
                               );
                             } else {
                               // Show error at the top with custom overlay

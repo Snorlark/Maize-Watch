@@ -433,6 +433,282 @@ class ThingSpeakService {
       throw error;
     }
   }
+
+  /**
+   * Gets weekly overview data for a calendar week (Sunday to Saturday)
+   * @param {Date} startDate - Optional start date to calculate week from
+   * @param {Date} endDate - Optional end date to calculate week from
+   * @returns {Promise<Object>} Weekly data with daily averages and summary
+   */
+  async getWeeklyOverviewData(startDate = null, endDate = null) {
+    try {
+      console.log('Getting weekly overview data...');
+      
+      // Always sync latest data first
+      await this.syncLatestDataFromThingSpeak();
+      
+      let queryStartDate, queryEndDate;
+      
+      if (startDate && endDate) {
+        // Use provided date range - ensure these align to calendar week boundaries
+        queryStartDate = new Date(startDate);
+        queryEndDate = new Date(endDate);
+        
+        // Ensure we're working with calendar week boundaries (Sunday to Saturday)
+        queryStartDate = this.getStartOfWeek(queryStartDate);
+        queryEndDate = this.getEndOfWeek(queryStartDate);
+        
+        console.log(`Using calendar week from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+      } else {
+        // Default to current calendar week
+        const now = new Date();
+        queryStartDate = this.getStartOfWeek(now);
+        queryEndDate = this.getEndOfWeek(queryStartDate);
+        
+        console.log(`Using current calendar week from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+      }
+
+      console.log(`Querying data from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+      
+      // Query MongoDB for the specified date range
+      const data = await SensorData.find({
+        timestamp: { 
+          $gte: queryStartDate,
+          $lte: queryEndDate
+        }
+      }).sort({ timestamp: 1 });
+
+      console.log(`Found ${data.length} records in the specified date range`);
+
+      if (!data || data.length === 0) {
+        console.log('No weekly data found for the specified range');
+        return {
+          data: [],
+          summary: {
+            totalRecords: 0,
+            dateRange: {
+              start: queryStartDate.toISOString(),
+              end: queryEndDate.toISOString()
+            }
+          }
+        };
+      }
+
+      // Group data by calendar day within the week (Sunday = 0, Saturday = 6)
+      const weeklyData = new Map();
+      
+      // Initialize all 7 days of the week with empty arrays
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(queryStartDate);
+        dayDate.setDate(queryStartDate.getDate() + i);
+        const dayKey = this.formatDateKey(dayDate);
+        weeklyData.set(dayKey, {
+          dayOfWeek: i, // 0 = Sunday, 6 = Saturday
+          date: dayDate.toISOString().split('T')[0],
+          dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][i],
+          data: []
+        });
+      }
+
+      // Process and group the sensor data by day
+      data.forEach(record => {
+        const recordDate = new Date(record.timestamp);
+        const dayKey = this.formatDateKey(recordDate);
+        
+        if (weeklyData.has(dayKey)) {
+          // Ensure soil_ph is properly handled (convert to number if it's a string)
+          const soilPh = typeof record.measurements.soil_ph === 'string' 
+            ? parseFloat(record.measurements.soil_ph) 
+            : record.measurements.soil_ph;
+
+          // Ensure light_intensity is properly handled
+          const lightIntensity = typeof record.measurements.light_intensity === 'string'
+            ? parseFloat(record.measurements.light_intensity)
+            : record.measurements.light_intensity;
+
+          weeklyData.get(dayKey).data.push({
+            timestamp: record.timestamp,
+            measurements: {
+              temperature: record.measurements.temperature,
+              humidity: record.measurements.humidity,
+              soil_moisture: record.measurements.soil_moisture,
+              soil_ph: soilPh || null, // Use null instead of 0 for missing soil pH
+              light_intensity: lightIntensity || 0
+            }
+          });
+        }
+      });
+
+      // Convert Map to array and calculate daily averages
+      const processedWeeklyData = Array.from(weeklyData.values()).map(day => {
+        if (day.data.length === 0) {
+          // Return null values for days with no data
+          return {
+            dayOfWeek: day.dayOfWeek,
+            date: day.date,
+            dayName: day.dayName,
+            timestamp: new Date(day.date + 'T12:00:00.000Z').toISOString(), // Use noon as default time
+            hasData: false,
+            dataPoints: 0,
+            measurements: {
+              temperature: null,
+              humidity: null,
+              soil_moisture: null,
+              soil_ph: null,
+              light_intensity: null
+            }
+          };
+        }
+
+        // Calculate daily averages with special handling for soil pH
+        const totals = day.data.reduce((acc, reading) => {
+          acc.temperature += reading.measurements.temperature || 0;
+          acc.humidity += reading.measurements.humidity || 0;
+          acc.soil_moisture += reading.measurements.soil_moisture || 0;
+          
+          // Special handling for soil pH - only include non-zero values
+          if (reading.measurements.soil_ph && reading.measurements.soil_ph !== 0) {
+            acc.soil_ph += reading.measurements.soil_ph;
+            acc.soil_ph_count++;
+          }
+          
+          acc.light_intensity += reading.measurements.light_intensity || 0;
+          acc.count++;
+          return acc;
+        }, {
+          temperature: 0,
+          humidity: 0,
+          soil_moisture: 0,
+          soil_ph: 0,
+          soil_ph_count: 0,
+          light_intensity: 0,
+          count: 0
+        });
+
+        // Use the most recent timestamp for the day
+        const latestReading = day.data[day.data.length - 1];
+
+        return {
+          dayOfWeek: day.dayOfWeek,
+          date: day.date,
+          dayName: day.dayName,
+          timestamp: latestReading.timestamp,
+          hasData: true,
+          dataPoints: day.data.length,
+          measurements: {
+            temperature: parseFloat((totals.temperature / totals.count).toFixed(2)),
+            humidity: parseFloat((totals.humidity / totals.count).toFixed(2)),
+            soil_moisture: parseFloat((totals.soil_moisture / totals.count).toFixed(2)),
+            soil_ph: totals.soil_ph_count > 0 ? parseFloat((totals.soil_ph / totals.soil_ph_count).toFixed(2)) : null,
+            light_intensity: parseFloat((totals.light_intensity / totals.count).toFixed(2))
+          }
+        };
+      });
+
+      // Calculate weekly statistics
+      const weeklyStats = this.calculateWeeklyStats(processedWeeklyData);
+
+      console.log(`Processed weekly data: ${processedWeeklyData.length} days, ${data.length} total readings`);
+
+      return {
+        data: processedWeeklyData,
+        summary: {
+          totalRecords: data.length,
+          dateRange: {
+            start: queryStartDate.toISOString(),
+            end: queryEndDate.toISOString()
+          },
+          weeklyStats: weeklyStats
+        }
+      };
+
+    } catch (error) {
+      console.error('Error getting weekly overview data:', error);
+      throw new Error(`Failed to get weekly overview data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Helper method to get the start of calendar week (Sunday)
+   */
+  getStartOfWeek(date) {
+    const d = new Date(date);
+    // Convert to Sunday = 0, Monday = 1, ..., Saturday = 6
+    const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const diff = day; // Days from Sunday
+    d.setDate(d.getDate() - diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  /**
+   * Helper method to get the end of calendar week (Saturday at 23:59:59)
+   */
+  getEndOfWeek(startOfWeek) {
+    const d = new Date(startOfWeek);
+    d.setDate(d.getDate() + 6); // Add 6 days to get to Saturday
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
+  /**
+   * Helper method to format date as YYYY-MM-DD for consistent keys
+   */
+  formatDateKey(date) {
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
+  }
+
+  /**
+   * Helper method to calculate weekly statistics
+   */
+  calculateWeeklyStats(weeklyData) {
+    const dataWithValues = weeklyData.filter(day => day.hasData);
+    
+    if (dataWithValues.length === 0) {
+      return {
+        temperature: { min: null, max: null, avg: null },
+        humidity: { min: null, max: null, avg: null },
+        soil_moisture: { min: null, max: null, avg: null },
+        soil_ph: { min: null, max: null, avg: null },
+        light_intensity: { min: null, max: null, avg: null },
+        daysWithData: 0,
+        totalDays: 7
+      };
+    }
+
+    const parameters = ['temperature', 'humidity', 'soil_moisture', 'soil_ph', 'light_intensity'];
+    const stats = {};
+
+    parameters.forEach(param => {
+      const values = dataWithValues
+        .map(day => day.measurements[param])
+        .filter(val => val !== null && !isNaN(val));
+      
+      if (values.length > 0) {
+        stats[param] = {
+          min: Math.min(...values),
+          max: Math.max(...values),
+          avg: parseFloat((values.reduce((sum, val) => sum + val, 0) / values.length).toFixed(2))
+        };
+      } else {
+        stats[param] = { min: null, max: null, avg: null };
+      }
+    });
+
+    stats.daysWithData = dataWithValues.length;
+    stats.totalDays = 7;
+
+    return stats;
+  }
+
+  /**
+   * Helper method to get current calendar week start (for frontend compatibility)
+   */
+  getCurrentWeekStart() {
+    const now = new Date();
+    return this.getStartOfWeek(now);
+  }
 }
 
 // Create and export the service instance

@@ -214,8 +214,10 @@ class _CornRegistrationScreenState extends State<CornRegistrationScreen> {
     });
 
     try {
-      // Get user ID from userData
-      final String userId = widget.userData['userId'] ?? '';
+      // Debug print to see the structure of userData
+      print('DEBUG - CornRegistrationScreen userData: \\${widget.userData}');
+      final dynamic user = widget.userData['user'] ?? widget.userData;
+      final String userId = user['id'] ?? user['_id'] ?? user['userId'] ?? '';
 
       if (userId.isEmpty) {
         throw Exception('User ID not found');

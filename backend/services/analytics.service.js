@@ -13,11 +13,12 @@ class AnalyticsService {
       
       const analyticsDir = path.resolve(__dirname, '../../analytics');
       const pythonScript = path.resolve(analyticsDir, 'main.py');
-      const venvPython = process.platform === 'win32' 
-        ? path.resolve(analyticsDir, 'venv', 'Scripts', 'python.exe')
-        : path.resolve(analyticsDir, 'venv', 'bin', 'python3');
+      
+      // Use the virtual environment's Python interpreter
+      const venvPython = path.resolve(analyticsDir, 'venv/bin/python3');
+      const pythonCommand = process.platform === 'win32' ? 'python' : venvPython;
 
-      const pythonProcess = spawn(venvPython, [pythonScript], {
+      const pythonProcess = spawn(pythonCommand, [pythonScript], {
         cwd: analyticsDir,
         env: { ...process.env, PYTHONUNBUFFERED: '1' }
       });
@@ -56,15 +57,20 @@ class AnalyticsService {
     try {
       console.log('Fetching latest prescription from IoT database...');
       
-      const client = await mongoose.connect(process.env.MONGODB_IOT_URI, {
-        serverSelectionTimeoutMS: 30000,
-        connectTimeoutMS: 30000,
-        socketTimeoutMS: 45000
-      });
+      const db = mongoose.connection.db;
       
-      const db = client.connection.db;
-      const prescription = await db.collection('corn_analyses')
-        .findOne({}, { sort: { timestamp: -1 } });
+      // First try to get the most recent real-time analysis
+      let prescription = await db.collection('corn_analyses')
+        .findOne(
+          { is_realtime: true },
+          { sort: { timestamp: -1 } }
+        );
+
+      // If no real-time analysis found, get the most recent analysis
+      if (!prescription) {
+        prescription = await db.collection('corn_analyses')
+          .findOne({}, { sort: { timestamp: -1 } });
+      }
 
       if (prescription) {
         // Ensure all numeric values are properly converted
@@ -106,8 +112,7 @@ class AnalyticsService {
     try {
       console.log('Fetching unnotified prescriptions...');
       
-      const client = await mongoose.connect(process.env.MONGODB_IOT_URI);
-      const db = client.connection.db;
+      const db = mongoose.connection.db;
       
       const prescriptions = await db.collection('corn_analyses')
         .find({ is_notified: false })
@@ -126,8 +131,7 @@ class AnalyticsService {
     try {
       console.log(`Marking prescription ${prescriptionId} as notified`);
       
-      const client = await mongoose.connect(process.env.MONGODB_IOT_URI);
-      const db = client.connection.db;
+      const db = mongoose.connection.db;
       
       const result = await db.collection('corn_analyses')
         .findOneAndUpdate(

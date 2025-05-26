@@ -290,6 +290,68 @@ router.post('/login', async (req, res) => {
     }
   });
   
+/**
+ * @route PUT /api/user/:username
+ * @desc Update user profile information
+ * @access Private
+ */
+router.put('/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { fullName, contactNumber, address } = req.body;
 
+        // Validate required fields
+        if (!fullName || !contactNumber || !address) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        // Validate phone number format
+        const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
+        if (!phoneRegex.test(contactNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please enter a valid Philippine mobile number'
+            });
+        }
+
+        // Find and update user
+        const updatedUser = await User.findOneAndUpdate(
+            { username },
+            { 
+                fullName,
+                contactNumber,
+                address
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Don't send password back in response
+        const userResponse = updatedUser.toObject();
+        delete userResponse.password;
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: userResponse
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: err.message
+        });
+    }
+});
 
 export default router;

@@ -78,7 +78,7 @@ export async function getNewPrescriptions(userId, lastCheckTimestamp = null) {
     const db = client.connection.db;
     
     const query = {
-      userId: userId,
+      user_id: userId,
       ...(lastCheckTimestamp && {
         timestamp: { $gt: new Date(lastCheckTimestamp) }
       })

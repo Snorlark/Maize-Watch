@@ -8,7 +8,7 @@ def generate_recommendations(health_analysis):
     if health_analysis["health_status"] == "Healthy":
         base_rec = "All parameters are within optimal ranges. Maintain current conditions."
         
-        # Add yield prediction if available STILL COOKING FOR THIS PART !
+        # Add yield prediction if available
         if "predictions" in health_analysis and "yield_class" in health_analysis["predictions"]:
             yield_class = health_analysis["predictions"]["yield_class"]["prediction"]
             confidence = health_analysis["predictions"]["yield_class"]["confidence"]
@@ -32,72 +32,19 @@ def generate_recommendations(health_analysis):
             condition = issue["condition"]
             importance = round(issue["importance_score"] * 100, 1)
             
-            # Add importance score(??) to the recommendation
-            if param == "temperature":
-                if condition == "low":
-                    recommendations.append(f"Increase temperature (impact score: {importance}%): Use greenhouse heating or row covers to maintain warmth.")
-                else:
-                    recommendations.append(f"Reduce temperature (impact score: {importance}%): Apply shade cloth and consider misting to cool the crop.")
-            
-            elif param == "humidity":
-                if condition == "low":
-                    recommendations.append(f"Increase humidity (impact score: {importance}%): Apply regular misting or adjust irrigation schedule.")
-                else:
-                    recommendations.append(f"Reduce humidity (impact score: {importance}%): Improve ventilation to prevent disease conditions.")
-            
-            elif param == "soil_moisture":
-                if condition == "low":
-                    recommendations.append(f"Increase soil moisture (impact score: {importance}%): Begin evening irrigation daily or use drip irrigation.")
-                else:
-                    recommendations.append(f"Reduce soil moisture (impact score: {importance}%): Improve drainage and reduce irrigation frequency.")
-            
-            elif param == "ph":
-                if condition == "low":
-                    recommendations.append(f"Increase pH (impact score: {importance}%): Apply lime or pH-balancing biofertilizer.")
-                else:
-                    recommendations.append(f"Reduce pH (impact score: {importance}%): Apply sulfur or acidifying amendments for better nutrient uptake.")
-            
-            elif param == "light":
-                if condition == "low":
-                    recommendations.append(f"Increase light (impact score: {importance}%): Supplement with grow lights for optimal growth.")
-                else:
-                    recommendations.append(f"Reduce light exposure (impact score: {importance}%): Provide partial shade during peak hours.")
+            # Generate recommendation based on parameter and condition
+            rec = generate_parameter_recommendation(param, condition, importance)
+            if rec:
+                recommendations.append(rec)
     else:
         # If no ML-based important issues, generate standard recommendations for all issues
         for param, details in health_analysis["issues"].items():
             condition = details["condition"]
-            
-            if param == "temperature":
-                if condition == "low":
-                    recommendations.append("Increase greenhouse temperature or use row covers to maintain warmth.")
-                else:
-                    recommendations.append("Apply shade cloth to reduce thermal stress and consider misting to cool the crop.")
-            
-            elif param == "humidity":
-                if condition == "low":
-                    recommendations.append("Increase humidity through regular misting or irrigation.")
-                else:
-                    recommendations.append("Improve ventilation to reduce excess humidity and prevent disease.")
-            
-            elif param == "soil_moisture":
-                if condition == "low":
-                    recommendations.append("Begin evening irrigation daily to maintain optimal soil moisture.")
-                else:
-                    recommendations.append("Improve drainage and reduce irrigation frequency to avoid waterlogged conditions.")
-            
-            elif param == "ph":
-                if condition == "low":
-                    recommendations.append("Apply lime or pH-balancing biofertilizer to increase soil pH.")
-                else:
-                    recommendations.append("Apply sulfur or acidifying amendments to lower soil pH for better nutrient uptake.")
-            
-            elif param == "light":
-                if condition == "low":
-                    recommendations.append("Supplement with grow lights to achieve optimal light intensity for this growth stage.")
-                else:
-                    recommendations.append("Provide partial shade to reduce excessive light exposure.")
+            rec = generate_parameter_recommendation(param, condition)
+            if rec:
+                recommendations.append(rec)
     
-    # Add stress level specific recommendations if available
+    # Add stress level specific recommendations
     if "stress_level" in health_analysis:
         stress_level = health_analysis["stress_level"]
         
@@ -110,17 +57,62 @@ def generate_recommendations(health_analysis):
     
     # Add a stage-specific recommendation
     stage = health_analysis["corn_stage"]
-    if stage == "Emergence (VE)":
-        recommendations.append("Stage note: Ensure soil is warm and moist for proper emergence.")
-    elif stage == "Early Vegetative (V2–V4)":
-        recommendations.append("Stage note: Focus on nutrient application for root and leaf development.")
-    elif stage == "Mid Vegetative (V5–VT)":
-        recommendations.append("Stage note: Maintain optimal growth conditions for tasseling.")
-    elif stage == "Reproductive (R1–R3)":
-        recommendations.append("Stage note: Ensure adequate water and nutrients for kernel formation.")
-    elif stage == "Maturing (R4–R5)":
-        recommendations.append("Stage note: Monitor kernel development and prevent water stress.")
-    elif stage == "Maturity/Harvest (R6)":
-        recommendations.append("Stage note: Prepare for harvest and maintain dry conditions.")
+    stage_rec = generate_stage_recommendation(stage)
+    if stage_rec:
+        recommendations.append(stage_rec)
         
     return recommendations
+
+def generate_parameter_recommendation(param, condition, importance=None):
+    """Generate a recommendation for a specific parameter and condition."""
+    recommendations = {
+        'temperature': {
+            'low': "Increase temperature: Use greenhouse heating or row covers to maintain warmth.",
+            'high': "Reduce temperature: Apply shade cloth and consider misting to cool the crop.",
+            'critically_low': "URGENT: Increase temperature immediately using greenhouse heating or row covers.",
+            'critically_high': "URGENT: Reduce temperature immediately using shade cloth and misting."
+        },
+        'humidity': {
+            'low': "Increase humidity: Apply regular misting or adjust irrigation schedule.",
+            'high': "Reduce humidity: Improve ventilation to prevent disease conditions.",
+            'critically_low': "URGENT: Increase humidity immediately through misting and reduced ventilation.",
+            'critically_high': "URGENT: Reduce humidity immediately by improving ventilation."
+        },
+        'soil_moisture': {
+            'low': "Increase soil moisture: Begin evening irrigation daily or use drip irrigation.",
+            'high': "Reduce soil moisture: Improve drainage and reduce irrigation frequency.",
+            'critically_low': "URGENT: Increase soil moisture immediately through irrigation.",
+            'critically_high': "URGENT: Reduce soil moisture immediately by improving drainage."
+        },
+        'soil_ph': {
+            'low': "Increase pH: Apply lime or pH-balancing biofertilizer.",
+            'high': "Reduce pH: Apply sulfur or acidifying amendments for better nutrient uptake.",
+            'critically_low': "URGENT: Increase pH immediately using lime application.",
+            'critically_high': "URGENT: Reduce pH immediately using sulfur application."
+        },
+        'light_intensity': {
+            'low': "Increase light: Supplement with grow lights for optimal growth.",
+            'high': "Reduce light exposure: Provide partial shade during peak hours.",
+            'critically_low': "URGENT: Increase light immediately using supplemental lighting.",
+            'critically_high': "URGENT: Reduce light exposure immediately using shade cloth."
+        }
+    }
+    
+    if param in recommendations and condition in recommendations[param]:
+        rec = recommendations[param][condition]
+        if importance is not None:
+            rec = f"{rec} (impact score: {importance}%)"
+        return rec
+    return None
+
+def generate_stage_recommendation(stage):
+    """Generate a stage-specific recommendation."""
+    stage_recommendations = {
+        "Emergence (VE)": "Stage note: Ensure soil is warm and moist for proper emergence.",
+        "Early Vegetative (V2–V4)": "Stage note: Focus on nutrient application for root and leaf development.",
+        "Mid Vegetative (V5–VT)": "Stage note: Maintain optimal growth conditions for tasseling.",
+        "Reproductive (R1–R3)": "Stage note: Ensure adequate water and nutrients for kernel formation.",
+        "Maturing (R4–R5)": "Stage note: Monitor kernel development and prevent water stress.",
+        "Maturity/Harvest (R6)": "Stage note: Prepare for harvest and maintain dry conditions."
+    }
+    return stage_recommendations.get(stage)

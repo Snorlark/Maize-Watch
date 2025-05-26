@@ -9,6 +9,7 @@ class UserInfoWidget extends StatefulWidget {
   final String contactNumber;
   final String address;
   final Function(Map<String, String>) onUpdate;
+  final bool isUpdating;
 
   const UserInfoWidget({
     super.key,
@@ -17,6 +18,7 @@ class UserInfoWidget extends StatefulWidget {
     required this.contactNumber,
     required this.address,
     required this.onUpdate,
+    this.isUpdating = false,
   });
 
   @override
@@ -47,8 +49,17 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 color: MAIZE_ACCENT,
               ),
               IconButton(
-                icon: const Icon(Icons.edit, color: Colors.black54),
-                onPressed: _showEditOverlay,
+                icon: widget.isUpdating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(MAIZE_ACCENT),
+                        ),
+                      )
+                    : const Icon(Icons.edit, color: Colors.black54),
+                onPressed: widget.isUpdating ? null : _showEditOverlay,
               ),
             ],
           ),
@@ -118,19 +129,14 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 ),
                 TextFormField(
                   controller: userNameController,
+                  enabled: false, // Username cannot be changed
                   decoration: const InputDecoration(
-                    filled:  true,
+                    filled: true,
                     fillColor: MAIZE_PRIMARY_LIGHT,     
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT,             
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter username';
-                    }
-                    return null;
-                  },
                 ),
                 SizedBox(height: ScreenUtil().setHeight(12)),
                 const CustomFont(
@@ -142,7 +148,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 TextFormField(
                   controller: nameController,
                   decoration: const InputDecoration(
-                    filled:  true,
+                    filled: true,
                     fillColor: MAIZE_PRIMARY_LIGHT,     
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
@@ -165,7 +171,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 TextFormField(
                   controller: contactController,
                   decoration: const InputDecoration(
-                    filled:  true,
+                    filled: true,
                     fillColor: MAIZE_PRIMARY_LIGHT,     
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
@@ -193,7 +199,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 TextFormField(
                   controller: addressController,
                   decoration: const InputDecoration(
-                    filled:  true,
+                    filled: true,
                     fillColor: MAIZE_PRIMARY_LIGHT,     
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
@@ -214,23 +220,34 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                     foregroundColor: MAIZE_PRIMARY_LIGHT,
                     backgroundColor: MAIZE_ACCENT,
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      widget.onUpdate({
-                        'userName': userNameController.text,
-                        'name': nameController.text,
-                        'contactNumber': contactController.text,
-                        'address': addressController.text,
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: CustomFont(
-                    text: 'Save Changes',
-                    fontWeight: FontWeight.w500, 
-                    color: MAIZE_PRIMARY_LIGHT, 
-                    fontSize: 16,
-                  ),
+                  onPressed: widget.isUpdating
+                      ? null
+                      : () {
+                          if (_formKey.currentState!.validate()) {
+                            widget.onUpdate({
+                              'userName': userNameController.text,
+                              'name': nameController.text,
+                              'contactNumber': contactController.text,
+                              'address': addressController.text,
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: widget.isUpdating
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : CustomFont(
+                          text: 'Save Changes',
+                          fontWeight: FontWeight.w500, 
+                          color: MAIZE_PRIMARY_LIGHT, 
+                          fontSize: 16,
+                        ),
                 ),
                 const SizedBox(height: 20),
               ],

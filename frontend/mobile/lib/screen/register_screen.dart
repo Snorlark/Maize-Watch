@@ -263,9 +263,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final response = await _apiService.register(userData);
 
       if (response.success) {
-        // Immediately attempt to login with the new credentials
-        await _loginAfterRegistration(
-            usernameController.text, passwordController.text);
+        // Immediately attempt to login with the new credentials to get the user object with id
+        final loginResponse = await _apiService.login(
+          userData['username'] ?? '',
+          userData['password'] ?? '',
+        );
+        if (loginResponse.success && loginResponse.data != null && loginResponse.data!['user'] != null) {
+          final userObj = loginResponse.data!['user'];
+          _showRegistrationSuccessOverlay(userData: userObj);
+        } else {
+          _handleRegistrationError('Registration succeeded but failed to retrieve user ID.');
+        }
       } else {
         // Handle different error cases
         _handleRegistrationError(response.message);
@@ -278,80 +286,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
-      }
-    }
-  }
-
-  // Update the _loginAfterRegistration function in RegisterScreen
-
-  // Update the _loginAfterRegistration function in RegisterScreen
-
-  Future<void> _loginAfterRegistration(String username, String password) async {
-    try {
-      // Call the login API
-      final loginResponse = await _apiService.login(username, password);
-
-      if (loginResponse.success) {
-        if (mounted) {
-          // Extract user data and user ID
-          final userData = loginResponse.data?['user'] ?? {};
-          final userId = userData['_id'] ?? '';
-
-          if (userId.isEmpty) {
-            _showSnackBar(
-              message: AppLocalizations.of(context)!.user_id_not_found,
-              isError: true,
-            );
-            // Navigate to landing page if user ID is not found
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => LandingScreen(showLoginOnLoad: true)),
-            );
-            return;
-          }
-
-          // Show registration success overlay
-          _showRegistrationSuccessOverlay(
-            userData: {
-              'userId': userId,
-              'fullName': userData['fullName'] ?? '',
-              'username': userData['username'] ?? '',
-              ...userData,
-            },
-          );
-        }
-      } else {
-        // If login fails after registration (should be rare)
-        _showSnackBar(
-          message:
-              "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
-          isError: true,
-        );
-
-        // Navigate back to landing page with login dialog
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => LandingScreen(showLoginOnLoad: true)),
-          );
-        }
-      }
-    } catch (e) {
-      // Handle login error
-      _showSnackBar(
-        message:
-            "${AppLocalizations.of(context)!.registration_successful} ${AppLocalizations.of(context)!.login_failed}",
-        isError: true,
-      );
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (_) => LandingScreen(showLoginOnLoad: true)),
-        );
       }
     }
   }
