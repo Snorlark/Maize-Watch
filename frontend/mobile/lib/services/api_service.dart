@@ -24,6 +24,8 @@ class ApiService {
   final String baseUrl = 'http://localhost:8080';
 
   static Map<String, dynamic>? currentUser;
+  bool _isRefreshing = false;
+  final _refreshQueue = <Future Function()>[];
 
   // Helper function for min calculation
   int min(int a, int b) {
@@ -67,10 +69,28 @@ class ApiService {
     print('Token saved: $token');
   }
 
+  // Save refresh token to shared preferences
+  Future<void> _saveRefreshToken(String refreshToken) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('refresh_token', refreshToken);
+  }
+
+  // Get refresh token from shared preferences
+  Future<String?> _getRefreshToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('refresh_token');
+    } catch (e) {
+      print('❌ Error retrieving refresh token: $e');
+      return null;
+    }
+  }
+
   // Clear token from shared preferences
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
   }
 
   // Save user data to shared preferences
@@ -131,6 +151,7 @@ class ApiService {
 
       // Clear user-related data but keep necessary app settings
       await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
       await prefs.remove('user_data');
       await prefs.remove('user_id');
       await prefs.remove('login_timestamp');
@@ -176,9 +197,9 @@ class ApiService {
       final responseData = json.decode(response.body);
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-        if (responseData['data'] != null && responseData['data']['token'] != null) {
+        if (responseData['token'] != null) {
           // Save the token after successful login
-          final token = responseData['data']['token'];
+          final token = responseData['token'];
           print('🎟️ Token received: ${token.substring(0, min(token.length, 10))}...');
           
           // Check if token is properly formatted by decoding it
@@ -204,8 +225,8 @@ class ApiService {
             await _saveToken(token);
             
             // Store the user data if available
-            if (responseData['data']['user'] != null) {
-              currentUser = responseData['data']['user'];
+            if (responseData['user'] != null) {
+              currentUser = responseData['user'];
               await _saveUserData(currentUser!);
               
               // Explicitly store the user ID
@@ -218,7 +239,10 @@ class ApiService {
             
             return ApiResponse(
               success: true,
-              data: responseData['data'],
+              data: {
+                'token': token,
+                'user': responseData['user']
+              },
             );
           } catch (e) {
             print('❌ Error processing token: $e');
@@ -258,7 +282,7 @@ class ApiService {
             },
             body: json.encode(userData),
           )
-          .timeout(Duration(seconds: 20)); // Increased a bit
+          .timeout(Duration(seconds: 20));
 
       client.close();
 
@@ -266,6 +290,23 @@ class ApiService {
 
       if (response.statusCode == 201 && responseData['success'] == true) {
         print('✅ Registration successful');
+        // Save user data if present
+        if (responseData['data'] != null) {
+          // Store the user data in memory
+          currentUser = responseData['data'];
+          
+          // Save user data to shared preferences
+          await _saveUserData(responseData['data']);
+          
+          // Explicitly store the user ID
+          final prefs = await SharedPreferences.getInstance();
+          final userId = responseData['data']['id'] ?? responseData['data']['_id'];
+          if (userId != null) {
+            await prefs.setString('user_id', userId.toString());
+            print('✅ User ID stored after registration: $userId');
+            print('✅ User data stored in shared preferences');
+          }
+        }
         return ApiResponse(
           success: true,
           message: responseData['message'] ?? 'Registration successful',
@@ -280,7 +321,6 @@ class ApiService {
       }
     } on TimeoutException catch (e) {
       print('Timeout error: ${e.toString()}');
-      // Since we know the account might have been created
       return ApiResponse(
         success: false,
         message:
@@ -560,104 +600,123 @@ class ApiService {
   // Register corn field for a user
   Future<ApiResponse> registerCornField(
     String userId, Map<String, dynamic> cornData) async {
-  try {
-    var token = await _getToken();
-    if (token == null) {
-      return ApiResponse(
-        success: false,
-        message: 'Authentication token not found. Please log in again.',
-      );
-    }
-
-    // Ensure the userId matches what's in the token
-    final userData = await getUserData();
-    if (userData == null || (userData['id'] != userId && userData['_id'] != userId)) {
-      print('⚠️ Warning: User ID mismatch. Using ID from user data.');
-      userId = userData?['id'] ?? userData?['_id'] ?? userId;
-    }
-
-    // Ensure growth stage is correctly formatted
-    if (cornData.containsKey('growthStage')) {
-      cornData['growthStage'] =
-          cornData['growthStage'].toString().trim().toUpperCase();
-      print('Sending growth stage to API: ${cornData['growthStage']}');
-    }
-
-    final client = getClient();
     try {
-      final response = await client
-          .post(
-            Uri.parse('$baseUrl/api/corn/register'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: json.encode({
-              'userId': userId,
-              ...cornData,
-            }),
-          )
-          .timeout(Duration(seconds: 20));
-
-      final responseData = json.decode(response.body);
-
-      // Check if token is invalid or expired
-      if (response.statusCode == 401) {
-        print('🔄 Token expired or invalid. Attempting to refresh token...');
-        
-        // Try to refresh the token
-        bool refreshed = await refreshToken();
-        if (refreshed) {
-          // Retry the request with the new token
-          token = await _getToken();
-          return await registerCornField(userId, cornData);
-        } else {
-          // If refresh failed, need to re-login
-          return ApiResponse(
-            success: false,
-            message: 'Your session has expired. Please log in again.',
-          );
-        }
-      }
-
-      if (response.statusCode == 201 && responseData['success'] == true) {
-        print('✅ Corn field registration successful');
-        return ApiResponse(
-          success: true,
-          message:
-              responseData['message'] ?? 'Corn field registered successfully',
-          data: responseData['data'],
-        );
-      } else {
-        print('❌ Corn field registration failed: ${responseData['message']}');
+      var token = await _getToken();
+      if (token == null) {
         return ApiResponse(
           success: false,
-          message: responseData['message'] ?? 'Corn field registration failed',
+          message: 'Authentication token not found. Please log in again.',
         );
       }
-    } finally {
-      client.close();
+
+      // Get user data from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userDataStr = prefs.getString('user_data');
+      
+      if (userDataStr == null) {
+        print('No user data found in shared preferences');
+        return ApiResponse(
+          success: false,
+          message: 'User data not found. Please log in again.',
+        );
+      }
+
+      // Parse user data
+      final userData = json.decode(userDataStr);
+      userId = userData['id'] ?? userData['_id'];
+      
+      if (userId == null) {
+        print('User ID not found in user data');
+        return ApiResponse(
+          success: false,
+          message: 'User ID not found. Please log in again.',
+        );
+      }
+
+      print('Using user ID for corn field registration: $userId');
+
+      // Ensure growth stage is correctly formatted
+      if (cornData.containsKey('growthStage')) {
+        cornData['growthStage'] =
+            cornData['growthStage'].toString().trim().toUpperCase();
+        print('Sending growth stage to API: ${cornData['growthStage']}');
+      }
+
+      final client = getClient();
+      try {
+        final response = await client
+            .post(
+              Uri.parse('$baseUrl/api/corn/register'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: json.encode({
+                'userId': userId,
+                ...cornData,
+              }),
+            )
+            .timeout(Duration(seconds: 20));
+
+        final responseData = json.decode(response.body);
+
+        // Check if token is invalid or expired
+        if (response.statusCode == 401) {
+          print('🔄 Token expired or invalid. Attempting to refresh token...');
+          
+          // Try to refresh the token
+          bool refreshed = await refreshToken();
+          if (refreshed) {
+            // Retry the request with the new token
+            token = await _getToken();
+            return await registerCornField(userId, cornData);
+          } else {
+            // If refresh failed, need to re-login
+            return ApiResponse(
+              success: false,
+              message: 'Your session has expired. Please log in again.',
+            );
+          }
+        }
+
+        if (response.statusCode == 201 && responseData['success'] == true) {
+          print('✅ Corn field registration successful');
+          return ApiResponse(
+            success: true,
+            message:
+                responseData['message'] ?? 'Corn field registered successfully',
+            data: responseData['data'],
+          );
+        } else {
+          print('❌ Corn field registration failed: ${responseData['message']}');
+          return ApiResponse(
+            success: false,
+            message: responseData['message'] ?? 'Corn field registration failed',
+          );
+        }
+      } finally {
+        client.close();
+      }
+    } on TimeoutException catch (e) {
+      print('Timeout error: ${e.toString()}');
+      return ApiResponse(
+        success: false,
+        message: 'The server is taking too long to respond.',
+      );
+    } on http.ClientException catch (e) {
+      print('HTTP client error: ${e.toString()}');
+      return ApiResponse(
+        success: false,
+        message: 'Client error occurred: ${e.toString()}',
+      );
+    } on Exception catch (e) {
+      print('Corn registration error: ${e.toString()}');
+      return ApiResponse(
+        success: false,
+        message: 'Connection error. Please check your internet connection.',
+      );
     }
-  } on TimeoutException catch (e) {
-    print('Timeout error: ${e.toString()}');
-    return ApiResponse(
-      success: false,
-      message: 'The server is taking too long to respond.',
-    );
-  } on http.ClientException catch (e) {
-    print('HTTP client error: ${e.toString()}');
-    return ApiResponse(
-      success: false,
-      message: 'Client error occurred: ${e.toString()}',
-    );
-  } on Exception catch (e) {
-    print('Corn registration error: ${e.toString()}');
-    return ApiResponse(
-      success: false,
-      message: 'Connection error. Please check your internet connection.',
-    );
   }
-}
   
 
   // Helper function for the days-based calculation
@@ -924,38 +983,222 @@ class ApiService {
     }
   }
 
+  // Refresh token method
   Future<bool> refreshToken() async {
+    if (_isRefreshing) {
+      // If already refreshing, add to queue
+      return Future.delayed(Duration(seconds: 1), () => refreshToken());
+    }
+
+    _isRefreshing = true;
   try {
-    final currentToken = await _getToken();
-    if (currentToken == null) return false;
+      final refreshToken = await _getRefreshToken();
+      if (refreshToken == null) {
+        print('No refresh token available');
+        return false;
+      }
     
     final client = getClient();
+      try {
     final response = await client.post(
       Uri.parse('$baseUrl/auth/refresh-token'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'refreshToken': refreshToken}),
+        );
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['success'] == true && data['token'] != null) {
+            await _saveToken(data['token']);
+            return true;
+          }
+        }
+        return false;
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      print('Error refreshing token: $e');
+      return false;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  // Verify phone number for password reset
+  Future<ApiResponse> verifyPhoneNumber(String phoneNumber) async {
+    try {
+      final client = getClient();
+      final response = await client
+          .post(
+            Uri.parse('$baseUrl/auth/verify-phone'),
       headers: {
-        'Authorization': 'Bearer $currentToken',
         'Content-Type': 'application/json',
       },
-    ).timeout(Duration(seconds: 15));
+            body: json.encode({
+              'phoneNumber': phoneNumber,
+            }),
+          )
+          .timeout(Duration(seconds: 20));
     
     client.close();
     
-    if (response.statusCode == 200) {
       final responseData = json.decode(response.body);
-      if (responseData['success'] == true && 
-          responseData['data'] != null && 
-          responseData['data']['token'] != null) {
-        await _saveToken(responseData['data']['token']);
-        print('Token refreshed successfully');
-        return true;
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return ApiResponse(
+          success: true,
+          message: responseData['message'] ?? 'Phone number verified',
+          data: responseData['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: responseData['message'] ?? 'Phone number not found',
+        );
       }
+    } catch (e) {
+      print('Error verifying phone number: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Connection error during verification',
+      );
     }
-    
-    print('Failed to refresh token: ${response.statusCode}');
-    return false;
-  } catch (e) {
-    print('Error refreshing token: $e');
-    return false;
+  }
+
+  // Reset password after OTP verification
+  Future<ApiResponse> resetPassword(String username, String newPassword) async {
+    try {
+      final client = getClient();
+      final response = await client
+          .post(
+            Uri.parse('$baseUrl/auth/reset-password'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'username': username,
+              'newPassword': newPassword,
+            }),
+          )
+          .timeout(Duration(seconds: 20));
+
+      client.close();
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return ApiResponse(
+          success: true,
+          message: responseData['message'] ?? 'Password reset successful',
+          data: responseData['data'],
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: responseData['message'] ?? 'Failed to reset password',
+        );
+      }
+    } catch (e) {
+      print('Error resetting password: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Connection error during password reset',
+      );
+    }
+  }
+
+  Future<ApiResponse> getUserByUsername(String username) async {
+    try {
+      print('🔍 Fetching user details for username: $username');
+      final client = getClient();
+      
+      final url = Uri.parse('$baseUrl/auth/user/$username');
+      print('🌐 User details URL: $url');
+      
+      final response = await client
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(Duration(seconds: 20));
+
+      print('📡 User details response status: ${response.statusCode}');
+      print('📦 User details response body: ${response.body}');
+
+      client.close();
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return ApiResponse(
+          success: true,
+          data: responseData['data'],
+          message: responseData['message'],
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: responseData['message'] ?? 'Failed to fetch user details',
+      );
+    } catch (e) {
+      print('❌ Error fetching user details: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Connection error. Please check your internet and try again.',
+      );
   }
 }
+
+  Future<ApiResponse> updateUserProfile(String username, Map<String, String> userData) async {
+    try {
+      print('🔄 Updating profile for username: $username');
+      final client = getClient();
+      
+      final url = Uri.parse('$baseUrl/api/user/$username');
+      print('🌐 Update profile URL: $url');
+      
+      final response = await client
+          .put(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: json.encode(userData),
+          )
+          .timeout(Duration(seconds: 20));
+
+      print('📡 Update profile response status: ${response.statusCode}');
+      print('📦 Update profile response body: ${response.body}');
+
+      client.close();
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        // Update the local user data
+        if (responseData['data'] != null) {
+          await _saveUserData(responseData['data']);
+        }
+        
+        return ApiResponse(
+          success: true,
+          data: responseData['data'],
+          message: responseData['message'],
+        );
+      }
+      return ApiResponse(
+        success: false,
+        message: responseData['message'] ?? 'Failed to update profile',
+      );
+    } catch (e) {
+      print('❌ Error updating profile: $e');
+      return ApiResponse(
+        success: false,
+        message: 'Connection error. Please check your internet and try again.',
+      );
+    }
+  }
 }

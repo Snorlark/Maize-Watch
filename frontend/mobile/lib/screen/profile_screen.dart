@@ -19,12 +19,14 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String userName = 'farmer1';
-  String name = 'Juan Dela Cruz';
-  String contactNumber = '+639 023 2311 321';
-  String address = '0717 Tolentino St., Sampaloc, Philippines';
+  String userName = '';
+  String name = '';
+  String contactNumber = '';
+  String address = '';
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
+  bool _isUpdating = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -34,21 +36,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
       final userData = await _apiService.getUserData();
       if (userData != null) {
         setState(() {
-          userName = userData['username'] ?? 'farmer1';
-          name = userData['fullName'] ?? userData['name'] ?? 'Juan Dela Cruz';
-          contactNumber = userData['contactNumber'] ?? userData['phoneNumber'] ?? '+639 023 2311 321';
-          address = userData['address'] ?? '0717 Tolentino St., Sampaloc, Philippines';
+          userName = userData['username'] ?? '';
+          name = userData['fullName'] ?? userData['name'] ?? '';
+          contactNumber = userData['contactNumber'] ?? userData['phoneNumber'] ?? '';
+          address = userData['address'] ?? '';
           _isLoading = false;
         });
       } else {
-        setState(() => _isLoading = false);
+        setState(() {
+          _errorMessage = 'Failed to load user data';
+          _isLoading = false;
+        });
       }
     } catch (e) {
       print('Error loading user data: $e');
-      setState(() => _isLoading = false);
+      setState(() {
+        _errorMessage = 'Error loading user data';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleProfileUpdate(Map<String, String> updatedData) async {
+    try {
+      setState(() {
+        _isUpdating = true;
+        _errorMessage = null;
+      });
+
+      final response = await _apiService.updateUserProfile(userName, updatedData);
+
+      if (response.success) {
+        setState(() {
+          userName = updatedData['userName']!;
+          name = updatedData['name']!;
+          contactNumber = updatedData['contactNumber']!;
+          address = updatedData['address']!;
+          _isUpdating = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profile updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        setState(() {
+          _errorMessage = response.message;
+          _isUpdating = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Failed to update profile'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error updating profile: $e');
+      setState(() {
+        _errorMessage = 'Error updating profile';
+        _isUpdating = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -132,90 +204,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: Colors.green))
-              : Padding(
-                  padding: const EdgeInsets.all(30.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 40),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            localizations.account,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade900,
-                              fontFamily: 'Montserrat',
-                            ),
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
                           ),
-                          Image.asset(
-                            'assets/images/maize_watch_logo.png',
-                            height: 60,
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _loadUserData,
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 5),
-                      CustomFont(
-                        text: localizations.about_user,
-                        fontSize: 16,
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      const SizedBox(height: 20),
-
-                      UserInfoWidget(
-                        userName: userName,
-                        name: name,
-                        contactNumber: contactNumber,
-                        address: address,
-                        onUpdate: (updatedData) {
-                          setState(() {
-                            userName = updatedData['userName']!;
-                            name = updatedData['name']!;
-                            contactNumber = updatedData['contactNumber']!;
-                            address = updatedData['address']!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 20),
-
-                      CustomButton(
-                        context: context,
-                        title: localizations.settings,
-                        screen: SettingsScreen(),
-                      ),
-                      CustomButton(
-                        context: context,
-                        title: localizations.about,
-                        screen: AboutUsScreen(),
-                      ),
-                      const Spacer(),
-                      Center(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: MAIZE_LOGO_ICON,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.all(30.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 40),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                localizations.account,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade900,
+                                  fontFamily: 'Montserrat',
+                                ),
+                              ),
+                              Image.asset(
+                                'assets/images/maize_watch_logo.png',
+                                height: 60,
+                              ),
+                            ],
                           ),
-                          onPressed: _handleLogout,
-                          child: Text(
-                            localizations.logout,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontFamily: 'Montserrat',
+                          const SizedBox(height: 5),
+                          CustomFont(
+                            text: localizations.about_user,
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(height: 20),
+
+                          UserInfoWidget(
+                            userName: userName,
+                            name: name,
+                            contactNumber: contactNumber,
+                            address: address,
+                            onUpdate: _handleProfileUpdate,
+                            isUpdating: _isUpdating,
+                          ),
+                          const SizedBox(height: 20),
+
+                          CustomButton(
+                            context: context,
+                            title: localizations.settings,
+                            screen: SettingsScreen(),
+                          ),
+                          CustomButton(
+                            context: context,
+                            title: localizations.about,
+                            screen: AboutUsScreen(),
+                          ),
+                          const Spacer(),
+                          Center(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: MAIZE_LOGO_ICON,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                              ),
+                              onPressed: _handleLogout,
+                              child: Text(
+                                localizations.logout,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontFamily: 'Montserrat',
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+                    ),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:maize_watch/screen/corn_registration_screen.dart';
@@ -35,6 +36,14 @@ final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('en'));
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Load .env file from project root (two levels up from lib folder)
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Warning: Could not load .env file: $e');
+    // Continue without .env file - you can set default values or handle this case
+  }
 
   // Optional: Force English on first run
   final prefs = await SharedPreferences.getInstance();
@@ -72,7 +81,8 @@ void main() async {
   NotificationService().initialize();
 
   FlutterLocalNotificationsPlugin()
-      .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>()
       ?.requestPermissions(alert: true, badge: true, sound: true);
 
   runApp(const MaizeWatch());
@@ -81,7 +91,8 @@ void main() async {
 Future<void> _requestPermissions() async {
   if (Platform.isIOS || Platform.isMacOS) {
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
   } else if (Platform.isAndroid) {
     if (await Permission.notification.isGranted) return;

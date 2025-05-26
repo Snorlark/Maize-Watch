@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:maize_watch/model/sensor_data_model.dart';
 import 'package:maize_watch/services/api_service.dart';
+import 'package:maize_watch/services/prescription_service.dart';
 
 class CropConditionService {
   // Singleton pattern
@@ -9,8 +11,9 @@ class CropConditionService {
   factory CropConditionService() => _instance;
   CropConditionService._internal();
 
-  // ApiService for fetching data
+  // Services
   final ApiService _apiService = ApiService();
+  final PrescriptionService _prescriptionService = PrescriptionService();
   
   // ValueNotifier to broadcast condition data changes
   final ValueNotifier<SensorReading?> currentDataNotifier = ValueNotifier(null);
@@ -145,6 +148,49 @@ class CropConditionService {
         return Colors.orange;
       case 'Critical':
         return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Get overall status from analytics
+  Future<String> getOverallStatus(BuildContext context) async {
+    try {
+      final userData = await _apiService.getUserData();
+      if (userData == null) return 'Unknown';
+      
+      final userId = userData['id'] ?? userData['_id'];
+      if (userId == null) return 'Unknown';
+      
+      final result = await _prescriptionService.checkForNewPrescriptions(context);
+      if (result['success'] == true && result['hasNewPrescriptions'] == true) {
+        final prescriptions = result['prescriptions'] as List<Map<String, dynamic>>;
+        if (prescriptions.isNotEmpty) {
+          // Get the highest priority prescription's severity
+          final highestPriority = prescriptions.reduce((a, b) {
+            int aPriority = a['priority'] is int ? a['priority'] : (a['priority'] is String ? int.tryParse(a['priority']) ?? 2 : 2);
+            int bPriority = b['priority'] is int ? b['priority'] : (b['priority'] is String ? int.tryParse(b['priority']) ?? 2 : 2);
+            return aPriority < bPriority ? a : b;
+          });
+          return (highestPriority['priority'] is int ? highestPriority['priority'] : int.tryParse(highestPriority['priority'].toString()) ?? 2) == 1 ? 'CRITICAL' : 'WARNING';
+        }
+      }
+      return 'NORMAL';
+    } catch (e) {
+      print('Error getting overall status: $e');
+      return 'NORMAL';
+    }
+  }
+
+  // Get color for overall status
+  Color getOverallStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'CRITICAL':
+        return Colors.red;
+      case 'WARNING':
+        return Colors.orange;
+      case 'NORMAL':
+        return Colors.green;
       default:
         return Colors.grey;
     }

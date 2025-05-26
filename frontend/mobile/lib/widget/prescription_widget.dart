@@ -2,37 +2,31 @@
 import 'package:flutter/material.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
-import 'package:maize_watch/model/prescription_model.dart';
+import '../model/prescription_model.dart';
 
 class PrescriptionWidget extends StatelessWidget {
-  final String title;
-  final String value;
-  final String date;
-  final String time;
-  final bool isChecked;
-  final Function(bool) onChecked;
-  final String? category;
-  final int? priority;
-  final String? description;
+  final Prescription prescription;
+  final Function(bool) onStatusChanged;
+  final Function()? onDelete;
+  final Function()? onCheckAll;
+  final Function()? onUncheckAll;
+  final Function()? onDeleteAll;
+  final Function()? onDeleteCompleted;
 
   const PrescriptionWidget({
     Key? key,
-    required this.title,
-    required this.value,
-    required this.date,
-    required this.time,
-    required this.isChecked,
-    required this.onChecked,
-    this.category,
-    this.priority,
-    this.description,
+    required this.prescription,
+    required this.onStatusChanged,
+    this.onDelete,
+    this.onCheckAll,
+    this.onUncheckAll,
+    this.onDeleteAll,
+    this.onDeleteCompleted,
   }) : super(key: key);
 
   // Get the color based on priority
   Color _getPriorityColor() {
-    if (priority == null) return Colors.blue.shade700;
-    
-    switch (priority) {
+    switch (prescription.priority) {
       case 1:
         return Colors.red.shade700; // High priority
       case 2:
@@ -43,24 +37,20 @@ class PrescriptionWidget extends StatelessWidget {
         return Colors.blue.shade700; // Default
     }
   }
-  
+
   // Get category icon
   IconData _getCategoryIcon() {
-    if (category == null) return Icons.recommend;
-    
-    switch (category!.toLowerCase()) {
-      case 'soil ph':
+    switch (prescription.parameter.toLowerCase()) {
+      case 'soil_ph':
         return Icons.science;
-      case 'moisture':
+      case 'soil_moisture':
         return Icons.water_drop;
       case 'temperature':
         return Icons.thermostat;
-      case 'nutrition':
-        return Icons.eco;
-      case 'pest':
-        return Icons.bug_report;
-      case 'disease':
-        return Icons.coronavirus;
+      case 'humidity':
+        return Icons.water;
+      case 'light_intensity':
+        return Icons.light_mode;
       default:
         return Icons.recommend;
     }
@@ -68,6 +58,11 @@ class PrescriptionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dateTime = prescription.timestamp;
+    final date = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    final time =
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(
@@ -106,22 +101,24 @@ class PrescriptionWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomFont(
-                        text: title,
+                        text: prescription.parameter
+                            .replaceAll('_', ' ')
+                            .toUpperCase(),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                       const SizedBox(height: 4),
                       CustomFont(
-                        text: value,
+                        text: '${prescription.value} (${prescription.status})',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: Colors.black54,
                       ),
-                      if (description != null && description!.isNotEmpty) ...[
+                      if (prescription.recommendation.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         CustomFont(
-                          text: description!,
+                          text: prescription.recommendation,
                           fontSize: 13,
                           fontWeight: FontWeight.normal,
                           color: Colors.black54,
@@ -130,26 +127,40 @@ class PrescriptionWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Checkbox
-                Transform.scale(
-                  scale: 1.2,
-                  child: Checkbox(
-                    value: isChecked,
-                    onChanged: (value) {
-                      if (value != null) {
-                        onChecked(value);
-                      }
-                    },
-                    activeColor: MAIZE_PRIMARY,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+                // Checkbox and delete button
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (prescription.isCompleted && onDelete != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.red.shade400,
+                        ),
+                        onPressed: onDelete,
+                        tooltip: 'Delete prescription',
+                      ),
+                    Transform.scale(
+                      scale: 1.2,
+                      child: Checkbox(
+                        value: prescription.isCompleted,
+                        onChanged: (value) {
+                          if (value != null) {
+                            onStatusChanged(value);
+                          }
+                        },
+                        activeColor: MAIZE_PRIMARY,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            // Date, time and priority indicator
+            // Date and time
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -182,27 +193,47 @@ class PrescriptionWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (priority != null) Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor().withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _getPriorityColor().withOpacity(0.3),
-                      width: 1,
+                // Impact score
+                if (prescription.impactScore > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getPriorityColor().withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: CustomFont(
+                      text:
+                          '${(prescription.impactScore * 100).toStringAsFixed(0)}% Impact',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: _getPriorityColor(),
                     ),
                   ),
-                  child: CustomFont(
-                    text: priority == 1 ? 'High' : (priority == 2 ? 'Medium' : 'Low'),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: _getPriorityColor(),
-                  ),
-                ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context,
+    String label,
+    IconData icon,
+    Function()? onPressed,
+    Color color,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        textStyle: const TextStyle(fontSize: 12),
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:maize_watch/custom/constants.dart';
+import 'package:maize_watch/custom/custom_dialog.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import '../widget/prescription_widget.dart';
-import '../services/prescription_service.dart'; // Import the PrescriptionService
+import '../services/prescription_service.dart';
+import '../model/prescription_model.dart';
 
 class PrescriptionScreen extends StatefulWidget {
   const PrescriptionScreen({super.key});
@@ -14,8 +16,8 @@ class PrescriptionScreen extends StatefulWidget {
 
 class _PrescriptionScreenState extends State<PrescriptionScreen> {
   String selectedFilter = 'View All';
-  List<Map<String, dynamic>> prescriptions = [];
-  List<Map<String, dynamic>> filteredPrescriptions = [];
+  List<Prescription> prescriptions = [];
+  List<Prescription> filteredPrescriptions = [];
   bool isLoading = true;
   String errorMessage = '';
   final PrescriptionService _prescriptionService = PrescriptionService();
@@ -26,6 +28,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     _loadPrescriptions();
   }
 
+  
+
   // Load prescriptions from the service
   Future<void> _loadPrescriptions() async {
     try {
@@ -34,20 +38,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         errorMessage = '';
       });
 
-      // Get prescriptions from the service
       print('🔍 Fetching prescriptions...');
-      final loadedPrescriptions = await _prescriptionService.getAllPrescriptions();
+      final fetchedPrescriptions = await _prescriptionService.getAllPrescriptions(context);
       
-      // Debug log the prescriptions count and some details
-      print('📋 Found ${loadedPrescriptions.length} prescriptions in total');
-      if (loadedPrescriptions.isNotEmpty) {
-        print('📝 First prescription: ${loadedPrescriptions[0]["title"]} (${loadedPrescriptions[0]["date"]})');
-      } else {
-        print('❌ No prescriptions found');
-      }
+      print('📋 Found ${fetchedPrescriptions.length} prescriptions in total');
       
       setState(() {
-        prescriptions = loadedPrescriptions;
+        this.prescriptions = fetchedPrescriptions;
         isLoading = false;
       });
 
@@ -62,83 +59,310 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     }
   }
 
+
   // Update prescription status (checked/unchecked)
-  Future<void> _updatePrescriptionStatus(
-      Map<String, dynamic> prescription, bool isChecked) async {
+  Future<void> _updatePrescriptionStatus(Prescription prescription, bool isChecked) async {
     try {
+      print('🔄 Updating prescription ${prescription.id} to completed: $isChecked');
+      
       final result = await _prescriptionService.updatePrescriptionStatus(
-        prescription['analysisId'],
-        prescription['prescriptionId'],
+        prescription.fieldId, // Use fieldId as analysisId
+        prescription.id,
         isChecked
       );
 
       if (result['success']) {
-        // Update the local prescription list
+        // Update the local prescription list immediately
         setState(() {
-          final index = prescriptions.indexWhere((p) => 
-              p['prescriptionId'] == prescription['prescriptionId'] && 
-              p['analysisId'] == prescription['analysisId']);
+          final index = prescriptions.indexWhere((p) => p.id == prescription.id);
           
           if (index != -1) {
-            prescriptions[index]['isChecked'] = isChecked;
-            filterPrescriptions(selectedFilter); // Refresh the filtered list
+            // Create a new prescription with updated status
+            prescriptions[index] = Prescription(
+              id: prescription.id,
+              timestamp: prescription.timestamp,
+              parameter: prescription.parameter,
+              value: prescription.value,
+              status: prescription.status,
+              recommendation: prescription.recommendation,
+              priority: prescription.priority,
+              impactScore: prescription.impactScore,
+              isCompleted: isChecked, // FIXED: Update the isCompleted flag
+              fieldId: prescription.fieldId,
+              growthStage: prescription.growthStage,
+            );
+            
+            // Refresh the filtered list
+            filterPrescriptions(selectedFilter);
+            print('✅ Updated prescription status locally');
           }
         });
-      } else {
-        // Show error toast or snackbar
+        
+        // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Failed to update status'))
+          SnackBar(
+            content: Text(isChecked ? 'Prescription marked as completed' : 'Prescription marked as pending'),
+            backgroundColor: Colors.green,
+          )
+        );
+      } else {
+        // Show error toast
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to update status'),
+            backgroundColor: Colors.red,
+          )
         );
       }
     } catch (e) {
+      print('❗ Error updating prescription status: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating prescription: $e'))
+        SnackBar(
+          content: Text('Error updating prescription: $e'),
+          backgroundColor: Colors.red,
+        )
       );
     }
   }
 
-  void filterPrescriptions(String filterBy) {
-    List<Map<String, dynamic>> tempList = List.from(prescriptions);
+  // Delete prescription
+ Future<void> _deletePrescription(Prescription prescription) async {
+    try {
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Prescription'),
+          content: Text('Are you sure you want to delete this ${prescription.parameter.replaceAll('_', ' ')} prescription?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Delete',
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+            ),
+          ],
+        ),
+      );
 
-    // First apply status filter if needed
-    if (filterBy == 'Done') {
-      tempList = tempList.where((prescription) => prescription["isChecked"] == true).toList();
-    } else if (filterBy == 'Not Yet Done') {
-      tempList = tempList.where((prescription) => prescription["isChecked"] == false).toList();
+      if (confirmed == true) {
+        setState(() {
+          // Remove from both lists
+          prescriptions.removeWhere((p) => p.id == prescription.id);
+          filteredPrescriptions.removeWhere((p) => p.id == prescription.id);
+        });
+
+        // Update SharedPreferences
+        await _prescriptionService.updateLocalStorageAfterDelete(prescription.id);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Prescription deleted successfully'),
+            backgroundColor: Colors.green,
+          )
+        );
+        
+        print('✅ Prescription ${prescription.id} deleted successfully');
+      }
+    } catch (e) {
+      print('❗ Error deleting prescription: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting prescription: $e'),
+          backgroundColor: Colors.red,
+        )
+      );
+    }
+  }
+
+   void filterPrescriptions(String filterBy) {
+    List<Prescription> tempList = List.from(prescriptions);
+
+    // Apply status filter
+    switch (filterBy) {
+      case 'Done':
+        tempList = tempList.where((prescription) => prescription.isCompleted).toList();
+        break;
+      case 'Not Yet Done':
+        tempList = tempList.where((prescription) => !prescription.isCompleted).toList();
+        break;
+      case 'Newest First':
+        // No filtering, just sorting
+        break;
+      case 'Oldest First':
+        // No filtering, just sorting
+        break;
+      case 'View All':
+      default:
+        // No filtering
+        break;
     }
 
-    // Then apply sorting if needed
-    if (filterBy == 'Newest' || filterBy == 'Oldest') {
-      tempList.sort((a, b) {
-        // Parse the date strings to DateTime objects
-        DateTime dateA = DateFormat("dd/MM/yyyy").parse(a["date"]);
-        DateTime dateB = DateFormat("dd/MM/yyyy").parse(b["date"]);
-        
-        // Compare dates
-        int dateComparison = filterBy == 'Newest' ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
-        
-        // If dates are equal, compare times
-        if (dateComparison == 0 && a["time"] != null && b["time"] != null) {
-          DateTime timeA = DateFormat("HH:mm").parse(a["time"]);
-          DateTime timeB = DateFormat("HH:mm").parse(b["time"]);
-          return filterBy == 'Newest' ? timeB.compareTo(timeA) : timeA.compareTo(timeB);
-        }
-        
-        return dateComparison;
-      });
+    // Apply sorting
+    switch (filterBy) {
+      case 'Newest First':
+        tempList.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        break;
+      case 'Oldest First':
+        tempList.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        break;
+      default:
+        // Default sorting: Priority first, then newest first
+        tempList.sort((a, b) {
+          int priorityComparison = a.priority.compareTo(b.priority);
+          if (priorityComparison != 0) return priorityComparison;
+          return b.timestamp.compareTo(a.timestamp); // Newest first for same priority
+        });
+        break;
     }
 
     setState(() {
       selectedFilter = filterBy;
       filteredPrescriptions = tempList;
     });
+    
+    print('🔍 Filtered prescriptions: ${tempList.length} items for filter: $filterBy');
+  }
+
+  // Handle bulk operations
+  Future<void> _handleCheckAll(bool isChecked) async {
+    try {
+      await _prescriptionService.updateAllPrescriptionsStatus(isChecked);
+      await _loadPrescriptions(); // Reload to reflect changes
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isChecked ? 'All prescriptions marked as completed' : 'All prescriptions marked as pending'),
+          backgroundColor: Colors.green,
+        )
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating prescriptions: $e'),
+          backgroundColor: Colors.red,
+        )
+      );
+    }
+  }
+
+  Future<void> _handleDeleteCompleted() async {
+    try {
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Completed Prescriptions'),
+          content: const Text('Are you sure you want to delete all completed prescriptions?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Delete',
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await _prescriptionService.deleteAllCompletedPrescriptions();
+        await _loadPrescriptions(); // Reload to reflect changes
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All completed prescriptions deleted'),
+            backgroundColor: Colors.green,
+          )
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting prescriptions: $e'),
+          backgroundColor: Colors.red,
+        )
+      );
+    }
+  }
+
+  Future<void> _handleDeleteAll() async {
+    try {
+      // Show confirmation dialog
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete All Prescriptions'),
+          content: const Text('Are you sure you want to delete ALL prescriptions? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Delete All',
+                style: TextStyle(color: Colors.red.shade900),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await _prescriptionService.deleteAllPrescriptions();
+        await _loadPrescriptions(); // Reload to reflect changes
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All prescriptions deleted'),
+            backgroundColor: Colors.green,
+          )
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting prescriptions: $e'),
+          backgroundColor: Colors.red,
+        )
+      );
+    }
+  }
+
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    Function() onPressed,
+    Color color,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        textStyle: const TextStyle(fontSize: 12),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _loadPrescriptions, // Pull to refresh functionality
+        onRefresh: _loadPrescriptions,
         child: Container(
           decoration: const BoxDecoration(
             color: MAIZE_BOTTOM_OVERLAY
@@ -155,123 +379,185 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 10),
                         CustomFont(
-                          text: "Prescriptions",
+                          text: 'Prescriptions',
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green.shade900,
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
+                        CustomFont(
+                          text: 'Manage your prescriptions (${prescriptions.length} total)',
+                          fontSize: 14,
+                          color: MAIZE_PRIMARY,
+                        ),
                       ],
                     ),
-                    Image.asset(
-                      'assets/images/maize_watch_logo.png',
-                      scale: 5.5,
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _loadPrescriptions,
+                      tooltip: 'Refresh prescriptions',
                     ),
                   ],
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white54,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: DropdownButton<String>(
-                    elevation: 0,
-                    dropdownColor: MAIZE_PRIMARY_LIGHT,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
-                    borderRadius: BorderRadius.circular(15),
-                    value: selectedFilter,
-                    icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
-                    underline: Container(),
-                    items: <String>['View All', 'Newest', 'Oldest', 'Done', 'Not Yet Done']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value, style: TextStyle(color: Colors.green.shade900)),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        filterPrescriptions(newValue);
-                      }
-                    },
-                  ),
-                ),
                 const SizedBox(height: 20),
-                Expanded(
-                  child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : errorMessage.isNotEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                // Filter dropdown and Check All button in a row
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Filter dropdown
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: PopupMenuButton<String>(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'View All',
+                            child: Text('View All'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Done',
+                            child: Text('Done'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Not Yet Done',
+                            child: Text('Not Yet Done'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Newest First',
+                            child: Text('Newest First'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'Oldest First',
+                            child: Text('Oldest First'),
+                          ),
+                        ],
+                        onSelected: (value) => filterPrescriptions(value),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(errorMessage, 
-                                style: TextStyle(color: Colors.red[700]),
-                                textAlign: TextAlign.center,
+                              const Icon(Icons.sort, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                selectedFilter,
+                                style: const TextStyle(fontSize: 14),
                               ),
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: _loadPrescriptions,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green[700],
-                                ),
-                                child: const Text('Retry', style: TextStyle(color: Colors.white)),
-                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_drop_down),
                             ],
                           ),
-                        )
-                      : filteredPrescriptions.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.article_outlined, size: 48, color: Colors.green[300]),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No prescriptions found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.green[900],
-                                    fontWeight: FontWeight.bold
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  selectedFilter != 'View All' 
-                                    ? 'Try changing your filter' 
-                                    : 'Pull down to refresh',
-                                  style: TextStyle(color: Colors.green[700]),
-                                ),
-                              ],
+                        ),
+                      ),
+                    ),
+                    // Check All and Delete buttons in a column
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Check All toggle button
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            final allChecked = prescriptions.every((p) => p.isCompleted);
+                            _handleCheckAll(!allChecked);
+                          },
+                          icon: Icon(
+                            prescriptions.every((p) => p.isCompleted) 
+                              ? Icons.check_box 
+                              : Icons.check_box_outline_blank,
+                            size: 20,
+                          ),
+                          label: Text(
+                            prescriptions.every((p) => p.isCompleted) 
+                              ? 'Uncheck All' 
+                              : 'Check All',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                        ),
+                        // Delete Checked button (only shown when some items are checked)
+                        if (prescriptions.any((p) => p.isCompleted))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: ElevatedButton.icon(
+                              onPressed: _handleDeleteCompleted,
+                              icon: const Icon(Icons.delete_sweep, size: 20),
+                              label: const Text('Delete'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
                             ),
-                          )
-                        : ListView.builder(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            itemCount: filteredPrescriptions.length,
-                            itemBuilder: (context, index) {
-                              final prescription = filteredPrescriptions[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 15),
-                                child: PrescriptionWidget(
-                                  title: prescription["title"] ?? 'Untitled',
-                                  value: prescription["value"] ?? '',
-                                  date: prescription["date"] ?? '',
-                                  time: prescription["time"] ?? '',
-                                  isChecked: prescription["isChecked"] ?? false,
-                                  onChecked: (bool value) {
-                                    _updatePrescriptionStatus(prescription, value);
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Prescriptions list
+                Expanded(
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : errorMessage.isNotEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+                                  const SizedBox(height: 16),
+                                  Text(errorMessage, textAlign: TextAlign.center),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: _loadPrescriptions,
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : filteredPrescriptions.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.medical_services_outlined, size: 64, color: Colors.grey.shade400),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        selectedFilter == 'View All' 
+                                          ? 'No prescriptions found' 
+                                          : 'No prescriptions found for "$selectedFilter"',
+                                        style: TextStyle(color: Colors.grey.shade600),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.builder(
+                                  itemCount: filteredPrescriptions.length,
+                                  itemBuilder: (context, index) {
+                                    final prescription = filteredPrescriptions[index];
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 12.0),
+                                      child: PrescriptionWidget(
+                                        prescription: prescription,
+                                        onStatusChanged: (isChecked) =>
+                                            _updatePrescriptionStatus(prescription, isChecked),
+                                        onDelete: prescription.isCompleted 
+                                          ? () => _deletePrescription(prescription)
+                                          : null,
+                                      ),
+                                    );
                                   },
                                 ),
-                              );
-                            },
-                          ),
                 ),
               ],
             ),
@@ -281,3 +567,5 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     );
   }
 }
+
+// Helper method to update local storage after deletion

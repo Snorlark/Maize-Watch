@@ -51,17 +51,7 @@ const allowedOrigins = [
 
 // CORS configuration
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.warn(`Request from disallowed origin: ${origin}`);
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: '*', // Allow all origins during development
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -330,20 +320,8 @@ app.use((err, req, res, next) => {
 
 // Start server after connecting to MongoDB
 const startServer = async () => {
-  let client;
   try {
-    const connections = await connectToMongo();
-    client = connections.client;
-    
-    // Initial data sync on startup
-    try {
-      console.log('Performing initial ThingSpeak data synchronization...');
-      const savedCount = await thingSpeakService.syncDataFromThingSpeak();
-      console.log(`Initial ThingSpeak sync completed successfully: ${savedCount} records saved`);
-    } catch (syncError) {
-      console.error('Initial ThingSpeak sync failed:', syncError);
-      // Continue starting server despite sync failure
-    }
+    const { client } = await connectToMongo();
     
     const server = app.listen(port, '0.0.0.0', () => {
       console.log(`✅ Server running on port ${port}`);

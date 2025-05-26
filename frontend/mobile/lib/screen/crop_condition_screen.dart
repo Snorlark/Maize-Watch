@@ -12,6 +12,7 @@ import 'package:maize_watch/widget/corn_progress_widget.dart';
 import 'package:maize_watch/widget/dashboard_widget.dart';
 import 'package:maize_watch/widget/crop_condition_widget.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:maize_watch/widget/sensor_data_widget.dart';
 
 class CropConditionScreen extends StatefulWidget {
   const CropConditionScreen({super.key});
@@ -53,6 +54,7 @@ class _CropConditionScreenState extends State<CropConditionScreen>
   // Changed from Map to CornField
   CornField? _cornField;
   List<SensorReading>? _historicalData;
+  String _overallStatus = 'NORMAL';
 
   @override
   void initState() {
@@ -71,6 +73,7 @@ class _CropConditionScreenState extends State<CropConditionScreen>
 
     _loadUserGreeting();
     _loadData();
+    _loadOverallStatus();
   }
 
   Future<void> _loadUserGreeting() async {
@@ -131,6 +134,13 @@ class _CropConditionScreenState extends State<CropConditionScreen>
       });
       _animationController.forward();
     }
+  }
+
+  Future<void> _loadOverallStatus() async {
+    final status = await _cropConditionService.getOverallStatus(context);
+    setState(() {
+      _overallStatus = status;
+    });
   }
 
   @override
