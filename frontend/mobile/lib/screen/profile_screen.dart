@@ -41,25 +41,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _errorMessage = null;
       });
 
+      print('Calling getUserData()...');
       final userData = await _apiService.getUserData();
+      print('getUserData returned: $userData');
+      
       if (userData != null) {
+        print('=== FULL API RESPONSE DEBUG ===');
+        print('Raw userData: $userData');
+        print('userData type: ${userData.runtimeType}');
+        print('userData keys: ${userData.keys}');
+        
+        // Check each field individually
+        userData.forEach((key, value) {
+          print('Field "$key": $value (${value.runtimeType})');
+        });
+        
+        // Check if data is nested
+        if (userData.containsKey('user')) {
+          print('Found nested user object: ${userData['user']}');
+        }
+        if (userData.containsKey('data')) {
+          print('Found nested data object: ${userData['data']}');
+        }
+        print('================================');
+        
         setState(() {
-          userName = userData['username'] ?? '';
-          name = userData['fullName'] ?? userData['name'] ?? '';
-          contactNumber = userData['contactNumber'] ?? userData['phoneNumber'] ?? '';
-          address = userData['address'] ?? '';
+          // Handle potential nested structure
+          Map<String, dynamic> userInfo = userData;
+          
+          // Check if user data is nested under 'user' or 'data' key
+          if (userData.containsKey('user') && userData['user'] is Map) {
+            userInfo = userData['user'] as Map<String, dynamic>;
+            print('Using nested user data: $userInfo');
+          } else if (userData.containsKey('data') && userData['data'] is Map) {
+            userInfo = userData['data'] as Map<String, dynamic>;
+            print('Using nested data: $userInfo');
+          }
+          
+          // Map exact field names from MongoDB document with null safety
+          userName = userInfo['username']?.toString() ?? '';
+          name = userInfo['fullName']?.toString() ?? '';
+          contactNumber = userInfo['contactNumber']?.toString() ?? '';
+          address = userInfo['address']?.toString() ?? '';
+          
           _isLoading = false;
         });
+
+        print('Final parsed data - Username: $userName, Name: $name, Contact: $contactNumber, Address: $address');
+        
+        // Check if essential fields are missing from API response
+        if (contactNumber.isEmpty || address.isEmpty) {
+          print('WARNING: Missing fields in API response!');
+          print('contactNumber missing: ${contactNumber.isEmpty}');
+          print('address missing: ${address.isEmpty}');
+          print('Expected fields: [username, fullName, contactNumber, address, role]');
+          
+          // Try to fetch complete user data if fields are missing
+          final completeUserData = await _apiService.getUserByUsername(userName);
+          if (completeUserData != null && completeUserData.data != null) {
+            final userDetails = completeUserData.data as Map<String, dynamic>;
+            setState(() {
+              contactNumber = userDetails['contactNumber']?.toString() ?? '';
+              address = userDetails['address']?.toString() ?? '';
+            });
+            print('Updated from getUserByUsername - Contact: $contactNumber, Address: $address');
+          }
+        }
       } else {
         setState(() {
-          _errorMessage = 'Failed to load user data';
+          _errorMessage = 'Failed to load user data - No data received';
           _isLoading = false;
         });
       }
     } catch (e) {
       print('Error loading user data: $e');
       setState(() {
-        _errorMessage = 'Error loading user data';
+        _errorMessage = 'Error loading user data: ${e.toString()}';
         _isLoading = false;
       });
     }
@@ -72,28 +129,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _errorMessage = null;
       });
 
-      final response = await _apiService.updateUserProfile(userName, updatedData);
+      print('Updating profile with data: $updatedData');
+
+      // Prepare the update payload with exact MongoDB field names
+      final updatePayload = {
+        'fullName': updatedData['name'] ?? name,
+        'contactNumber': updatedData['contactNumber'] ?? contactNumber,
+        'address': updatedData['address'] ?? address,
+      };
+
+      final response = await _apiService.updateUserProfile(userName, updatePayload);
 
       if (response.success) {
         setState(() {
-          userName = updatedData['userName']!;
-          name = updatedData['name']!;
-          contactNumber = updatedData['contactNumber']!;
-          address = updatedData['address']!;
+          name = updatedData['name'] ?? name;
+          contactNumber = updatedData['contactNumber'] ?? contactNumber;
+          address = updatedData['address'] ?? address;
           _isUpdating = false;
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Profile updated successfully'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
             ),
           );
         }
+
+        // Reload data to ensure consistency with backend
+        await _loadUserData();
       } else {
         setState(() {
-          _errorMessage = response.message;
+          _errorMessage = response.message ?? 'Failed to update profile';
           _isUpdating = false;
         });
 
@@ -102,6 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SnackBar(
               content: Text(response.message ?? 'Failed to update profile'),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -109,15 +179,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       print('Error updating profile: $e');
       setState(() {
-        _errorMessage = 'Error updating profile';
+        _errorMessage = 'Error updating profile: ${e.toString()}';
         _isUpdating = false;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating profile'),
+            content: Text('Error updating profile: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -203,22 +274,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: MAIZE_BOTTOM_OVERLAY,
           ),
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.green))
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Colors.green),
+                      SizedBox(height: 16),
+                      Text(
+                        'Loading profile...',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               : _errorMessage != null
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _loadUserData,
-                            child: const Text('Retry'),
-                          ),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Error Loading Profile',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                                fontFamily: 'Montserrat',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontFamily: 'Montserrat',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton.icon(
+                              onPressed: _loadUserData,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: MAIZE_ACCENT,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   : Padding(
@@ -272,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           CustomButton(
                             context: context,
                             title: localizations.about,
-                            screen: AboutUsScreen(),
+                            screen: const AboutUsScreen(),
                           ),
                           const Spacer(),
                           Center(

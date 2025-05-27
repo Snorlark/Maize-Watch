@@ -90,6 +90,8 @@ export const login = async (req, res) => {
         id: user._id,
         username: user.username,
         fullName: user.fullName,
+        contactNumber: user.contactNumber,
+        address: user.address,
         role: user.role
       }
     });
@@ -258,10 +260,14 @@ export const getUserByUsername = async (req, res) => {
       });
     }
 
-    // Only return necessary user details
+    // Return all necessary user details
     const userDetails = {
-      phoneNumber: user.contactNumber,
-      username: user.username
+      id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      contactNumber: user.contactNumber,
+      address: user.address,
+      role: user.role
     };
 
     return res.status(200).json({
@@ -271,6 +277,58 @@ export const getUserByUsername = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting user details:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Update user profile
+export const updateUser = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { fullName, contactNumber, address } = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    const { db } = await connectToDatabase();
+    const result = await db.collection('users').updateOne(
+      { username },
+      { 
+        $set: {
+          fullName,
+          contactNumber,
+          address,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        username,
+        fullName,
+        contactNumber,
+        address
+      }
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
     return res.status(500).json({
       success: false,
       message: 'Internal server error'
