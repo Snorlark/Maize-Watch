@@ -43,7 +43,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               CustomFont(
-                text: widget.userName,
+                text: widget.userName.isNotEmpty ? widget.userName : 'Username',
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: MAIZE_ACCENT,
@@ -64,9 +64,9 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
             ],
           ),
           const SizedBox(height: 10),
-          buildUserInfo(title: "Name", value: widget.name),
-          buildUserInfo(title: "Contact No.", value: widget.contactNumber),
-          buildUserInfo(title: "Address", value: widget.address),
+          buildUserInfo(title: "Name", value: widget.name.isNotEmpty ? widget.name : 'Not provided'),
+          buildUserInfo(title: "Contact No.", value: widget.contactNumber.isNotEmpty ? widget.contactNumber : 'Not provided'),
+          buildUserInfo(title: "Address", value: widget.address.isNotEmpty ? widget.address : 'Not provided'),
         ],
       ),
     );
@@ -90,7 +90,13 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 fontFamily: 'Montserrat',
               ),
             ),
-            TextSpan(text: value),
+            TextSpan(
+              text: value,
+              style: TextStyle(
+                color: value == 'Not provided' ? Colors.grey : Colors.black,
+                fontStyle: value == 'Not provided' ? FontStyle.italic : FontStyle.normal,
+              ),
+            ),
           ],
         ),
       ),
@@ -153,9 +159,10 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
                     border: OutlineInputBorder(),
+                    hintText: 'Enter your full name',
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Please enter full name';
                     }
                     return null;
@@ -176,15 +183,16 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
                     border: OutlineInputBorder(),
+                    hintText: '+639 023 2311 321',
                   ),
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Please enter contact number';
                     }
-                    if (!RegExp(r'^\+[0-9]{1,3} [0-9]{3} [0-9]{3,4} [0-9]{3,4}$')
-                        .hasMatch(value)) {
-                      return 'Invalid format. Example: +639 023 2311 321';
+                    // More flexible phone validation
+                    if (value.trim().length < 10) {
+                      return 'Contact number too short';
                     }
                     return null;
                   },
@@ -204,10 +212,11 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                     focusColor: MAIZE_ACCENT,
                     hoverColor: MAIZE_ACCENT, 
                     border: OutlineInputBorder(),
+                    hintText: 'Enter your address',
                   ),
                   maxLines: 3,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Please enter address';
                     }
                     return null;
@@ -216,19 +225,23 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(15),
                     foregroundColor: MAIZE_PRIMARY_LIGHT,
                     backgroundColor: MAIZE_ACCENT,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   onPressed: widget.isUpdating
                       ? null
                       : () {
                           if (_formKey.currentState!.validate()) {
+                            // Send data with exact MongoDB field names
                             widget.onUpdate({
-                              'userName': userNameController.text,
-                              'name': nameController.text,
-                              'contactNumber': contactController.text,
-                              'address': addressController.text,
+                              'userName': userNameController.text.trim(),
+                              'name': nameController.text.trim(),
+                              'contactNumber': contactController.text.trim(),
+                              'address': addressController.text.trim(),
                             });
                             Navigator.pop(context);
                           }
@@ -242,7 +255,7 @@ class _UserInfoWidgetState extends State<UserInfoWidget> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : CustomFont(
+                      : const CustomFont(
                           text: 'Save Changes',
                           fontWeight: FontWeight.w500, 
                           color: MAIZE_PRIMARY_LIGHT, 

@@ -1152,53 +1152,60 @@ class ApiService {
   }
 }
 
-  Future<ApiResponse> updateUserProfile(String username, Map<String, String> userData) async {
+  Future<ApiResponse> updateUserProfile(String username, Map<String, dynamic> userData) async {
     try {
       print('🔄 Updating profile for username: $username');
-      final client = getClient();
-      
-      final url = Uri.parse('$baseUrl/api/user/$username');
+      final token = await _getToken();
+      if (token == null) {
+        return ApiResponse(success: false, message: 'No authentication token found');
+      }
+
+      final url = Uri.parse('$baseUrl/auth/user/$username');
       print('🌐 Update profile URL: $url');
-      
-      final response = await client
-          .put(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: json.encode(userData),
-          )
-          .timeout(Duration(seconds: 20));
+
+      final client = getClient();
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(userData),
+      );
 
       print('📡 Update profile response status: ${response.statusCode}');
       print('📦 Update profile response body: ${response.body}');
 
-      client.close();
-
-      final responseData = json.decode(response.body);
-
-      if (response.statusCode == 200 && responseData['success'] == true) {
-        // Update the local user data
-        if (responseData['data'] != null) {
-          await _saveUserData(responseData['data']);
-        }
-        
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
         return ApiResponse(
           success: true,
-          data: responseData['data'],
-          message: responseData['message'],
+          message: data['message'],
+          data: data['data'],
+        );
+      } else {
+        final error = jsonDecode(response.body);
+        return ApiResponse(
+          success: false,
+          message: error['message'] ?? 'Failed to update profile',
         );
       }
-      return ApiResponse(
-        success: false,
-        message: responseData['message'] ?? 'Failed to update profile',
-      );
     } catch (e) {
       print('❌ Error updating profile: $e');
       return ApiResponse(
         success: false,
-        message: 'Connection error. Please check your internet and try again.',
+        message: 'Error updating profile: $e',
       );
+    }
+  }
+
+  Future<String?> getToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('token');
+    } catch (e) {
+      print('Error getting token: $e');
+      return null;
     }
   }
 }

@@ -43,8 +43,18 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       
       print('📋 Found ${fetchedPrescriptions.length} prescriptions in total');
       
+      // Group prescriptions by parameter and severity
+      Map<String, Prescription> latestPrescriptions = {};
+      for (var prescription in fetchedPrescriptions) {
+        String key = '${prescription.parameter}_${prescription.status}';
+        if (!latestPrescriptions.containsKey(key) || 
+            prescription.timestamp.isAfter(latestPrescriptions[key]!.timestamp)) {
+          latestPrescriptions[key] = prescription;
+        }
+      }
+      
       setState(() {
-        this.prescriptions = fetchedPrescriptions;
+        this.prescriptions = latestPrescriptions.values.toList();
         isLoading = false;
       });
 
@@ -66,7 +76,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       print('🔄 Updating prescription ${prescription.id} to completed: $isChecked');
       
       final result = await _prescriptionService.updatePrescriptionStatus(
-        prescription.fieldId, // Use fieldId as analysisId
+        prescription.fieldId,
         prescription.id,
         isChecked
       );
@@ -87,7 +97,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               recommendation: prescription.recommendation,
               priority: prescription.priority,
               impactScore: prescription.impactScore,
-              isCompleted: isChecked, // FIXED: Update the isCompleted flag
+              isCompleted: isChecked,
               fieldId: prescription.fieldId,
               growthStage: prescription.growthStage,
             );
@@ -233,6 +243,19 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   // Handle bulk operations
   Future<void> _handleCheckAll(bool isChecked) async {
     try {
+      // Only update non-completed prescriptions
+      final prescriptionsToUpdate = prescriptions.where((p) => p.isCompleted != isChecked).toList();
+      
+      if (prescriptionsToUpdate.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isChecked ? 'All prescriptions are already completed' : 'All prescriptions are already pending'),
+            backgroundColor: Colors.blue,
+          )
+        );
+        return;
+      }
+
       await _prescriptionService.updateAllPrescriptionsStatus(isChecked);
       await _loadPrescriptions(); // Reload to reflect changes
       ScaffoldMessenger.of(context).showSnackBar(
