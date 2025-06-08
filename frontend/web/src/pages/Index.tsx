@@ -1,10 +1,16 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 export default function Index() {
-    const navigate = useNavigate();
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    
+  const navigate = useNavigate();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    AOS.init({ duration: 1000, once: true });
+  }, []);
+
     const images = [
         '/images/healthycorn.png',
         '/images/prescriptions.png',
@@ -26,7 +32,7 @@ export default function Index() {
             
           <div className="bg-[url(/images/background.png)] rounded-bl-[50px] rounded-br-[50px] rounded-tl-none rounded-tr-none relative h-197 bg-cover bg-center flex items-center justify-center">
             <nav className="fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
-              <div className="w-16 md:w-20 py-2 flex items-center">
+              <div className="w-10 md:w-20 py-2 flex items-center">
                 <img
                   src="/images/smalllogo.png"
                   alt="Logo"
@@ -53,20 +59,38 @@ export default function Index() {
   
             {/* HERO PAGE */}
             <div className="relative flex flex-col items-center justify-center text-white text-center space-y-4 md:space-y-6 w-full px-4">
-              <div className="flex flex-col items-center">
+              <div 
+                  data-aos="zoom-in" className="flex flex-col items-center">
                 <img src="/images/mainlogo.png" alt="Maize Watch Logo" className=" w-80 md:w-100 lg:w-180 xl:w-250 m-auto rounded-full transition-all duration-300 hover:scale-105" />
               </div>
-  
-              <button  onClick={() => navigate('/login')} className="mt-2 md:mt-4 px-6 md:px-8 py-3 md:py-4 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center">
-                Monitor now →
-              </button>
+ 
+              <div 
+                  data-aos="fade-up" data-aos-delay="200" className='lg:mt-10 '>
+                <button onClick={() => {
+                  const target = document.getElementById('about-section');
+                  if (target) {
+                    const offset = -250; 
+                    const bodyRect = document.body.getBoundingClientRect().top;
+                    const elementRect = target.getBoundingClientRect().top;
+                    const elementPosition = elementRect - bodyRect;
+                    const offsetPosition = elementPosition + offset;
+
+                    window.scrollTo({
+                      top: offsetPosition,
+                      behavior: 'smooth'
+                    });
+                  }
+                }}className="animate-bounce mt-2 md:mt-4 px-6 md:px-8 py-3 md:py-3 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center" >
+                  See more ↓
+                </button>
+              </div>
             </div>
           </div>
 
             
             {/* ABOUT PART */}
-          <div className="relative -mt-12 pb-8 md:pb-4 ">
-              <div className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
+          <div data-aos="fade-up" data-aos-delay="200" className="relative -mt-12 pb-8 md:pb-4 ">
+              <div id="about-section"  className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
                 <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
                   <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
                     <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
@@ -89,6 +113,8 @@ export default function Index() {
             <div className="py-8 md:py-15 px-4 md:px-30">
               <div className="container mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+
+                  <div data-aos="fade-up" data-aos-delay="300">
                   <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-40 lg:mr-10 ml-2 md:ml-8">
@@ -98,7 +124,9 @@ export default function Index() {
                       </p>
                     </div>
                   </div>
+                  </div>
   
+                  <div data-aos="fade-up" data-aos-delay="600" > 
                   <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-45 lg:mr-10 ml-2 md:ml-8">
@@ -108,7 +136,9 @@ export default function Index() {
                       </p>
                     </div>
                   </div>
+                  </div>
   
+                  <div data-aos="fade-up" data-aos-delay="900">
                   <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
                     <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
                     <div className="flex items-start gap-4 mt-4 md:mt-8 mr-35 mb-3 md:mr-45 lg:mr-10 ml-2 md:ml-8">
@@ -117,6 +147,7 @@ export default function Index() {
                         data-driven solutions.
                       </p>
                     </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -131,16 +162,16 @@ export default function Index() {
                   
                   <div className=" ml-10  space-y-6">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 ">
+                      <div data-aos="fade-down" data-aos-delay="400" className="p-2 ">
                         <img src="/images/header.png" alt="Brain Icon" className="w-full h-full" />
                       </div>
                     </div>
   
-                    <p className="text-gray-700 text-sm md:text-base xl:text-lg max-w-xl">
+                    <p  data-aos="fade-right" data-aos-delay="400" className="text-gray-700 text-sm md:text-base xl:text-lg max-w-xl">
                     ──────── &nbsp;&nbsp;&nbsp; We also offer a real-time app that helps corn farmers optimize crop yield through IoT sensor data. It monitors key environmental factors and provides actionable insights from our prescriptive analytics, enabling smarter farming decisions for better productivity and sustainability.
                     </p>
                     
-                    <div className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90  ">
+                    <div  data-aos="fade" data-aos-delay="500" className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90  ">
                       <button onClick={() => navigate('/solutions')} className="cursor-pointer flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1">
                         LEARN MORE
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -167,7 +198,7 @@ export default function Index() {
                     </div>
                   </div>
                   
-                  <div className="relative flex justify-center items-center">
+                  <div data-aos="fade-left" data-aos-delay="400" className="relative flex justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15 transition-discrete ease-in-out duration-500"></div>
                     <img
                       src={images[currentImageIndex]}
@@ -183,25 +214,29 @@ export default function Index() {
   
             {/* TECHNOLOGY PART */}
             <div className="bg-[url(/images/background2.png)] rounded-tr-[50px] rounded-tl-[50px] rounded-bl-none relative min-h-screen bg-cover bg-center flex items-center justify-center py-8 md:py-20">
-                 <div className="container px-4 md:px-16">
+                 <div  className="container px-4 md:px-16">
                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-4 lg:gap-0">
                     
                     {/* colum1 */}
-                     <div className="text-white space-y-4 md:space-y-6 mt-4 md:mt-30 lg:mt-40 2xl:mt-100 px-2 md:px-0">
-                       <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold leading-tight">
+                     <div data-aos="fade" className="text-white space-y-4 md:space-y-6 mt-4 md:mt-30 lg:mt-40 2xl:mt-100 px-2 md:px-0">
+                       <h2 data-aos="fade-down" data-aos-delay="400" className="text-2xl md:text-4xl lg:text-5xl font-bold leading-tight">
                          The Technology<br />Behind.
                        </h2>
-                       <button onClick={() => navigate('/technology')} className="flex items-center gap-2 text-sm md:text-lg font-semibold text-(--color-white) border-b-2 border-(--color-white) pb-1 hover:text-(--color-lgreen) hover:border-(--color-lgreen) transition-all duration-300 cursor-pointer">
+                       <div data-aos-delay="500">
+
+                       <button  onClick={() => navigate('/technology')} className="flex items-center gap-2 text-sm md:text-lg font-semibold text-(--color-white) border-b-2 border-(--color-white) pb-1 hover:text-(--color-lgreen) hover:border-(--color-lgreen) transition-all duration-300 cursor-pointer">
                          LEARN MORE
                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
                            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                          </svg>
                        </button>
+                       
+                       </div>
                      </div>
                     
                     {/* colum2 */}
                       {/* subcolumn1 */}
-                    <div className="container mx-auto xl:col-span-2 2xl:col-span-1 px-4 xl:mx-0">
+                    <div data-aos="fade-left" data-aos-delay="400" className="container mx-auto xl:col-span-2 2xl:col-span-1 px-4 xl:mx-0">
                       <div className="grid grid-cols-1 xl:grid-cols-2 ">
   
                         <div className="text-white mt-4 md:mt-40 mx-auto w-full max-w-[320px] lg:max-w-full">
@@ -235,7 +270,7 @@ export default function Index() {
   
       
              {/* FOOTER PART */}
-             <footer className="bg-(--color-white) py-6 px-4 md:px-10">
+             <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-10">
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">

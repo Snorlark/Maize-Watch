@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import AOS from 'aos';
 import { useState } from 'react';
 
 export default function ProductPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+   useEffect(() => {
+      AOS.init({ duration: 1000, once: true });
+    }, []);
 
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -47,7 +52,7 @@ export default function ProductPage() {
                   <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Get App</button></li>
                   <li><button>
                     <img
-                      onClick={() => navigate('/headermenu')}
+                      onClick={() => navigate('/header-menu')}
                       src="/images/menu-green.png"
                       alt="Logo"
                       className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
@@ -62,15 +67,16 @@ export default function ProductPage() {
             <div className="container mx-auto px-4 md:px-20 lg:px-80">
               <div className=" space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 ">
+                  <div data-aos="zoom-in" className="p-2 ">
                     <img src="/images/header-product.png" alt="Brain Icon" className="w-full h-full" />
                   </div>
                 </div>
-                <p className="py-5 xl:py-10  xl:text-lg">
+                <p data-aos="fade-up" data-aos-delay="200" className="py-5 xl:py-10  xl:text-lg">
                  <b>Maize Watch</b>  offers a real-time, IoT-powered mobile and web application designed to revolutionize corn farming by turning raw environmental data into actionable insights. Using a network of smart sensors—monitoring temperature, humidity, soil moisture, light intensity, and soil pH—our system collects critical information from the field and transmits it instantly to the cloud via a SIM-enabled microcontroller.
                 </p>
                 <div className="items-center">
                 <button
+                    data-aos="fade" data-aos-delay="400"
                     onClick={() => setIsOpen(!isOpen)}
                     className="flex items-center  text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
                   >
@@ -97,12 +103,12 @@ export default function ProductPage() {
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
           {/* See the prototype */}
-          <section className="py-16 px-4 md:px-20 mr-5">
+          <section className="py-16 px-4 md:px-20 ">
             <div className="container mx-auto px-4 md:px-20 lg:px-80">
               <div className=" space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 ">
-                    <img src="/images/header-product-2.png" alt="Brain Icon" className="w-full h-full" />
+                  <div className="py-2 ">
+                    <h2 className=" text-right text-3xl md:text-6xl font-bold text-(--color-dgreen)">See the prototype.</h2>
                   </div>
 
                 </div>
@@ -111,16 +117,16 @@ export default function ProductPage() {
           </section>
 
               <div className="container mx-auto 2xl:px-40 ">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div data-aos="fade" data-aos-delay="200" className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   
                   <div className="px-15 2xl:pl-35 mx-auto  space-y-10">
                     <div className="flex items-center gap-2">
-                      <div >
+                      <div data-aos="fade-down" data-aos-delay="400" >
                         <h2 className="text-5xl md:text-4xl font-bold text-(--color-dgreen)">Real-time Monitoring</h2>
                       </div>
                     </div>
   
-                    <p className=" xl:py-8 text-sm md:text-base xl:text-lg max-w-xl">
+                    <p data-aos="fade-right" data-aos-delay="400" className=" xl:py-8 text-sm md:text-base xl:text-lg max-w-xl">
                       Monitor your corn crops in real time with IoT sensors—track temperature, soil moisture, humidity, pH level, and light intensity for healthier harvests. Get instant visibility into field conditions, enabling quick decisions on irrigation, soil care, and crop management to support optimal growth and yield.
                     </p>
                     
@@ -144,7 +150,7 @@ export default function ProductPage() {
                     </div>
                   </div>
                   
-                  <div className="relative flex justify-center items-center">
+                  <div data-aos="fade-left" data-aos-delay="400" className="relative flex justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15 transition-discrete ease-in-out duration-500"></div>
                     <img
                       src={images[currentImageIndex]}
@@ -160,15 +166,15 @@ export default function ProductPage() {
           <hr className="my-5 border-t border-(--color-lgreen) mt-20  mx-10 xl:mx-40" />
 
           <section className=" py-12 px-4 md:px-20">
-            <div className="max-w-5xl mx-auto space-y-6 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-(--color-dgreen)">Learn and Grow.</h2>
+            <div data-aos="fade" data-aos-delay="400"  className="max-w-5xl mx-auto space-y-6 text-center">
+              <h2 data-aos="fade-down" data-aos-delay="400" className="text-3xl md:text-4xl font-bold text-(--color-dgreen)">Learn and Grow.</h2>
 
               <div className="flex flex-col items-center space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-md max-w-3xl w-full xl:my-15">
-                  <div className="bg-(--color-dgreen) text-white p-10 flex items-center justify-center">
+                  <div data-aos="fade-right" data-aos-delay="400"  className="bg-(--color-dgreen) text-white p-10 flex items-center justify-center">
                     <p className="text-lg font-semibold text-left">Want to understand how the app works?</p>
                   </div>
-                  <div className="bg-(--color-lgreen) text-white p-12 flex items-center justify-center">
+                  <div data-aos="fade-left" data-aos-delay="400"  className="bg-(--color-lgreen) text-white p-12 flex items-center justify-center">
                     <p className="text-sm md:text-base text-left">
                       Navigate through our <span className="underline">knowledge hub</span>, just click the learn more below.
                     </p>
@@ -190,7 +196,7 @@ export default function ProductPage() {
 
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
-          <footer className="bg-(--color-white) py-6 px-4 md:px-12">
+          <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-12">
             <div className="container mx-auto max-w-6xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                 <div className="space-y-3">
