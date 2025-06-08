@@ -131,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       print('Updating profile with data: $updatedData');
 
-      // Prepare the update payload with exact MongoDB field names
+      // Prepare the update payload with correct field names
       final updatePayload = {
         'fullName': updatedData['name'] ?? name,
         'contactNumber': updatedData['contactNumber'] ?? contactNumber,

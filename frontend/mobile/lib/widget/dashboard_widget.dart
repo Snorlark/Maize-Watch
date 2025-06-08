@@ -24,24 +24,56 @@ class _DashboardWidgetState extends State<DashboardWidget> {
   final ApiService _apiService = ApiService();
   final CropConditionService _cropConditionService = CropConditionService();
   bool _isLoading = true;
+  bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _cropConditionService.initialize();
-    _loadInitialData();
+    _initializeData();
   }
 
-  Future<void> _loadInitialData() async {
+  Future<void> _initializeData() async {
     setState(() {
       _isLoading = true;
+      _hasError = false;
+      _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 300));
+    try {
+      // Initialize the service and wait for initial data
+      _cropConditionService.initialize();
+      
+      // Wait for initial data load with timeout
+      bool dataLoaded = false;
+      int attempts = 0;
+      while (!dataLoaded && attempts < 5) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_cropConditionService.currentDataNotifier.value != null) {
+          dataLoaded = true;
+        }
+        attempts++;
+      }
 
-    setState(() {
-      _isLoading = false;
-    });
+      if (!dataLoaded) {
+        throw Exception('Timeout waiting for initial data');
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error initializing dashboard data: $e');
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = 'Failed to load sensor data. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _retryLoading() async {
+    await _initializeData();
   }
 
   @override
@@ -49,12 +81,57 @@ class _DashboardWidgetState extends State<DashboardWidget> {
     final localize = AppLocalizations.of(context)!;
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Loading sensor data...'),
+          ],
+        ),
+      );
+    }
+
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_errorMessage ?? 'An error occurred'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _retryLoading,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
     }
 
     return ValueListenableBuilder<SensorReading?>(
       valueListenable: _cropConditionService.currentDataNotifier,
       builder: (context, currentData, _) {
+        if (currentData == null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orange),
+                const SizedBox(height: 16),
+                const Text('No sensor data available'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _retryLoading,
+                  child: const Text('Refresh'),
+                ),
+              ],
+            ),
+          );
+        }
+
         return SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
@@ -69,7 +146,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                           .currentDataNotifier.value?.soilMoisture
                           .toDouble() ??
                       0.0,
-                  end: currentData?.soilMoisture.toDouble() ?? 0,
+                  end: currentData.soilMoisture.toDouble(),
                 ),
                 duration: const Duration(milliseconds: 800),
                 builder: (context, value, child) {
@@ -89,7 +166,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                           .currentDataNotifier.value?.soilPh
                           .toDouble() ??
                       0.0,
-                  end: currentData?.soilPh.toDouble() ?? 0,
+                  end: currentData.soilPh.toDouble(),
                 ),
                 duration: const Duration(milliseconds: 800),
                 builder: (context, value, child) {
@@ -111,7 +188,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                         begin: _cropConditionService
                                 .currentDataNotifier.value?.humidity ??
                             0,
-                        end: currentData?.humidity ?? 0,
+                        end: currentData.humidity,
                       ),
                       duration: const Duration(milliseconds: 800),
                       builder: (context, value, child) {
@@ -130,7 +207,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                                 .currentDataNotifier.value?.lightIntensity
                                 .toDouble() ??
                             0,
-                        end: currentData?.lightIntensity.toDouble() ?? 0,
+                        end: currentData.lightIntensity.toDouble(),
                       ),
                       duration: const Duration(milliseconds: 800),
                       builder: (context, value, child) {

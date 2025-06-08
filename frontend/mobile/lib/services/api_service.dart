@@ -98,9 +98,9 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_data', json.encode(userData));
 
-    // Also store the login timestamp
-    await prefs.setInt(
-        'login_timestamp', DateTime.now().millisecondsSinceEpoch);
+    // Store the login timestamp
+    await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+    print('✅ Login timestamp stored: ${DateTime.now().millisecondsSinceEpoch}');
   }
 
   // Get user data from shared preferences
@@ -134,13 +134,57 @@ class ApiService {
     }
   }
 
+  // Check if session is expired (1 week)
+  Future<bool> isSessionExpired() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final loginTimestamp = prefs.getInt('login_timestamp');
+      
+      if (loginTimestamp == null) {
+        print('⚠️ No login timestamp found');
+        return true;
+      }
+
+      final loginDate = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
+      final now = DateTime.now();
+      final difference = now.difference(loginDate);
+      
+      // Session expires after 7 days
+      final isExpired = difference.inDays >= 7;
+      
+      if (isExpired) {
+        print('⚠️ Session expired. Last login: $loginDate');
+        // Clear session data
+        await logout();
+      } else {
+        print('✅ Session valid. Days remaining: ${7 - difference.inDays}');
+      }
+      
+      return isExpired;
+    } catch (e) {
+      print('❌ Error checking session expiration: $e');
+      return true;
+    }
+  }
+
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
-    final token = await _getToken();
-    final userData = await getUserData();
-    print('Retrieved token: $token');
-    print('Retrieved user data: $userData');
-    return token != null && userData != null;
+    try {
+      // First check if session is expired
+      if (await isSessionExpired()) {
+        print('❌ Session expired');
+        return false;
+      }
+
+      final token = await _getToken();
+      final userData = await getUserData();
+      print('Retrieved token: ${token != null ? 'Present' : 'Missing'}');
+      print('Retrieved user data: ${userData != null ? 'Present' : 'Missing'}');
+      return token != null && userData != null;
+    } catch (e) {
+      print('❌ Error checking login status: $e');
+      return false;
+    }
   }
 
   // Logout and clear all user data
@@ -160,9 +204,9 @@ class ApiService {
       // Optionally, make an API call to invalidate the session server-side
       // await _dio.post('/logout');
 
-      print('User logged out successfully');
+      print('✅ User logged out successfully');
     } catch (e) {
-      print('Error during logout: $e');
+      print('❌ Error during logout: $e');
       throw Exception('Failed to logout');
     }
   }
@@ -173,7 +217,7 @@ class ApiService {
       print('🔑 Attempting login for username: $username');
       final client = getClient();
       
-      final loginUrl = Uri.parse('$baseUrl/auth/login');
+      final loginUrl = Uri.parse('$baseUrl/api/auth/login');
       print('🌐 Login URL: $loginUrl');
       
       final response = await client
@@ -185,6 +229,7 @@ class ApiService {
             body: json.encode({
               'username': username,
               'password': password,
+              'deviceType': 'mobile',
             }),
           )
           .timeout(Duration(seconds: 20));
@@ -197,9 +242,10 @@ class ApiService {
       final responseData = json.decode(response.body);
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-        if (responseData['token'] != null) {
+        final data = responseData['data'];
+        if (data != null && data['token'] != null) {
           // Save the token after successful login
-          final token = responseData['token'];
+          final token = data['token'];
           print('🎟️ Token received: ${token.substring(0, min(token.length, 10))}...');
           
           // Check if token is properly formatted by decoding it
@@ -225,8 +271,8 @@ class ApiService {
             await _saveToken(token);
             
             // Store the user data if available
-            if (responseData['user'] != null) {
-              currentUser = responseData['user'];
+            if (data['user'] != null) {
+              currentUser = data['user'];
               await _saveUserData(currentUser!);
               
               // Explicitly store the user ID
@@ -241,7 +287,7 @@ class ApiService {
               success: true,
               data: {
                 'token': token,
-                'user': responseData['user']
+                'user': data['user']
               },
             );
           } catch (e) {
@@ -251,6 +297,10 @@ class ApiService {
         } else {
           print('❌ No token in response data');
           print('Response data: $responseData');
+          return ApiResponse(
+            success: false,
+            message: 'No token received from server',
+          );
         }
       } else {
         print('❌ Login failed with status ${response.statusCode}');
@@ -276,7 +326,7 @@ class ApiService {
       final client = getClient();
       final response = await client
           .post(
-            Uri.parse('$baseUrl/auth/register'),
+            Uri.parse('$baseUrl/api/auth/register'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -991,17 +1041,17 @@ class ApiService {
     }
 
     _isRefreshing = true;
-  try {
+    try {
       final refreshToken = await _getRefreshToken();
       if (refreshToken == null) {
         print('No refresh token available');
         return false;
       }
     
-    final client = getClient();
+      final client = getClient();
       try {
-    final response = await client.post(
-      Uri.parse('$baseUrl/auth/refresh-token'),
+        final response = await client.post(
+          Uri.parse('$baseUrl/api/auth/refresh-token'),
           headers: {'Content-Type': 'application/json'},
           body: json.encode({'refreshToken': refreshToken}),
         );
@@ -1031,10 +1081,10 @@ class ApiService {
       final client = getClient();
       final response = await client
           .post(
-            Uri.parse('$baseUrl/auth/verify-phone'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+            Uri.parse('$baseUrl/api/auth/verify-phone'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: json.encode({
               'phoneNumber': phoneNumber,
             }),
@@ -1072,7 +1122,7 @@ class ApiService {
       final client = getClient();
       final response = await client
           .post(
-            Uri.parse('$baseUrl/auth/reset-password'),
+            Uri.parse('$baseUrl/api/auth/reset-password'),
             headers: {
               'Content-Type': 'application/json',
             },
@@ -1113,7 +1163,7 @@ class ApiService {
       print('🔍 Fetching user details for username: $username');
       final client = getClient();
       
-      final url = Uri.parse('$baseUrl/auth/user/$username');
+      final url = Uri.parse('$baseUrl/api/auth/user/$username');
       print('🌐 User details URL: $url');
       
       final response = await client
@@ -1160,7 +1210,7 @@ class ApiService {
         return ApiResponse(success: false, message: 'No authentication token found');
       }
 
-      final url = Uri.parse('$baseUrl/auth/user/$username');
+      final url = Uri.parse('$baseUrl/api/auth/user/$username');
       print('🌐 Update profile URL: $url');
 
       final client = getClient();
@@ -1178,11 +1228,23 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return ApiResponse(
-          success: true,
-          message: data['message'],
-          data: data['data'],
-        );
+        if (data['success'] == true) {
+          // Update the current user data in memory
+          if (currentUser != null) {
+            currentUser!.addAll(userData);
+            await _saveUserData(currentUser!);
+          }
+          return ApiResponse(
+            success: true,
+            message: data['message'],
+            data: data['data'],
+          );
+        } else {
+          return ApiResponse(
+            success: false,
+            message: data['message'] ?? 'Failed to update profile',
+          );
+        }
       } else {
         final error = jsonDecode(response.body);
         return ApiResponse(

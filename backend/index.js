@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
+import bcrypt from 'bcrypt';
 
 import cornRoutes from './routes/corn.route.js'
 import userRoutes from './routes/user.route.js';
@@ -18,6 +19,8 @@ import cornAnalysisRoutes from './routes/cornAnalysis.route.js';
 import { iotConnection } from './services/cornAnalysis.service.js';
 import AnalyticsService from './services/analytics.service.js';
 import authRoutes from './routes/auth.route.js';
+import activityLogRoutes from './routes/activityLog.route.js';
+import { logActivity } from './middleware/activityLog.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,11 +123,21 @@ const connectToMongo = async () => {
 };
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/sensors', sensorDataRoutes);
 app.use('/api/corn', cornRoutes);
 app.use('/api/corn-analysis', cornAnalysisRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Apply activity logging middleware to relevant routes
+app.use('/api/users', logActivity('view', 'user'));
+app.use('/api/corn-fields', logActivity('view', 'corn_field'));
+app.use('/api/sensor-data', logActivity('view', 'sensor_data'));
+app.use('/api/analytics', logActivity('view', 'analytics'));
+app.use('/api/prescriptions', logActivity('view', 'prescription'));
+
+// Activity log routes
+app.use('/api/activity-logs', activityLogRoutes);
 
 // Test route
 app.get('/', (req, res) => {
@@ -159,7 +172,7 @@ app.get('/health', async (req, res) => {
 
 // API Routes - Protected by admin middleware
 // Get all users - admin only
-app.get('/api/users', isAdmin, async (req, res) => {
+app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
   try {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -173,7 +186,7 @@ app.get('/api/users', isAdmin, async (req, res) => {
 });
 
 // Create user - admin only
-app.post('/api/users', isAdmin, async (req, res) => {
+app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
   try {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -187,7 +200,7 @@ app.post('/api/users', isAdmin, async (req, res) => {
 });
 
 // Get single user - admin only
-app.get('/api/users/:id', isAdmin, async (req, res) => {
+app.get('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
   try {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -202,7 +215,7 @@ app.get('/api/users/:id', isAdmin, async (req, res) => {
 });
 
 // Update user - admin only
-app.put('/api/users/:id', isAdmin, async (req, res) => {
+app.put('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
   try {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -220,7 +233,7 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
 });
 
 // Delete user - admin only
-app.delete('/api/users/:id', isAdmin, async (req, res) => {
+app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
   try {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
@@ -275,6 +288,67 @@ app.post('/setup/create-admin', async (req, res) => {
   } catch (err) {
     console.error('Error creating admin:', err);
     res.status(500).json({ error: 'Failed to create admin user' });
+  }
+});
+
+// Promote admin to super_admin (one-time setup)
+app.post('/setup/promote-to-super-admin', async (req, res) => {
+  try {
+    if (!mainDb) {
+      return res.status(500).json({ error: 'Database connection not established' });
+    }
+
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username and password are required'
+      });
+    }
+
+    // Find the admin user
+    const user = await mainDb.collection('users').findOne({ username });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid password'
+      });
+    }
+
+    // Update role to super_admin
+    const result = await mainDb.collection('users').updateOne(
+      { _id: user._id },
+      { $set: { role: 'super_admin' } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User promoted to super admin successfully'
+    });
+  } catch (err) {
+    console.error('Error promoting to super admin:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to promote user to super admin'
+    });
   }
 });
 

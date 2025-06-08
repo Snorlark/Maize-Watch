@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../model/prescription_model.dart';
 
 class PrescriptionWidget extends StatelessWidget {
@@ -56,8 +57,48 @@ class PrescriptionWidget extends StatelessWidget {
     }
   }
 
+  // Get localized parameter name
+  String _getLocalizedParameterName(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    switch (prescription.parameter.toLowerCase()) {
+      case 'soil_ph':
+        return localizations.parameter_soil_ph;
+      case 'soil_moisture':
+        return localizations.parameter_soil_moisture;
+      case 'temperature':
+        return localizations.parameter_temperature;
+      case 'humidity':
+        return localizations.parameter_humidity;
+      case 'light_intensity':
+        return localizations.parameter_light_intensity;
+      default:
+        return prescription.parameter.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
+  // Get localized recommendation text
+  String _getLocalizedRecommendation(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+    // Add translations for common recommendations
+    final recommendation = prescription.recommendation.toLowerCase();
+    if (recommendation.contains('apply') && recommendation.contains('fertilizer')) {
+      return localizations.recommendation_apply_fertilizer;
+    } else if (recommendation.contains('water') || recommendation.contains('irrigation')) {
+      return localizations.recommendation_water;
+    } else if (recommendation.contains('temperature') || recommendation.contains('heat')) {
+      return localizations.recommendation_temperature;
+    } else if (recommendation.contains('ph') || recommendation.contains('soil')) {
+      return localizations.recommendation_soil_ph;
+    } else if (recommendation.contains('light') || recommendation.contains('shade')) {
+      return localizations.recommendation_light;
+    }
+    // If no specific translation is found, return the original recommendation
+    return prescription.recommendation;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final dateTime = prescription.timestamp;
     final date = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     final time =
@@ -82,28 +123,26 @@ class PrescriptionWidget extends StatelessWidget {
               children: [
                 // Category icon
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: _getPriorityColor().withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getCategoryIcon(),
                     color: _getPriorityColor(),
-                    size: 24,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 // Title and value
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomFont(
-                        text: prescription.parameter
-                            .replaceAll('_', ' ')
-                            .toUpperCase(),
+                        text: _getLocalizedParameterName(context),
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
@@ -113,15 +152,23 @@ class PrescriptionWidget extends StatelessWidget {
                         text: '${prescription.value} (${prescription.status})',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black54,
+                        color: Colors.black87,
                       ),
                       if (prescription.recommendation.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        CustomFont(
-                          text: prescription.recommendation,
-                          fontSize: 13,
-                          fontWeight: FontWeight.normal,
-                          color: Colors.black54,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: CustomFont(
+                            text: _getLocalizedRecommendation(context),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
                         ),
                       ],
                     ],
@@ -136,12 +183,13 @@ class PrescriptionWidget extends StatelessWidget {
                         icon: Icon(
                           Icons.delete_outline,
                           color: Colors.red.shade400,
+                          size: 28,
                         ),
                         onPressed: onDelete,
-                        tooltip: 'Delete prescription',
+                        tooltip: localizations.tooltip_delete_prescription,
                       ),
                     Transform.scale(
-                      scale: 1.2,
+                      scale: 1.4,
                       child: Checkbox(
                         value: prescription.isCompleted,
                         onChanged: (value) {
@@ -159,7 +207,7 @@ class PrescriptionWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             // Date and time
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -168,48 +216,34 @@ class PrescriptionWidget extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.calendar_today,
-                      size: 16,
+                      size: 18,
                       color: Colors.grey.shade600,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     CustomFont(
                       text: date,
                       fontSize: 13,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    CustomFont(
-                      text: time,
-                      fontSize: 13,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
                     ),
                   ],
                 ),
-                // Impact score
-                if (prescription.impactScore > 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getPriorityColor().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 18,
+                      color: Colors.grey.shade600,
                     ),
-                    child: CustomFont(
-                      text:
-                          '${(prescription.impactScore * 100).toStringAsFixed(0)}% Impact',
-                      fontSize: 12,
+                    const SizedBox(width: 6),
+                    CustomFont(
+                      text: time,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: _getPriorityColor(),
+                      color: Colors.grey.shade700,
                     ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ],

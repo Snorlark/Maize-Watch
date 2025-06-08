@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:icons_flutter/icons_flutter.dart';
 import 'package:maize_watch/custom/constants.dart';
+import 'package:maize_watch/services/api_service.dart';
+import 'package:maize_watch/screen/landing_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'crop_condition_screen.dart';
 import 'prescription_screen.dart';
@@ -15,26 +18,75 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 1;
   final PageController _pageController = PageController(initialPage: 1);
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      // Check session when app resumes
+      final isExpired = await _apiService.isSessionExpired();
+      if (isExpired && mounted) {
+        // Show session expired message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.session_expired),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {
+                // Navigate to landing screen
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LandingScreen(showLoginOnLoad: true)),
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   Future<bool> _onWillPop() async {
     return await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout?'),
-        content: const Text('Do you really want to logout?'),
+        title: Text(AppLocalizations.of(context)!.logout_title),
+        content: Text(AppLocalizations.of(context)!.logout_message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(true);
+            onPressed: () async {
+              await _apiService.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LandingScreen()),
+                  (route) => false,
+                );
+              }
             },
-            child: const Text('Logout'),
+            child: Text(AppLocalizations.of(context)!.logout),
           ),
         ],
       ),
