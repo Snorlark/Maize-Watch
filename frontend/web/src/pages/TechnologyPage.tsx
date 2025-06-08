@@ -1,10 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from "react";
+import AOS from 'aos';
+import { useEffect } from 'react';
 
 export default function TechnologyPage() {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
 
+       useEffect(() => {
+          AOS.init({ duration: 1000, once: true });
+        }, []);
+    
     return (
         <>
             <body className="bg-(--color-white) min-h-screen">
@@ -24,7 +30,7 @@ export default function TechnologyPage() {
                                     <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Get App</button></li>
                                     <li><button>
                                         <img
-                                            onClick={() => navigate('/headermenu')}
+                                            onClick={() => navigate('/header-menu')}
                                             src="/images/menu-green.png"
                                             alt="Logo"
                                             className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
@@ -35,20 +41,22 @@ export default function TechnologyPage() {
                         </nav>
                     </div>
 
-                    <div className="py-16 px-4 md:px-20 2xl:pt-20 mr-5">
+                    <div data-aos="fade" data-aos-delay="200" className="py-16 px-4 md:px-20 2xl:pt-20 mr-5">
                       <div className="container mx-auto px-4 md:px-20 lg:px-80">
                         <div className=" space-y-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 ">
-                              <img src="/images/header-technology.png" alt="Brain Icon" className="w-full h-full" />
+                              <img src="/images/header-technology.png" data-aos="zoom-in" alt="Brain Icon" className="w-full h-full" />
                             </div>
                           </div >
+                          <div data-aos="fade-up" data-aos-delay="200">
                             <p className="py-2 xl:text-lg mt-10">
                               This system would be accessible through a mobile app that displays real-time data from the Arduino sensors, prompts alerts, and provides prescriptive analytics. The system uses an Arduino board and various sensors such as temperature and humidity sensor, soil moisture sensor, LDR (light dependent resistor) sensor, and pH level sensor which are vital factors to the growth of a corn crop. 
                             </p>
                             <p className="py-2 xl:text-lg mb-10">
                               The collected data from the sensors and with the use of a random forest algorithm would be used to generate a recommendation to the user, providing users recommendations on what actions to perform to further improve the productivity of the crop with its current state.
                             </p>
+                            </div>
                           <div className="items-center">
 
 
@@ -87,11 +95,11 @@ export default function TechnologyPage() {
 
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
-              <div className="container mx-auto py-15 2xl:px-40 ">
+              <div  data-aos="fade-up" className="container mx-auto py-15 2xl:px-40 ">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 items-center">
                   
 
-                <div className="relative flex pb-8 justify-center items-center">
+                <div data-aos="fade-right" className="relative flex pb-8 justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-50 transition-discrete ease-in-out duration-500"></div>
                     <img
                       src="/images/IoT.png"
@@ -101,7 +109,7 @@ export default function TechnologyPage() {
                 </div>
 
 
-                  <div className="px-10  mx-auto ">
+                  <div data-aos="fade-left" className="px-10  mx-auto ">
                     <div className="flex items-center gap-2">
                       <div >
                         <h2 className="text-5xl md:text-4xl pb-2 font-bold text-(--color-dgreen)">Keep an eye on your corn crops in real time with our IoT sensors. </h2>
@@ -118,9 +126,9 @@ export default function TechnologyPage() {
                 </div>
               </div>
 
-              <div className="container mx-auto py-15 2xl:px-40 ">
+              <div  data-aos="fade-up" className="container mx-auto py-15 2xl:px-40 ">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 items-center">
-                  <div className="px-10  mx-auto ">
+                  <div data-aos="fade-right" className="px-10  mx-auto ">
                     <div className="flex items-center gap-2">
                       <div >
                         <h2 className="text-5xl md:text-4xl pb-2 font-bold text-(--color-dgreen)">Get easy-to-follow advices with the prescription checklist.</h2>
@@ -132,7 +140,7 @@ export default function TechnologyPage() {
                   </div>
                   
 
-                  <div className="pt-8 relative flex justify-center items-center">
+                  <div data-aos="fade-left" className="pt-8 relative flex justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-50 transition-discrete ease-in-out duration-500"></div>
                     <img
                       src="/images/prescriptive.png"
@@ -146,7 +154,7 @@ export default function TechnologyPage() {
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
 
-          <footer className="bg-(--color-white) py-6 px-4 md:px-12">
+          <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-12">
             <div className="container mx-auto max-w-6xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                 <div className="space-y-3">

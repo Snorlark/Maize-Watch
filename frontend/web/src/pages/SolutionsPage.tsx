@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import AOS from 'aos';
 import { useLocation } from 'react-router-dom';
 
 export default function SolutionsPage() {
@@ -10,7 +11,10 @@ export default function SolutionsPage() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  
+   useEffect(() => {
+      AOS.init({ duration: 1000, once: true });
+    }, []);
+
   return (
     <>
       <body className="bg-(--color-white) min-h-screen">
@@ -30,7 +34,7 @@ export default function SolutionsPage() {
                   <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Get App</button></li>
                   <li><button>
                     <img
-                      onClick={() => navigate('/headermenu')}
+                      onClick={() => navigate('/header-menu')}
                       src="/images/menu-green.png"
                       alt="Logo"
                       className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
@@ -46,21 +50,13 @@ export default function SolutionsPage() {
               <div className="container mx-auto px-4 md:px-20 lg:px-80">
                 <div className=" space-y-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 ">
+                    <div data-aos="zoom-in" className="p-2 ">
                       <img src="/images/header-solutions.png" alt="Brain Icon" className="w-full h-full" />
                     </div>
                   </div>
-                  <p className="pt-5">
+                  <p data-aos="fade-up" data-aos-delay="200" className="pt-5">
                     Maize Watch is a smart farming system that monitors real-time corn field conditions using IoT sensors and delivers data-driven recommendations through AI-powered prescriptive analytics—helping farmers grow healthier crops, efficiently and sustainably.
                   </p>
-                  <div className="flex items-center md:gap-90  ">
-                    <button onClick={() => navigate('/products')} className="flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">
-                      LEARN MORE
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -76,7 +72,7 @@ export default function SolutionsPage() {
                     <img src="/images/header-solutions-2.png" alt="Brain Icon" className="w-full h-full" />
                   </div>
                   
-                  <div className='py-5'>
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
                     <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Mission.</h1>
                       <p className="text-sm md:text-base leading-relaxed">
@@ -84,7 +80,7 @@ export default function SolutionsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className='py-5'>
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
                     <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Principles.</h1>
                       <p className="text-sm md:text-base leading-relaxed list-disc">
@@ -94,7 +90,7 @@ export default function SolutionsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className='py-5'>
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
                     <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Vision.</h1>
                       <p className="text-sm md:text-base leading-relaxed list-disc">
@@ -113,13 +109,13 @@ export default function SolutionsPage() {
 
           <section className="py-12 px-4 md:px-20">
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center px-4 md:px-20 lg:px-40">
-              <div>
+              <div data-aos="fade-right" data-aos-delay="400">
                 <h2 className="text-6xl font-bold text-(--color-dgreen) mb-8">The Problem.</h2>
                 <p className="text-gray-700 text-sm md:text-base leading-relaxed">
                   Traditional corn farming in rural areas often faces inefficiencies due to a lack of real-time field data, unpredictable climate conditions, and limited access to modern tools for decision-making. Farmers frequently rely on experience and intuition, which can lead to overuse or underuse of resources like water and fertilizer, reduced yields, and vulnerability to crop diseases or poor soil conditions. Additionally, smallholder farmers often lack access to agricultural experts or timely information, making it difficult to make informed choices about irrigation, fertilization, or planting schedules—ultimately impacting both productivity and sustainability.
                 </p>
               </div>
-              <div className="flex justify-center">
+              <div data-aos="fade-left" data-aos-delay="400" className="flex justify-center">
                 <img
                   src="/images/farmer.png" 
                   alt="Farmer inspecting corn"
@@ -132,7 +128,7 @@ export default function SolutionsPage() {
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
 
-          <footer className="bg-(--color-white) py-6 px-4 md:px-12">
+          <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-12">
             <div className="container mx-auto max-w-6xl">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                 <div className="space-y-3">
