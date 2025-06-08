@@ -1,7 +1,7 @@
 //activityLogs.js
 import express from 'express';
 import ActivityLog from '../models/ActivityLog.js';
-import { login, logout, getUserProfile } from '../authController.js';
+import { login, logout, getUserProfile } from '../controllers/authController.js';
 import { isAuthenticated, authorize, isAdminOrSuperAdmin } from '../middleware/auth.middleware.js';
 
 const router = express.Router();

@@ -16,7 +16,7 @@ import historicalDataRoutes from './routes/historical_data.route.js';
 import thingSpeakService from './services/thingspeak.service.js';
 import historicalDataService from './services/historical_data.service.js';
 import { isAdmin, isAuthenticated } from './middleware/auth.middleware.js';
-
+import exportRoutes from './routes/exportRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import usersRoutes from './routes/user.route.js';
 import activityLogsRoutes from './routes/activityLogs.js';
@@ -183,6 +183,7 @@ app.use('/api/historical-data', historicalDataRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/activity-logs', activityLogsRoutes);
+app.use('/api/export', exportRoutes);
 
 // Test route
 app.get('/', (req, res) => {
