@@ -1,6 +1,6 @@
 // authRoutes.js
 import express from 'express';
-import { login, logout, getUserProfile } from '../authController.js';
+import { login, logout, getUserProfile } from '../controllers/authController.js';
 import { isAuthenticated as authenticate, isAdmin, isSuperAdmin, authorize, isAdminOrSuperAdmin } from '../middleware/auth.middleware.js';
 import { logActivity, autoLogActivity } from '../middleware/activityLogger.js';
 
