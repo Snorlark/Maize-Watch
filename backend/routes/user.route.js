@@ -206,7 +206,7 @@ router.post('/register', async (req, res) => {
             fullName,
             contactNumber,
             address,
-            role: 'farmer' // Default role
+            role: 'user' // Default role
         });
         
         // Save the new user

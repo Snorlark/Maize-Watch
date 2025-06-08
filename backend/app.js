@@ -3,6 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import analyticsRoutes from './routes/analytics.route.js';
+import authRoutes from './routes/auth.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Connect to MongoDB

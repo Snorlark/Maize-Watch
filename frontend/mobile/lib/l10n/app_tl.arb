@@ -285,12 +285,77 @@
   "faqQ1": "Paano ko i-on ang mga notipikasyon?",
   "faqA1": "Pumunta sa mga setting at i-toggle ang switch.",
   "faqQ2": "Paano i-reset ang aking password?",
-  "faqA2": "I-click ang ‘Nakalimutan ang Password’ sa login screen.",
+  "faqA2": "I-click ang 'Nakalimutan ang Password' sa login screen.",
 
   "appName": "Maize Watch",
   "aboutApp": "Ang Maize Watch ay isang crop monitoring application na tumutulong sa mga magsasaka na subaybayan ang paglago ng mais at agad na matukoy ang mga problema.",
   "versionInfo": "bersyon 1.0.0",
   "contactUs": "Makipag-ugnayan sa amin sa:",
-  "translate": "Isalin"
-
+  "translate": "Isalin",
+  "prescriptions_title": "Mga Reseta",
+  "prescriptions_subtitle": "Pamahalaan ang iyong mga reseta ({count} kabuuan)",
+  "@prescriptions_subtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "filter_view_all": "Tingnan Lahat",
+  "filter_done": "Tapos Na",
+  "filter_not_done": "Hindi Pa Tapos",
+  "filter_newest": "Pinakabago Muna",
+  "filter_oldest": "Pinakaluma Muna",
+  "action_check_all": "I-check Lahat",
+  "action_uncheck_all": "I-uncheck Lahat",
+  "action_delete": "Tanggalin",
+  "action_delete_all": "Tanggalin Lahat",
+  "action_delete_completed": "Tanggalin ang Tapos Na",
+  "dialog_delete_prescription": "Tanggalin ang Reseta",
+  "dialog_delete_prescription_confirm": "Sigurado ka bang gusto mong tanggalin ang reseta sa {parameter}?",
+  "@dialog_delete_prescription_confirm": {
+    "placeholders": {
+      "parameter": {
+        "type": "String",
+        "example": "antas ng pH ng lupa"
+      }
+    }
+  },
+  "dialog_delete_all_prescriptions": "Tanggalin Lahat ng Reseta",
+  "dialog_delete_all_prescriptions_confirm": "Sigurado ka bang gusto mong tanggalin ang LAHAT ng reseta? Hindi na maibabalik ang aksyong ito.",
+  "dialog_delete_completed_prescriptions": "Tanggalin ang Lahat ng Tapos Nang Reseta",
+  "dialog_delete_completed_prescriptions_confirm": "Sigurado ka bang gusto mong tanggalin ang lahat ng tapos nang reseta?",
+  "status_prescription_completed": "Minarkahan bilang tapos na ang reseta",
+  "status_prescription_pending": "Minarkahan bilang hindi pa tapos ang reseta",
+  "status_prescription_deleted": "Matagumpay na nai-delete ang reseta",
+  "status_all_completed_deleted": "Lahat ng tapos nang reseta ay nai-delete na",
+  "status_all_deleted": "Lahat ng reseta ay nai-delete na",
+  "error_load_prescriptions": "Hindi ma-load ang mga reseta",
+  "error_update_prescription": "Error sa pag-update ng reseta",
+  "error_delete_prescription": "Error sa pag-delete ng reseta",
+  "error_delete_prescriptions": "Error sa pag-delete ng mga reseta",
+  "empty_no_prescriptions": "Walang nakitang reseta",
+  "empty_no_prescriptions_filter": "Walang nakitang reseta para sa \"{filter}\"",
+  "@empty_no_prescriptions_filter": {
+    "placeholders": {
+      "filter": {
+        "type": "String",
+        "example": "Tapos Na"
+      }
+    }
+  },
+  "parameter_soil_ph": "Antas ng pH ng Lupa",
+  "parameter_soil_moisture": "Halumigmig ng Lupa",
+  "parameter_temperature": "Temperatura",
+  "parameter_humidity": "Halumigmig",
+  "parameter_light_intensity": "Lakas ng Liwanag",
+  "tooltip_delete_prescription": "Tanggalin ang reseta",
+  "tooltip_refresh_prescriptions": "I-refresh ang mga reseta",
+  "button_retry": "Subukang Muli",
+  "recommendation_apply_fertilizer": "Maglagay ng pataba ayon sa rekomendasyon para sa pinakamainam na paglago",
+  "recommendation_water": "I-adjust ang iskedyul ng patubig batay sa antas ng halumigmig ng lupa",
+  "recommendation_temperature": "Subaybayan at panatilihin ang pinakamainam na kondisyon ng temperatura",
+  "recommendation_soil_ph": "I-adjust ang antas ng pH ng lupa sa rekomendadong antas",
+  "recommendation_light": "Siguraduhing may tamang liwanag para sa malusog na paglago"
 }

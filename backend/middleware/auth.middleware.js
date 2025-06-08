@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// Export verifyToken function
+// Verify JWT token
 export const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
@@ -20,104 +20,7 @@ export const verifyToken = (token) => {
   }
 };
 
-export async function authenticateToken(req, res, next) {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Format: "Bearer TOKEN"
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access denied. No token provided.'
-      });
-    }
-
-    const decoded = verifyToken(token);
-
-    const user = await User.findById(decoded.id).select('-password');
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token. User not found.'
-      });
-    }
-
-    req.user = {
-      id: user._id.toString(),
-      username: user.username
-    };
-
-    next();
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token.'
-      });
-    } else if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired.'
-      });
-    } else {
-      console.error('Authentication error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Server error during authentication.'
-      });
-    }
-  }
-}
-
-// Admin authorization middleware
-export const isAdmin = async (req, res, next) => {
-  try {
-    // 1. Get token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Unauthorized - No token provided' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // 2. Verify token
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({ message: 'Unauthorized - Invalid token' });
-    }
-    
-    // 3. Find user and check if admin
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    const db = client.db();
-    
-    const user = await db.collection('users').findOne({ _id: new ObjectId(decoded.userId) });
-    await client.close();
-    
-    if (!user) {
-      return res.status(401).json({ message: 'Unauthorized - User not found' });
-    }
-    
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden - Admin access required' });
-    }
-    
-    // Add user info to request object for later use
-    req.user = {
-      id: user._id.toString(),
-      username: user.username,
-      role: user.role
-    };
-    
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Unauthorized - Invalid token' });
-  }
-};
-
-// Basic authentication middleware (for any logged-in user)
+// Authentication middleware for protected routes
 export const isAuthenticated = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -153,7 +56,8 @@ export const isAuthenticated = async (req, res, next) => {
     // Set up the user object with the ID from the database
     req.user = {
       id: user._id.toString(),
-      username: user.username
+      username: user.username,
+      role: user.role
     };
     
     next();
@@ -176,6 +80,25 @@ export const isAuthenticated = async (req, res, next) => {
     return res.status(500).json({
       success: false,
       message: 'Authentication error'
+    });
+  }
+};
+
+// Admin authorization middleware
+export const isAdmin = async (req, res, next) => {
+  try {
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden - Admin access required'
+      });
+    }
+    next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Authorization error'
     });
   }
 };

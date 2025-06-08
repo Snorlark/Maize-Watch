@@ -276,5 +276,73 @@
   "versionInfo": "version 1.0.0",
   "contactUs": "Contact us at:",
   "translate": "Translate",
-  "forgot_password": "Forgot Password?"
+  "forgot_password": "Forgot Password?",
+  "session_expired": "Your session has expired. Please log in again.",
+  "cancel": "Cancel",
+  "prescriptions_title": "Prescriptions",
+  "prescriptions_subtitle": "Manage your prescriptions ({count} total)",
+  "@prescriptions_subtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "filter_view_all": "View All",
+  "filter_done": "Done",
+  "filter_not_done": "Not Yet Done",
+  "filter_newest": "Newest First",
+  "filter_oldest": "Oldest First",
+  "action_check_all": "Check All",
+  "action_uncheck_all": "Uncheck All",
+  "action_delete": "Delete",
+  "action_delete_all": "Delete All",
+  "action_delete_completed": "Delete Completed",
+  "dialog_delete_prescription": "Delete Prescription",
+  "dialog_delete_prescription_confirm": "Are you sure you want to delete this {parameter} prescription?",
+  "@dialog_delete_prescription_confirm": {
+    "placeholders": {
+      "parameter": {
+        "type": "String",
+        "example": "soil pH"
+      }
+    }
+  },
+  "dialog_delete_all_prescriptions": "Delete All Prescriptions",
+  "dialog_delete_all_prescriptions_confirm": "Are you sure you want to delete ALL prescriptions? This action cannot be undone.",
+  "dialog_delete_completed_prescriptions": "Delete Completed Prescriptions",
+  "dialog_delete_completed_prescriptions_confirm": "Are you sure you want to delete all completed prescriptions?",
+  "status_prescription_completed": "Prescription marked as completed",
+  "status_prescription_pending": "Prescription marked as pending",
+  "status_prescription_deleted": "Prescription deleted successfully",
+  "status_all_completed_deleted": "All completed prescriptions deleted",
+  "status_all_deleted": "All prescriptions deleted",
+  "error_load_prescriptions": "Failed to load prescriptions",
+  "error_update_prescription": "Error updating prescription",
+  "error_delete_prescription": "Error deleting prescription",
+  "error_delete_prescriptions": "Error deleting prescriptions",
+  "empty_no_prescriptions": "No prescriptions found",
+  "empty_no_prescriptions_filter": "No prescriptions found for \"{filter}\"",
+  "@empty_no_prescriptions_filter": {
+    "placeholders": {
+      "filter": {
+        "type": "String",
+        "example": "Done"
+      }
+    }
+  },
+  "parameter_soil_ph": "Soil pH",
+  "parameter_soil_moisture": "Soil Moisture",
+  "parameter_temperature": "Temperature",
+  "parameter_humidity": "Humidity",
+  "parameter_light_intensity": "Light Intensity",
+  "tooltip_delete_prescription": "Delete prescription",
+  "tooltip_refresh_prescriptions": "Refresh prescriptions",
+  "button_retry": "Retry",
+  "recommendation_apply_fertilizer": "Apply fertilizer as recommended for optimal growth",
+  "recommendation_water": "Adjust irrigation schedule based on soil moisture levels",
+  "recommendation_temperature": "Monitor and maintain optimal temperature conditions",
+  "recommendation_soil_ph": "Adjust soil pH to recommended levels",
+  "recommendation_light": "Ensure proper light exposure for healthy growth"
 }

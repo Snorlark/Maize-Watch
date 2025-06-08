@@ -10,7 +10,7 @@
     <application
         android:label="maize_watch"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
 
         <!-- Add this to help Android recognize the notification channel -->
         <meta-data

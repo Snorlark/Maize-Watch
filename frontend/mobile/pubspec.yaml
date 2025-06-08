@@ -1,5 +1,5 @@
 name: maize_watch
-description: "A new Flutter project."
+description: "Maize Watch - Smart Corn Farming Management System"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -22,7 +22,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   curved_navigation_bar: ^1.0.6
   syncfusion_flutter_charts: ^28.1.35
-  flutter_local_notifications: ^19.1.0 
+  flutter_local_notifications: ^16.3.2
   permission_handler: ^12.0.0+1
   url_launcher: ^6.3.1
   sqflite: ^2.4.2
@@ -34,6 +34,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   generate: true
@@ -45,3 +46,15 @@ flutter:
     - assets/gif/
     - assets/lottie/
     - .env
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/maize_watch_logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/images/maize_watch_logo.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"

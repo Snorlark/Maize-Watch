@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import apiClient from '../api/client';
 
 export default function Index() {
     const navigate = useNavigate();
@@ -18,40 +17,6 @@ export default function Index() {
 
     const handleNextImage = () => {
         setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    };
-
-    const [status, setStatus] = useState<string>('');
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-    const testConnection = async () => {
-      setIsLoading(true);
-      setStatus('Testing connection...');
-      
-      try {
-        // Test the root endpoint
-        const response = await apiClient.get('/');
-        setStatus(`✅ Connected successfully! Server response: ${JSON.stringify(response.data)}`);
-      } catch (error: any) {
-        console.error('Connection error:', error);
-        
-        let errorMessage = 'Failed to connect to server';
-        
-        if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          errorMessage = `Server error: ${error.response.status} ${error.response.statusText}`;
-        } else if (error.request) {
-          // The request was made but no response was received
-          errorMessage = 'No response from server. Check if the server is running and the URL is correct.';
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          errorMessage = `Error: ${error.message}`;
-        }
-        
-        setStatus(`❌ ${errorMessage}`);
-      } finally {
-        setIsLoading(false);
-      }
     };
 
     return (
@@ -75,7 +40,7 @@ export default function Index() {
                   <li>
                     <button>
                     <img
-                    onClick={() => navigate('/headermenu')}
+                    onClick={() => navigate('/header-menu')}
                     src="/images/menu-green.png"
                     alt="Logo"
                     className="h-8 w-8 md:h-10 md:w-10 object-cover opacity-80 hover:opacity-100 duration-300"
@@ -98,40 +63,11 @@ export default function Index() {
             </div>
           </div>
 
-          <div style={{ margin: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '5px' }}>
-      {/* <h3>API Connection Test</h3>
-      <p>Server URL: {import.meta.env.VITE_API_URL || 'Not set'}</p>
-      <button 
-        onClick={testConnection}
-        disabled={isLoading}a
-        style={{ 
-          padding: '8px 16px',
-          backgroundColor: '#4CAF50',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: isLoading ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {isLoading ? 'Testing...' : 'Test Connection'}
-      </button> */}
-      
-      {status && (
-        <div style={{ 
-          marginTop: '10px', 
-          padding: '10px', 
-          backgroundColor: status.includes('✅') ? '#e7f7e7' : '#ffebee',
-          borderRadius: '4px'
-        }}>
-          {status}
-        </div>
-      )}
-    </div>
             
             {/* ABOUT PART */}
           <div className="relative -mt-12 pb-8 md:pb-4 ">
               <div className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
-                <div onClick={() => navigate('/products')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
+                <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
                   <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
                     <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
                     <div>

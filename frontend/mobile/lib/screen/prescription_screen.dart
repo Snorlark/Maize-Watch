@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_dialog.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../widget/prescription_widget.dart';
 import '../services/prescription_service.dart';
 import '../model/prescription_model.dart';
@@ -39,8 +40,28 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       });
 
       print('🔍 Fetching prescriptions...');
-      final fetchedPrescriptions = await _prescriptionService.getAllPrescriptions(context);
+      final result = await _prescriptionService.checkForNewPrescriptions(context);
       
+      if (!result['success']) {
+        setState(() {
+          isLoading = false;
+          errorMessage = result['message'] ?? 'Failed to load prescriptions';
+        });
+        return;
+      }
+
+      // Handle offline state
+      if (result['isOffline'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Using cached data'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      final fetchedPrescriptions = await _prescriptionService.getAllPrescriptions(context);
       print('📋 Found ${fetchedPrescriptions.length} prescriptions in total');
       
       // Group prescriptions by parameter and severity
@@ -64,7 +85,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       print('❗ Error loading prescriptions: $e');
       setState(() {
         isLoading = false;
-        errorMessage = 'Failed to load prescriptions: $e';
+        errorMessage = 'Failed to load prescriptions. Please try again.';
       });
     }
   }
@@ -72,6 +93,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
   // Update prescription status (checked/unchecked)
   Future<void> _updatePrescriptionStatus(Prescription prescription, bool isChecked) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       print('🔄 Updating prescription ${prescription.id} to completed: $isChecked');
       
@@ -111,7 +133,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         // Show success feedback
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isChecked ? 'Prescription marked as completed' : 'Prescription marked as pending'),
+            content: Text(isChecked 
+              ? localizations.status_prescription_completed 
+              : localizations.status_prescription_pending),
             backgroundColor: Colors.green,
           )
         );
@@ -119,7 +143,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         // Show error toast
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to update status'),
+            content: Text(result['message'] ?? localizations.error_update_prescription),
             backgroundColor: Colors.red,
           )
         );
@@ -128,7 +152,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       print('❗ Error updating prescription status: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating prescription: $e'),
+          content: Text(localizations.error_update_prescription),
           backgroundColor: Colors.red,
         )
       );
@@ -137,22 +161,25 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
   // Delete prescription
  Future<void> _deletePrescription(Prescription prescription) async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       // Show confirmation dialog
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete Prescription'),
-          content: Text('Are you sure you want to delete this ${prescription.parameter.replaceAll('_', ' ')} prescription?'),
+          title: Text(localizations.dialog_delete_prescription),
+          content: Text(localizations.dialog_delete_prescription_confirm(
+            prescription.parameter.replaceAll('_', ' ').toLowerCase()
+          )),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Delete',
+                localizations.action_delete,
                 style: TextStyle(color: Colors.red.shade700),
               ),
             ),
@@ -172,8 +199,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Prescription deleted successfully'),
+          SnackBar(
+            content: Text(localizations.status_prescription_deleted),
             backgroundColor: Colors.green,
           )
         );
@@ -184,7 +211,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       print('❗ Error deleting prescription: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error deleting prescription: $e'),
+          content: Text(localizations.error_delete_prescription),
           backgroundColor: Colors.red,
         )
       );
@@ -275,22 +302,23 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   }
 
   Future<void> _handleDeleteCompleted() async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       // Show confirmation dialog
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete Completed Prescriptions'),
-          content: const Text('Are you sure you want to delete all completed prescriptions?'),
+          title: Text(localizations.dialog_delete_completed_prescriptions),
+          content: Text(localizations.dialog_delete_completed_prescriptions_confirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Delete',
+                localizations.action_delete,
                 style: TextStyle(color: Colors.red.shade700),
               ),
             ),
@@ -302,8 +330,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         await _prescriptionService.deleteAllCompletedPrescriptions();
         await _loadPrescriptions(); // Reload to reflect changes
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All completed prescriptions deleted'),
+          SnackBar(
+            content: Text(localizations.status_all_completed_deleted),
             backgroundColor: Colors.green,
           )
         );
@@ -311,7 +339,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error deleting prescriptions: $e'),
+          content: Text(localizations.error_delete_prescriptions),
           backgroundColor: Colors.red,
         )
       );
@@ -319,22 +347,23 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   }
 
   Future<void> _handleDeleteAll() async {
+    final localizations = AppLocalizations.of(context)!;
     try {
       // Show confirmation dialog
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete All Prescriptions'),
-          content: const Text('Are you sure you want to delete ALL prescriptions? This action cannot be undone.'),
+          title: Text(localizations.dialog_delete_all_prescriptions),
+          content: Text(localizations.dialog_delete_all_prescriptions_confirm),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(localizations.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Delete All',
+                localizations.action_delete_all,
                 style: TextStyle(color: Colors.red.shade900),
               ),
             ),
@@ -346,8 +375,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         await _prescriptionService.deleteAllPrescriptions();
         await _loadPrescriptions(); // Reload to reflect changes
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All prescriptions deleted'),
+          SnackBar(
+            content: Text(localizations.status_all_deleted),
             backgroundColor: Colors.green,
           )
         );
@@ -355,7 +384,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error deleting prescriptions: $e'),
+          content: Text(localizations.error_delete_prescriptions),
           backgroundColor: Colors.red,
         )
       );
@@ -383,6 +412,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _loadPrescriptions,
@@ -404,13 +434,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       children: [
                         const SizedBox(height: 10),
                         CustomFont(
-                          text: 'Prescriptions',
+                          text: localizations.prescriptions_title,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                         const SizedBox(height: 4),
                         CustomFont(
-                          text: 'Manage your prescriptions (${prescriptions.length} total)',
+                          text: localizations.prescriptions_subtitle(prescriptions.length),
                           fontSize: 14,
                           color: MAIZE_PRIMARY,
                         ),
@@ -419,18 +449,18 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     IconButton(
                       icon: const Icon(Icons.refresh),
                       onPressed: _loadPrescriptions,
-                      tooltip: 'Refresh prescriptions',
+                      tooltip: localizations.tooltip_refresh_prescriptions,
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
                 // Filter dropdown and Check All button in a row
-                Row(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Filter dropdown
                     Container(
+                      width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -441,25 +471,25 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         itemBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'View All',
-                            child: Text('View All'),
+                            child: Text(localizations.filter_view_all),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'Done',
-                            child: Text('Done'),
+                            child: Text(localizations.filter_done),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'Not Yet Done',
-                            child: Text('Not Yet Done'),
+                            child: Text(localizations.filter_not_done),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'Newest First',
-                            child: Text('Newest First'),
+                            child: Text(localizations.filter_newest),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'Oldest First',
-                            child: Text('Oldest First'),
+                            child: Text(localizations.filter_oldest),
                           ),
                         ],
                         onSelected: (value) => filterPrescriptions(value),
@@ -471,7 +501,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                               const Icon(Icons.sort, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                selectedFilter,
+                                selectedFilter == 'View All' ? localizations.filter_view_all :
+                                selectedFilter == 'Done' ? localizations.filter_done :
+                                selectedFilter == 'Not Yet Done' ? localizations.filter_not_done :
+                                selectedFilter == 'Newest First' ? localizations.filter_newest :
+                                localizations.filter_oldest,
                                 style: const TextStyle(fontSize: 14),
                               ),
                               const SizedBox(width: 8),
@@ -481,45 +515,52 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                         ),
                       ),
                     ),
-                    // Check All and Delete buttons in a column
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    const SizedBox(height: 12),
+                    // Action buttons in a row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Check All toggle button
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            final allChecked = prescriptions.every((p) => p.isCompleted);
-                            _handleCheckAll(!allChecked);
-                          },
-                          icon: Icon(
-                            prescriptions.every((p) => p.isCompleted) 
-                              ? Icons.check_box 
-                              : Icons.check_box_outline_blank,
-                            size: 20,
-                          ),
-                          label: Text(
-                            prescriptions.every((p) => p.isCompleted) 
-                              ? 'Uncheck All' 
-                              : 'Check All',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final allChecked = prescriptions.every((p) => p.isCompleted);
+                              _handleCheckAll(!allChecked);
+                            },
+                            icon: Icon(
+                              prescriptions.every((p) => p.isCompleted) 
+                                ? Icons.check_box 
+                                : Icons.check_box_outline_blank,
+                              size: 20,
+                            ),
+                            label: Text(
+                              prescriptions.every((p) => p.isCompleted) 
+                                ? localizations.action_uncheck_all 
+                                : localizations.action_check_all,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
                           ),
                         ),
                         // Delete Checked button (only shown when some items are checked)
                         if (prescriptions.any((p) => p.isCompleted))
                           Padding(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(left: 8),
                             child: ElevatedButton.icon(
                               onPressed: _handleDeleteCompleted,
                               icon: const Icon(Icons.delete_sweep, size: 20),
-                              label: const Text('Delete'),
+                              label: Text(
+                                localizations.action_delete_completed,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                             ),
                           ),
@@ -537,14 +578,63 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
-                                  const SizedBox(height: 16),
-                                  Text(errorMessage, textAlign: TextAlign.center),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: _loadPrescriptions,
-                                    child: const Text('Retry'),
+                                  Icon(
+                                    errorMessage.contains('log in') 
+                                        ? Icons.login 
+                                        : errorMessage.contains('register') 
+                                            ? Icons.add_location_alt
+                                            : Icons.error_outline,
+                                    size: 64,
+                                    color: errorMessage.contains('log in') || errorMessage.contains('register')
+                                        ? Colors.blue.shade400
+                                        : Colors.red.shade400,
                                   ),
+                                  const SizedBox(height: 16),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                                    child: Text(
+                                      errorMessage,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: errorMessage.contains('log in') || errorMessage.contains('register')
+                                            ? Colors.blue.shade700
+                                            : Colors.red.shade700,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (errorMessage.contains('log in'))
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        // Navigate to login screen
+                                        Navigator.pushReplacementNamed(context, '/login');
+                                      },
+                                      icon: const Icon(Icons.login),
+                                      label: const Text('Go to Login'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    )
+                                  else if (errorMessage.contains('register'))
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        // Navigate to field registration screen
+                                        Navigator.pushNamed(context, '/register-field');
+                                      },
+                                      icon: const Icon(Icons.add_location_alt),
+                                      label: const Text('Register Field'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                    )
+                                  else
+                                    ElevatedButton(
+                                      onPressed: _loadPrescriptions,
+                                      child: Text(localizations.button_retry),
+                                    ),
                                 ],
                               ),
                             )
@@ -557,8 +647,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                                       const SizedBox(height: 16),
                                       Text(
                                         selectedFilter == 'View All' 
-                                          ? 'No prescriptions found' 
-                                          : 'No prescriptions found for "$selectedFilter"',
+                                          ? localizations.empty_no_prescriptions 
+                                          : localizations.empty_no_prescriptions_filter(selectedFilter),
                                         style: TextStyle(color: Colors.grey.shade600),
                                       ),
                                     ],

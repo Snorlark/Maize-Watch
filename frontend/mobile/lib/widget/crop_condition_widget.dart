@@ -53,20 +53,20 @@ import 'package:maize_watch/custom/constants.dart';
         // Wrap with a Container with constraints to prevent overflow
         return Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width - 30, // Adjust as needed
+            maxWidth: MediaQuery.of(context).size.width - 30.w, // Adjusted for ScreenUtil
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min, // Use minimum space needed
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Fixed size for icon container to prevent layout issues
+              // Icon container
               Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 40.r,
-                    height: 40.r,
+                    width: 42.r, // Increased from 36.r
+                    height: 42.r, // Increased from 36.r
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
@@ -75,30 +75,30 @@ import 'package:maize_watch/custom/constants.dart';
                   Icon(
                     icon,
                     color: iconColor,
-                    size: 30.r,
+                    size: 32.r, // Increased from 26.r
                   ),
                 ],
               ),
-              SizedBox(width: 10.w), // Use a smaller fixed width
+              SizedBox(width: 8.w),
               Flexible(
-                // Use Flexible instead of Expanded to allow the text to wrap
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CustomFont(
                       text: messageKey,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18.sp, // Increased from 15.sp
                       color: MAIZE_PRIMARY_LIGHT
                     ),
-                    SizedBox(height: 2.h),
-
-                    (includeUpdated) ?
-                    CustomFont(
-                      text: localizations.stay_updated,
-                      fontSize: 14, // Slightly reduced to help with overflow
-                    ) :
-                    Container()
+                    SizedBox(height: 4.h), // Increased from 2.h
+                    if (includeUpdated)
+                      CustomFont(
+                        text: localizations.stay_updated,
+                        fontSize: 14.sp, // Increased from 13.sp
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey.shade700,
+                      ),
                   ],
                 ),
               ),

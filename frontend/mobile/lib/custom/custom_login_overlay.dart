@@ -299,23 +299,37 @@ void showLoginOverlay(BuildContext context) {
                             Navigator.pop(context); // Dismiss loading dialog
 
                             if (loginResponse.success) {
+                              // Successfully logged in
                               Navigator.pop(context); // Dismiss the modal
                               Navigator.pushAndRemoveUntil(
                                 originalContext,
-                                NoSwipePageRoute(
-                                    builder: (context) => const HomeScreen()),
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
                                 (route) => false,
                               );
                             } else {
-                              // Show error at the top with custom overlay
-                              showErrorOverlay(loginResponse.message ??
-                                  AppLocalizations.of(context)!.invalid_credentials);
+                              // Show error message from the server
+                              showErrorOverlay(
+                                loginResponse.message ?? 
+                                AppLocalizations.of(context)!.invalid_credentials
+                              );
                             }
                           } catch (e) {
                             Navigator.pop(context); // Dismiss loading dialog
-                            // Show connection error at the top with custom overlay
-                            showErrorOverlay(
-                                AppLocalizations.of(context)!.connection_error);
+                            print('Login error: $e');
+                            
+                            // Show more specific error messages
+                            String errorMessage;
+                            if (e.toString().contains('SocketException')) {
+                              errorMessage = AppLocalizations.of(context)!.connection_error;
+                            } else if (e.toString().contains('TimeoutException')) {
+                              errorMessage = 'Connection timed out. Please try again.';
+                            } else {
+                              errorMessage = 'An unexpected error occurred. Please try again.';
+                            }
+                            
+                            showErrorOverlay(errorMessage);
                           }
                         }
                       },
