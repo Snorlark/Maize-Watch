@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:maize_watch/custom/custom_font.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class NotificationSettingsWidget extends StatelessWidget {
   final bool isNotificationsEnabled;
@@ -17,6 +18,8 @@ class NotificationSettingsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final local = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -26,15 +29,13 @@ class NotificationSettingsWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 10.0),
-            child: Text(
-              "Notifications",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Montserrat',
-              ),
+          Padding(
+            padding: const EdgeInsets.only(left: 10.0),
+            child: CustomFont(
+              text: local.notifications,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Montserrat',
             ),
           ),
           const SizedBox(height: 10),
@@ -53,9 +54,10 @@ class NotificationSettingsWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   CustomFont(
-                    text: "Enable Notifications",
+                    text: local.enableNotifications,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
+                    fontFamily: 'Montserrat',
                     color: Colors.black,
                   ),
                 ],
@@ -80,7 +82,7 @@ class NotificationSettingsWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       CustomFont(
-                        text: "Vibration Only",
+                        text: local.vibrationOnly,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
@@ -91,14 +93,16 @@ class NotificationSettingsWidget extends StatelessWidget {
                     children: [
                       Icon(
                         isVibrationOnly ? Icons.vibration : Icons.volume_up,
-                        color: const Color(0xFF418036),
+                        color: Colors.black,
                         size: 20,
                       ),
                       const SizedBox(width: 5),
                       CustomFont(
-                        text: isVibrationOnly ? "Vibrate" : "Sound & Vibrate",
+                        text: isVibrationOnly
+                            ? local.vibrate
+                            : local.soundAndVibrate,
                         fontSize: 12,
-                        color: const Color(0xFF418036),
+                        color: Colors.black,
                       ),
                     ],
                   ),

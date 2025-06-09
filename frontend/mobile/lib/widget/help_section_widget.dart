@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HelpSectionWidget extends StatelessWidget {
   final bool isExpanded;
@@ -12,6 +13,8 @@ class HelpSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Container(
@@ -22,11 +25,11 @@ class HelpSectionWidget extends StatelessWidget {
         child: Column(
           children: [
             ListTile(
-              title: const Padding(
-                padding: EdgeInsets.only(left: 15.0),
+              title: Padding(
+                padding: const EdgeInsets.only(left: 15.0),
                 child: Text(
-                  "Help",
-                  style: TextStyle(
+                  loc.helpTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.bold,
@@ -41,12 +44,11 @@ class HelpSectionWidget extends StatelessWidget {
               onTap: onToggle,
             ),
             if (isExpanded)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 child: Text(
-                  "This section provides information to help users understand the app features and usage. "
-                  "Learn how to monitor your plants, configure settings, and interpret sensor data.",
-                  style: TextStyle(
+                  loc.helpDescription,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Montserrat',
                     color: Colors.black87,

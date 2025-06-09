@@ -1,0 +1,20 @@
+[33m[nodemon] 3.1.9[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node backend/index.js`[39m
+ThingSpeak service initialized with channel ID: 2965485
+Setting up automatic ThingSpeak data fetch every 15 seconds
+Starting ThingSpeak latest data sync...
+Fetching latest data from ThingSpeak...
+Connecting to MongoDB (attempt 1/5)...
+(node:21868) [MONGOOSE] Warning: Duplicate schema index on {"username":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2025-06-08T18:53:45.011Z] Running scheduled data fetch...
+Starting ThingSpeak latest data sync...
+Fetching latest data from ThingSpeak...
+Successfully fetched latest data from ThingSpeak
+Connected to MongoDB successfully using native driver
+Latest data already exists in MongoDB for timestamp: 2025-05-27T19:35:02.000Z
+[2025-06-08T18:53:45.440Z] Initial data fetch: No new data to save
+[31m[nodemon] Internal watch failed: EMFILE: too many open files, watch '/Users/larkbabao/Desktop/Maize-Watch/analytics/venv/lib/python3.13/site-packages/pandas/tests/io/parser/test_compression.py'[39m

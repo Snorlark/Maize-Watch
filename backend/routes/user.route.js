@@ -1,13 +1,161 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
+import pkg from 'jsonwebtoken';
+
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { sign } = pkg;
+
+
 const router = express.Router();
 
-/**
- * @route POST /api/auth/register
- * @desc Register a new user
- * @access Public
- */
+// /**
+//  * @route POST /api/auth/register
+//  * @desc Register a new user
+//  * @access Public
+//  */
+// router.post('/register', async (req, res) => {
+//     try {
+//         // Validate required fields
+//         const { username, password, fullName, contactNumber, address } = req.body;
+        
+//         if (!username || !password || !fullName || !contactNumber || !address) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'All fields are required'
+//             });
+//         }
+        
+//         // Check if username already exists
+//         const existingUser = await User.findOne({ username });
+        
+//         if (existingUser) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Username is already taken'
+//             });
+//         }
+
+//         // Validate password length
+//         if (password.length < 6) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Password must be at least 6 characters'
+//             });
+//         }
+
+//         // Validate phone number format
+//         const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
+//         if (!phoneRegex.test(contactNumber)) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Please enter a valid Philippine mobile number'
+//             });
+//         }
+
+//         // Hash password
+//         const salt = await bcrypt.genSalt(10);
+//         const hashedPassword = await bcrypt.hash(password, salt);
+        
+//         // Create new user
+//         const newUser = new User({
+//             username,
+//             password: hashedPassword,
+//             fullName,
+//             contactNumber,
+//             address,
+//             role: 'farmer' // Default role
+//         });
+        
+//         // Save the new user
+//         const savedUser = await newUser.save();
+        
+//         // Don't send password back in response
+//         // const userResponse = savedUser.toObject();
+//         // delete userResponse.password;
+        
+//         // res.status(201).json({
+//         //     success: true,
+//         //     message: 'Registration successful',
+//         //     data: userResponse
+//         // });
+//     } catch (err) {
+//         console.log(err);
+//         res.status(500).json({ 
+//             success: false,
+//             message: 'Server error', 
+//             error: err.message 
+//         });
+//     }
+// });
+
+// /**
+//  * @route POST /api/auth/login
+//  * @desc Authenticate user & get token
+//  * @access Public
+//  */
+// router.post('/login', async (req, res) => {
+//     try {
+//         const { username, password } = req.body;
+        
+//         if (!username || !password) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'Username and password are required'
+//             });
+//         }
+        
+//         // Find user by username
+//         const user = await User.findOne({ username });
+        
+//         if (!user) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: 'Invalid username or password'
+//             });
+//         }
+           
+//         const isPasswordValid = await bcrypt.compare(password, user.password);
+              
+//         if (!isPasswordValid) {
+//             return res.status(401).json({
+//                 success: false,
+//                 message: 'Invalid username or password'
+//             });
+//         }
+        
+//         // Don't send password back in response
+//         const userResponse = user.toObject();
+//         delete userResponse.password;
+        
+//         // Success response
+//         res.json({
+//             success: true,
+//             message: 'Login successful',
+//             data: {
+//                 user: userResponse,
+//                 token: 'jwt-token-would-go-here' // In a real app, generate JWT token
+//             }
+//         });
+//     } catch (err) {
+//         console.log(err);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Server error',
+//             error: err.message
+//         });
+//     }
+// });
+
+// export default router;
+
+
 router.post('/register', async (req, res) => {
     try {
         // Validate required fields
@@ -58,21 +206,22 @@ router.post('/register', async (req, res) => {
             fullName,
             contactNumber,
             address,
-            role: 'farmer' // Default role
+            role: 'user' // Default role
         });
         
         // Save the new user
         const savedUser = await newUser.save();
         
         // Don't send password back in response
-        // const userResponse = savedUser.toObject();
-        // delete userResponse.password;
+        const userResponse = savedUser.toObject();
+        delete userResponse.password;
         
-        // res.status(201).json({
-        //     success: true,
-        //     message: 'Registration successful',
-        //     data: userResponse
-        // });
+        // Add this response that was missing in your original code
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful',
+            data: userResponse
+        });
     } catch (err) {
         console.log(err);
         res.status(500).json({ 
@@ -83,53 +232,117 @@ router.post('/register', async (req, res) => {
     }
 });
 
-/**
- * @route POST /api/auth/login
- * @desc Authenticate user & get token
- * @access Public
- */
 router.post('/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
+      const { username, password } = req.body;
+  
+      if (!username || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username and password are required'
+        });
+      }
+  
+      const user = await User.findOne({ username });
+  
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid username or password'
+        });
+      }
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+  
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid username or password'
+        });
+      }
+  
+      // ✅ Generate JWT token
+      const token = sign(
+        { id: user._id },                      // payload
+        process.env.JWT_SECRET,               // secret
+        { expiresIn: '1h' }                   // options
+      );
+  
+      const userResponse = user.toObject();
+      delete userResponse.password;
+  
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: userResponse,
+          token
+        }
+      });
+  
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: err.message
+      });
+    }
+  });
+  
+/**
+ * @route PUT /api/user/:username
+ * @desc Update user profile information
+ * @access Private
+ */
+router.put('/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { fullName, contactNumber, address } = req.body;
+
+        // Validate required fields
+        if (!fullName || !contactNumber || !address) {
             return res.status(400).json({
                 success: false,
-                message: 'Username and password are required'
+                message: 'All fields are required'
             });
         }
-        
-        // Find user by username
-        const user = await User.findOne({ username });
-        
-        if (!user) {
-            return res.status(401).json({
+
+        // Validate phone number format
+        const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
+        if (!phoneRegex.test(contactNumber)) {
+            return res.status(400).json({
                 success: false,
-                message: 'Invalid username or password'
+                message: 'Please enter a valid Philippine mobile number'
             });
         }
-           
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-              
-        if (!isPasswordValid) {
-            return res.status(401).json({
+
+        // Find and update user
+        const updatedUser = await User.findOneAndUpdate(
+            { username },
+            { 
+                fullName,
+                contactNumber,
+                address
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({
                 success: false,
-                message: 'Invalid username or password'
+                message: 'User not found'
             });
         }
-        
+
         // Don't send password back in response
-        const userResponse = user.toObject();
+        const userResponse = updatedUser.toObject();
         delete userResponse.password;
-        
-        // Success response
+
         res.json({
             success: true,
-            message: 'Login successful',
-            data: {
-                user: userResponse,
-                token: 'jwt-token-would-go-here' // In a real app, generate JWT token
-            }
+            message: 'Profile updated successfully',
+            data: userResponse
         });
     } catch (err) {
         console.log(err);

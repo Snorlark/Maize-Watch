@@ -1,32 +1,29 @@
-
+// src/App.tsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+
+// Your existing pages
 import Index from './pages/Index';
-import SignUpPage from './pages/Signup';
-import LoginPage from './pages/Login';
 import TechnologyPage from './pages/TechnologyPage';
 import SolutionsPage from './pages/SolutionsPage';
 import ProductPage from './pages/ProductPage';
-import Dashboard from './pages/Dashboard';
-import AccountManagement from "./pages/AccountManagement";
-import LiveData from "./pages/LiveData";
 import HeaderMenuPage from './pages/HeaderMenu';
-
-
+import GetAppPage from './pages/GetApp';
 
 const App: React.FC = () => {
   return (
+
     <Routes>
+      {/* Public Routes */}
       <Route path="/" element={<Index />} />
-      <Route path="/signup" element={<SignUpPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/accountmanagement" element={<AccountManagement />} />
-      <Route path="/livedata" element={<LiveData />} />
       <Route path="/technology" element={<TechnologyPage />} />
       <Route path="/solutions" element={<SolutionsPage />} />
-      <Route path="/products" element={<ProductPage />} />
-      <Route path="/headermenu" element={<HeaderMenuPage />} />
+      <Route path="/product" element={<ProductPage />} />
+      <Route path="/header-menu" element={<HeaderMenuPage />} />
+      <Route path="/getapp" element={<GetAppPage />} />
+
+      {/* Catch-all route */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };

@@ -1,72 +1,87 @@
+// lib/services/prescription_list.dart
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:maize_watch/model/prescription_model.dart';
+
+// Default prescription list in case we can't fetch from the API
 List<Map<String, dynamic>> PrescriptionList = [
   {
-    "title": "Increase Irrigation",
-    "value": "Soil moisture levels are below 30%. Increase irrigation to maintain optimal growth conditions.",
-    "date": "24/02/2025",
-    "time": "7:30 AM",
-    "isChecked": false
+    "id": "1",
+    "title": "Apply Nitrogen Fertilizer",
+    "value": "150 kg/ha",
+    "date": "19/05/2025",
+    "time": "08:00 AM",
+    "isChecked": false,
+    "fieldId": "field1",
+    "category": "Nutrition",
+    "priority": 1,
+    "description": "Soil tests indicate nitrogen deficiency. Apply fertilizer evenly across the field."
   },
   {
-    "title": "Reduce Watering",
-    "value": "Soil moisture is above 80%. Reduce irrigation to prevent root rot and waterlogging.",
-    "date": "23/02/2025",
-    "time": "2:00 PM",
-    "isChecked": false
+    "id": "2",
+    "title": "Water Field Section A",
+    "value": "25mm",
+    "date": "18/05/2025",
+    "time": "06:30 AM",
+    "isChecked": true,
+    "fieldId": "field1",
+    "category": "Moisture",
+    "priority": 2,
+    "description": "Soil moisture levels are dropping. Apply irrigation to maintain optimal growth."
   },
   {
-    "title": "Increase Ventilation",
-    "value": "Humidity is above 85%. Ensure proper air circulation to prevent fungal diseases.",
-    "date": "22/02/2025",
-    "time": "9:15 AM",
-    "isChecked": false
+    "id": "3",
+    "title": "Apply Lime to Adjust pH",
+    "value": "2 tons/ha",
+    "date": "15/05/2025",
+    "time": "10:00 AM",
+    "isChecked": true,
+    "fieldId": "field1",
+    "category": "Soil pH",
+    "priority": 2,
+    "description": "Soil pH is too acidic at 5.2. Apply agricultural lime to raise pH to optimal range."
   },
   {
-    "title": "Shade Protection Needed",
-    "value": "Light intensity exceeds 100,000 lux. Consider using shade nets to protect crops from excessive sunlight.",
-    "date": "21/02/2025",
-    "time": "11:45 AM",
-    "isChecked": false
+    "id": "4",
+    "title": "Scout for Fall Armyworm",
+    "value": "Check 20 plants",
+    "date": "20/05/2025",
+    "time": "09:00 AM",
+    "isChecked": false,
+    "fieldId": "field1",
+    "category": "Pest",
+    "priority": 1,
+    "description": "Sensor data indicates conditions favorable for Fall Armyworm. Inspect plants for early infestation."
   },
   {
-    "title": "Increase Sunlight Exposure",
-    "value": "Light intensity is below 30,000 lux. Ensure maize plants receive at least 6 hours of direct sunlight daily.",
-    "date": "20/02/2025",
-    "time": "3:30 PM",
-    "isChecked": false
+    "id": "5",
+    "title": "Apply Phosphorus Fertilizer",
+    "value": "80 kg/ha",
+    "date": "21/05/2025",
+    "time": "07:00 AM",
+    "isChecked": false,
+    "fieldId": "field1",
+    "category": "Nutrition",
+    "priority": 3,
+    "description": "Soil tests show moderate phosphorus deficiency. Apply during V3 stage for optimal effect."
   },
-  {
-    "title": "Optimize Temperature",
-    "value": "Temperature dropped below 15°C. Consider using mulching or row covers to retain heat.",
-    "date": "19/02/2025",
-    "time": "5:20 AM",
-    "isChecked": false
-  },
-  {
-    "title": "Monitor Heat Stress",
-    "value": "Temperature exceeds 35°C. Increase irrigation frequency and provide partial shading if necessary.",
-    "date": "18/02/2025",
-    "time": "12:40 PM",
-    "isChecked": false
-  },
-  {
-    "title": "Maintain Soil Drainage",
-    "value": "Prolonged soil moisture above 70%. Ensure drainage channels are clear to prevent flooding.",
-    "date": "17/02/2025",
-    "time": "8:15 AM",
-    "isChecked": false
-  },
-  {
-    "title": "Adjust Humidity",
-    "value": "Humidity below 40%. Use misting or cover crops to retain moisture in the air.",
-    "date": "16/02/2025",
-    "time": "6:50 PM",
-    "isChecked": false
-  },
-  {
-    "title": "Balance Moisture Levels",
-    "value": "Soil moisture fluctuating between 20% and 80%. Implement consistent watering schedules.",
-    "date": "15/02/2025",
-    "time": "10:10 AM",
-    "isChecked": false
-  }
 ];
+
+// Function to convert from API response format to Prescription objects
+List<Prescription> convertToPrescriptionObjects(List<Map<String, dynamic>> data) {
+  return data.map((item) => Prescription.fromJson(item)).toList();
+}
+
+// Format the current date using the intl package
+String formatCurrentDate() {
+  final now = DateTime.now();
+  final formatter = DateFormat('dd/MM/yyyy');
+  return formatter.format(now);
+}
+
+// Format the current time using the intl package
+String formatCurrentTime() {
+  final now = DateTime.now();
+  final formatter = DateFormat('hh:mm a');
+  return formatter.format(now);
+}

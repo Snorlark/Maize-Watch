@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:maize_watch/custom/constants.dart';
 
 class AboutUsScreen extends StatelessWidget {
   const AboutUsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFDCE775), Color(0xFF2E7D32)],
+            colors: [MAIZE_BOTTOM_OVERLAY, Color(0xFF2E7D32)],
           ),
         ),
         child: Padding(
@@ -35,9 +39,9 @@ class AboutUsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        "About",
-                        style: TextStyle(
+                      Text(
+                        localizations.about, // ← i18n
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1B5E20),
@@ -66,31 +70,31 @@ class AboutUsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Maize Watch",
-                      style: TextStyle(
+                      localizations.appName, // ← i18n
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Montserrat',
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     Text(
-                      "\nThe aaamobile app proposes an innovative, IoT-driven corn monitoring system enhanced by prescriptive analytics. This system will not only provide real-time data on crop health and environmental conditions but also use these data to offer practical advice, further optimizing maize quality and yield.\n",
-                      style: TextStyle(
+                      localizations.aboutApp, // ← i18n
+                      style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     Center(
                       child: Text(
-                        "version 1.0.0",
-                        style: TextStyle(
+                        localizations.versionInfo, // ← i18n
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.black54,
                           fontFamily: 'Montserrat',
@@ -101,10 +105,10 @@ class AboutUsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-              const Center(
+              Center(
                 child: Text(
-                  "Contact us at:",
-                  style: TextStyle(
+                  localizations.contactUs, // ← i18n
+                  style: const TextStyle(
                     fontSize: 14,
                     fontFamily: 'Montserrat',
                     color: Colors.white,

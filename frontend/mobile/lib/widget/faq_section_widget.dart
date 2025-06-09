@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class FAQSectionWidget extends StatelessWidget {
   final bool isExpanded;
@@ -12,6 +13,8 @@ class FAQSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Container(
@@ -22,11 +25,11 @@ class FAQSectionWidget extends StatelessWidget {
         child: Column(
           children: [
             ListTile(
-              title: const Padding(
-                padding: EdgeInsets.only(left: 15.0),
+              title: Padding(
+                padding: const EdgeInsets.only(left: 15.0),
                 child: Text(
-                  "FAQs",
-                  style: TextStyle(
+                  loc.faqTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.bold,
@@ -41,43 +44,43 @@ class FAQSectionWidget extends StatelessWidget {
               onTap: onToggle,
             ),
             if (isExpanded)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "1. What do the sensor indicators mean?",
-                      style: TextStyle(
+                      "1. ${loc.faqQ1}",
+                      style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     Text(
-                      "Green indicates the sensor is working properly, while red means there may be an issue.",
-                      style: TextStyle(
+                      loc.faqA1,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 15),
+                    const SizedBox(height: 15),
                     Text(
-                      "2. How often does the app update sensor data?",
-                      style: TextStyle(
+                      "2. ${loc.faqQ2}",
+                      style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 5),
                     Text(
-                      "Sensor data is updated every 5 seconds automatically.",
-                      style: TextStyle(
+                      loc.faqA2,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontFamily: 'Montserrat',
                         color: Colors.black87,
