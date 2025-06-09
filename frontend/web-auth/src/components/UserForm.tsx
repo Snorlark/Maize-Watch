@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, User, Phone, MapPin, Shield } from 'lucide-react';
-import { User as UserType } from '../api/services/authService';
+import { useState, useEffect } from 'react';
+import { X, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { userService, type User } from '../api/client';
 
 interface UserFormProps {
   mode: 'create' | 'edit';
-  initialData?: UserType | null;
-  onSubmit: (data: Omit<UserType, '_id'>) => Promise<void>;
+  initialData?: User | null;
+  onSubmit: (data: Omit<User, '_id'> & { password?: string }) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
+}
+
+interface FormData extends Omit<User, '_id'> {
+  password?: string;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -17,14 +26,13 @@ const UserForm: React.FC<UserFormProps> = ({
   onCancel,
   isLoading
 }) => {
-  const [formData, setFormData] = useState<Omit<UserType, '_id'>>({
+  const [formData, setFormData] = useState<FormData>({
     username: '',
     password: '',
     fullName: '',
     contactNumber: '',
     address: '',
     role: 'user',
-    
   });
 
   useEffect(() => {
@@ -32,11 +40,10 @@ const UserForm: React.FC<UserFormProps> = ({
       setFormData({
         username: initialData.username,
         password: '', // Password is not included when editing
-        fullName: initialData.fullName,
-        contactNumber: initialData.contactNumber,
-        address: initialData.address,
+        fullName: initialData.fullName || '',
+        contactNumber: initialData.contactNumber || '',
+        address: initialData.address || '',
         role: initialData.role,
-        
       });
     }
   }, [initialData, mode]);
@@ -45,7 +52,7 @@ const UserForm: React.FC<UserFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'lot' ? Number(value) : value,
+      [name]: value,
     }));
   };
 
@@ -95,7 +102,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 <input
                   type="password"
                   name="password"
-                  value={formData.password}
+                  value={formData.password || ''}
                   onChange={handleInputChange}
                   required={mode === 'create'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -121,7 +128,7 @@ const UserForm: React.FC<UserFormProps> = ({
               <input
                 type="text"
                 name="fullName"
-                value={formData.fullName}
+                value={formData.fullName || ''}
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -133,7 +140,7 @@ const UserForm: React.FC<UserFormProps> = ({
               <input
                 type="text"
                 name="contactNumber"
-                value={formData.contactNumber}
+                value={formData.contactNumber || ''}
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -144,7 +151,7 @@ const UserForm: React.FC<UserFormProps> = ({
               <input
                 type="text"
                 name="address"
-                value={formData.address}
+                value={formData.address || ''}
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"

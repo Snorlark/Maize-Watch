@@ -125,12 +125,13 @@ const getStatus = (value: number, thresholds: { min: number; max: number; critic
  * Export to PDF with Maize Watch branding
  */
 const exportToPdf = async (
-  chartNode: HTMLElement,
   chartData: ChartDataPoint[],
-  options: ExportOptions
+  xKey: string,
+  title: string,
+  dateRange: DateRange
 ) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    const config = CHART_CONFIGS[xKey as 'temperature' | 'humidity' | 'soilMoisture' | 'soilPh' | 'lightIntensity'];
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -147,16 +148,16 @@ const exportToPdf = async (
     // Add title and metadata
     pdf.setFontSize(18);
     pdf.setTextColor(37, 99, 235);
-    pdf.text(config.title, pageWidth / 2, 35, { align: "center" });
+    pdf.text(title, pageWidth / 2, 35, { align: "center" });
     
     // Add date range information
     pdf.setFontSize(12);
     pdf.setTextColor(75, 85, 99);
-    let dateRangeText = `${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)} View`;
+    let dateRangeText = `${xKey.charAt(0).toUpperCase() + xKey.slice(1)} View`;
     
-    if (options.customDateRange) {
-      const { startDate, endDate } = options.customDateRange;
-      dateRangeText += ` - ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`;
+    if (dateRange) {
+      const { from, to } = dateRange;
+      dateRangeText += ` - ${from} to ${to}`;
     }
     
     pdf.text(dateRangeText, pageWidth / 2, 42, { align: "center" });
@@ -174,11 +175,6 @@ const exportToPdf = async (
     const startY = 55;
     const margin = 15;
     const availableWidth = pageWidth - (margin * 2);
-    
-    // Determine xKey based on current overview
-    const xKey = options.currentOverview === 'hourly' ? 'hour' : 
-                 options.currentOverview === 'daily' ? 'day' : 
-                 options.currentOverview === 'weekly' ? 'week' : 'month';
     
     const headers = [xKey.charAt(0).toUpperCase() + xKey.slice(1), `${config.fieldName} (${config.unit})`, "Status"];
     const columnWidths = [availableWidth * 0.4, availableWidth * 0.4, availableWidth * 0.2];
@@ -275,7 +271,7 @@ const exportToPdf = async (
     }
     
     // Save the PDF
-    const filename = `${options.chartType}-dashboard-${options.currentOverview}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `${xKey}-dashboard-${dateRange ? `${dateRange.from}-${dateRange.to}` : 'all'}-${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(filename);
   } catch (error) {
     console.error("Error exporting to PDF:", error);
@@ -394,7 +390,7 @@ export const unifiedExport = async (
   try {
     switch (format) {
       case 'pdf':
-        await exportToPdf(chartNode, filteredData, options);
+        await exportToPdf(filteredData, options.chartType, CHART_CONFIGS[options.chartType].title, options.dateRange);
         break;
       case 'svg':
         await exportToSvg(chartNode, options);

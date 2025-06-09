@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Clock, User, Smartphone, Calendar } from 'lucide-react';
+import { FileText, Clock, User, Smartphone } from 'lucide-react';
 import Footer from '../components/Footer';
 
 interface ActivityLog {

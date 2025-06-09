@@ -1,61 +1,52 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
-  ReferenceLine,
+  XAxis,
+  YAxis,
   CartesianGrid,
+  Tooltip,
   Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  BarChart,
+  Bar,
+  ReferenceLine,
 } from "recharts";
 import {
   Download,
-  X,
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  TestTube,
+  Calendar,
+  Clock,
   TrendingUp,
   TrendingDown,
   AlertCircle,
   List,
-  Table,
+  Filter,
   Minus,
-  Clock,
-  CalendarDays,
-  Calendar,
   BarChart2,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  FileText,
+  BarChart3,
+  LineChart as LineChartIcon,
+  Table,
 } from "lucide-react";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Calendar as CalendarPicker } from "../ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { API_CONFIG } from '../../api/config';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { format } from "date-fns";
+import { cn } from "../../lib/utils";
 import UnifiedExportModal from '../UnifiedExportModal';
 import { API_CONFIG, CHART_CONFIG, dateUtils } from '../../api/config';
 
@@ -336,8 +327,8 @@ type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 // Add at the top of SoilPhLevelDashboard
 const periodOptions = [
   { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
-  { label: 'Daily', value: 'daily', icon: <CalendarIcon className="h-4 w-4 mr-1" /> },
-  { label: 'Weekly', value: 'weekly', icon: <CalendarDays className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
+  { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [

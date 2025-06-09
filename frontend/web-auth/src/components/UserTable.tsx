@@ -24,8 +24,8 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete 
   const sortedUsers = [...farmersOnly].sort((a, b) => {
     if (sortDirection === null) return 0;
     
-    const nameA = a.fullName.toLowerCase();
-    const nameB = b.fullName.toLowerCase();
+    const nameA = (a.fullName || '').toLowerCase();
+    const nameB = (b.fullName || '').toLowerCase();
     
     if (sortDirection === 'asc') {
       return nameA.localeCompare(nameB);
@@ -86,7 +86,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete 
 
         autoTable(doc, {
           head: [tableColumn],
-          body: tableRows,
+          body: tableRows.map(row => row.map(cell => cell || '')),
           startY: 50,
           theme: 'grid',
           styles: { fontSize: 10, cellPadding: 3 },

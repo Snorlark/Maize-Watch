@@ -1,62 +1,54 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
-  ReferenceLine,
+  XAxis,
+  YAxis,
   CartesianGrid,
+  Tooltip,
   Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  BarChart,
+  Bar,
+  ReferenceLine,
 } from "recharts";
 import {
   Download,
-  X,
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  Droplet,
+  Calendar,
+  Clock,
   TrendingUp,
   TrendingDown,
   AlertCircle,
   List,
-  Table,
+  Filter,
   Minus,
-  Clock,
-  CalendarDays,
-  Calendar,
   BarChart2,
+  Droplets,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  FileText,
+  BarChart3,
+  LineChart as LineChartIcon,
+  Table,
 } from "lucide-react";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Calendar as CalendarPicker } from "../ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { format } from "date-fns";
+import { cn } from "../../lib/utils";
+import UnifiedExportModal from '../UnifiedExportModal';
 import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { API_CONFIG } from '../../api/config';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import UnifiedExportModal from '../UnifiedExportModal';
 
 // Types
 interface DataItem {
@@ -230,7 +222,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const threshold = data.threshold;
     let status = "Normal";
     let statusColor = "text-green-600";
-    let statusIcon = <Droplet className="w-4 h-4" />;
+    let statusIcon = <Droplets className="w-4 h-4" />;
     if (value < threshold.min) {
       status = "Too Dry";
       statusColor = "text-blue-600";
@@ -245,7 +237,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <div className={`p-2 rounded-full ${HUMIDITY_COLORS.background}`}>
-            <Droplet className={`w-4 h-4 ${HUMIDITY_COLORS.text}`} />
+            <Droplets className={`w-4 h-4 ${HUMIDITY_COLORS.text}`} />
           </div>
           <p className="font-semibold text-gray-800">{label}</p>
         </div>
@@ -329,9 +321,9 @@ type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 // Add at the top of HumidityDashboard
 const periodOptions = [
   { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
-  { label: 'Daily', value: 'daily', icon: <CalendarIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Monthly', value: 'monthly', icon: <CalendarDays className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
   { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
@@ -1066,7 +1058,7 @@ const HumidityDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Droplet className="h-8 w-8 text-blue-600" />
+                <Droplets className="h-8 w-8 text-blue-600" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Humidity Dashboard</h1>
