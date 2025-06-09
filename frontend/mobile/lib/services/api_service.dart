@@ -21,7 +21,7 @@ class ApiResponse {
 }
 
 class ApiService {
-  final String baseUrl = 'http://localhost:8080';
+  final String baseUrl = 'https://maize-watch.onrender.com';
 
   static Map<String, dynamic>? currentUser;
   bool _isRefreshing = false;

@@ -60,7 +60,7 @@ class _DetailScreenState extends State<DetailScreen> {
       print('Fetching data for week: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
 
       // Replace with your actual backend URL
-      final String backendUrl = 'http://localhost:8080'; // Change this to your actual backend URL
+      final String backendUrl = 'https://maize-watch.onrender.com'; // Updated to cloud backend
       
       final uri = Uri.parse('$backendUrl/api/sensors/weekly-overview')
           .replace(queryParameters: {
@@ -408,7 +408,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
   Future<void> fetchLiveData() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:8080/api/sensors/latest'),
+        Uri.parse('https://maize-watch.onrender.com/api/sensors/latest'),
         headers: {'Content-Type': 'application/json'},
       );
 

@@ -20,7 +20,7 @@ import type { User } from '../api/services/authService';
 
 // Base URL configuration
 const isDevelopment = import.meta.env?.MODE === 'development';
-const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'http://localhost:8080';
+const apiBaseUrl = isDevelopment ? 'https://maize-watch.onrender.com' : 'https://maize-watch.onrender.com';
 console.log('API Base URL being used:', apiBaseUrl);
 
 // Create the Axios instance

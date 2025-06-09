@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://maize-watch.onrender.com',
   endpoints: {
     historical: '/api/sensors/historical',
     weekly: '/api/sensors/weekly-overview',
