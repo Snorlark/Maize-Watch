@@ -17,8 +17,7 @@ export default function AccountManagement() {
     addUser, 
     updateUserById, 
     deleteUserById,
-    currentUser,
-    isAdmin
+    currentUser
   } = useUserContext();
   
   // State for modals

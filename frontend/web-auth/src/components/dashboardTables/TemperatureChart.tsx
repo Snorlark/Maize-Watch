@@ -1,61 +1,53 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
-  ReferenceLine,
+  XAxis,
+  YAxis,
   CartesianGrid,
+  Tooltip,
   Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  BarChart,
+  Bar,
+  ReferenceLine,
 } from "recharts";
 import {
   Download,
-  X,
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  Thermometer,
+  Calendar,
+  Clock,
   TrendingUp,
   TrendingDown,
   AlertCircle,
   List,
-  Table,
+  Filter,
   Minus,
-  Clock,
-  CalendarDays,
-  Calendar,
   BarChart2,
+  Thermometer,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
+  FileText,
+  BarChart3,
+  LineChart as LineChartIcon,
+  Table,
 } from "lucide-react";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Calendar as CalendarPicker } from "../ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { API_CONFIG } from '../../api/config';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { format } from "date-fns";
+import { cn } from "../../lib/utils";
 import UnifiedExportModal from '../UnifiedExportModal';
 
 // Types
@@ -99,45 +91,29 @@ const TEMPERATURE_COLORS = {
 
 // Utility Functions
 const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  
+  const start = getStartOfWeek(date);
+  const end = getEndOfWeek(start);
   return { start, end };
 };
 
 const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  const start = getStartOfMonth(date);
+  const end = getEndOfMonth(date);
   return { start, end };
 };
 
 const formatDateRange = (start: Date, end: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric',
-    timeZone: 'Asia/Manila'
-  };
-  return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
+  return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
 };
 
 const convertToPhilippineTime = (utcDateString: string): Date => {
   const utcDate = new Date(utcDateString);
-  // Philippines is UTC+8
-  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
+  return new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
 };
 
 const getDayOfWeekName = (dayIndex: number): string => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayIndex];
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[dayIndex];
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -329,9 +305,9 @@ type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 // Add at the top of TemperatureDashboard
 const periodOptions = [
   { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
-  { label: 'Daily', value: 'daily', icon: <CalendarIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Monthly', value: 'monthly', icon: <CalendarDays className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
   { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
@@ -378,29 +354,19 @@ const getWeekNumberInMonth = (date: Date): number => {
 
 // Replace the state and controls in TemperatureDashboard with the following:
 const TemperatureDashboard = () => {
-  const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('weekly');
   const [chartData, setChartData] = useState<DataItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<string>('');
-  const [currentOverview, setCurrentOverview] = useState(overview);
+  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
+  const [currentOverview, setCurrentOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
+  const [viewType, setViewType] = useState<ViewType>('line');
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [xKey, setXKey] = useState<string>('hour');
   const chartRef = useRef<HTMLDivElement>(null);
-  const [xKey, setXKey] = useState<string>('day');
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
-
-  // Update hourly data type
-  interface HourlyData {
-    sum: number;
-    count: number;
-    dates: string[];
-  }
-
-  // Update the hourly data map
-  const hourlyData = new Map<string, HourlyData>();
 
   // API Configuration
   const API_CONFIG = {

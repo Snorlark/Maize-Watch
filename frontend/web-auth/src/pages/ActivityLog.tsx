@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, User, Activity, Clock, MapPin, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, User, Activity, Clock, MapPin, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
 import Footer from '../components/Footer';
 import apiClient from '../api/client';
 import authService from '../api/services/authService';

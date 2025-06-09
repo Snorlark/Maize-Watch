@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
-import { Download, X, Calendar as CalendarIcon, FileText } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Download, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '../lib/utils';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { saveAs } from 'file-saver';
 import { unifiedExport, type ChartDataPoint, type ExportOptions } from '../utils/UnifiedExportUtils';
 
 interface UnifiedExportModalProps {

@@ -33,7 +33,6 @@ const DAY_MAP: Record<string, number> = {
  */
 export const parseDateString = (
   dateStr: string | number,
-  dataType: string = "unknown",
   referenceDate?: Date
 ): Date | null => {
   if (typeof dateStr !== 'string') {
@@ -107,7 +106,6 @@ export const mapDateToDataKey = (date: Date, dataType: string): string => {
  * Exports chart as a PDF document with a table format and logo
  */
 const exportToPdf = async (
-  chartNode: HTMLElement,
   chartData: ChartDataPoint[],
   xKey: string,
   title: string,
@@ -439,10 +437,28 @@ export const handleExport = async (
 
   // Export based on format
   if (format === "pdf") {
-    await exportToPdf(chartNode, filteredData, xKey, title, dateRange);
+    await exportToPdf(filteredData, xKey, title, dateRange);
   } else if (format === "svg") {
     await exportToSvg(chartNode, title);
   } else if (format === "csv") {
     exportToCsv(filteredData, xKey, title);
   }
+};
+
+export const exportChartAsPDF = async (
+  chartRef: React.RefObject<HTMLDivElement>,
+  title: string,
+  subtitle: string = "",
+  filename: string = "chart-export.pdf"
+) => {
+  // Implementation of exportChartAsPDF method
+};
+
+export const exportChartAsImage = async (
+  chartRef: React.RefObject<HTMLDivElement>,
+  title: string,
+  subtitle: string = "",
+  filename: string = "chart-export.png"
+) => {
+  // Implementation of exportChartAsImage method
 };

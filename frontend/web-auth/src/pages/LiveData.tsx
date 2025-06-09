@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import Footer from '../components/Footer'
-import { FaThermometerHalf, FaExclamationCircle, FaMountain } from 'react-icons/fa'
+import { FaThermometerHalf, FaMountain } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
 import { BsSun } from 'react-icons/bs'
 import { Activity, Gauge, AlertTriangle, Clock, RefreshCw } from 'lucide-react'

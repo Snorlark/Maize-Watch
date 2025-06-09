@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Download, X, Calendar as CalendarIcon, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar } from './ui/calendar';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';

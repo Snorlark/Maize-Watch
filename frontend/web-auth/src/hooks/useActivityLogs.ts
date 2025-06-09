@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { activityLogService } from '../api/services/activityLogService';
 import { ActivityLog, ActivityLogFilters } from '../api/services/activityLog';
 
