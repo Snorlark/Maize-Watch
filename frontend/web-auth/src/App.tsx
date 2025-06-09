@@ -66,11 +66,11 @@ const App: React.FC = () => {
         </Route>
 
         {/* Admin Logs route */}
-        <Route path="/admin/logs" element={
-          <ProtectedRoute>
-            <AdminLogs />
-          </ProtectedRoute>
-        } />
+        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="/login" />}>
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="/admin/logs" element={<AdminLogs />} />
+          </Route>
+        </Route>
 
         {/* Not found route */}
         <Route path="*" element={<NotFound />} />

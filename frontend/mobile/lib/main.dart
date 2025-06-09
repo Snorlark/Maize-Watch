@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -36,6 +37,12 @@ final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('en'));
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Hide all system UI elements
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: [], // This will hide all system overlays
+  );
 
   try {
     // Load .env file from project root (two levels up from lib folder)
@@ -120,7 +127,17 @@ class MaizeWatch extends StatelessWidget {
           builder: (context, locale, _) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
+              theme: ThemeData(
+                textTheme: GoogleFonts.montserratTextTheme(),
+                appBarTheme: const AppBarTheme(
+                  systemOverlayStyle: SystemUiOverlayStyle(
+                    statusBarColor: Colors.transparent,
+                    systemNavigationBarColor: Colors.transparent,
+                    statusBarIconBrightness: Brightness.dark,
+                    systemNavigationBarIconBrightness: Brightness.dark,
+                  ),
+                ),
+              ),
               supportedLocales: L10n.all,
               locale: locale,
               localizationsDelegates: const [

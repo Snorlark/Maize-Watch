@@ -32,6 +32,7 @@ router.get('/latest', async (req, res) => {
 router.get('/weekly-overview', async (req, res) => {
   try {
     console.log('Fetching weekly overview data...');
+    console.log('Query params:', req.query);
     
     let startDate = null;
     let endDate = null;
@@ -41,8 +42,21 @@ router.get('/weekly-overview', async (req, res) => {
       startDate = new Date(req.query.startDate);
       endDate = new Date(req.query.endDate);
       
+      console.log('Parsed dates:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        startDay: startDate.getDay(),
+        endDay: endDate.getDay(),
+        startDateValid: !isNaN(startDate.getTime()),
+        endDateValid: !isNaN(endDate.getTime())
+      });
+      
       // Validate dates
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('Invalid date format received:', {
+          startDate: req.query.startDate,
+          endDate: req.query.endDate
+        });
         return res.status(400).json({
           success: false,
           error: 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)'
@@ -51,6 +65,10 @@ router.get('/weekly-overview', async (req, res) => {
       
       // Ensure startDate is a Sunday and endDate is a Saturday
       if (startDate.getDay() !== 0) {
+        console.error('Start date is not a Sunday:', {
+          startDate: startDate.toISOString(),
+          day: startDate.getDay()
+        });
         return res.status(400).json({
           success: false,
           error: 'Start date must be a Sunday'
@@ -58,6 +76,10 @@ router.get('/weekly-overview', async (req, res) => {
       }
       
       if (endDate.getDay() !== 6) {
+        console.error('End date is not a Saturday:', {
+          endDate: endDate.toISOString(),
+          day: endDate.getDay()
+        });
         return res.status(400).json({
           success: false,
           error: 'End date must be a Saturday'
@@ -66,7 +88,18 @@ router.get('/weekly-overview', async (req, res) => {
     }
     
     // Get weekly data from the service
+    console.log('Calling thingSpeakService.getWeeklyOverviewData with dates:', {
+      startDate: startDate?.toISOString(),
+      endDate: endDate?.toISOString()
+    });
+    
     const weeklyResult = await thingSpeakService.getWeeklyOverviewData(startDate, endDate);
+    
+    console.log('Weekly overview result:', {
+      success: true,
+      dataPoints: weeklyResult.data.length,
+      dateRange: weeklyResult.summary.dateRange
+    });
     
     res.json({
       success: true,
@@ -84,10 +117,29 @@ router.get('/weekly-overview', async (req, res) => {
 });
 
 // Get historical sensor data
-router.get('/historical', isAuthenticated, async (req, res) => {
+router.get('/historical', async (req, res) => {
   try {
     const minutes = parseInt(req.query.minutes) || 60;
-    const data = await thingSpeakService.getHistoricalData(minutes);
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+    console.log('Historical data request:', {
+      minutes,
+      startDate,
+      endDate
+    });
+
+    const data = await thingSpeakService.getHistoricalData(minutes, startDate, endDate);
+    
+    console.log('Historical data response:', {
+      success: true,
+      dataPoints: data.length,
+      dateRange: data.length > 0 ? {
+        start: data[0].timestamp,
+        end: data[data.length - 1].timestamp
+      } : null
+    });
+
     res.json({
       success: true,
       data: data
@@ -144,55 +196,6 @@ router.post('/sync', isAuthenticated, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to sync data: ' + error.message
-    });
-  }
-});
-
-
-
-// Get weekly overview data with proper calendar week support
-router.get('/weekly-overview', async (req, res) => {
-  try {
-    console.log('Fetching weekly overview data...');
-    console.log('Query params:', req.query);
-    
-    let startDate = null;
-    let endDate = null;
-    
-    // Check if specific date range is provided
-    if (req.query.startDate && req.query.endDate) {
-      startDate = new Date(req.query.startDate);
-      endDate = new Date(req.query.endDate);
-      
-      // Validate dates
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)'
-        });
-      }
-      
-      console.log(`Using date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
-    } else {
-      console.log('No date range provided, using default (last 7 days)');
-    }
-    
-    // Get weekly data from the service
-    const weeklyResult = await thingSpeakService.getWeeklyOverviewData(startDate, endDate);
-    
-    console.log(`Returning ${weeklyResult.data.length} data points`);
-    
-    res.json({
-      success: true,
-      period: 'weekly',
-      data: weeklyResult.data,
-      summary: weeklyResult.summary
-    });
-  } catch (error) {
-    console.error('Error fetching weekly overview:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch weekly overview data: ' + error.message
     });
   }
 });

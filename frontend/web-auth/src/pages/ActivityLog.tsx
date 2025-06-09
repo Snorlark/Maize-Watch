@@ -160,24 +160,24 @@ const ActivityLogPage: React.FC = () => {
   // }
 
   return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      <main className="flex-grow container mx-auto px-4 py-8">
+    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+      <main className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <Activity className="w-6 h-6 text-[#356B2C]" />
-              Activity Log
-            </h1>
-            <p className="text-[#4A7C59] mt-1 text-sm">Monitor all admin and user activities</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
+            <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
+            Activity Log
+          </h1>
+          <p className="text-[#456C2D] text-sm sm:text-base">
+            Monitor all admin and user activities across the system
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#456C2D] text-[#F5F5DC]">
               Admin Access
-            </div>
+            </span>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#356B2C] text-white rounded-lg hover:bg-[#2D5A24] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -188,12 +188,12 @@ const ActivityLogPage: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
             <div className="flex items-center justify-between">
-              <span><strong>Error:</strong> {error}</span>
+              <span className="font-medium">Error: {error}</span>
               <button
                 onClick={() => fetchLogs(currentPage)}
-                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
               >
                 Retry
               </button>

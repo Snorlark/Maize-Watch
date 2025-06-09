@@ -15,75 +15,99 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
+  late AnimationController _rotationController;
 
   @override
   void initState() {
     super.initState();
-    _checkSessionAndNavigate();
+    
+    // Clockwise animation
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+
+    // Timer to navigate to LandingScreen
+    Timer(const Duration(milliseconds: 4500), () {
+      _rotationController.stop();
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 800),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const LandingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    });
   }
 
-  Future<void> _checkSessionAndNavigate() async {
-    try {
-      // Check if session is expired
-      final isExpired = await _apiService.isSessionExpired();
-      
-      if (isExpired) {
-        // Session expired, go to landing screen
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const LandingScreen(showLoginOnLoad: true),
-            ),
-          );
-        }
-      } else {
-        // Session valid, check if user is logged in
-        final isLoggedIn = await _apiService.isLoggedIn();
-        
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => isLoggedIn 
-                ? const HomeScreen()
-                : const LandingScreen(),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('❌ Error checking session: $e');
-      // On error, go to landing screen
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const LandingScreen(),
-          ),
-        );
-      }
-    }
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/logo.png',
-              width: 150,
-              height: 150,
+      backgroundColor: MAIZE_BOTTOM_OVERLAY,
+      body: Stack(
+        children: [
+          // Centered rotating logo stack
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/Frame-Logo.png',
+                      width: 200.w,
+                      height: 200.h,
+                    ),
+                    RotationTransition(
+                      turns: _rotationController,
+                      child: Image.asset(
+                        'assets/images/Corn-Logo.png',
+                        width: 80.w,
+                        height: 80.h,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(),
-          ],
-        ),
+          ),
+
+          // Bottom "from" and NOVU logo
+          Positioned(
+            bottom: 40.h,
+            left: 0,
+            right: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CustomFont(
+                  text: 'from',
+                  fontSize: 14.sp,
+                  color: MAIZE_ACCENT,
+                  fontWeight: FontWeight.w500,
+                ),
+                Image.asset(
+                  'assets/images/NOVU-LOGO.png',
+                  width: 80.w,
+                  height: 30.h,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

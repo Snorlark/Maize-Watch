@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Users } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
@@ -103,36 +103,58 @@ export default function AccountManagement() {
   }
 
   return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-6 sm:px-20 md:px-32 lg:px-50 pt-6">
-      
-
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Account Management</h1>
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-            {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
+    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+      <main className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
+            <Users className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
+            Account Management
+          </h1>
+          <p className="text-[#456C2D] text-sm sm:text-base">
+            Manage farmer accounts and user permissions
+          </p>
+          <div className="mt-3">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#456C2D] text-[#F5F5DC]">
+              {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
+            </span>
           </div>
         </div>
 
+        {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Error: {error}</span>
+              <button
+                onClick={() => fetchUsers()}
+                className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
-        <UserTable 
-          users={users} 
-          loading={loading} 
-          onEdit={handleOpenEditModal} 
-          onDelete={handleOpenDeleteModal} 
-        />
+        {/* User Table */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <UserTable 
+            users={users} 
+            loading={loading} 
+            onEdit={handleOpenEditModal} 
+            onDelete={handleOpenDeleteModal} 
+          />
+        </div>
 
-        <div 
-          className="mt-6 flex items-center text-green-700 cursor-pointer hover:underline"
-          onClick={handleOpenCreateModal}
-        >
-          <PlusCircle className="w-5 h-5 mr-2" />
-          <span>Create new account</span>
+        {/* Create New Account Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex items-center gap-2 px-6 py-3 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium shadow-md hover:shadow-lg"
+          >
+            <PlusCircle className="w-5 h-5" />
+            <span>Create New Account</span>
+          </button>
         </div>
       </main>
 

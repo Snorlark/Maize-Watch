@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService, { User } from '../api/services/authService';
 import * as jwt_decode from 'jwt-decode'; // Changed to named import
+import SessionExpirationModal from '../components/SessionExpirationModal';
 
 // Define token payload type
 interface TokenPayload {
@@ -19,6 +19,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   resetInactivityTimer: () => void;
+  refreshUserData: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,11 +56,16 @@ export const isSuperAdmin = (userRole: string): boolean => {
 
 // Inactivity timeout in milliseconds (15 minutes = 900000ms)
 const INACTIVITY_TIMEOUT = 900000;
+// Warning timeout (2 minutes before expiration = 120000ms)
+const WARNING_TIMEOUT = 120000;
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
+  const [warningTimer, setWarningTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes in seconds
   const navigate = useNavigate();
 
   // Function to decode and validate token
@@ -87,17 +93,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Start the inactivity timer
   const startInactivityTimer = () => {
-    // Clear any existing timer
+    // Clear any existing timers
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
     }
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+    }
     
-    // Set a new timer
-    const timer = setTimeout(() => {
+    // Set warning timer (2 minutes before expiration)
+    const warningTimerInstance = setTimeout(() => {
+      setShowSessionModal(true);
+      setTimeRemaining(120); // 2 minutes
+    }, INACTIVITY_TIMEOUT - WARNING_TIMEOUT);
+    
+    // Set inactivity timer (full timeout)
+    const inactivityTimerInstance = setTimeout(() => {
       logout();
     }, INACTIVITY_TIMEOUT);
     
-    setInactivityTimer(timer);
+    setWarningTimer(warningTimerInstance);
+    setInactivityTimer(inactivityTimerInstance);
   };
 
   // Reset the inactivity timer
@@ -105,6 +121,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user) {
       startInactivityTimer();
     }
+  };
+
+  // Handle session extension
+  const handleExtendSession = () => {
+    setShowSessionModal(false);
+    resetInactivityTimer();
+  };
+
+  // Handle session logout
+  const handleSessionLogout = () => {
+    setShowSessionModal(false);
+    logout();
+  };
+
+  // Close session modal
+  const handleCloseSessionModal = () => {
+    setShowSessionModal(false);
   };
 
   useEffect(() => {
@@ -150,6 +183,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (inactivityTimer) {
           clearTimeout(inactivityTimer);
         }
+        if (warningTimer) {
+          clearTimeout(warningTimer);
+        }
         
         activityEvents.forEach(event => {
           window.removeEventListener(event, resetTimer);
@@ -176,14 +212,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     authService.logout();
     setUser(null);
+    setShowSessionModal(false);
     
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
       setInactivityTimer(null);
     }
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+      setWarningTimer(null);
+    }
     
     // Redirect to login page
     navigate('/');
+  };
+
+  const refreshUserData = () => {
+    const token = authService.getToken();
+    if (token) {
+      const userData = parseToken(token);
+      if (userData) {
+        setUser(userData);
+      }
+    }
   };
 
   const value = {
@@ -192,8 +243,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     logout,
-    resetInactivityTimer
+    resetInactivityTimer,
+    refreshUserData
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionExpirationModal
+        isOpen={showSessionModal}
+        onClose={handleCloseSessionModal}
+        onExtendSession={handleExtendSession}
+        onLogout={handleSessionLogout}
+        timeRemaining={timeRemaining}
+      />
+    </AuthContext.Provider>
+  );
 };
