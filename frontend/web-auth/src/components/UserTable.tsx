@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Pencil, Trash2, Loader2, ArrowUpDown, Download } from 'lucide-react';
-import { User } from '../api/client';
+import { User as UserType } from '../api/services/authService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 // @ts-ignore - Add this if jspdf-autotable types are causing issues
 
 interface UserTableProps {
-  users: User[];
+  users: UserType[];
   loading: boolean;
-  onEdit: (user: User) => void;
-  onDelete: (user: User) => void;
+  onEdit: (user: UserType) => void;
+  onDelete: (user: UserType) => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -106,25 +106,25 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete 
   return (
     <div className="overflow-x-auto">
       <div className="flex justify-between mb-4">
-        <h2 className="text-xl font-semibold">Farmers List</h2>
+        <h2 className="text-xl font-semibold text-[#1E441E]">Farmers List</h2>
         <div className="flex gap-2">
           <button 
             onClick={toggleSort}
-            className="flex items-center px-3 py-2 bg-[#cce3bb] text-[#123b1f] rounded-md hover:bg-[#b8d9a2]"
+            className="flex items-center px-3 py-2 bg-[#456C2D] text-[#F5F5DC] rounded-lg hover:bg-[#8B4513] transition-colors cursor-pointer"
           >
             <ArrowUpDown className="w-4 h-4 mr-1" /> 
             Sort by Name {sortDirection === 'asc' ? '(A-Z)' : sortDirection === 'desc' ? '(Z-A)' : ''}
           </button>
           <button 
             onClick={exportToPDF}
-            className="flex items-center px-3 py-2 bg-[#123b1f] text-white rounded-md hover:bg-[#1a5930]"
+            className="flex items-center px-3 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4 mr-1" /> Export PDF
           </button>
         </div>
       </div>
       <table className="min-w-full bg-white rounded-xl shadow-md overflow-hidden">
-        <thead className="bg-[#cce3bb] text-[#123b1f] text-left">
+        <thead className="bg-[#456C2D] text-[#F5F5DC] text-left">
           <tr>
             <th className="px-6 py-3">
               <div className="flex items-center">
@@ -151,18 +151,18 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete 
             </tr>
           ) : (
             sortedUsers.map((user) => (
-              <tr key={user._id} className="border-b hover:bg-[#f2fbe7]">
+              <tr key={user._id} className="border-b hover:bg-[#F5F9E8] transition-colors">
                 <td className="px-6 py-4">{user.fullName}</td>
                 <td className="px-6 py-4">{user.address}</td>
                 <td className="px-6 py-4">{user.contactNumber}</td>
                 <td className="px-6 py-4">{user.username}</td>
                 <td className="px-6 py-4 flex gap-2">
                   <Pencil 
-                    className="w-5 h-5 text-green-600 cursor-pointer hover:scale-110 transition-transform" 
+                    className="w-5 h-5 text-[#456C2D] cursor-pointer hover:text-[#8B4513] hover:scale-110 transition-all" 
                     onClick={() => onEdit(user)}
                   />
                   <Trash2 
-                    className="w-5 h-5 text-red-600 cursor-pointer hover:scale-110 transition-transform" 
+                    className="w-5 h-5 text-red-600 cursor-pointer hover:text-red-800 hover:scale-110 transition-all" 
                     onClick={() => onDelete(user)}
                   />
                 </td>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
-import { User } from '../api/client';
+import { X, Save, Loader2, User, Phone, MapPin, Shield } from 'lucide-react';
+import { User as UserType } from '../api/services/authService';
 
 interface UserFormProps {
   mode: 'create' | 'edit';
-  initialData?: User | null;
-  onSubmit: (data: Omit<User, '_id'>) => Promise<void>;
+  initialData?: UserType | null;
+  onSubmit: (data: Omit<UserType, '_id'>) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
 }
@@ -17,7 +17,7 @@ const UserForm: React.FC<UserFormProps> = ({
   onCancel,
   isLoading
 }) => {
-  const [formData, setFormData] = useState<Omit<User, '_id'>>({
+  const [formData, setFormData] = useState<Omit<UserType, '_id'>>({
     username: '',
     password: '',
     fullName: '',
@@ -164,7 +164,7 @@ const UserForm: React.FC<UserFormProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-md hover:bg-[#A0522D] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {mode === 'create' ? 'Create Account' : 'Save Changes'}

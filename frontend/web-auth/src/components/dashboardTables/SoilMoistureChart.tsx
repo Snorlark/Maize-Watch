@@ -9,6 +9,8 @@ import {
   LineChart,
   Line,
   ReferenceLine,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 import {
   Download,
@@ -16,61 +18,61 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  RefreshCw,
   FileText,
   BarChart3,
   LineChart as LineChartIcon,
   Waves,
-  Droplet,
   TrendingUp,
   TrendingDown,
+  AlertCircle,
+  List,
+  Table,
+  Minus,
+  Clock,
+  CalendarDays,
+  Calendar,
+  BarChart2,
+  ChevronDown,
 } from "lucide-react";
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { saveAs } from 'file-saver';
 import { Calendar as CalendarPicker } from "../ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Skeleton } from '../ui/skeleton';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { API_CONFIG } from '../../api/config';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import UnifiedExportModal from '../UnifiedExportModal';
 
 // Types
 interface DataItem {
-  [key: string]:
-    | string
-    | number
-    | { min: number; max: number; critical: number }
-    | undefined;
-  value: number;
+  [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
+  value: number | null;
   dataPoints?: number;
   threshold: {
     min: number;
     max: number;
     critical: number;
   };
-}
-
-interface ThingSpeakEntry {
-  created_at: string;
-  entry_id: number;
-  field3: string;
-}
-
-interface ThingSpeakResponse {
-  feeds: ThingSpeakEntry[];
-  channel: {
-    id: number;
-    name: string;
-    last_entry_id: number;
-  };
-}
-
-interface ExportModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  chartData: DataItem[];
-  xKey: string;
-  currentOverview: string;
-  dateRange: string;
-  viewType: string;
-  chartRef: React.RefObject<HTMLDivElement | null>;
+  hour?: string;
+  day?: string;
+  week?: string;
+  month?: string;
+  timestamp?: string;
 }
 
 interface CalendarProps {
@@ -86,14 +88,6 @@ interface DateRange {
   start: Date;
   end: Date;
 }
-
-// API Configuration
-const THINGSPEAK_CONFIG = {
-  channelId: "2965485",
-  apiKey: "EQ3MYH5XBDSB6K2A",
-  field: "3",
-  baseUrl: "https://api.thingspeak.com/channels",
-};
 
 // Add soil moisture thresholds
 const SOIL_MOISTURE_THRESHOLDS = {
@@ -117,60 +111,46 @@ const SOIL_MOISTURE_COLORS = {
   }
 };
 
-// Utility Functions
-const getTimescaleForPeriod = (period: string): number => {
-  switch (period) {
-    case "hourly":
-      return 86400; // 24 hours
-    case "weekly":
-      return 604800; // 7 days
-    case "monthly":
-      return 2592000; // 30 days
-    default:
-      return 86400;
+// Add soil moisture conversion function
+const convertSoilMoistureToPercentage = (rawValue: number): number => {
+  if (rawValue === undefined || rawValue === null || isNaN(rawValue)) {
+    return 0;
   }
-};
 
-const fetchThingSpeakData = async (
-  period: string
-): Promise<ThingSpeakResponse> => {
-  const timescale = getTimescaleForPeriod(period);
-  const url = `${THINGSPEAK_CONFIG.baseUrl}/${THINGSPEAK_CONFIG.channelId}/fields/${THINGSPEAK_CONFIG.field}.json?api_key=${THINGSPEAK_CONFIG.apiKey}&timescale=${timescale}`;
+  // If the value is already in percentage range (0-100), return as is
+  if (rawValue >= 0 && rawValue <= 100) {
+    return rawValue;
+  }
+
+  // Convert raw analog values to percentage
+  // Most common ranges:
+  // - 10-bit ADC: 0-1023 (dry=1023, wet=0)
+  // - 12-bit ADC: 0-4095 (dry=4095, wet=0)
+  // - 16-bit ADC: 0-65535 (dry=65535, wet=0)
   
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Fetched ${period} data:`, data);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${period} data:`, error);
-    throw error;
+  let percentage: number;
+  
+  if (rawValue >= 0 && rawValue <= 1023) {
+    // 10-bit ADC range (0-1023)
+    // Invert the value since dry soil = high value, wet soil = low value
+    percentage = ((1023 - rawValue) / 1023) * 100;
+  } else if (rawValue >= 0 && rawValue <= 4095) {
+    // 12-bit ADC range (0-4095)
+    percentage = ((4095 - rawValue) / 4095) * 100;
+  } else if (rawValue >= 0 && rawValue <= 65535) {
+    // 16-bit ADC range (0-65535)
+    percentage = ((65535 - rawValue) / 65535) * 100;
+  } else {
+    // For other ranges, assume it's already in a reasonable range and normalize
+    const maxReasonableValue = Math.max(rawValue, 1000);
+    percentage = (rawValue / maxReasonableValue) * 100;
   }
+  
+  // Clamp to 0-100 range
+  return Math.max(0, Math.min(100, percentage));
 };
 
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  const philippineTime = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000);
-  return philippineTime;
-};
-
-const formatDateRange = (start: Date, end: Date): string => {
-  const options: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "Asia/Manila",
-  };
-  return `${start.toLocaleDateString(
-    "en-PH",
-    options
-  )} - ${end.toLocaleDateString("en-PH", options)}`;
-};
-
+// Utility Functions
 const getWeekRange = (date: Date): { start: Date; end: Date } => {
   const start = new Date(date);
   const day = start.getDay();
@@ -185,430 +165,109 @@ const getWeekRange = (date: Date): { start: Date; end: Date } => {
   return { start, end };
 };
 
-const processSoilMoistureData = (
-  response: ThingSpeakResponse,
-  period: string,
-  customRange?: { start: Date; end: Date }
-): { chartData: DataItem[]; xKey: string; dateRange: string } => {
-  if (!response.feeds || response.feeds.length === 0) {
-    return getDefaultData(period);
-  }
+const getMonthRange = (date: Date): { start: Date; end: Date } => {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+};
 
-  // Log the first and last few entries from the API
-  console.log("API Data Sample:", {
-    firstEntry: response.feeds[0],
-    lastEntry: response.feeds[response.feeds.length - 1],
-    totalEntries: response.feeds.length,
-  });
+const formatDateRange = (start: Date, end: Date): string => {
+  const options: Intl.DateTimeFormatOptions = { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
+  };
+  return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
+};
 
-  const latestEntry = response.feeds[response.feeds.length - 1];
-  const latestDate = convertToPhilippineTime(latestEntry.created_at);
-  
-  let chartData: DataItem[] = [];
-  let xKey = "";
-  let dateRange = "";
+const convertToPhilippineTime = (utcDateString: string): Date => {
+  const utcDate = new Date(utcDateString);
+  // Philippines is UTC+8
+  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
+  return philippineTime;
+};
 
-  switch (period) {
-    case "daily": {
-      const dayNames = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      const hourlyData: {
-        [key: string]: { sum: number; count: number; hours: string[] };
-      } = {};
-      
-      // Initialize 24 hours
-      for (let hour = 0; hour < 24; hour++) {
-        const hourKey = `${hour.toString().padStart(2, "0")}:00`;
-        hourlyData[hourKey] = { sum: 0, count: 0, hours: [] };
-      }
-
-      // Get the start of the current week (Sunday)
-      const currentDate = new Date(latestDate);
-      const day = currentDate.getDay();
-      const diff = currentDate.getDate() - day;
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(diff);
-      startOfWeek.setHours(0, 0, 0, 0);
-
-      // Get the end of the week (Saturday)
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-
-      console.log("Date Range:", {
-        startOfWeek: startOfWeek.toISOString(),
-        endOfWeek: endOfWeek.toISOString(),
-        latestDate: latestDate.toISOString(),
-      });
-
-      // Process the data
-      response.feeds.forEach((entry) => {
-        if (entry.field3) {
-          const entryDate = convertToPhilippineTime(entry.created_at);
-          const value = parseFloat(entry.field3);
-
-          // Debug log for entries near the start of the week
-          if (entryDate.getDay() <= 1) {
-            // Sunday (0) or Monday (1)
-            console.log("Entry near start of week:", {
-              date: entryDate.toISOString(),
-              value: value,
-              day: entryDate.getDay(),
-              isInRange: entryDate >= startOfWeek && entryDate <= endOfWeek,
-            });
-          }
-
-          if (
-            !isNaN(value) &&
-            entryDate >= startOfWeek &&
-            entryDate <= endOfWeek
-          ) {
-            const hour = entryDate.getHours();
-            const hourKey = `${hour.toString().padStart(2, "0")}:00`;
-            hourlyData[hourKey].sum += value;
-            hourlyData[hourKey].count += 1;
-            hourlyData[hourKey].hours.push(entryDate.toISOString());
-          }
-        }
-      });
-      
-      // Debug log for hourly data
-      console.log(
-        "Hourly Data Summary:",
-        Object.entries(hourlyData).map(([hour, data]) => ({
-          hour,
-          count: data.count,
-          average: data.count > 0 ? data.sum / data.count : 0,
-          timestamps: data.hours,
-        }))
-      );
-
-      chartData = Object.keys(hourlyData).map((hour) => ({
-        hour,
-        value:
-          hourlyData[hour].count > 0
-            ? Math.round((hourlyData[hour].sum / hourlyData[hour].count) * 10) /
-              10
-            : 0,
-        dataPoints: hourlyData[hour].count,
-        threshold: {
-          min: SOIL_MOISTURE_THRESHOLDS.min,
-          max: SOIL_MOISTURE_THRESHOLDS.max,
-          critical: SOIL_MOISTURE_THRESHOLDS.critical,
-        },
-      }));
-
-      dateRange = formatDateRange(startOfWeek, endOfWeek);
-      xKey = "hour";
-      break;
-    }
-    
-    case "weekly": {
-      const dayNames = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      const dayData: {
-        [key: string]: { sum: number; count: number; dates: string[] };
-      } = {};
-
-      // Initialize all days
-      dayNames.forEach((day) => {
-        dayData[day] = { sum: 0, count: 0, dates: [] };
-      });
-
-      // Get the latest entry date in Philippine time
-      const latestEntry = response.feeds[response.feeds.length - 1];
-      const latestDate = convertToPhilippineTime(latestEntry.created_at);
-
-      // Calculate current week range (Sunday to Saturday) in Philippine time
-      const currentDate = new Date(latestDate);
-      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-      // Get start of current week (Sunday)
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - dayOfWeek);
-      startOfWeek.setHours(0, 0, 0, 0);
-
-      // Get end of current week (Saturday)
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-
-      console.log("Weekly Date Range (Philippine Time):", {
-        latestDate: latestDate.toLocaleString("en-PH", {
-          timeZone: "Asia/Manila",
-        }),
-        startOfWeek: startOfWeek.toLocaleString("en-PH", {
-          timeZone: "Asia/Manila",
-        }),
-        endOfWeek: endOfWeek.toLocaleString("en-PH", {
-          timeZone: "Asia/Manila",
-        }),
-        dayOfWeek: dayOfWeek,
-      });
-
-      // Process all the data entries
-      let processedCount = 0;
-      let totalEntries = response.feeds.length;
-        
-      response.feeds.forEach((entry, index) => {
-        if (entry.field3) {
-          const entryDate = convertToPhilippineTime(entry.created_at);
-            const value = parseFloat(entry.field3);
-
-          // Check if entry is within the current week
-          if (
-            !isNaN(value) &&
-            entryDate >= startOfWeek &&
-            entryDate <= endOfWeek
-          ) {
-            const dayName = dayNames[entryDate.getDay()];
-            const entryDateStr = entryDate.toLocaleDateString("en-PH", {
-              timeZone: "Asia/Manila",
-            });
-
-            dayData[dayName].sum += value;
-            dayData[dayName].count += 1;
-            if (!dayData[dayName].dates.includes(entryDateStr)) {
-              dayData[dayName].dates.push(entryDateStr);
-      }
-      
-            processedCount++;
-
-            // Log some sample entries for debugging
-            if (processedCount <= 10 || index % 50 === 0) {
-              console.log(`Entry ${index + 1}/${totalEntries}:`, {
-                originalUTC: entry.created_at,
-                philippineTime: entryDate.toLocaleString("en-PH", {
-                  timeZone: "Asia/Manila",
-                }),
-                dayName: dayName,
-                value: value,
-                inRange: true,
-              });
-            }
-          }
-        }
-      });
-
-      console.log(
-        `Total entries processed: ${processedCount} out of ${totalEntries}`
-      );
-
-      // Debug log for daily data summary
-      console.log(
-        "Daily Data Summary:",
-        Object.entries(dayData).map(([day, data]) => ({
-          day,
-          count: data.count,
-          average:
-            data.count > 0 ? Math.round((data.sum / data.count) * 10) / 10 : 0,
-          dates: data.dates,
-        }))
-      );
-
-      // Create chart data with all days, even if they have no data
-      chartData = dayNames.map((day) => ({
-        day,
-        value:
-          dayData[day].count > 0
-            ? Math.round((dayData[day].sum / dayData[day].count) * 10) / 10
-            : 0,
-        dataPoints: dayData[day].count,
-        dates: dayData[day].dates.join(", "),
-        threshold: {
-          min: SOIL_MOISTURE_THRESHOLDS.min,
-          max: SOIL_MOISTURE_THRESHOLDS.max,
-          critical: SOIL_MOISTURE_THRESHOLDS.critical,
-        },
-      }));
-
-      dateRange = formatDateRange(startOfWeek, endOfWeek);
-      xKey = "day";
-      break;
-    }
-    
-    case "monthly": {
-      const monthNames = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      const monthsData: { [key: string]: { sum: number; count: number } } = {};
-      
-      for (let i = 11; i >= 0; i--) {
-        const monthDate = new Date(latestDate);
-        monthDate.setMonth(monthDate.getMonth() - i);
-        const monthLabel = monthNames[monthDate.getMonth()];
-        monthsData[monthLabel] = { sum: 0, count: 0 };
-        
-        response.feeds.forEach((entry) => {
-          const entryDate = convertToPhilippineTime(entry.created_at);
-          const monthLabel = monthNames[entryDate.getMonth()];
-
-          if (monthsData[monthLabel] && entry.field3) {
-            const value = parseFloat(entry.field3);
-            if (!isNaN(value)) {
-              monthsData[monthLabel].sum += value;
-              monthsData[monthLabel].count += 1;
-            }
-          }
-        });
-      }
-      
-      const firstMonth = new Date(latestDate);
-      firstMonth.setMonth(firstMonth.getMonth() - 11, 1);
-      const lastMonth = new Date(latestDate);
-      lastMonth.setMonth(lastMonth.getMonth() + 1, 0);
-      
-      chartData = monthNames.map((month) => ({
-        month,
-        value:
-          monthsData[month] && monthsData[month].count > 0
-            ? Math.round(
-                (monthsData[month].sum / monthsData[month].count) * 10
-              ) / 10
-            : 0,
-        threshold: {
-          min: SOIL_MOISTURE_THRESHOLDS.min,
-          max: SOIL_MOISTURE_THRESHOLDS.max,
-          critical: SOIL_MOISTURE_THRESHOLDS.critical,
-        },
-      }));
-
-      dateRange = formatDateRange(firstMonth, lastMonth);
-      xKey = "month";
-      break;
-    }
-  }
-
-  return { chartData, xKey, dateRange };
+const getDayOfWeekName = (dayIndex: number): string => {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return dayNames[dayIndex];
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
-  const today = baseDate ? new Date(baseDate) : getCurrentPhilippineTime();
+  const today = baseDate ? new Date(baseDate) : new Date();
   const defaultThreshold = {
     min: SOIL_MOISTURE_THRESHOLDS.min,
     max: SOIL_MOISTURE_THRESHOLDS.max,
     critical: SOIL_MOISTURE_THRESHOLDS.critical,
   };
+
   switch (period) {
-    case 'daily': {
+    case 'hourly': {
       const currentDate = new Date(today);
-      const dayOfWeek = currentDate.getDay();
-      const startOfWeek = new Date(currentDate);
-      startOfWeek.setDate(currentDate.getDate() - dayOfWeek);
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-      const dayNames = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      const chartData = dayNames.map((day) => ({
+      const chartData: DataItem[] = [];
+      for (let i = 0; i < 24; i++) {
+        chartData.push({
+          hour: `${i.toString().padStart(2, '0')}:00`,
+          value: null,
+          dataPoints: 0,
+          threshold: defaultThreshold
+        });
+      }
+      return {
+        chartData,
+        xKey: 'hour',
+        dateRange: formatDateRange(currentDate, currentDate)
+      };
+    }
+    case 'daily': {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const chartData: DataItem[] = days.map(day => ({
         day,
-        value: 0,
+        value: null,
         dataPoints: 0,
-        dates: "",
-        threshold: defaultThreshold,
+        threshold: defaultThreshold
       }));
+      const startOfWeek = getStartOfWeek(today);
+      const endOfWeek = getEndOfWeek(startOfWeek);
       return {
         chartData,
         xKey: 'day',
-        dateRange: formatDateRange(startOfWeek, endOfWeek),
+        dateRange: formatDateRange(startOfWeek, endOfWeek)
       };
     }
     case 'weekly': {
-      const weeks = [];
-      let start = new Date(today);
-      start.setHours(0, 0, 0, 0);
-      for (let i = 3; i >= 0; i--) {
-        const weekStart = new Date(start);
-        weekStart.setDate(start.getDate() - i * 7 - start.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        weeks.push({
-          week: `Week ${4 - i}`,
-          value: 0,
+      const weeksInMonth = getWeeksInMonth(today);
+      const chartData: DataItem[] = Array.from({ length: weeksInMonth }, (_, i) => ({
+        week: `Week ${i + 1}`,
+        value: null,
           dataPoints: 0,
-          threshold: defaultThreshold,
-        });
-      }
-      const firstWeekStart = new Date(start);
-      firstWeekStart.setDate(start.getDate() - 21 - start.getDay());
-      const lastWeekEnd = new Date(start);
-      lastWeekEnd.setDate(start.getDate() + 6 - start.getDay());
+        threshold: defaultThreshold
+      }));
+      const startOfMonth = getStartOfMonth(today);
+      const endOfMonth = getEndOfMonth(today);
       return {
-        chartData: weeks,
+        chartData,
         xKey: 'week',
-        dateRange: formatDateRange(firstWeekStart, lastWeekEnd),
+        dateRange: formatDateRange(startOfMonth, endOfMonth)
       };
     }
     case 'monthly': {
       const monthNames = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
       ];
-      const chartData = [];
-      let monthCursor = new Date(today);
-      monthCursor.setDate(1);
-      monthCursor.setHours(0, 0, 0, 0);
-      for (let i = 11; i >= 0; i--) {
-        const month = new Date(monthCursor);
-        month.setMonth(monthCursor.getMonth() - i);
-        chartData.push({
-          month: monthNames[month.getMonth()],
-          value: 0,
+      const chartData: DataItem[] = monthNames.map(month => ({
+        month,
+        value: null,
           dataPoints: 0,
-          threshold: defaultThreshold,
-        });
-      }
-      const firstMonth = new Date(today);
-      firstMonth.setMonth(firstMonth.getMonth() - 11, 1);
-      const lastMonth = new Date(today);
-      lastMonth.setMonth(lastMonth.getMonth() + 1, 0);
+        threshold: defaultThreshold
+      }));
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const endOfYear = new Date(today.getFullYear(), 11, 31);
       return {
         chartData,
         xKey: 'month',
-        dateRange: formatDateRange(firstMonth, lastMonth),
+        dateRange: formatDateRange(startOfYear, endOfYear)
       };
     }
     default:
@@ -703,365 +362,25 @@ const Calendar: React.FC<CalendarProps> = ({
   );
 };
 
-// Export Modal Component
-const ExportModal: React.FC<ExportModalProps> = ({
-  isOpen,
-  onClose,
-  chartData,
-  xKey,
-  currentOverview,
-  dateRange,
-  viewType,
-  chartRef,
-}) => {
-  const [exportFormat, setExportFormat] = useState<string>("CSV");
-  const [exportType, setExportType] = useState<string>("current");
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
-  const [showStartCalendar, setShowStartCalendar] = useState<boolean>(false);
-  const [showEndCalendar, setShowEndCalendar] = useState<boolean>(false);
-  const [isLoadingExport, setIsLoadingExport] = useState<boolean>(false);
-
-  const handleExport = async () => {
-    setIsLoadingExport(true);
-    
-    try {
-      if (exportFormat === "CSV") {
-        // Create CSV content with headers
-        const headers = [
-          xKey.charAt(0).toUpperCase() + xKey.slice(1),
-          "Soil Moisture",
-          "Data Points",
-          "Status",
-          "Thresholds"
-        ];
-        
-        const rows = chartData.map((item) => {
-          const value = item.value as number;
-          const threshold = (item as any).threshold as {
-            min: number;
-            max: number;
-            critical: number;
-          };
-          let status = "Normal";
-          if (value < threshold.min) status = "Too Dry";
-          else if (value > threshold.critical) status = "Critical";
-          else if (value > threshold.max) status = "Too Wet";
-          
-          return [
-            item[xKey],
-            value.toFixed(1),
-            item.dataPoints || "N/A",
-            status,
-            `Min: ${threshold.min}, Max: ${threshold.max}, Critical: ${threshold.critical}`
-          ];
-        });
-
-        const csvContent = [
-          headers.join(","),
-          ...rows.map(row => row.join(","))
-        ].join("\n");
-        
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-        saveAs(blob, `soil-moisture-data-${currentOverview}-${viewType}-${new Date().toISOString().split('T')[0]}.csv`);
-      } else if (exportFormat === "PDF") {
-        if (!chartRef.current) {
-          throw new Error("Chart reference not found");
-        }
-
-        // Create a temporary container for the chart
-        const container = document.createElement('div');
-        container.style.width = '1200px';
-        container.style.height = '800px';
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '-9999px';
-        document.body.appendChild(container);
-
-        // Clone the chart content
-        const chartClone = chartRef.current.cloneNode(true) as HTMLElement;
-        container.appendChild(chartClone);
-
-        try {
-          const canvas = await html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            width: 1200,
-            height: 800,
-            backgroundColor: '#ffffff'
-          });
-
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4',
-          });
-
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-          const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-
-          const imgX = (pdfWidth - imgWidth * ratio) / 2;
-          const imgY = 20;
-
-          // Add title
-          pdf.setFontSize(16);
-          pdf.setTextColor(124, 58, 237); // #7C3AED
-          pdf.text('Soil Moisture Dashboard', pdfWidth / 2, 15, { align: 'center' });
-
-          // Add subtitle
-          pdf.setFontSize(12);
-          pdf.setTextColor(75, 85, 99); // text-gray-600
-          pdf.text(`${currentOverview.charAt(0).toUpperCase() + currentOverview.slice(1)} View - ${dateRange}`, pdfWidth / 2, 25, { align: 'center' });
-
-          // Add chart
-          pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-
-          // Add footer
-          pdf.setFontSize(10);
-          pdf.setTextColor(107, 114, 128); // text-gray-500
-          pdf.text(`Generated on ${new Date().toLocaleString()}`, pdfWidth / 2, pdfHeight - 10, { align: 'center' });
-
-          pdf.save(`soil-moisture-dashboard-${currentOverview}-${viewType}-${new Date().toISOString().split('T')[0]}.pdf`);
-        } finally {
-          // Clean up
-          document.body.removeChild(container);
-        }
-      } else if (exportFormat === "SVG") {
-        if (!chartRef.current) {
-          throw new Error("Chart reference not found");
-        }
-
-        const svgElement = chartRef.current.querySelector('svg');
-        if (!svgElement) {
-          throw new Error("SVG element not found");
-        }
-
-        // Create a temporary container for the SVG
-        const container = document.createElement('div');
-        container.style.width = '1200px';
-        container.style.height = '800px';
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '-9999px';
-        document.body.appendChild(container);
-
-        // Clone the SVG
-        const svgClone = svgElement.cloneNode(true) as SVGElement;
-        svgClone.setAttribute('width', '1200');
-        svgClone.setAttribute('height', '800');
-        container.appendChild(svgClone);
-
-        try {
-          const svgData = new XMLSerializer().serializeToString(svgClone);
-          const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-          saveAs(svgBlob, `soil-moisture-chart-${currentOverview}-${viewType}-${new Date().toISOString().split('T')[0]}.svg`);
-        } finally {
-          // Clean up
-          document.body.removeChild(container);
-        }
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Export failed. Please try again.");
-    } finally {
-      setIsLoadingExport(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Export Soil Moisture Data
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Export Format
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { format: "CSV", icon: <FileText size={16} />, label: "CSV" },
-                { format: "PDF", icon: <FileText size={16} />, label: "PDF" },
-                { format: "SVG", icon: <FileText size={16} />, label: "SVG" },
-              ].map(({ format, icon, label }) => (
-                <button
-                  key={format}
-                  onClick={() => setExportFormat(format)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                    exportFormat === format
-                      ? "bg-purple-100 text-purple-600 border-2 border-purple-600"
-                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent"
-                  }`}
-                >
-                  {icon}
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Export Range
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { type: "current", label: "Current Period" },
-                { type: "custom", label: "Custom Range" },
-              ].map(({ type, label }) => (
-                <button
-                  key={type}
-                  onClick={() => setExportType(type)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    exportType === type
-                      ? "bg-green-100 text-green-600 border-2 border-green-600"
-                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border-2 border-transparent"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {exportType === "custom" && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={startDate.toLocaleDateString()}
-                    readOnly
-                    className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    onClick={() => setShowStartCalendar(!showStartCalendar)}
-                  />
-                  <CalendarIcon
-                    size={16}
-                    className="absolute right-3 top-3 text-gray-400"
-                  />
-                  <CalendarPicker
-                    selectedDate={startDate}
-                    onDateSelect={setStartDate}
-                    isVisible={showStartCalendar}
-                    setIsVisible={setShowStartCalendar}
-                    maxDate={endDate}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={endDate.toLocaleDateString()}
-                    readOnly
-                    className="w-full p-2 border border-gray-300 rounded-md cursor-pointer focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    onClick={() => setShowEndCalendar(!showEndCalendar)}
-                  />
-                  <CalendarIcon
-                    size={16}
-                    className="absolute right-3 top-3 text-gray-400"
-                  />
-                  <CalendarPicker
-                    selectedDate={endDate}
-                    onDateSelect={setEndDate}
-                    isVisible={showEndCalendar}
-                    setIsVisible={setShowEndCalendar}
-                    minDate={startDate}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-            <p className="text-sm text-gray-600">
-              <strong>Current Range:</strong> {dateRange}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>View:</strong> {currentOverview} ({viewType})
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-              disabled={isLoadingExport}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleExport}
-              className="px-4 py-2 bg-[#8B5C2A] text-white rounded-md hover:bg-[#A9743A] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
-              disabled={isLoadingExport}
-            >
-              {isLoadingExport ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Exporting...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  <span>Export</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Custom Tooltip Component
+// Custom Tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const value = payload[0].value;
     const threshold = data.threshold;
-
     let status = "Normal";
     let statusColor = "text-green-600";
     let statusIcon = <Waves className="w-4 h-4" />;
-
     if (value < threshold.min) {
       status = "Too Dry";
-      statusColor = "text-teal-600";
+      statusColor = "text-yellow-600";
     } else if (value > threshold.critical) {
       status = "Critical";
-      statusColor = "text-blue-600";
+      statusColor = "text-purple-600";
     } else if (value > threshold.max) {
       status = "Too Wet";
-      statusColor = "text-teal-800";
+      statusColor = "text-blue-600";
     }
-
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
@@ -1080,9 +399,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         )}
         <div className="mt-2 text-xs text-gray-500">
           <p>Thresholds:</p>
-          <p className="text-[#2DD4BF]">Min: {threshold.min}%</p>
-          <p className="text-[#0F766E]">Max: {threshold.max}%</p>
-          <p className="text-[#2563EB]">Critical: {threshold.critical}%</p>
+          <p className="text-[#86EFAC]">Min: {threshold.min}%</p>
+          <p className="text-[#15803D]">Max: {threshold.max}%</p>
+          <p className="text-[#166534]">Critical: {threshold.critical}%</p>
         </div>
       </div>
     );
@@ -1090,198 +409,646 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Add these helper functions before the main component
-const getPreviousWeek = (date: Date): DateRange => {
-  const start = new Date(date);
-  start.setDate(start.getDate() - 7);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  return { start, end };
-};
+// Update the calculateTrend function to handle null values
+const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; percentage: number } => {
+  const validData = data.filter(item => item.value !== null);
+  if (validData.length < 2) {
+    return { trend: 'neutral', percentage: 0 };
+  }
 
-const getNextWeek = (date: Date): DateRange => {
-  const start = new Date(date);
-  start.setDate(start.getDate() + 7);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  return { start, end };
-};
+  const firstValue = validData[0].value as number;
+  const lastValue = validData[validData.length - 1].value as number;
+  
+  if (firstValue === 0) {
+    return { trend: 'neutral', percentage: 0 };
+  }
 
-const getPreviousMonth = (date: Date): DateRange => {
-  const start = new Date(date);
-  start.setMonth(start.getMonth() - 1);
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 1);
-  end.setDate(0);
-  return { start, end };
-};
-
-const getNextMonth = (date: Date): DateRange => {
-  const start = new Date(date);
-  start.setMonth(start.getMonth() + 1);
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 1);
-  end.setDate(0);
-  return { start, end };
-};
-
-// Add this utility if missing
-const getCurrentPhilippineTime = (): Date => {
-  const now = new Date();
-  // Convert current time to Philippine time (UTC+8)
-  const philippineTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
-};
-
-// Add trend analysis function
-const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral', percentage: number } => {
-  if (data.length < 2) return { trend: 'neutral', percentage: 0 };
-
-  const values = data.map(item => item.value as number);
-  const firstValue = values[0];
-  const lastValue = values[values.length - 1];
   const percentageChange = ((lastValue - firstValue) / firstValue) * 100;
+  const roundedPercentage = Math.round(percentageChange * 10) / 10;
 
-  if (Math.abs(percentageChange) < 1) return { trend: 'neutral', percentage: percentageChange };
+  if (Math.abs(roundedPercentage) < 1) {
+    return { trend: 'neutral', percentage: 0 };
+  }
+
   return {
-    trend: percentageChange > 0 ? 'up' : 'down',
-    percentage: Math.abs(percentageChange)
+    trend: roundedPercentage > 0 ? 'up' : 'down',
+    percentage: Math.abs(roundedPercentage)
   };
+};
+
+// Add the same utility functions as HumidityChart
+const getStartOfWeek = (date: Date): Date => {
+  const daysFromSunday = date.getDay();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
+};
+
+const getEndOfWeek = (date: Date): Date => {
+  const startOfWeek = getStartOfWeek(date);
+  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+};
+
+const getStartOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const getEndOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+const getStartOfDay = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const getEndOfDay = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+};
+
+// Update ViewType to include all options
+type ViewType = 'line' | 'bar' | 'list' | 'tabular';
+
+// Add at the top of SoilMoistureDashboard
+const periodOptions = [
+  { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <CalendarIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Weekly', value: 'weekly', icon: <CalendarDays className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
+];
+const viewTypeOptions = [
+  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
+  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
+];
+
+// Add the getStatusBadge function before the SoilMoistureDashboard component
+const getStatusBadge = (value: number) => {
+  if (value >= SOIL_MOISTURE_THRESHOLDS.critical) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>;
+  } else if (value >= SOIL_MOISTURE_THRESHOLDS.max) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">High</span>;
+  } else if (value >= SOIL_MOISTURE_THRESHOLDS.min) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>;
+  } else {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Low</span>;
+  }
+};
+
+// Add helper functions for week calculations before the fetchData function
+const getWeeksInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const firstWeekday = firstDay.getDay();
+  const lastWeekday = lastDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  
+  // Calculate number of weeks
+  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
+  if (lastWeekday < firstWeekday) weeks++;
+  
+  return weeks;
+};
+
+const getWeekNumberInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const firstWeekday = firstDay.getDay();
+  const dayOfMonth = date.getDate();
+  
+  // Calculate week number (1-based)
+  return Math.ceil((dayOfMonth + firstWeekday) / 7);
 };
 
 // Update the main component
 const SoilMoistureDashboard = () => {
-  const [overview, setOverview] = useState<string>("weekly");
-  const [viewType, setViewType] = useState<string>("chart");
+  const [viewType, setViewType] = useState<ViewType>('line');
+  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('weekly');
   const [chartData, setChartData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<string>("");
-  const [xKey, setXKey] = useState<string>("day");
-  const [showExportModal, setShowExportModal] = useState<boolean>(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<string>('');
+  const [currentOverview, setCurrentOverview] = useState(overview);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral', percentage: number }>({ trend: 'neutral', percentage: 0 });
-  const chartRef = useRef<HTMLDivElement | null>(null);
+  const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [xKey, setXKey] = useState<string>('day');
+  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
 
-  const fetchDataForPeriod = async (date?: Date, range?: DateRange) => {
+  // Update hourly data type
+  interface HourlyData {
+    sum: number;
+    count: number;
+    dates: string[];
+  }
+
+  // Update the hourly data map
+  const hourlyData = new Map<string, HourlyData>();
+
+  // API Configuration
+  const API_CONFIG = {
+    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+    endpoints: {
+      historical: '/api/sensors/historical',
+      weekly: '/api/sensors/weekly-overview',
+      latest: '/api/sensors/latest'
+    }
+  };
+
+  // Update the fetchData function
+  const fetchData = async (period: string, baseDate: Date = new Date()) => {
     setIsLoading(true);
     setError(null);
+
     try {
-      const response = await fetchThingSpeakData(overview);
-      const {
-        chartData: newData,
-        xKey: newXKey,
-        dateRange: newDateRange,
-      } = processSoilMoistureData(response, overview, range);
-      setChartData(newData);
-      setXKey(newXKey);
-      setDateRange(newDateRange);
-      setLastUpdated(new Date());
-      setTrend(calculateTrend(newData));
+      // Convert baseDate to Philippine time
+      const phDate = new Date(baseDate.getTime() + (8 * 60 * 60 * 1000));
+      let startDate: Date;
+      let endDate: Date;
+      let endpoint: string;
+      let params: Record<string, string> = {};
+
+      switch (period) {
+        case 'hourly': {
+          // For hourly view, get data for the selected day
+          startDate = new Date(phDate);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(phDate);
+          endDate.setHours(23, 59, 59, 999);
+          endpoint = API_CONFIG.endpoints.historical;
+          params.startDate = startDate.toISOString();
+          params.endDate = endDate.toISOString();
+          console.log('Hourly view - Date range:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            phDate: phDate.toISOString()
+          });
+          break;
+        }
+        case 'daily': {
+          // For daily view, get data for the week containing the selected date
+          startDate = getStartOfWeek(phDate);
+          endDate = getEndOfWeek(startDate);
+          endpoint = API_CONFIG.endpoints.historical;
+          params.startDate = startDate.toISOString();
+          params.endDate = endDate.toISOString();
+          console.log('Daily view - Week range:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            phDate: phDate.toISOString()
+          });
+          break;
+        }
+        case 'weekly': {
+          // For weekly view, get data for the month containing the selected date
+          startDate = getStartOfMonth(phDate);
+          endDate = getEndOfMonth(phDate);
+          endpoint = API_CONFIG.endpoints.historical;
+          params.startDate = startDate.toISOString();
+          params.endDate = endDate.toISOString();
+          break;
+        }
+        case 'monthly': {
+          // For monthly view, get data for the entire year
+          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
+          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
+          endpoint = API_CONFIG.endpoints.historical;
+          params.startDate = startDate.toISOString();
+          params.endDate = endDate.toISOString();
+          break;
+        }
+        default:
+          throw new Error('Invalid period specified');
+      }
+
+      const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
+      console.log(`Making API request to ${url} for ${period} view`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`API response for ${period} view:`, {
+        success: result.success,
+        dataLength: result.data?.length,
+        firstItem: result.data?.[0],
+        lastItem: result.data?.[result.data?.length - 1]
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch data');
+      }
+
+      let processedData: DataItem[] = [];
+      const rawData = result.data;
+
+      // Handle empty or invalid data
+      if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+        console.warn(`No data available for ${period} view`);
+        processedData = getDefaultData(period, phDate).chartData;
+      } else {
+        // Filter data to only include entries within our date range
+        const filteredData = rawData.filter((item: any) => {
+          const itemDate = new Date(item.timestamp);
+          const isInRange = itemDate >= startDate && itemDate <= endDate;
+          if (!isInRange) {
+            console.log('Filtered out item:', {
+              timestamp: item.timestamp,
+              itemDate: itemDate.toISOString(),
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString()
+            });
+          }
+          return isInRange;
+        });
+
+        console.log(`Filtered data for ${period} view:`, {
+          totalItems: rawData.length,
+          filteredItems: filteredData.length,
+          firstFilteredItem: filteredData[0],
+          lastFilteredItem: filteredData[filteredData.length - 1]
+        });
+
+        switch (period) {
+          case 'hourly': {
+            // Process hourly data for the selected day
+            const hourlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
+            
+            // Initialize all hours for the day
+            for (let i = 0; i < 24; i++) {
+              const hourKey = `${i.toString().padStart(2, '0')}:00`;
+              hourlyData.set(hourKey, { sum: 0, count: 0, dates: [] });
+            }
+            
+            filteredData.forEach((item: any) => {
+              if (!item || typeof item !== 'object') return;
+              
+              const date = new Date(item.timestamp);
+              const hourKey = `${date.getHours().toString().padStart(2, '0')}:00`;
+              if (hourlyData.has(hourKey)) {
+                const current = hourlyData.get(hourKey)!;
+                if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
+                  const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
+                  current.sum += convertedValue;
+                  current.count++;
+                  current.dates.push(date.toISOString());
+                }
+              }
+            });
+
+            console.log('Hourly data processing:', {
+              totalHours: hourlyData.size,
+              hoursWithData: Array.from(hourlyData.entries())
+                .filter(([_, data]) => data.count > 0)
+                .map(([hour, data]) => ({
+                  hour,
+                  count: data.count,
+                  average: data.sum / data.count
+                }))
+            });
+
+            processedData = Array.from(hourlyData.entries()).map(([hour, data]) => ({
+              hour,
+              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+              dataPoints: data.count,
+              threshold: SOIL_MOISTURE_THRESHOLDS
+            }));
+            setXKey('hour');
+            break;
+          }
+          case 'daily': {
+            // Process daily data for the week
+            const dailyData = new Map<string, { sum: number; count: number; dates: string[] }>();
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            
+            // Initialize all days
+            days.forEach(day => dailyData.set(day, { sum: 0, count: 0, dates: [] }));
+            
+            filteredData.forEach((item: any) => {
+              if (!item || typeof item !== 'object') return;
+              
+              const date = new Date(item.timestamp);
+              const dayKey = days[date.getDay()];
+              const current = dailyData.get(dayKey)!;
+              if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
+                const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
+                current.sum += convertedValue;
+                current.count++;
+                current.dates.push(date.toISOString());
+              }
+            });
+
+            console.log('Daily data processing:', {
+              totalDays: dailyData.size,
+              daysWithData: Array.from(dailyData.entries())
+                .filter(([_, data]) => data.count > 0)
+                .map(([day, data]) => ({
+                  day,
+                  count: data.count,
+                  average: data.sum / data.count
+                }))
+            });
+
+            processedData = days.map(day => {
+              const data = dailyData.get(day)!;
+              return {
+                day,
+                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+                dataPoints: data.count,
+                threshold: SOIL_MOISTURE_THRESHOLDS
+              };
+            });
+            setXKey('day');
+            break;
+          }
+          case 'weekly': {
+            // Process weekly data for the month
+            const weeksInMonth = getWeeksInMonth(phDate);
+            const weeklyData = new Map<string, { sum: number; count: number; dates: string[] }>();
+            
+            // Initialize all weeks
+            for (let i = 1; i <= weeksInMonth; i++) {
+              weeklyData.set(`Week ${i}`, { sum: 0, count: 0, dates: [] });
+            }
+            
+            filteredData.forEach((item: any) => {
+              if (!item || typeof item !== 'object') return;
+              
+              const date = new Date(item.timestamp);
+              const weekNumber = getWeekNumberInMonth(date);
+              const weekKey = `Week ${weekNumber}`;
+              
+              if (weeklyData.has(weekKey)) {
+                const current = weeklyData.get(weekKey)!;
+                if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
+                  const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
+                  current.sum += convertedValue;
+                  current.count++;
+                  current.dates.push(date.toISOString());
+                }
+              }
+            });
+
+            processedData = Array.from(weeklyData.entries()).map(([week, data]) => ({
+              week,
+              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+              dataPoints: data.count,
+              threshold: SOIL_MOISTURE_THRESHOLDS
+            }));
+            setXKey('week');
+            break;
+          }
+          case 'monthly': {
+            // Process monthly data for the year
+            const monthlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
+            const monthNames = [
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"
+            ];
+            
+            // Initialize all months
+            monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0, dates: [] }));
+            
+            filteredData.forEach((item: any) => {
+              if (!item || typeof item !== 'object') return;
+              
+              const date = new Date(item.timestamp);
+              const monthKey = monthNames[date.getMonth()];
+              const current = monthlyData.get(monthKey)!;
+              if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
+                const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
+                current.sum += convertedValue;
+                current.count++;
+                current.dates.push(date.toISOString());
+              }
+            });
+
+            processedData = monthNames.map(month => {
+              const data = monthlyData.get(month)!;
+              return {
+                month,
+                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+                dataPoints: data.count,
+                threshold: SOIL_MOISTURE_THRESHOLDS
+              };
+            });
+            setXKey('month');
+            break;
+          }
+        }
+      }
+
+      console.log(`Final processed data for ${period} view:`, {
+        dataLength: processedData.length,
+        dataWithValues: processedData.filter(item => item.value !== null).length,
+        firstItem: processedData[0],
+        lastItem: processedData[processedData.length - 1]
+      });
+
+      // Calculate trend using non-zero values
+      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
+      const trend = calculateTrend(validData);
+      setTrend(trend);
+
+      setChartData(processedData);
+      setDateRange(formatDateRange(startDate, endDate));
+      setCurrentOverview(period);
+      setError(null);
     } catch (error) {
-      console.error("Error fetching soil moisture data:", error);
-      setError("Failed to fetch live data. Showing sample data.");
-      let baseDate = date;
-      if (!baseDate && range) baseDate = range.start;
-      const {
-        chartData: defaultData,
-        xKey: defaultXKey,
-        dateRange: defaultDateRange,
-      } = getDefaultData(overview, baseDate);
-      setChartData(defaultData);
-      setXKey(defaultXKey);
-      setDateRange(defaultDateRange);
+      console.error(`Error fetching ${period} data:`, error);
+      setError("Failed to fetch data. Please try again later.");
+      const defaultData = getDefaultData(period, baseDate);
+      setChartData(defaultData.chartData);
+      setXKey(defaultData.xKey);
+      setDateRange(defaultData.dateRange);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFetchData = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    void fetchDataForPeriod(selectedDate, customDateRange);
+  // Fetch data when overview or selectedDate changes
+  useEffect(() => {
+    fetchData(overview, selectedDate);
+  }, [overview, selectedDate]);
+
+  // Auto-refresh data every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchData(overview, selectedDate);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [overview, selectedDate]);
+
+  const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
+    setOverview(newOverview);
+    setCurrentOverview(newOverview);
+    fetchData(newOverview, selectedDate);
   };
 
-  useEffect(() => {
-    void fetchDataForPeriod(selectedDate, customDateRange);
-  }, [overview, selectedDate, customDateRange]);
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setShowCalendar(false);
+  };
 
   const handlePreviousPeriod = () => {
-    if (customDateRange) {
-      if (overview === "daily") {
-        const newDate = new Date(customDateRange.start);
-        newDate.setDate(newDate.getDate() - 1);
-        setCustomDateRange({ start: newDate, end: newDate });
-      } else if (overview === "weekly") {
-        const newRange = getPreviousWeek(customDateRange.start);
-        setCustomDateRange(newRange);
-      } else if (overview === "monthly") {
-        const newRange = getPreviousMonth(customDateRange.start);
-        setCustomDateRange(newRange);
-      }
-    } else {
-      if (overview === "daily") {
-        const newDate = new Date(selectedDate);
-        newDate.setDate(newDate.getDate() - 1);
-        setSelectedDate(newDate);
-      } else if (overview === "weekly") {
-        const newRange = getPreviousWeek(selectedDate);
-        setSelectedDate(newRange.start);
-      } else if (overview === "monthly") {
-        const newRange = getPreviousMonth(selectedDate);
-        setSelectedDate(newRange.start);
-      }
+    let newDate: Date;
+    switch (overview) {
+      case 'hourly':
+        newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case 'daily':
+        newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'weekly':
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+        break;
+      case 'monthly':
+        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
+        break;
+      default:
+        newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
     }
+        setSelectedDate(newDate);
   };
 
   const handleNextPeriod = () => {
-    if (customDateRange) {
-      if (overview === "daily") {
-        const newDate = new Date(customDateRange.start);
-        newDate.setDate(newDate.getDate() + 1);
-        setCustomDateRange({ start: newDate, end: newDate });
-      } else if (overview === "weekly") {
-        const newRange = getNextWeek(customDateRange.start);
-        setCustomDateRange(newRange);
-      } else if (overview === "monthly") {
-        const newRange = getNextMonth(customDateRange.start);
-        setCustomDateRange(newRange);
-      }
-    } else {
-      if (overview === "daily") {
-        const newDate = new Date(selectedDate);
-        newDate.setDate(newDate.getDate() + 1);
-        setSelectedDate(newDate);
-      } else if (overview === "weekly") {
-        const newRange = getNextWeek(selectedDate);
-        setSelectedDate(newRange.start);
-      } else if (overview === "monthly") {
-        const newRange = getNextMonth(selectedDate);
-        setSelectedDate(newRange.start);
-      }
+    // Don't allow navigation to future dates
+    const now = new Date();
+    if (selectedDate >= now) {
+      return;
     }
+
+    let newDate: Date;
+    switch (overview) {
+      case 'hourly':
+        newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case 'daily':
+        newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'weekly':
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        break;
+      case 'monthly':
+        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
+        break;
+      default:
+        newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
+    }
+
+    // Ensure we don't go beyond current date
+    if (newDate > now) {
+      newDate = now;
+    }
+    setSelectedDate(newDate);
   };
 
-  const handleCustomDateSelect = (start: Date, end: Date) => {
-    setCustomDateRange({ start, end });
+  const handleExport = () => {
+    setShowExportModal(true);
   };
 
-  const handleResetDateRange = () => {
-    setCustomDateRange(undefined);
-    setSelectedDate(new Date());
-  };
-
-  const renderChart = () => {
-    if (viewType === "table") {
+  // Update the renderSummary function to handle null values
+  const renderSummary = () => {
+    const validData = chartData.filter(item => item.value !== null);
+    if (validData.length === 0) {
       return (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+        <div className="mt-4 p-4 bg-muted rounded-lg">
+          <p className="text-sm text-muted-foreground">No data available for the selected period</p>
+        </div>
+      );
+    }
+
+    const currentValue = validData[validData.length - 1].value as number;
+    const averageValue = validData.reduce((sum, item) => sum + (item.value as number), 0) / validData.length;
+    const trend = calculateTrend(validData);
+
+    let status = 'Normal';
+    let statusColor = 'text-green-600';
+    if (currentValue < SOIL_MOISTURE_THRESHOLDS.min) {
+      status = 'Too Dry';
+      statusColor = 'text-yellow-600';
+    } else if (currentValue > SOIL_MOISTURE_THRESHOLDS.critical) {
+      status = 'Critical';
+      statusColor = 'text-red-600';
+    } else if (currentValue > SOIL_MOISTURE_THRESHOLDS.max) {
+      status = 'Too Wet';
+      statusColor = 'text-blue-600';
+    }
+
+    return (
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-4 bg-card rounded-lg border">
+          <h3 className="text-sm font-medium text-muted-foreground">Current Status</h3>
+          <p className={`text-2xl font-bold ${statusColor}`}>{status}</p>
+          <p className="text-sm text-muted-foreground">Current: {currentValue.toFixed(1)}%</p>
+        </div>
+        <div className="p-4 bg-card rounded-lg border">
+          <h3 className="text-sm font-medium text-muted-foreground">Average</h3>
+          <p className="text-2xl font-bold">{averageValue.toFixed(1)}%</p>
+          <p className="text-sm text-muted-foreground">Based on {validData.length} data points</p>
+        </div>
+        <div className="p-4 bg-card rounded-lg border">
+          <h3 className="text-sm font-medium text-muted-foreground">Trend</h3>
+          <div className="flex items-center gap-2">
+            <span className={`text-2xl font-bold ${
+              trend.trend === 'up' ? 'text-green-600' :
+              trend.trend === 'down' ? 'text-red-600' :
+              'text-gray-600'
+            }`}>
+              {trend.trend === 'up' ? '↑' : trend.trend === 'down' ? '↓' : '→'}
+            </span>
+            <p className="text-2xl font-bold">
+              {trend.percentage > 0 ? `${trend.percentage}%` : 'Stable'}
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {trend.trend === 'up' ? 'Increasing' :
+             trend.trend === 'down' ? 'Decreasing' :
+             'No significant change'}
+          </p>
+        </div>
+        <div className="p-4 bg-card rounded-lg border">
+          <h3 className="text-sm font-medium text-muted-foreground">Thresholds</h3>
+          <p className="text-sm">Min: {SOIL_MOISTURE_THRESHOLDS.min}%</p>
+          <p className="text-sm">Max: {SOIL_MOISTURE_THRESHOLDS.max}%</p>
+          <p className="text-sm text-red-600">Critical: {SOIL_MOISTURE_THRESHOLDS.critical}%</p>
+        </div>
+      </div>
+    );
+  };
+
+  // Update the renderChart function to ensure value is always a number
+  const renderChart = () => {
+    if (isLoading) return <Skeleton className="h-[400px] w-full" />;
+    if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
+    
+    // Always show chart even with empty data
+    const displayData = (chartData.length === 0 ? 
+      getDefaultData(overview, selectedDate).chartData : 
+      chartData.map(item => ({
+        ...item,
+        value: item.value ?? 0, // Use nullish coalescing to handle null values
+        threshold: SOIL_MOISTURE_THRESHOLDS
+      }))).map(item => ({
+        ...item,
+        value: Number(item.value) // Ensure value is always a number
+      }));
+
+    if (viewType === 'tabular') {
+      return (
+        <div className="overflow-x-auto max-h-[500px]">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 sticky top-0">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {xKey.charAt(0).toUpperCase() + xKey.slice(1)}
+                  {xKey === 'hour' ? 'Hour' : xKey === 'day' ? 'Day' : xKey === 'week' ? 'Week' : 'Month'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Soil Moisture (%)
@@ -1289,351 +1056,271 @@ const SoilMoistureDashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Data Points
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thresholds
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {chartData.map((item, index) => {
-                  const value = item.value as number;
-                  const threshold = (item as any).threshold as {
-                    min: number;
-                    max: number;
-                    critical: number;
-                  };
-                  const label = (item as any)[xKey] as string;
-                  let status = "Normal";
-                  let statusColor = "text-green-600";
-
-                  if (value < threshold.min) {
-                    status = "Too Dry";
-                    statusColor = "text-blue-600";
-                  } else if (value > threshold.critical) {
-                    status = "Critical";
-                    statusColor = "text-red-600";
-                  } else if (value > threshold.max) {
-                    status = "Too Wet";
-                    statusColor = "text-orange-600";
-                  }
-
-                  return (
+              {displayData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {label}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {renderTableCell(item)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {value}%
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.value?.toFixed(1) ?? '0.0'}%
                       </td>
-                      <td
-                        className={`px-6 py-4 whitespace-nowrap text-sm ${statusColor}`}
-                      >
-                        {status}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.dataPoints || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="text-xs">
-                          <p>Min: {threshold.min}%</p>
-                          <p>Max: {threshold.max}%</p>
-                          <p>Critical: {threshold.critical}%</p>
-                        </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {getStatusBadge(item.value)}
                       </td>
                     </tr>
-                  );
-                })}
+              ))}
               </tbody>
             </table>
-          </div>
         </div>
       );
     }
 
+    const thresholdLines = [
+      <ReferenceLine key="min" y={SOIL_MOISTURE_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" label={{ value: 'Min', position: 'right', fill: 'green' }} />,
+      <ReferenceLine key="max" y={SOIL_MOISTURE_THRESHOLDS.max} stroke="blue" strokeDasharray="3 3" label={{ value: 'Max', position: 'right', fill: 'blue' }} />,
+      <ReferenceLine key="critical" y={SOIL_MOISTURE_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
+    ];
+
+    // Customize X-axis labels based on view type
+    const getXAxisLabel = (value: string) => {
+      switch (overview) {
+        case 'hourly':
+          return `${value}:00`; // Add :00 to hour labels
+        case 'daily':
+          return value; // Already formatted as day names
+        case 'weekly':
+          return value; // Already formatted as Week 1, Week 2, etc.
+        case 'monthly':
+          return value; // Already formatted as month names
+        default:
+          return value;
+      }
+    };
+
+    if (viewType === 'line') {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <ResponsiveContainer width="100%" height={400}>
-          {viewType === "line" ? (
-            <LineChart data={chartData}>
+        <div className="h-[500px] p-4 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={displayData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey={xKey} 
-                tick={{ fontSize: 12, fill: "#374151" }}
-                axisLine={{ stroke: "#D1D5DB" }}
+                height={80}
+                tick={{ fontSize: 12 }}
+                angle={0}
+                textAnchor="middle"
+                dy={10}
+                padding={{ left: 20, right: 20 }}
+                tickFormatter={getXAxisLabel}
               />
               <YAxis 
-                tick={{ fontSize: 12, fill: "#374151" }}
-                axisLine={{ stroke: "#D1D5DB" }}
-                label={{ 
-                  value: "Soil Moisture (%)",
-                  angle: -90, 
-                  position: "insideLeft",
-                  style: { textAnchor: "middle", fill: "#374151" },
-                }}
+                domain={[0, 100]}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `${value}%`}
+                width={60}
+                tickMargin={10}
+                axisLine={{ stroke: '#666' }}
+                tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" height={36} />
               <Line 
-                type="monotone" 
+                type="monotoneX"
                 dataKey="value" 
-                stroke={SOIL_MOISTURE_COLORS.primary}
+                name="Soil Moisture"
+                stroke="#22C55E"
                 strokeWidth={2}
-                dot={{ fill: SOIL_MOISTURE_COLORS.primary, strokeWidth: 2, r: 4 }}
+                dot={{ fill: '#fff', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, fill: '#fff', stroke: '#22C55E', strokeWidth: 2 }}
+                connectNulls={true}
+                isAnimationActive={true}
+                animationDuration={500}
               />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.min}
-                stroke={SOIL_MOISTURE_COLORS.min}
-                strokeDasharray="3 3"
-                label={{ value: "Min", position: "right", fill: SOIL_MOISTURE_COLORS.min }}
-              />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.max}
-                stroke={SOIL_MOISTURE_COLORS.max}
-                strokeDasharray="3 3"
-                label={{ value: "Max", position: "right", fill: SOIL_MOISTURE_COLORS.max }}
-              />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.critical}
-                stroke={SOIL_MOISTURE_COLORS.critical}
-                strokeDasharray="3 3"
-                label={{ value: "Critical", position: "right", fill: SOIL_MOISTURE_COLORS.critical }}
-              />
+              {thresholdLines}
             </LineChart>
-          ) : (
-            <BarChart data={chartData}>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
+
+    if (viewType === 'bar') {
+      return (
+        <div className="h-[500px] p-4 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={displayData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey={xKey}
-                tick={{ fontSize: 12, fill: "#374151" }}
-                axisLine={{ stroke: "#D1D5DB" }}
+                height={80}
+                tick={{ fontSize: 12 }}
+                angle={0}
+                textAnchor="middle"
+                dy={10}
+                padding={{ left: 20, right: 20 }}
+                tickFormatter={getXAxisLabel}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "#374151" }}
-                axisLine={{ stroke: "#D1D5DB" }}
-                label={{
-                  value: "Soil Moisture (%)",
-                  angle: -90,
-                  position: "insideLeft",
-                  style: { textAnchor: "middle", fill: "#374151" },
-                }}
+                domain={[0, 100]}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => `${value}%`}
+                width={60}
+                tickMargin={10}
+                axisLine={{ stroke: '#666' }}
+                tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" fill={SOIL_MOISTURE_COLORS.primary} radius={[4, 4, 0, 0]} />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.min}
-                stroke={SOIL_MOISTURE_COLORS.min}
-                strokeDasharray="3 3"
-                label={{ value: "Min", position: "right", fill: SOIL_MOISTURE_COLORS.min }}
+              <Legend verticalAlign="top" height={36} />
+              <Bar
+                dataKey="value"
+                name="Soil Moisture"
+                fill="#22C55E"
+                radius={[4, 4, 0, 0]}
               />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.max}
-                stroke={SOIL_MOISTURE_COLORS.max}
-                strokeDasharray="3 3"
-                label={{ value: "Max", position: "right", fill: SOIL_MOISTURE_COLORS.max }}
-              />
-              <ReferenceLine
-                y={SOIL_MOISTURE_THRESHOLDS.critical}
-                stroke={SOIL_MOISTURE_COLORS.critical}
-                strokeDasharray="3 3"
-                label={{ value: "Critical", position: "right", fill: SOIL_MOISTURE_COLORS.critical }}
-              />
+              {thresholdLines}
             </BarChart>
-          )}
         </ResponsiveContainer>
       </div>
     );
+    }
+    return null;
+  };
+
+  // Update table cell rendering
+  const renderTableCell = (item: DataItem) => {
+    const value = item[xKey];
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value.toString();
+    }
+    return '';
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-full ${SOIL_MOISTURE_COLORS.background}`}>
-              <Droplet className={`w-6 h-6 ${SOIL_MOISTURE_COLORS.text}`} />
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Waves className="h-8 w-8 text-green-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Soil Moisture Dashboard
-              </h2>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-500">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </p>
-                {trend.trend !== 'neutral' && (
-                  <div className={`flex items-center gap-1 text-sm ${
-                    trend.trend === 'up' ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {trend.trend === 'up' ? (
-                      <TrendingUp size={16} />
-                    ) : (
-                      <TrendingDown size={16} />
-                    )}
-                    <span>{trend.percentage.toFixed(1)}% {trend.trend === 'up' ? 'increase' : 'decrease'}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleFetchData}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-              title="Refresh Data"
-            >
-              <RefreshCw size={20} />
-            </button>
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-              title="Export Data"
-            >
-              <Download size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div>
-              <label
-                htmlFor="overview"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Time Period
-              </label>
-              <select
-                id="overview"
-                value={overview}
-                onChange={(e) => {
-                  setOverview(e.target.value);
-                  setCustomDateRange(undefined);
-                  setSelectedDate(new Date());
-                }}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="viewType"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                View Type
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewType("chart")}
-                  className={`p-2 rounded-md ${
-                    viewType === "chart"
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Bar Chart"
-                >
-                  <BarChart3 size={20} />
-                </button>
-                <button
-                  onClick={() => setViewType("line")}
-                  className={`p-2 rounded-md ${
-                    viewType === "line"
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Line Chart"
-                >
-                  <LineChartIcon size={20} />
-                </button>
-                <button
-                  onClick={() => setViewType("table")}
-                  className={`p-2 rounded-md ${
-                    viewType === "table"
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                  }`}
-                  title="Table View"
-                >
-                  <FileText size={20} />
-                </button>
-              </div>
+                <h1 className="text-2xl font-bold text-gray-900">Soil Moisture Dashboard</h1>
+                <p className="text-sm text-muted-foreground">{dateRange}</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className="text-sm text-gray-500">
-              <strong>Date Range:</strong> {dateRange}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
                 onClick={handlePreviousPeriod}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-                title="Previous Period"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={handleResetDateRange}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
-                title="Reset to Current Period"
-              >
-                Today
-              </button>
-              <button
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {overview === 'hourly' ? 'Previous Day' :
+                   overview === 'daily' ? 'Previous Week' :
+                   overview === 'weekly' ? 'Previous Week' :
+                   'Previous Month'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                 onClick={handleNextPeriod}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
-                title="Next Period"
-              >
-                <ChevronRight size={20} />
-              </button>
+                >
+                  {overview === 'hourly' ? 'Next Day' :
+                   overview === 'daily' ? 'Next Week' :
+                   overview === 'weekly' ? 'Next Week' :
+                   'Next Month'}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
             </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                className="w-full flex items-center justify-center"
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Export Data
+              </Button>
           </div>
         </div>
       </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <Select
+              value={overview}
+              onValueChange={(value) => handleOverviewChange(value as 'hourly' | 'daily' | 'weekly' | 'monthly')}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                {periodOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-      {/* Chart/Table */}
-      <div ref={chartRef}>
-        {isLoading ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-[180px] justify-between">
+                  <div className="flex items-center">
+                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                     viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
+                     <Table className="h-4 w-4 mr-2" />}
+                    {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View
           </div>
-        ) : error ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-center">
-              <div className="text-red-500 mb-2">
-                <X size={24} />
-              </div>
-              <p className="text-gray-700">{error}</p>
-              <button
-                onClick={handleFetchData}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Retry
-              </button>
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {viewTypeOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setViewType(option.value as ViewType)}
+                  >
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
             </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        ) : (
-          renderChart()
-        )}
       </div>
 
-      {/* Export Modal */}
-      <ExportModal
+        <div ref={chartRef} className="h-[450px] p-4 mb-2">
+          {renderChart()}
+        </div>
+        {renderSummary()}
+      </CardContent>
+      <UnifiedExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
-        chartData={chartData}
-        xKey={xKey}
         currentOverview={overview}
-        dateRange={dateRange}
-        viewType={viewType}
+        chartData={chartData}
         chartRef={chartRef}
+        chartType="soilMoisture"
+        dateRange={dateRange}
       />
-    </div>
+    </Card>
   );
 };
 

@@ -154,7 +154,8 @@ class ThingSpeakService {
       // Parse all values with fallbacks for missing data
       const temperature = this.parseFieldValue(latestData.field1);
       const humidity = this.parseFieldValue(latestData.field2);
-      const soil_moisture = this.parseFieldValue(latestData.field3);
+      const rawSoilMoisture = this.parseFieldValue(latestData.field3);
+      const soil_moisture = this.convertSoilMoistureToPercentage(rawSoilMoisture);
       const soil_ph = this.parseFieldValue(latestData.field4);
       const light_intensity = this.parseFieldValue(latestData.field5);
       
@@ -248,7 +249,8 @@ class ThingSpeakService {
         // Parse all values with fallbacks for missing data
         const temperature = this.parseFieldValue(feed.field1);
         const humidity = this.parseFieldValue(feed.field2);
-        const soil_moisture = this.parseFieldValue(feed.field3);
+        const rawSoilMoisture = this.parseFieldValue(feed.field3);
+        const soil_moisture = this.convertSoilMoistureToPercentage(rawSoilMoisture);
         const soil_ph = this.parseFieldValue(feed.field4);
         const light_intensity = this.parseFieldValue(feed.field5);
         
@@ -316,6 +318,52 @@ class ThingSpeakService {
   }
 
   /**
+   * Converts raw soil moisture sensor values to percentage
+   * Most soil moisture sensors output raw analog values (0-1023 for 10-bit ADC)
+   * that need to be converted to percentage (0-100%)
+   * @param {number} rawValue - Raw sensor value
+   * @returns {number} Percentage value (0-100)
+   */
+  convertSoilMoistureToPercentage(rawValue) {
+    if (rawValue === undefined || rawValue === null || isNaN(rawValue)) {
+      return 0;
+    }
+
+    // If the value is already in percentage range (0-100), return as is
+    if (rawValue >= 0 && rawValue <= 100) {
+      return rawValue;
+    }
+
+    // Convert raw analog values to percentage
+    // Most common ranges:
+    // - 10-bit ADC: 0-1023 (dry=1023, wet=0)
+    // - 12-bit ADC: 0-4095 (dry=4095, wet=0)
+    // - 16-bit ADC: 0-65535 (dry=65535, wet=0)
+    
+    let percentage;
+    
+    if (rawValue >= 0 && rawValue <= 1023) {
+      // 10-bit ADC range (0-1023)
+      // Invert the value since dry soil = high value, wet soil = low value
+      percentage = ((1023 - rawValue) / 1023) * 100;
+    } else if (rawValue >= 0 && rawValue <= 4095) {
+      // 12-bit ADC range (0-4095)
+      percentage = ((4095 - rawValue) / 4095) * 100;
+    } else if (rawValue >= 0 && rawValue <= 65535) {
+      // 16-bit ADC range (0-65535)
+      percentage = ((65535 - rawValue) / 65535) * 100;
+    } else {
+      // For other ranges, assume it's already in a reasonable range and normalize
+      // Find the maximum value in a reasonable range and normalize
+      const maxReasonableValue = Math.max(rawValue, 1000);
+      percentage = (rawValue / maxReasonableValue) * 100;
+    }
+    
+    // Clamp to 0-100 range
+    return Math.max(0, Math.min(100, percentage));
+  }
+
+  /**
    * Gets the latest sensor data from MongoDB
    */
   async getLatestData() {
@@ -347,24 +395,61 @@ class ThingSpeakService {
   /**
    * Gets historical data for a specified time range
    */
-  async getHistoricalData(minutes = 60) {
+  async getHistoricalData(minutes = 60, startDate = null, endDate = null) {
     try {
       // Always sync latest data first
       await this.syncLatestDataFromThingSpeak();
       
-      // Ensure minutes is a valid number
-      const validMinutes = isNaN(minutes) || minutes <= 0 ? 60 : minutes;
+      let query = {};
       
+      if (startDate && endDate) {
+        // Use specific date range
+        query = {
+          timestamp: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        };
+        console.log('Querying with specific date range:', {
+          startDate: new Date(startDate).toISOString(),
+          endDate: new Date(endDate).toISOString()
+        });
+      } else {
+        // Use relative time window
+        const validMinutes = isNaN(minutes) || minutes <= 0 ? 60 : minutes;
+        query = {
+          timestamp: {
+            $gte: new Date(Date.now() - validMinutes * 60 * 1000)
+          }
+        };
+        console.log('Querying with relative time window:', {
+          minutes: validMinutes,
+          from: new Date(Date.now() - validMinutes * 60 * 1000).toISOString()
+        });
+      }
+
       // Get data from MongoDB
-      const mongoData = await SensorData.find({
-        timestamp: {
-          $gte: new Date(Date.now() - validMinutes * 60 * 1000)
-        }
-      }).sort({ timestamp: 1 }); // Sort by ascending time for charts
+      const mongoData = await SensorData.find(query).sort({ timestamp: 1 }); // Sort by ascending time for charts
+
+      console.log(`Found ${mongoData.length} records in the specified range`);
 
       if (!mongoData || mongoData.length === 0) {
-        console.log(`No historical data found for the past ${validMinutes} minutes`);
+        console.log('No historical data found for the specified range');
         return [];
+      }
+
+      // Log sample data points for debugging
+      if (mongoData.length > 0) {
+        console.log('Sample data points:', {
+          first: {
+            timestamp: mongoData[0].timestamp,
+            humidity: mongoData[0].measurements.humidity
+          },
+          last: {
+            timestamp: mongoData[mongoData.length - 1].timestamp,
+            humidity: mongoData[mongoData.length - 1].measurements.humidity
+          }
+        });
       }
 
       return mongoData.map(data => ({
@@ -443,6 +528,10 @@ class ThingSpeakService {
   async getWeeklyOverviewData(startDate = null, endDate = null) {
     try {
       console.log('Getting weekly overview data...');
+      console.log('Input dates:', {
+        startDate: startDate?.toISOString(),
+        endDate: endDate?.toISOString()
+      });
       
       // Always sync latest data first
       await this.syncLatestDataFromThingSpeak();
@@ -458,17 +547,30 @@ class ThingSpeakService {
         queryStartDate = this.getStartOfWeek(queryStartDate);
         queryEndDate = this.getEndOfWeek(queryStartDate);
         
-        console.log(`Using calendar week from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+        console.log('Adjusted date range:', {
+          originalStart: startDate.toISOString(),
+          originalEnd: endDate.toISOString(),
+          adjustedStart: queryStartDate.toISOString(),
+          adjustedEnd: queryEndDate.toISOString(),
+          startDay: queryStartDate.getDay(),
+          endDay: queryEndDate.getDay()
+        });
       } else {
         // Default to current calendar week
         const now = new Date();
         queryStartDate = this.getStartOfWeek(now);
         queryEndDate = this.getEndOfWeek(queryStartDate);
         
-        console.log(`Using current calendar week from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+        console.log('Using default date range (current week):', {
+          now: now.toISOString(),
+          startDate: queryStartDate.toISOString(),
+          endDate: queryEndDate.toISOString(),
+          startDay: queryStartDate.getDay(),
+          endDay: queryEndDate.getDay()
+        });
       }
 
-      console.log(`Querying data from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}`);
+      console.log('Querying MongoDB for data from ${queryStartDate.toISOString()} to ${queryEndDate.toISOString()}');
       
       // Query MongoDB for the specified date range
       const data = await SensorData.find({
@@ -479,6 +581,19 @@ class ThingSpeakService {
       }).sort({ timestamp: 1 });
 
       console.log(`Found ${data.length} records in the specified date range`);
+      
+      if (data.length > 0) {
+        console.log('Sample data points:', {
+          first: {
+            timestamp: data[0].timestamp,
+            humidity: data[0].measurements.humidity
+          },
+          last: {
+            timestamp: data[data.length - 1].timestamp,
+            humidity: data[data.length - 1].measurements.humidity
+          }
+        });
+      }
 
       if (!data || data.length === 0) {
         console.log('No weekly data found for the specified range');

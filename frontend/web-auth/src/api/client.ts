@@ -1,5 +1,5 @@
 // client.ts
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError } from 'axios';
 import authService from '../api/services/authService';
 
 // Import the User interface from authService to ensure consistency
@@ -200,17 +200,27 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.put('/api/profile', userData);
-      
-      // Update stored user data
-      if (response.data) {
-        localStorage.setItem('user_data', JSON.stringify(response.data));
+      // Get current user to get username
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser?.username) {
+        throw new Error('User information not found');
       }
       
-      return response.data;
-    } catch (error) {
+      const response = await apiClient.put(`/api/auth/user/${currentUser.username}`, userData);
+      
+      // Update stored user data
+      if (response.data?.data) {
+        const updatedUser = response.data.data;
+        localStorage.setItem('user_data', JSON.stringify(updatedUser));
+      }
+      
+      return response.data?.data || response.data;
+    } catch (error: any) {
       console.error('Error updating user profile:', error);
-      throw error;
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error('Failed to update profile. Please try again.');
     }
   },
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { User } from '../api/client';
+import { User } from '../api/services/authService';
 
 interface DeleteConfirmationProps {
   user: User | null;
@@ -39,7 +39,7 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-md hover:bg-[#A0522D] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             Delete
