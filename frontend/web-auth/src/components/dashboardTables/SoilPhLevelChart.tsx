@@ -8,8 +8,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Area,
-  AreaChart,
   BarChart,
   Bar,
   ReferenceLine,
@@ -18,25 +16,16 @@ import {
   Download,
   Calendar,
   Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  List,
-  Filter,
-  Minus,
-  BarChart2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  FileText,
   BarChart3,
-  LineChart as LineChartIcon,
   Table,
+  TestTube,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Calendar as CalendarPicker } from "../ui/calendar";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -45,10 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { format } from "date-fns";
-import { cn } from "../../lib/utils";
 import UnifiedExportModal from '../UnifiedExportModal';
-import { API_CONFIG, CHART_CONFIG, dateUtils } from '../../api/config';
 
 // Types
 interface DataItem {
@@ -96,26 +82,6 @@ const SOIL_PH_COLORS = {
 };
 
 // Utility Functions
-const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
-};
-
-const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { start, end };
-};
-
 const formatDateRange = (start: Date, end: Date): string => {
   const options: Intl.DateTimeFormatOptions = { 
     month: 'short', 
@@ -124,18 +90,6 @@ const formatDateRange = (start: Date, end: Date): string => {
     timeZone: 'Asia/Manila'
   };
   return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
-};
-
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  // Philippines is UTC+8
-  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
-};
-
-const getDayOfWeekName = (dayIndex: number): string => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayIndex];
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -313,14 +267,6 @@ const getEndOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 };
 
-const getStartOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-const getEndOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-};
-
 // Update ViewType to include all options
 type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 
@@ -332,7 +278,7 @@ const periodOptions = [
   { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
   { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
   { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
@@ -382,23 +328,10 @@ const SoilPhLevelDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
-  const [currentOverview, setCurrentOverview] = useState(overview);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const [xKey, setXKey] = useState<string>('day');
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
-
-  // Update hourly data type
-  interface HourlyData {
-    sum: number;
-    count: number;
-    dates: string[];
-  }
-
-  // Update the hourly data map
-  const hourlyData = new Map<string, HourlyData>();
 
   // API Configuration
   const API_CONFIG = {
@@ -706,13 +639,9 @@ const SoilPhLevelDashboard = () => {
       });
 
       // Calculate trend using non-zero values
-      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
-      const trend = calculateTrend(validData);
-      setTrend(trend);
 
       setChartData(processedData);
       setDateRange(formatDateRange(startDate, endDate));
-      setCurrentOverview(period);
       setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
@@ -742,13 +671,7 @@ const SoilPhLevelDashboard = () => {
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    setCurrentOverview(newOverview);
     fetchData(newOverview, selectedDate);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
   };
 
   const handlePreviousPeriod = () => {
@@ -1135,7 +1058,7 @@ const SoilPhLevelDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[180px] justify-between">
                   <div className="flex items-center">
-                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                    {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
                      viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
                      <Table className="h-4 w-4 mr-2" />}
                     {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View

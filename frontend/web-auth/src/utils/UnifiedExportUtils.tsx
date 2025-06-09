@@ -1,3 +1,4 @@
+import React from "react";
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import Papa from "papaparse";
@@ -87,28 +88,6 @@ const calculateStatistics = (data: ChartDataPoint[]) => {
     max: Math.max(...values),
     count: validData.length
   };
-};
-
-/**
- * Get filtered data based on export options
- */
-const getFilteredData = (chartData: ChartDataPoint[], options: ExportOptions): ChartDataPoint[] => {
-  if (options.customDateRange) {
-    const { startDate, endDate } = options.customDateRange;
-    
-    // Set end of day for the to date to include the full day
-    const endOfDay = new Date(endDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    
-    return chartData.filter((item) => {
-      const timestamp = item.timestamp || item[options.currentOverview];
-      if (!timestamp || typeof timestamp !== 'string') return false;
-      const itemDate = new Date(timestamp);
-      return itemDate >= startDate && itemDate <= endOfDay;
-    });
-  }
-  
-  return chartData;
 };
 
 /**
@@ -372,39 +351,42 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 /**
  * Main unified export function
  */
-export const unifiedExport = async (
-  format: 'pdf' | 'csv' | 'svg',
-  chartNode: HTMLElement | null,
+const exportChartData = async (
   chartData: ChartDataPoint[],
-  options: ExportOptions
-): Promise<void> => {
-  if (!chartNode) {
-    throw new Error("Chart reference not found");
-  }
-
-  // Filter data based on options
-  const filteredData = getFilteredData(chartData, options);
-  
-  console.log(`Exporting ${filteredData.length} data points in ${format} format for ${options.chartType}`);
-
+  options: ExportOptions,
+  format: 'pdf' | 'svg' | 'csv',
+  chartRef?: React.RefObject<HTMLDivElement | null>
+) => {
   try {
+    const config = CHART_CONFIGS[options.chartType];
+    const xKey = options.currentOverview === 'hourly' ? 'hour' : 
+                 options.currentOverview === 'daily' ? 'day' : 
+                 options.currentOverview === 'weekly' ? 'week' : 'month';
+    
+    const dateRange = options.dateRange || { from: '', to: '' };
+    
     switch (format) {
       case 'pdf':
-        await exportToPdf(filteredData, options.chartType, CHART_CONFIGS[options.chartType].title, options.dateRange);
+        await exportToPdf(chartData, xKey, config.title, dateRange);
         break;
       case 'svg':
-        await exportToSvg(chartNode, options);
+        if (chartRef?.current) {
+          await exportToSvg(chartRef.current, options);
+        } else {
+          throw new Error('Chart reference is required for SVG export');
+        }
         break;
       case 'csv':
-        exportToCsv(filteredData, options);
+        exportToCsv(chartData, options);
         break;
       default:
-        throw new Error(`Unsupported export format: ${format}`);
+        throw new Error(`Unsupported format: ${format}`);
     }
   } catch (error) {
-    console.error(`Export error for ${format}:`, error);
+    console.error('Export failed:', error);
     throw error;
   }
 };
 
-export type { ChartDataPoint, DateRange, ExportOptions }; 
+export type { ChartDataPoint, DateRange, ExportOptions };
+export { exportChartData }; 

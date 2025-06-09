@@ -253,7 +253,10 @@ const exportToPdf = async (
 /**
  * Exports chart as an SVG image
  */
-const exportToSvg = async (chartNode: HTMLElement, title: string) => {
+const exportToSvg = async (
+  chartNode: HTMLElement,
+  title: string
+) => {
   try {
     // Generate SVG with proper styling
     const dataUrl = await htmlToImage.toSvg(chartNode, {
@@ -421,7 +424,7 @@ export const handleExport = async (
         // For other data types, attempt to convert labels to dates
         filteredData = chartData.filter(item => {
           // Parse the item date based on data type
-          const itemDate = parseDateString(item[xKey] as string, dataType);
+          const itemDate = parseDateString(item[xKey] as string, new Date());
           
           // If we couldn't parse the date, include the item by default
           if (!itemDate) return true;
@@ -443,22 +446,4 @@ export const handleExport = async (
   } else if (format === "csv") {
     exportToCsv(filteredData, xKey, title);
   }
-};
-
-export const exportChartAsPDF = async (
-  chartRef: React.RefObject<HTMLDivElement>,
-  title: string,
-  subtitle: string = "",
-  filename: string = "chart-export.pdf"
-) => {
-  // Implementation of exportChartAsPDF method
-};
-
-export const exportChartAsImage = async (
-  chartRef: React.RefObject<HTMLDivElement>,
-  title: string,
-  subtitle: string = "",
-  filename: string = "chart-export.png"
-) => {
-  // Implementation of exportChartAsImage method
 };

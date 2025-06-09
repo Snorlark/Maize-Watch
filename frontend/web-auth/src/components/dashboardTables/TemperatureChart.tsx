@@ -8,8 +8,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Area,
-  AreaChart,
   BarChart,
   Bar,
   ReferenceLine,
@@ -18,26 +16,16 @@ import {
   Download,
   Calendar,
   Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  List,
-  Filter,
-  Minus,
-  BarChart2,
-  Thermometer,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  FileText,
   BarChart3,
-  LineChart as LineChartIcon,
   Table,
+  Thermometer,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Calendar as CalendarPicker } from "../ui/calendar";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -46,9 +34,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { format } from "date-fns";
-import { cn } from "../../lib/utils";
 import UnifiedExportModal from '../UnifiedExportModal';
+import { format } from "date-fns";
 
 // Types
 interface DataItem {
@@ -90,30 +77,8 @@ const TEMPERATURE_COLORS = {
 };
 
 // Utility Functions
-const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = getStartOfWeek(date);
-  const end = getEndOfWeek(start);
-  return { start, end };
-};
-
-const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = getStartOfMonth(date);
-  const end = getEndOfMonth(date);
-  return { start, end };
-};
-
 const formatDateRange = (start: Date, end: Date): string => {
   return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
-};
-
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  return new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-};
-
-const getDayOfWeekName = (dayIndex: number): string => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[dayIndex];
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -274,13 +239,19 @@ const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; p
 
 // Add the same utility functions as HumidityChart
 const getStartOfWeek = (date: Date): Date => {
-  const daysFromSunday = date.getDay();
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = start.getDate() - day;
+  start.setDate(diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
 };
 
 const getEndOfWeek = (date: Date): Date => {
-  const startOfWeek = getStartOfWeek(date);
-  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+  const end = new Date(date);
+  end.setDate(date.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
 };
 
 const getStartOfMonth = (date: Date): Date => {
@@ -289,14 +260,6 @@ const getStartOfMonth = (date: Date): Date => {
 
 const getEndOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-};
-
-const getStartOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-const getEndOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 };
 
 // Update ViewType to include all options
@@ -310,7 +273,7 @@ const periodOptions = [
   { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
   { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
   { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
@@ -356,14 +319,11 @@ const getWeekNumberInMonth = (date: Date): number => {
 const TemperatureDashboard = () => {
   const [chartData, setChartData] = useState<DataItem[]>([]);
   const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
-  const [currentOverview, setCurrentOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRange, setDateRange] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
   const [viewType, setViewType] = useState<ViewType>('line');
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [xKey, setXKey] = useState<string>('hour');
   const chartRef = useRef<HTMLDivElement>(null);
@@ -674,13 +634,9 @@ const TemperatureDashboard = () => {
       });
 
       // Calculate trend using non-zero values
-      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
-      const trend = calculateTrend(validData);
-      setTrend(trend);
 
-    setChartData(processedData);
+      setChartData(processedData);
     setDateRange(formatDateRange(startDate, endDate));
-      setCurrentOverview(period);
     setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
@@ -710,13 +666,7 @@ const TemperatureDashboard = () => {
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    setCurrentOverview(newOverview);
     fetchData(newOverview, selectedDate);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
   };
 
   const handlePreviousPeriod = () => {
@@ -1103,7 +1053,7 @@ const TemperatureDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[180px] justify-between">
                   <div className="flex items-center">
-                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                    {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
                       viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
                       <Table className="h-4 w-4 mr-2" />}
                     {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View

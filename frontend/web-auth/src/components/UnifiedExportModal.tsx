@@ -1,17 +1,8 @@
-import { useState, useRef } from 'react';
-import { Download, X } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Label } from './ui/label';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Calendar } from './ui/calendar';
-import { format } from 'date-fns';
-import { cn } from '../lib/utils';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
-import { unifiedExport, type ChartDataPoint, type ExportOptions } from '../utils/UnifiedExportUtils';
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Download, X } from "lucide-react";
+import { exportChartData, type ChartDataPoint, type ExportOptions } from "../utils/UnifiedExportUtils";
 
 interface UnifiedExportModalProps {
     isOpen: boolean;
@@ -23,41 +14,39 @@ interface UnifiedExportModalProps {
     dateRange?: string;
 }
 
-const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
-    isOpen,
-    onClose,
-    currentOverview,
-    chartData = [],
-    chartRef,
-    chartType,
-    dateRange = ''
-}) => {
-    const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'svg'>('pdf');
+const UnifiedExportModal = ({ 
+    isOpen, 
+    onClose, 
+    currentOverview, 
+    chartData, 
+    chartRef, 
+    chartType, 
+    dateRange 
+}: UnifiedExportModalProps) => {
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'svg' | 'csv'>('pdf');
     const [exportType, setExportType] = useState<'current' | 'custom'>('current');
-    const [startDate, setStartDate] = useState<Date>(new Date());
-    const [endDate, setEndDate] = useState<Date>(new Date());
-    const [isLoadingExport, setIsLoadingExport] = useState<boolean>(false);
+    const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // 7 days ago
+    const [endDate, setEndDate] = useState(new Date());
+    const [isExporting, setIsExporting] = useState(false);
 
     const handleExport = async () => {
-        setIsLoadingExport(true);
+        setIsExporting(true);
         try {
             const options: ExportOptions = {
                 format: exportFormat,
                 chartType,
                 currentOverview,
-                customDateRange: exportType === 'custom' ? {
-                    startDate,
-                    endDate
-                } : undefined
+                dateRange: exportType === 'current' && dateRange ? { from: dateRange, to: dateRange } : undefined,
+                customDateRange: exportType === 'custom' ? { startDate, endDate } : undefined
             };
-
-            await unifiedExport(exportFormat, chartRef.current, chartData, options);
+            
+            await exportChartData(chartData, options, exportFormat, chartRef);
             onClose();
         } catch (error) {
-            console.error("Export error:", error);
+            console.error('Export failed:', error);
             alert("Export failed. Please try again.");
         } finally {
-            setIsLoadingExport(false);
+            setIsExporting(false);
         }
     };
 
@@ -169,10 +158,10 @@ const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
                         </Button>
                         <Button
                             onClick={handleExport}
-                            disabled={isLoadingExport || (exportType === 'custom' && (!startDate || !endDate))}
+                            disabled={isExporting || (exportType === 'custom' && (!startDate || !endDate))}
                             className="flex items-center gap-2"
                         >
-                            {isLoadingExport ? (
+                            {isExporting ? (
                                 <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                     Exporting...
