@@ -2,10 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import { X } from "lucide-react";
+
 
 export default function Index() {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+
 
   useEffect(() => {
     AOS.init({ duration: 1000, once: true });
@@ -80,7 +86,7 @@ export default function Index() {
                       behavior: 'smooth'
                     });
                   }
-                }}className="animate-bounce mt-2 md:mt-4 px-6 md:px-8 py-3 md:py-3 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center" >
+                }}className="animate-bounce mt-2 md:mt-4 px-6 hover:animate-none cursor-pointer md:px-8 py-3 md:py-3 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center" >
                   See more ↓
                 </button>
               </div>
@@ -295,16 +301,24 @@ export default function Index() {
                    <div className="mt-2 md:mt-0">
                      <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Information</h4>
                      <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
-                       <li><a href="#" className="hover:opacity-80 transition-all duration-300">Privacy</a></li>
-                       <li><a href="#" className="hover:opacity-80 transition-all duration-300">Terms of Use</a></li>
-                       <li><a href="#" className="hover:opacity-80 transition-all duration-300">About us</a></li>
+                       <li><button 
+                       onClick={() => {
+                      setPrivacyModalOpen(true);}}
+                      className="hover:opacity-80 transition-all duration-300">Privacy</button></li>
+                       <li><button 
+                       onClick={() => {
+                      setTermsModalOpen(true);}} className="hover:opacity-80 transition-all duration-300">Terms of Use</button></li>
+                       <li><button
+                       onClick={() => {
+                      setAboutModalOpen(true);
+                    }}className="hover:opacity-80 transition-all duration-300">About us</button></li>
                      </ul>
                    </div>
   
                    <div className="mt-2 md:mt-0">
                      <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Contact Us</h4>
                      <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
-                       <li>1234 Taft Avenue</li>
+                       <li>2129 Taft Avenue</li>
                        <li>Malate, Manila 1004 Philippines</li>
                        <li>Office: (02) 123-4567 (Mon-Fri)</li>
                      </ul>
@@ -319,6 +333,252 @@ export default function Index() {
              <br />
            </main>
          </body>
+
+
+
+ {aboutModalOpen && (
+        <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
+          <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
+            <button 
+              onClick={() => setAboutModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X size={25}  className='text-(--color-white) cursor-pointer hover:text-(--color-llgreen) ease-in-out duration-250'/>
+            </button>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="rounded-full">
+                <img 
+                  src="/maizewatchlogo.png" 
+                  alt="Maize Watch Icon" 
+                  className="h-10 w-10"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/24";
+                  }}
+                />
+              </div>
+              <span className="text-[#61983f] text-lg font-bold uppercase tracking-wider">Maize Watch</span>
+            </div>
+            
+            <div className="text-sm text-(--color-white) mb-6 mx-8">
+              <p>
+                Maize Watch empowers corn farmers to achieve higher yields and greater 
+                profitability through data-driven insights. Comprehensive data visualizations 
+                provide clarity on performance across all key health and environmental conditions, 
+                enabling timely interventions and optimized resource allocation. Integrated 
+                account management tools allow farmers to track and analyze sensor data, 
+                identify areas for improvement, and implement best practices. The result is 
+                increased agricultural efficiency, reduced costs, and improved overall farm 
+                productivity.
+              </p>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
+ {privacyModalOpen && (
+        <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
+          <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
+            <button 
+              onClick={() => setPrivacyModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X size={25}  className='text-(--color-white) cursor-pointer hover:text-(--color-llgreen) ease-in-out duration-250'/>
+            </button>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="rounded-full">
+                <img 
+                  src="/maizewatchlogo.png" 
+                  alt="Maize Watch Icon" 
+                  className="h-10 w-10"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/24";
+                  }}
+                />
+              </div>
+              <span className="text-[#61983f] text-lg font-bold uppercase tracking-wider">Maize Watch</span>
+            </div>
+            
+            <div className="space-y-6 text-sm text-white max-h-[70vh] overflow-y-auto px-4">
+              <h2 className="text-xl font-bold text-left mb-4">Privacy Information</h2>
+
+              <p>
+                At Maize Watch, we are committed to protecting the privacy of our users, particularly corn farmers who entrust us with their valuable agricultural data. This Privacy Information outlines how we collect, use, and protect your information when you use our platform.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">1. Information We Collect:</h3>
+                <p className="mb-2">To provide you with data-driven insights and optimize your corn yields, Maize Watch collects the following types of information:</p>
+
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>
+                    <strong>Farm-Specific Data:</strong> Location (GPS coordinates of fields), field size and boundaries, crop variety, planting/harvesting dates, and yield data.
+                  </li>
+                  <li>
+                    <strong>Sensor Data:</strong> Soil moisture/nutrient levels, temperature (soil/ambient), humidity, light intensity, and other relevant environmental data.
+                  </li>
+                  <li>
+                    <strong>Account Information:</strong> Your name, contact info, farm name/ID, and login credentials (encrypted).
+                  </li>
+                  <li>
+                    <strong>Usage Data:</strong> Features accessed, time spent, reports generated, and anonymized device info.
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">2. How We Use Your Information:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>To Provide Core Services:</strong> Visualize farm performance, analyze conditions, offer recommendations, and track progress.</li>
+                  <li><strong>To Improve Maize Watch:</strong> Enhance features, develop new tools, and improve models (often using anonymized data).</li>
+                  <li><strong>For Communication:</strong> Send updates, alerts, and respond to inquiries.</li>
+                  <li><strong>For Security:</strong> Ensure platform integrity, prevent fraud, and comply with legal duties.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">3. Data Sharing and Disclosure:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>With Your Consent:</strong> Data is shared only with parties you approve (e.g., consultants).</li>
+                  <li><strong>Service Providers:</strong> Only trusted providers under strict agreements.</li>
+                  <li><strong>Aggregated/Anonymized Data:</strong> Used for research or benchmarking without revealing identities.</li>
+                  <li><strong>Legal Requirements:</strong> Disclosed only when legally necessary.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">4. Data Security:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Encryption (in transit & at rest)</li>
+                  <li>Strict access controls</li>
+                  <li>Regular security audits</li>
+                  <li>Secure data backups</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">5. Your Choices and Rights:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Access, update, or correct your data anytime</li>
+                  <li>Request a copy of your data (data portability)</li>
+                  <li>Request data deletion (subject to legal retention)</li>
+                  <li>Opt-out of non-essential communications</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">6. Data Retention:</h3>
+                <p>
+                  Your data is retained while your account is active and for a reasonable period afterward to comply with obligations and ensure continuity.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">7. Changes to This Privacy Information:</h3>
+                <p>
+                  Updates to this Privacy Information will be posted on our website or communicated appropriately. Please review it periodically.
+                </p>
+              </div>
+              
+            </div>
+
+            
+          </div>
+        </div>
+      )}
+
+ {termsModalOpen && (
+        <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
+          <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
+            <button 
+              onClick={() => setTermsModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              <X size={25}  className='text-(--color-white) cursor-pointer hover:text-(--color-llgreen) ease-in-out duration-250'/>
+            </button>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="rounded-full">
+                <img 
+                  src="/maizewatchlogo.png" 
+                  alt="Maize Watch Icon" 
+                  className="h-10 w-10"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/24";
+                  }}
+                />
+              </div>
+              <span className="text-[#61983f] text-lg font-bold uppercase tracking-wider">Maize Watch</span>
+            </div>
+            
+            <div className="space-y-6 text-sm text-white max-h-[70vh] overflow-y-auto px-4">
+              <h2 className="text-xl font-bold text-left mb-4">Terms of Use</h2>
+
+              <p>
+                Welcome to Maize Watch. By accessing or using our platform, services, and related tools, you agree to comply with and be bound by these Terms of Use. If you do not agree with any part of these terms, please do not use Maize Watch.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">1. Use of the Platform:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>You may only use Maize Watch for lawful purposes and in accordance with these terms.</li>
+                  <li>You are responsible for maintaining the confidentiality of your account credentials and all activities under your account.</li>
+                  <li>You agree not to misuse the platform, interfere with its security or functionality, or attempt unauthorized access to any part of the system.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">2. Data Ownership and Usage:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>You retain full ownership of your farm data and sensor information.</li>
+                  <li>By using Maize Watch, you grant us permission to analyze your data to provide personalized insights and improve platform performance.</li>
+                  <li>We will not share your identifiable data without your explicit consent, as outlined in our Privacy Policy.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">3. Intellectual Property:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>All content on Maize Watch, including visualizations, software, text, graphics, and logos, is the property of Maize Watch or its licensors.</li>
+                  <li>You may not reproduce, distribute, modify, or create derivative works without our written permission.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">4. Account Termination:</h3>
+                <p>
+                  We reserve the right to suspend or terminate your access to Maize Watch at any time if you violate these terms, abuse the platform, or engage in any behavior that disrupts service for other users.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">5. Disclaimers:</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Maize Watch provides data-based insights to support agricultural decisions. Final decisions regarding farming practices remain your responsibility.</li>
+                  <li>We do not guarantee specific yield outcomes or profitability as agricultural success depends on many uncontrollable factors.</li>
+                  <li>The platform is provided “as-is” and “as available” without warranties of any kind.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">6. Limitation of Liability:</h3>
+                <p>
+                  To the extent permitted by law, Maize Watch shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform, including data loss, yield loss, or farm-related decisions made based on our analytics.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-base mb-1">7. Updates to the Terms:</h3>
+                <p>
+                  We may update these Terms of Use from time to time. Material changes will be communicated through our platform or via email. Continued use of Maize Watch means you accept the updated terms.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
     )
   }
