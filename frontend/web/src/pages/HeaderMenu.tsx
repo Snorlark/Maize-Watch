@@ -39,15 +39,14 @@ export default function HeaderMenuPage() {
                   <div className="cursor-pointer">
                       <h2 onClick={() => navigate('/')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">Home.</h2>
                       <h2 onClick={() => navigate('/solutions')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">Solution.</h2>
-                      <h2 onClick={() => navigate('/products')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">Product.</h2>
+                      <h2 onClick={() => navigate('/product')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">Product.</h2>
                       <h2 onClick={() => navigate('/technology')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">Technology.</h2>
-                      <h2 onClick={() => navigate('/')} className="hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 text-4xl md:text-5xl lg:text-6xl font-bold text-(--color-dgreen) mb-8">About.</h2>
                   </div>
   
                  
                 <div className="lg:mt-0 md:flex md:flex-col md:items-end">
                   
-                  <button onClick={() => navigate('/signup')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-8 py-2 md:py-4 rounded-md text-base md:text-2xl xl:text-4xl font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Sign Up Now</button>
+                  <button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-8 py-2 md:py-4 rounded-md text-base md:text-2xl xl:text-4xl font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Get App Now</button>
   
                   <button
                       onClick={() => setIsOpen(!isOpen)}
