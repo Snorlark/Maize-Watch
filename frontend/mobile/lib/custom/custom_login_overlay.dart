@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:maize_watch/custom/constants.dart';
-import 'package:maize_watch/main.dart';
 import 'package:maize_watch/model/user.dart';
 import 'package:maize_watch/services/api_service.dart';
 import '../screen/home_screen.dart';
@@ -236,7 +235,7 @@ void showLoginOverlay(BuildContext context) {
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () async {
                                   final url = Uri.parse(
-                                      'https://maize-watch-0l7s.onrender.com/');
+                                      'https://maize-watch.onrender.com/');
                                   if (await canLaunchUrl(url)) {
                                     await launchUrl(url);
                                   }
@@ -253,7 +252,7 @@ void showLoginOverlay(BuildContext context) {
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () async {
                                   final url = Uri.parse(
-                                      'https://maize-watch-0l7s.onrender.com/');
+                                      'https://maize-watch.onrender.com/');
                                   if (await canLaunchUrl(url)) {
                                     await launchUrl(url);
                                   }
