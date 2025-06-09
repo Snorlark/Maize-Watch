@@ -1,46 +1,16 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  BarChart,
-  Bar,
-  ReferenceLine,
-} from "recharts";
-import {
-  Download,
-  Calendar,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  List,
-  Filter,
-  Minus,
-  BarChart2,
-  Droplets,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  Table,
-} from "lucide-react";
-import { Button } from "../ui/button";
+import { useState, useRef, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { Card, CardContent, CardHeader } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Calendar as CalendarPicker } from "../ui/calendar";
-import { format } from "date-fns";
-import { cn } from "../../lib/utils";
+import { Button } from '../ui/button';
+import { Calendar, Download, Clock, BarChart3, Table, Droplets, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import UnifiedExportModal from '../UnifiedExportModal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -90,26 +60,6 @@ const HUMIDITY_COLORS = {
 };
 
 // Utility Functions
-const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
-};
-
-const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { start, end };
-};
-
 const formatDateRange = (start: Date, end: Date): string => {
   const options: Intl.DateTimeFormatOptions = { 
     month: 'short', 
@@ -120,16 +70,75 @@ const formatDateRange = (start: Date, end: Date): string => {
   return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
 };
 
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  // Philippines is UTC+8
-  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
+const getStartOfWeek = (date: Date): Date => {
+  const daysFromSunday = date.getDay();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
 };
 
-const getDayOfWeekName = (dayIndex: number): string => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayIndex];
+const getEndOfWeek = (date: Date): Date => {
+  const startOfWeek = getStartOfWeek(date);
+  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+};
+
+const getStartOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const getEndOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+// Update ViewType to include all options
+type ViewType = 'line' | 'bar' | 'list' | 'tabular';
+
+// Add at the top of HumidityDashboard
+const periodOptions = [
+  { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
+  { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
+];
+const viewTypeOptions = [
+  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
+  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
+  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
+];
+
+// Add the getStatusBadge function before the HumidityDashboard component
+const getStatusBadge = (value: number) => {
+  if (value >= HUMIDITY_THRESHOLDS.critical) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>;
+  } else if (value >= HUMIDITY_THRESHOLDS.max) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">High</span>;
+  } else if (value >= HUMIDITY_THRESHOLDS.min) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>;
+  } else {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Low</span>;
+  }
+};
+
+// Add helper functions for week calculations before the fetchData function
+const getWeeksInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const firstWeekday = firstDay.getDay();
+  const lastWeekday = lastDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  
+  // Calculate number of weeks
+  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
+  if (lastWeekday < firstWeekday) weeks++;
+  
+  return weeks;
+};
+
+const getWeekNumberInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const firstWeekday = firstDay.getDay();
+  const dayOfMonth = date.getDate();
+  
+  // Calculate week number (1-based)
+  return Math.ceil((dayOfMonth + firstWeekday) / 7);
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -288,111 +297,18 @@ const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; p
   };
 };
 
-// Add the same utility functions as TemperatureChart
-const getStartOfWeek = (date: Date): Date => {
-  const daysFromSunday = date.getDay();
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
-};
-
-const getEndOfWeek = (date: Date): Date => {
-  const startOfWeek = getStartOfWeek(date);
-  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
-};
-
-const getStartOfMonth = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-};
-
-const getEndOfMonth = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-};
-
-const getStartOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-const getEndOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-};
-
-// Update ViewType to include all options
-type ViewType = 'line' | 'bar' | 'list' | 'tabular';
-
-// Add at the top of HumidityDashboard
-const periodOptions = [
-  { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
-  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-];
-const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
-  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
-  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
-];
-
-// Add the getStatusBadge function before the HumidityDashboard component
-const getStatusBadge = (value: number) => {
-  if (value >= HUMIDITY_THRESHOLDS.critical) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>;
-  } else if (value >= HUMIDITY_THRESHOLDS.max) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">High</span>;
-  } else if (value >= HUMIDITY_THRESHOLDS.min) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>;
-  } else {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Low</span>;
-  }
-};
-
-// Add helper functions for week calculations before the fetchData function
-const getWeeksInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  const firstWeekday = firstDay.getDay();
-  const lastWeekday = lastDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  
-  // Calculate number of weeks
-  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
-  if (lastWeekday < firstWeekday) weeks++;
-  
-  return weeks;
-};
-
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-  
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
-
 // Update the component state
 const HumidityDashboard = () => {
-  const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('weekly');
   const [chartData, setChartData] = useState<DataItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<string>('');
-  const [currentOverview, setCurrentOverview] = useState(overview);
+  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [dateRange, setDateRange] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<ViewType>('line');
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [xKey, setXKey] = useState<string>('hour');
   const chartRef = useRef<HTMLDivElement>(null);
-  const [xKey, setXKey] = useState<string>('day');
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
-
-  // Update hourly data type
-  interface HourlyData {
-    sum: number;
-    count: number;
-    dates: string[];
-  }
-
-  // Update the hourly data map
-  const hourlyData = new Map<string, HourlyData>();
 
   // API Configuration
   const API_CONFIG = {
@@ -700,13 +616,10 @@ const HumidityDashboard = () => {
       });
 
       // Calculate trend using non-zero values
-      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
-      const trend = calculateTrend(validData);
-      setTrend(trend);
+      // const validData = processedData.filter(item => item.value !== null && item.value !== 0);
 
       setChartData(processedData);
       setDateRange(formatDateRange(startDate, endDate));
-      setCurrentOverview(period);
       setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
@@ -736,13 +649,7 @@ const HumidityDashboard = () => {
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    setCurrentOverview(newOverview);
     fetchData(newOverview, selectedDate);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
   };
 
   const handlePreviousPeriod = () => {
@@ -1129,7 +1036,7 @@ const HumidityDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[180px] justify-between">
                   <div className="flex items-center">
-                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                    {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
                      viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
                      <Table className="h-4 w-4 mr-2" />}
                     {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View

@@ -8,6 +8,10 @@ import DeleteConfirmation from "../components/DeleteConfirmation";
 import { User } from "../api/services/authService";
 import { useUserContext } from "../contexts/UserContext";
 
+interface UserFormData extends Omit<User, '_id'> {
+  password?: string;
+}
+
 export default function AccountManagement() {
   const { 
     users, 
@@ -63,7 +67,7 @@ export default function AccountManagement() {
   };
 
   // Handle user form submission (create or edit)
-  const handleFormSubmit = async (formData: Omit<User, '_id'>) => {
+  const handleFormSubmit = async (formData: UserFormData) => {
     setActionLoading(true);
     try {
       if (formMode === 'create') {

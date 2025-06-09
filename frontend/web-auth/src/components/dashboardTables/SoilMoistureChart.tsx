@@ -1,53 +1,13 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  BarChart,
-  Bar,
-  ReferenceLine,
-} from "recharts";
-import {
-  Download,
-  Calendar,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  List,
-  Filter,
-  Minus,
-  BarChart2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  Table,
-} from "lucide-react";
-import { Button } from "../ui/button";
+import { useState, useRef, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { Card, CardContent, CardHeader } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Calendar as CalendarPicker } from "../ui/calendar";
+import { Button } from '../ui/button';
+import { Calendar, Download, Clock, BarChart3, Table, Droplets, ChevronLeft, ChevronRight, ChevronDown, TrendingUp } from 'lucide-react';
+import UnifiedExportModal from '../UnifiedExportModal';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { format } from "date-fns";
-import { cn } from "../../lib/utils";
-import UnifiedExportModal from '../UnifiedExportModal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 // Types
 interface DataItem {
@@ -64,20 +24,6 @@ interface DataItem {
   week?: string;
   month?: string;
   timestamp?: string;
-}
-
-interface CalendarProps {
-  selectedDate: Date;
-  onDateSelect: (date: Date) => void;
-  isVisible: boolean;
-  setIsVisible: (visible: boolean) => void;
-  minDate?: Date;
-  maxDate?: Date;
-}
-
-interface DateRange {
-  start: Date;
-  end: Date;
 }
 
 // Add soil moisture thresholds
@@ -104,64 +50,13 @@ const SOIL_MOISTURE_COLORS = {
 
 // Add soil moisture conversion function
 const convertSoilMoistureToPercentage = (rawValue: number): number => {
-  if (rawValue === undefined || rawValue === null || isNaN(rawValue)) {
-    return 0;
-  }
-
-  // If the value is already in percentage range (0-100), return as is
-  if (rawValue >= 0 && rawValue <= 100) {
-    return rawValue;
-  }
-
-  // Convert raw analog values to percentage
-  // Most common ranges:
-  // - 10-bit ADC: 0-1023 (dry=1023, wet=0)
-  // - 12-bit ADC: 0-4095 (dry=4095, wet=0)
-  // - 16-bit ADC: 0-65535 (dry=65535, wet=0)
-  
-  let percentage: number;
-  
-  if (rawValue >= 0 && rawValue <= 1023) {
-    // 10-bit ADC range (0-1023)
-    // Invert the value since dry soil = high value, wet soil = low value
-    percentage = ((1023 - rawValue) / 1023) * 100;
-  } else if (rawValue >= 0 && rawValue <= 4095) {
-    // 12-bit ADC range (0-4095)
-    percentage = ((4095 - rawValue) / 4095) * 100;
-  } else if (rawValue >= 0 && rawValue <= 65535) {
-    // 16-bit ADC range (0-65535)
-    percentage = ((65535 - rawValue) / 65535) * 100;
-  } else {
-    // For other ranges, assume it's already in a reasonable range and normalize
-    const maxReasonableValue = Math.max(rawValue, 1000);
-    percentage = (rawValue / maxReasonableValue) * 100;
-  }
-  
-  // Clamp to 0-100 range
-  return Math.max(0, Math.min(100, percentage));
+  // Convert raw sensor value to percentage (0-100%)
+  // Assuming raw value is between 0-1023 (typical for analog sensors)
+  const percentage = (rawValue / 1023) * 100;
+  return Math.round(percentage * 100) / 100; // Round to 2 decimal places
 };
 
 // Utility Functions
-const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
-};
-
-const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { start, end };
-};
-
 const formatDateRange = (start: Date, end: Date): string => {
   const options: Intl.DateTimeFormatOptions = { 
     month: 'short', 
@@ -170,18 +65,6 @@ const formatDateRange = (start: Date, end: Date): string => {
     timeZone: 'Asia/Manila'
   };
   return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
-};
-
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  // Philippines is UTC+8
-  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
-};
-
-const getDayOfWeekName = (dayIndex: number): string => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayIndex];
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -266,93 +149,6 @@ const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[
   }
 };
 
-// Calendar Component
-const Calendar: React.FC<CalendarProps> = ({
-  selectedDate,
-  onDateSelect,
-  isVisible,
-  setIsVisible,
-  minDate,
-  maxDate,
-}) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
-
-  if (!isVisible) return null;
-
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
-
-  const days: React.ReactElement[] = [];
-
-  // Empty cells for days before the first day
-  for (let i = 0; i < firstDay; i++) {
-    days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
-  }
-
-  // Days of the month
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(year, month, i);
-    const isSelected = date.toDateString() === selectedDate.toDateString();
-    const isDisabled =
-      (minDate && date < minDate) || (maxDate && date > maxDate);
-
-    days.push(
-      <button
-        key={i}
-        onClick={() => {
-          if (!isDisabled) {
-            onDateSelect(date);
-          setIsVisible(false);
-          }
-        }}
-        disabled={isDisabled}
-        className={`h-8 w-8 rounded-full text-sm ${
-          isSelected
-            ? "bg-blue-600 text-white"
-            : isDisabled
-            ? "text-gray-300 cursor-not-allowed"
-            : "hover:bg-blue-100 text-gray-700"
-        }`}
-      >
-        {i}
-      </button>
-    );
-  }
-
-  return (
-    <div className="absolute z-50 mt-1 p-4 bg-white border border-gray-300 rounded-lg shadow-xl">
-      <div className="flex justify-between items-center mb-4">
-        <button
-          onClick={() => setCurrentMonth(new Date(year, month - 1))}
-          className="p-1 hover:bg-gray-100 rounded"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <div className="text-center font-semibold text-gray-800">
-          {new Date(year, month).toLocaleString("default", { month: "long" })}{" "}
-          {year}
-        </div>
-        <button
-          onClick={() => setCurrentMonth(new Date(year, month + 1))}
-          className="p-1 hover:bg-gray-100 rounded"
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-      <div className="grid grid-cols-7 gap-1 text-center">
-        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-          <div key={day} className="font-semibold text-gray-600 text-sm">
-            {day}
-          </div>
-        ))}
-        {days}
-      </div>
-    </div>
-  );
-};
-
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -361,7 +157,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const threshold = data.threshold;
     let status = "Normal";
     let statusColor = "text-green-600";
-    let statusIcon = <Waves className="w-4 h-4" />;
+    let statusIcon = <Droplets className="w-4 h-4" />;
     if (value < threshold.min) {
       status = "Too Dry";
       statusColor = "text-yellow-600";
@@ -376,7 +172,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <div className={`p-2 rounded-full ${SOIL_MOISTURE_COLORS.background}`}>
-            <Waves className={`w-4 h-4 ${SOIL_MOISTURE_COLORS.text}`} />
+            <Droplets className={`w-4 h-4 ${SOIL_MOISTURE_COLORS.text}`} />
           </div>
           <p className="font-semibold text-gray-800">{label}</p>
         </div>
@@ -386,7 +182,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           {`Status: ${status}`}
         </p>
         {data.dataPoints !== undefined && (
-          <p className="text-gray-500 text-sm">{`Data Points: ${data.dataPoints}`}</p>
+          <p className="text-sm text-gray-500">{`Data Points: ${data.dataPoints}`}</p>
         )}
         <div className="mt-2 text-xs text-gray-500">
           <p>Thresholds:</p>
@@ -446,14 +242,6 @@ const getEndOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 };
 
-const getStartOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-const getEndOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-};
-
 // Update ViewType to include all options
 type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 
@@ -465,7 +253,7 @@ const periodOptions = [
   { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Line', value: 'line', icon: <TrendingUp className="h-4 w-4 mr-1" /> },
   { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
   { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
@@ -515,23 +303,10 @@ const SoilMoistureDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
-  const [currentOverview, setCurrentOverview] = useState(overview);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const [xKey, setXKey] = useState<string>('day');
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
-
-  // Update hourly data type
-  interface HourlyData {
-    sum: number;
-    count: number;
-    dates: string[];
-  }
-
-  // Update the hourly data map
-  const hourlyData = new Map<string, HourlyData>();
 
   // API Configuration
   const API_CONFIG = {
@@ -843,18 +618,13 @@ const SoilMoistureDashboard = () => {
       });
 
       // Calculate trend using non-zero values
-      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
-      const trend = calculateTrend(validData);
-      setTrend(trend);
-
       setChartData(processedData);
       setDateRange(formatDateRange(startDate, endDate));
-      setCurrentOverview(period);
       setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
       setError("Failed to fetch data. Please try again later.");
-      const defaultData = getDefaultData(period, baseDate);
+      const defaultData = getDefaultData(period, new Date());
       setChartData(defaultData.chartData);
       setXKey(defaultData.xKey);
       setDateRange(defaultData.dateRange);
@@ -879,13 +649,7 @@ const SoilMoistureDashboard = () => {
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    setCurrentOverview(newOverview);
     fetchData(newOverview, selectedDate);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
   };
 
   const handlePreviousPeriod = () => {
@@ -947,6 +711,9 @@ const SoilMoistureDashboard = () => {
 
   // Update the renderSummary function to handle null values
   const renderSummary = () => {
+    if (isLoading) return <Skeleton className="h-[40px] w-full" />;
+    if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
+    
     const validData = chartData.filter(item => item.value !== null);
     if (validData.length === 0) {
       return (
@@ -1201,7 +968,7 @@ const SoilMoistureDashboard = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-green-100 rounded-lg">
-                <Waves className="h-8 w-8 text-green-600" />
+                <Droplets className="h-8 w-8 text-green-600" />
             </div>
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Soil Moisture Dashboard</h1>
@@ -1272,7 +1039,7 @@ const SoilMoistureDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[180px] justify-between">
                   <div className="flex items-center">
-                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                    {viewType === 'line' ? <TrendingUp className="h-4 w-4 mr-2" /> :
                      viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
                      <Table className="h-4 w-4 mr-2" />}
                     {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View

@@ -1,8 +1,6 @@
 // client.ts
 import axios, { AxiosError } from 'axios';
 import authService from '../api/services/authService';
-
-// Import the User interface from authService to ensure consistency
 import type { User } from '../api/services/authService';
 
 // Alternative: If you can't import from authService, define a compatible interface

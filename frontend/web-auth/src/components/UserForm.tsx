@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { X, Loader2 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Label } from './ui/label';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { userService, type User } from '../api/client';
+import { User } from '../api/services/authService';
 
 interface UserFormProps {
   mode: 'create' | 'edit';
@@ -15,8 +10,17 @@ interface UserFormProps {
   isLoading: boolean;
 }
 
-interface FormData extends Omit<User, '_id'> {
+interface FormData {
+  username: string;
+  email: string;
   password?: string;
+  fullName: string;
+  contactNumber: string;
+  address: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLogin?: string;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
@@ -28,22 +32,29 @@ const UserForm: React.FC<UserFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<FormData>({
     username: '',
+    email: '',
     password: '',
     fullName: '',
     contactNumber: '',
     address: '',
     role: 'user',
+    isActive: true,
+    createdAt: new Date().toISOString(),
   });
 
   useEffect(() => {
     if (initialData && mode === 'edit') {
       setFormData({
-        username: initialData.username,
+        username: initialData.username || '',
+        email: initialData.email || '',
         password: '', // Password is not included when editing
         fullName: initialData.fullName || '',
         contactNumber: initialData.contactNumber || '',
         address: initialData.address || '',
-        role: initialData.role,
+        role: initialData.role || 'user',
+        isActive: initialData.isActive ?? true,
+        createdAt: initialData.createdAt || new Date().toISOString(),
+        lastLogin: initialData.lastLogin,
       });
     }
   }, [initialData, mode]);
@@ -96,6 +107,19 @@ const UserForm: React.FC<UserFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
               />
             </div>
+            
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+              />
+            </div>
+            
             {mode === 'create' && (
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
