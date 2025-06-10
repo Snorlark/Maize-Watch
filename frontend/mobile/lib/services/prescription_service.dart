@@ -869,14 +869,14 @@ Future<Map<String, dynamic>> forceRefreshPrescriptions(BuildContext context) asy
     }
   }
 
-  // Add a public method to get prescriptions
-  Future<List<Prescription>> getPrescriptions() async {
+  // Change getPrescriptions to return List<Map<String, dynamic>>
+  Future<List<Map<String, dynamic>>> getPrescriptions() async {
     final prefs = await SharedPreferences.getInstance();
     final prescriptionsJson = prefs.getString(_prescriptionsStorageKey);
     if (prescriptionsJson == null) {
       return [];
     }
     final List<dynamic> decoded = json.decode(prescriptionsJson);
-    return decoded.map((item) => Prescription.fromJson(item)).toList();
+    return decoded.map((item) => Map<String, dynamic>.from(item)).toList();
   }
 }
