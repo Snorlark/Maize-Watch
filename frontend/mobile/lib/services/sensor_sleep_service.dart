@@ -192,8 +192,9 @@ class SensorSleepService {
     _checkTimer = null;
   }
 
-  // Add a public method to check sensor status
-  Future<void> checkSensorStatus() async {
+  // Change checkSensorStatus to return the current sensor status
+  Future<Map<String, bool>> checkSensorStatus() async {
     await _checkSensorStatus();
+    return Map<String, bool>.from(_currentSensorStatus);
   }
 } 
