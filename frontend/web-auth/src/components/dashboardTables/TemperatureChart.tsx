@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useRef, useEffect } from "react";
 import {
   LineChart,
@@ -166,7 +167,17 @@ const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[
 };
 
 // Custom Tooltip
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    payload: DataItem;
+  }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const value = payload[0].value;
@@ -281,15 +292,16 @@ const viewTypeOptions = [
 ];
 
 // Add the getStatusBadge function before the TemperatureDashboard component
-const getStatusBadge = (value: number) => {
-  if (value >= TEMPERATURE_THRESHOLDS.critical) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>;
-  } else if (value >= TEMPERATURE_THRESHOLDS.max) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">High</span>;
-  } else if (value >= TEMPERATURE_THRESHOLDS.min) {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>;
+const getStatusBadge = (value: number | null): React.ReactElement => {
+  if (value === null) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">N/A</span>;
+  }
+  if (value < 20) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Too Cold</span>;
+  } else if (value > 30) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Too Hot</span>;
   } else {
-    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Low</span>;
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Optimal</span>;
   }
 };
 
@@ -332,7 +344,7 @@ const TemperatureDashboard = () => {
 
   // API Configuration
   const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
+    baseUrl: 'http://localhost:8080',
     endpoints: {
       historical: '/api/sensors/historical',
       weekly: '/api/sensors/weekly-overview',
@@ -868,19 +880,11 @@ const TemperatureDashboard = () => {
     ];
 
     // Customize X-axis labels based on view type
-    const getXAxisLabel = (value: string) => {
-      switch (overview) {
-        case 'hourly':
-          return `${value}:00`; // Add :00 to hour labels
-        case 'daily':
-          return value; // Already formatted as day names
-        case 'weekly':
-          return value; // Already formatted as Week 1, Week 2, etc.
-        case 'monthly':
-          return value; // Already formatted as month names
-        default:
-          return value;
+    const getXAxisLabel = (value: string | number): string => {
+      if (typeof value === 'number') {
+        return value.toString();
       }
+      return value;
     };
 
     if (viewType === 'line') {
@@ -905,7 +909,7 @@ const TemperatureDashboard = () => {
               <YAxis
                 domain={[0, 50]}
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value}°C`}
+                tickFormatter={(value: number) => `${value}°C`}
                 width={60}
                 tickMargin={10}
                 axisLine={{ stroke: '#666' }}
@@ -954,7 +958,7 @@ const TemperatureDashboard = () => {
               <YAxis
                 domain={[0, 50]}
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value}°C`}
+                tickFormatter={(value: number) => `${value}°C`}
                 width={60}
                 tickMargin={10}
                 axisLine={{ stroke: '#666' }}
@@ -980,8 +984,14 @@ const TemperatureDashboard = () => {
   // Update table cell rendering
   const renderTableCell = (item: DataItem) => {
     const value = item[xKey];
+    if (value === null || value === undefined) {
+      return '';
+    }
     if (typeof value === 'string' || typeof value === 'number') {
       return value.toString();
+    }
+    if (typeof value === 'object' && 'min' in value) {
+      return `${value.min} - ${value.max}`;
     }
     return '';
   };

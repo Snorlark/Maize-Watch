@@ -349,7 +349,7 @@ const SoilPhLevelDashboard = () => {
 
   // API Configuration
   const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
+    baseUrl: 'http://localhost:8080',
     endpoints: {
       historical: '/api/sensors/historical',
       weekly: '/api/sensors/weekly-overview',
@@ -880,19 +880,11 @@ const SoilPhLevelDashboard = () => {
     ];
 
     // Customize X-axis labels based on view type
-    const getXAxisLabel = (value: string) => {
-      switch (overview) {
-        case 'hourly':
-          return `${value}:00`; // Add :00 to hour labels
-        case 'daily':
-          return value; // Already formatted as day names
-        case 'weekly':
-          return value; // Already formatted as Week 1, Week 2, etc.
-        case 'monthly':
-          return value; // Already formatted as month names
-        default:
-          return value;
+    const getXAxisLabel = (value: string | number): string => {
+      if (typeof value === 'number') {
+        return value.toString();
       }
+      return value;
     };
 
     if (viewType === 'line') {
