@@ -106,42 +106,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return false; // Prevent default pop
       },
       child: Scaffold(
-        body: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: const <Widget>[
-            PrescriptionScreen(),
-            CropConditionScreen(),
-            ProfileScreen()
-          ],
-          onPageChanged: (page) {
-            setState(() {
-              _currentIndex = page;
-            });
-          },
+        body: SafeArea(
+          child: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: const <Widget>[
+              PrescriptionScreen(),
+              CropConditionScreen(),
+              ProfileScreen()
+            ],
+            onPageChanged: (page) {
+              setState(() {
+                _currentIndex = page;
+              });
+            },
+          ),
         ),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: _currentIndex,
-          backgroundColor: MAIZE_BOTTOM_OVERLAY,
-          color: MAIZE_PRIMARY,
-          items: <Widget>[
-            Icon(
-              Icons.checklist,
-              color: MAIZE_PRIMARY_LIGHT,
-              size: ScreenUtil().setSp(35),
+        bottomNavigationBar: Container(
+          decoration: const BoxDecoration(
+            color: MAIZE_BOTTOM_OVERLAY,
+          ),
+          child: SafeArea(
+            child: CurvedNavigationBar(
+              index: _currentIndex,
+              backgroundColor: MAIZE_BOTTOM_OVERLAY,
+              color: MAIZE_PRIMARY,
+              height: 60.h,
+              items: <Widget>[
+                Icon(
+                  Icons.checklist,
+                  color: MAIZE_PRIMARY_LIGHT,
+                  size: ScreenUtil().setSp(35),
+                ),
+                Icon(
+                  FlutterIcons.corn_mco,
+                  color: MAIZE_PRIMARY_LIGHT,
+                  size: ScreenUtil().setSp(35),
+                ),
+                Image.asset(
+                  'assets/images/farmers_nav_bar_white.png',
+                  width: ScreenUtil().setSp(30),
+                  height: ScreenUtil().setSp(30),
+                ),
+              ],
+              onTap: _onTappedBar,
             ),
-            Icon(
-              FlutterIcons.corn_mco,
-              color: MAIZE_PRIMARY_LIGHT,
-              size: ScreenUtil().setSp(35),
-            ),
-            Image.asset(
-              'assets/images/farmers_nav_bar_white.png',
-              width: ScreenUtil().setSp(30),
-              height: ScreenUtil().setSp(30),
-            ),
-          ],
-          onTap: _onTappedBar,
+          ),
         ),
       ),
     );

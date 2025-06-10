@@ -98,28 +98,14 @@ class _CropConditionScreenState extends State<CropConditionScreen>
     });
 
     try {
-      // Get corn field data and convert to CornField object
-      final fieldData = await _apiService.getCropData(context);
-      if (fieldData != null) {
-        // Convert Map to CornField object
-        _cornField = CornField(
-          fieldName: fieldData['fieldName'] ?? 'Unknown Field',
-          cornVariety: fieldData['cornVariety'] ?? 'Unknown Variety',
-          growthStage: fieldData['growthStage'] ??
-              'VE', // Default to 'VE' if not available
-          plantingDate: fieldData['plantingDate'] != null
-              ? DateTime.parse(fieldData['plantingDate'])
-              : DateTime.now().subtract(const Duration(days: 30)),
-          soilType: fieldData['soilType'] ?? 'Loam',
-          location: fieldData['location'], id: '',
-// or another fallback
-        );
-      }
+      // Load data in parallel for better performance
+      await Future.wait([
+        _loadCornFieldData(),
+        _loadOverallStatus(),
+      ]);
 
       // Get latest sensor readings (handled by CropConditionService)
       await _cropConditionService.refreshData();
-
-
 
       // Process the sensor data with the corn growth service
       if (_cropConditionService.currentDataNotifier.value != null) {
@@ -133,6 +119,30 @@ class _CropConditionScreenState extends State<CropConditionScreen>
         _isLoading = false;
       });
       _animationController.forward();
+    }
+  }
+
+  Future<void> _loadCornFieldData() async {
+    try {
+      // Get corn field data and convert to CornField object
+      final fieldData = await _apiService.getCropData(context);
+      if (fieldData != null) {
+        // Convert Map to CornField object
+        _cornField = CornField(
+          fieldName: fieldData['fieldName'] ?? 'Unknown Field',
+          cornVariety: fieldData['cornVariety'] ?? 'Unknown Variety',
+          growthStage: fieldData['growthStage'] ??
+              'VE', // Default to 'VE' if not available
+          plantingDate: fieldData['plantingDate'] != null
+              ? DateTime.parse(fieldData['plantingDate'])
+              : DateTime.now().subtract(const Duration(days: 30)),
+          soilType: fieldData['soilType'] ?? 'Loam',
+          location: fieldData['location'], 
+          id: '',
+        );
+      }
+    } catch (e) {
+      print('Error loading corn field data: $e');
     }
   }
 
@@ -174,12 +184,13 @@ class _CropConditionScreenState extends State<CropConditionScreen>
             child: SizedBox.expand(),
           ),
           SafeArea(
+            bottom: false,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 ScreenUtil().setSp(30),
+                ScreenUtil().setSp(20),
                 ScreenUtil().setSp(30),
-                ScreenUtil().setSp(30),
-                ScreenUtil().setSp(30),
+                ScreenUtil().setSp(20),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

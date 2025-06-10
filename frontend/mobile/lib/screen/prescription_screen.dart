@@ -414,265 +414,267 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadPrescriptions,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: MAIZE_BOTTOM_OVERLAY
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(30.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        CustomFont(
-                          text: localizations.prescriptions_title,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        const SizedBox(height: 4),
-                        CustomFont(
-                          text: localizations.prescriptions_subtitle(prescriptions.length),
-                          fontSize: 14,
-                          color: MAIZE_PRIMARY,
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: _loadPrescriptions,
-                      tooltip: localizations.tooltip_refresh_prescriptions,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Filter dropdown and Check All button in a row
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Filter dropdown
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: PopupMenuButton<String>(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'View All',
-                            child: Text(localizations.filter_view_all),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadPrescriptions,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: MAIZE_BOTTOM_OVERLAY
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(30.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20), // Reduced top spacing
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          CustomFont(
+                            text: localizations.prescriptions_title,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                          PopupMenuItem(
-                            value: 'Done',
-                            child: Text(localizations.filter_done),
-                          ),
-                          PopupMenuItem(
-                            value: 'Not Yet Done',
-                            child: Text(localizations.filter_not_done),
-                          ),
-                          PopupMenuItem(
-                            value: 'Newest First',
-                            child: Text(localizations.filter_newest),
-                          ),
-                          PopupMenuItem(
-                            value: 'Oldest First',
-                            child: Text(localizations.filter_oldest),
+                          const SizedBox(height: 4),
+                          CustomFont(
+                            text: localizations.prescriptions_subtitle(prescriptions.length),
+                            fontSize: 14,
+                            color: MAIZE_PRIMARY,
                           ),
                         ],
-                        onSelected: (value) => filterPrescriptions(value),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.sort, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                selectedFilter == 'View All' ? localizations.filter_view_all :
-                                selectedFilter == 'Done' ? localizations.filter_done :
-                                selectedFilter == 'Not Yet Done' ? localizations.filter_not_done :
-                                selectedFilter == 'Newest First' ? localizations.filter_newest :
-                                localizations.filter_oldest,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.arrow_drop_down),
-                            ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: _loadPrescriptions,
+                        tooltip: localizations.tooltip_refresh_prescriptions,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Filter dropdown and Check All button in a row
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Filter dropdown
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: PopupMenuButton<String>(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'View All',
+                              child: Text(localizations.filter_view_all),
+                            ),
+                            PopupMenuItem(
+                              value: 'Done',
+                              child: Text(localizations.filter_done),
+                            ),
+                            PopupMenuItem(
+                              value: 'Not Yet Done',
+                              child: Text(localizations.filter_not_done),
+                            ),
+                            PopupMenuItem(
+                              value: 'Newest First',
+                              child: Text(localizations.filter_newest),
+                            ),
+                            PopupMenuItem(
+                              value: 'Oldest First',
+                              child: Text(localizations.filter_oldest),
+                            ),
+                          ],
+                          onSelected: (value) => filterPrescriptions(value),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.sort, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  selectedFilter == 'View All' ? localizations.filter_view_all :
+                                  selectedFilter == 'Done' ? localizations.filter_done :
+                                  selectedFilter == 'Not Yet Done' ? localizations.filter_not_done :
+                                  selectedFilter == 'Newest First' ? localizations.filter_newest :
+                                  localizations.filter_oldest,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_drop_down),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Action buttons in a row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Check All toggle button
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final allChecked = prescriptions.every((p) => p.isCompleted);
-                              _handleCheckAll(!allChecked);
-                            },
-                            icon: Icon(
-                              prescriptions.every((p) => p.isCompleted) 
-                                ? Icons.check_box 
-                                : Icons.check_box_outline_blank,
-                              size: 20,
-                            ),
-                            label: Text(
-                              prescriptions.every((p) => p.isCompleted) 
-                                ? localizations.action_uncheck_all 
-                                : localizations.action_check_all,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ),
-                        // Delete Checked button (only shown when some items are checked)
-                        if (prescriptions.any((p) => p.isCompleted))
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
+                      const SizedBox(height: 12),
+                      // Action buttons in a row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Check All toggle button
+                          Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: _handleDeleteCompleted,
-                              icon: const Icon(Icons.delete_sweep, size: 20),
+                              onPressed: () {
+                                final allChecked = prescriptions.every((p) => p.isCompleted);
+                                _handleCheckAll(!allChecked);
+                              },
+                              icon: Icon(
+                                prescriptions.every((p) => p.isCompleted) 
+                                  ? Icons.check_box 
+                                  : Icons.check_box_outline_blank,
+                                size: 20,
+                              ),
                               label: Text(
-                                localizations.action_delete_completed,
+                                prescriptions.every((p) => p.isCompleted) 
+                                  ? localizations.action_uncheck_all 
+                                  : localizations.action_check_all,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                // Prescriptions list
-                Expanded(
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : errorMessage.isNotEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    errorMessage.contains('log in') 
-                                        ? Icons.login 
-                                        : errorMessage.contains('register') 
-                                            ? Icons.add_location_alt
-                                            : Icons.error_outline,
-                                    size: 64,
-                                    color: errorMessage.contains('log in') || errorMessage.contains('register')
-                                        ? Colors.blue.shade400
-                                        : Colors.red.shade400,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                                    child: Text(
-                                      errorMessage,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: errorMessage.contains('log in') || errorMessage.contains('register')
-                                            ? Colors.blue.shade700
-                                            : Colors.red.shade700,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  if (errorMessage.contains('log in'))
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        // Navigate to login screen
-                                        Navigator.pushReplacementNamed(context, '/login');
-                                      },
-                                      icon: const Icon(Icons.login),
-                                      label: const Text('Go to Login'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    )
-                                  else if (errorMessage.contains('register'))
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        // Navigate to field registration screen
-                                        Navigator.pushNamed(context, '/register-field');
-                                      },
-                                      icon: const Icon(Icons.add_location_alt),
-                                      label: const Text('Register Field'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    )
-                                  else
-                                    ElevatedButton(
-                                      onPressed: _loadPrescriptions,
-                                      child: Text(localizations.button_retry),
-                                    ),
-                                ],
-                              ),
-                            )
-                          : filteredPrescriptions.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.medical_services_outlined, size: 64, color: Colors.grey.shade400),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        selectedFilter == 'View All' 
-                                          ? localizations.empty_no_prescriptions 
-                                          : localizations.empty_no_prescriptions_filter(selectedFilter),
-                                        style: TextStyle(color: Colors.grey.shade600),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: filteredPrescriptions.length,
-                                  itemBuilder: (context, index) {
-                                    final prescription = filteredPrescriptions[index];
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 12.0),
-                                      child: PrescriptionWidget(
-                                        prescription: prescription,
-                                        onStatusChanged: (isChecked) =>
-                                            _updatePrescriptionStatus(prescription, isChecked),
-                                        onDelete: prescription.isCompleted 
-                                          ? () => _deletePrescription(prescription)
-                                          : null,
-                                      ),
-                                    );
-                                  },
+                          // Delete Checked button (only shown when some items are checked)
+                          if (prescriptions.any((p) => p.isCompleted))
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: ElevatedButton.icon(
+                                onPressed: _handleDeleteCompleted,
+                                icon: const Icon(Icons.delete_sweep, size: 20),
+                                label: Text(
+                                  localizations.action_delete_completed,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                ),
-              ],
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Prescriptions list
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : errorMessage.isNotEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      errorMessage.contains('log in') 
+                                          ? Icons.login 
+                                          : errorMessage.contains('register') 
+                                              ? Icons.add_location_alt
+                                              : Icons.error_outline,
+                                      size: 64,
+                                      color: errorMessage.contains('log in') || errorMessage.contains('register')
+                                          ? Colors.blue.shade400
+                                          : Colors.red.shade400,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                                      child: Text(
+                                        errorMessage,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: errorMessage.contains('log in') || errorMessage.contains('register')
+                                              ? Colors.blue.shade700
+                                              : Colors.red.shade700,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    if (errorMessage.contains('log in'))
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          // Navigate to login screen
+                                          Navigator.pushReplacementNamed(context, '/login');
+                                        },
+                                        icon: const Icon(Icons.login),
+                                        label: const Text('Go to Login'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      )
+                                    else if (errorMessage.contains('register'))
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          // Navigate to field registration screen
+                                          Navigator.pushNamed(context, '/register-field');
+                                        },
+                                        icon: const Icon(Icons.add_location_alt),
+                                        label: const Text('Register Field'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      )
+                                    else
+                                      ElevatedButton(
+                                        onPressed: _loadPrescriptions,
+                                        child: Text(localizations.button_retry),
+                                      ),
+                                  ],
+                                ),
+                              )
+                            : filteredPrescriptions.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.medical_services_outlined, size: 64, color: Colors.grey.shade400),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          selectedFilter == 'View All' 
+                                            ? localizations.empty_no_prescriptions 
+                                            : localizations.empty_no_prescriptions_filter(selectedFilter),
+                                          style: TextStyle(color: Colors.grey.shade600),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    itemCount: filteredPrescriptions.length,
+                                    itemBuilder: (context, index) {
+                                      final prescription = filteredPrescriptions[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 12.0),
+                                        child: PrescriptionWidget(
+                                          prescription: prescription,
+                                          onStatusChanged: (isChecked) =>
+                                              _updatePrescriptionStatus(prescription, isChecked),
+                                          onDelete: prescription.isCompleted 
+                                            ? () => _deletePrescription(prescription)
+                                            : null,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
