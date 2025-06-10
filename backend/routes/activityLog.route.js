@@ -21,7 +21,9 @@ router.get('/', isAuthenticated, isAdmin, async (req, res) => {
       search: req.query.search
     };
 
-    const result = await ActivityLogService.getLogs(filters, page, limit);
+    // Pass the requesting user's role for role-based filtering
+    const requestingUserRole = req.user.role;
+    const result = await ActivityLogService.getLogs(filters, page, limit, requestingUserRole);
     res.json(result);
   } catch (error) {
     console.error('Error fetching activity logs:', error);

@@ -153,6 +153,165 @@ const ActivityLogPage: React.FC = () => {
     return 'Unknown';
   };
 
+  const formatDetails = (details: any) => {
+    if (!details || typeof details !== 'object') {
+      return 'No additional details';
+    }
+
+    const formattedDetails: string[] = [];
+
+    // Handle specific action types
+    if (details.createdUser) {
+      formattedDetails.push(`Created user: ${details.createdUser}`);
+      if (details.createdUserRole) {
+        formattedDetails.push(`Role: ${details.createdUserRole}`);
+      }
+    }
+
+    if (details.updatedUser) {
+      formattedDetails.push(`Updated user: ${details.updatedUser}`);
+      if (details.changes) {
+        const changes = Object.keys(details.changes);
+        if (changes.length > 0) {
+          formattedDetails.push(`Changed fields: ${changes.join(', ')}`);
+        }
+      }
+    }
+
+    if (details.deletedUser) {
+      formattedDetails.push(`Deleted user: ${details.deletedUser}`);
+      if (details.deletedUserRole) {
+        formattedDetails.push(`Role: ${details.deletedUserRole}`);
+      }
+    }
+
+    if (details.deviceType) {
+      formattedDetails.push(`Device: ${details.deviceType}`);
+    }
+
+    if (details.loginMethod) {
+      formattedDetails.push(`Login method: ${details.loginMethod}`);
+    }
+
+    if (details.method) {
+      formattedDetails.push(`HTTP method: ${details.method}`);
+    }
+
+    if (details.path) {
+      formattedDetails.push(`Path: ${details.path}`);
+    }
+
+    if (details.statusCode) {
+      formattedDetails.push(`Status: ${details.statusCode}`);
+    }
+
+    // If no specific details were found, show a summary
+    if (formattedDetails.length === 0) {
+      const keys = Object.keys(details);
+      if (keys.length > 0) {
+        formattedDetails.push(`Additional data: ${keys.join(', ')}`);
+      }
+    }
+
+    return formattedDetails.length > 0 ? formattedDetails.join(' | ') : 'No additional details';
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => fetchLogs(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+      >
+        Previous
+      </button>
+    );
+
+    // First page
+    if (startPage > 1) {
+      pages.push(
+        <button
+          key={1}
+          onClick={() => fetchLogs(1)}
+          className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] text-[#356B2C]"
+        >
+          1
+        </button>
+      );
+      if (startPage > 2) {
+        pages.push(
+          <span key="ellipsis1" className="px-2 text-[#4A7C59]">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => fetchLogs(i)}
+          className={`px-3 py-1 text-sm border rounded ${
+            currentPage === i
+              ? 'bg-[#356B2C] text-[#F5F5DC] border-[#356B2C]'
+              : 'border-[#B8D4A8] hover:bg-[#E8F2E0] text-[#356B2C]'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Last page
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push(
+          <span key="ellipsis2" className="px-2 text-[#4A7C59]">
+            ...
+          </span>
+        );
+      }
+      pages.push(
+        <button
+          key={totalPages}
+          onClick={() => fetchLogs(totalPages)}
+          className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] text-[#356B2C]"
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    // Next button
+    pages.push(
+      <button
+        key="next"
+        onClick={() => fetchLogs(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+      >
+        Next
+      </button>
+    );
+
+    return pages;
+  };
+
   // Redirect if not admin - you can implement this check based on your auth system
   // For now, I'll comment this out since we don't have access to UserContext
   // if (authChecked && !isAdmin) {
@@ -379,7 +538,7 @@ const ActivityLogPage: React.FC = () => {
                                     View Details
                                   </summary>
                                   <pre className="mt-1 p-2 bg-[#F5F9F1] rounded text-xs overflow-x-auto text-[#356B2C]">
-                                    {JSON.stringify(log.details, null, 2)}
+                                    {formatDetails(log.details)}
                                   </pre>
                                 </details>
                               )}
@@ -396,23 +555,10 @@ const ActivityLogPage: React.FC = () => {
               {totalPages > 1 && (
                 <div className="bg-[#F5F9F1] px-6 py-3 border-t border-[#B8D4A8] flex items-center justify-between">
                   <div className="text-sm text-[#356B2C]">
-                    Page {currentPage} of {totalPages}
+                    Page {currentPage} of {totalPages} • Total logs: {logs.length}
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => fetchLogs(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => fetchLogs(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
-                    >
-                      Next
-                    </button>
+                    {renderPagination()}
                   </div>
                 </div>
               )}

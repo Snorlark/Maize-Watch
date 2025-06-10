@@ -79,9 +79,22 @@ const UserForm: React.FC<UserFormProps> = ({
     await onSubmit(submitData);
   };
 
+  // Handle backdrop click to close modal
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onCancel();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6 relative">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-white rounded-lg w-full max-w-md p-6 relative"
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+      >
         <button 
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
           onClick={onCancel}
@@ -108,17 +121,20 @@ const UserForm: React.FC<UserFormProps> = ({
               />
             </div>
             
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
+            {/* Only show email field in create mode */}
+            {mode === 'create' && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                />
+              </div>
+            )}
             
             {mode === 'create' && (
               <div className="col-span-2">

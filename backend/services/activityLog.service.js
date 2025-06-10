@@ -13,9 +13,20 @@ class ActivityLogService {
     }
   }
 
-  static async getLogs(filters = {}, page = 1, limit = 20) {
+  static async getLogs(filters = {}, page = 1, limit = 20, requestingUserRole = null) {
     try {
       const query = {};
+      
+      // Apply role-based filtering
+      if (requestingUserRole === 'admin') {
+        // Admin can only see farmer activities
+        query.userRole = { $in: ['user', 'farmer'] };
+      } else if (requestingUserRole === 'super_admin') {
+        // Super admin can see all activities (no filter needed)
+      } else {
+        // Default: only show user/farmer activities
+        query.userRole = { $in: ['user', 'farmer'] };
+      }
       
       // Apply filters
       if (filters.userId) {
@@ -28,6 +39,7 @@ class ActivityLogService {
         query.resource = filters.resource;
       }
       if (filters.userRole) {
+        // Override role-based filtering if specific role is requested
         query.userRole = filters.userRole;
       }
       if (filters.startDate && filters.endDate) {

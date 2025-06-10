@@ -21,6 +21,7 @@ import AnalyticsService from './services/analytics.service.js';
 import authRoutes from './routes/auth.route.js';
 import activityLogRoutes from './routes/activityLog.route.js';
 import { logActivity } from './middleware/activityLog.middleware.js';
+import ActivityLog from './models/activityLog.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -193,6 +194,23 @@ app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
       return res.status(500).json({ error: 'Database connection not established' });
     }
     const result = await mainDb.collection('users').insertOne(req.body);
+    
+    // Log the activity
+    await ActivityLog.create({
+      userId: req.user.id,
+      userEmail: req.user.username,
+      userRole: req.user.role,
+      action: 'create',
+      resource: 'user',
+      resourceId: result.insertedId,
+      details: {
+        createdUser: req.body.username,
+        createdUserRole: req.body.role
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+    
     res.status(201).json({ ...req.body, _id: result.insertedId });
   } catch (err) {
     console.error('Error creating user:', err);
@@ -221,11 +239,33 @@ app.put('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
     }
+    
+    // Get the user before updating to log what was changed
+    const userBefore = await mainDb.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
     const result = await mainDb.collection('users').updateOne(
       { _id: new ObjectId(req.params.id) },
       { $set: req.body }
     );
     if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
+    
+    // Log the activity
+    await ActivityLog.create({
+      userId: req.user.id,
+      userEmail: req.user.username,
+      userRole: req.user.role,
+      action: 'update',
+      resource: 'user',
+      resourceId: req.params.id,
+      details: {
+        updatedUser: userBefore?.username,
+        changes: req.body,
+        previousData: userBefore
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+    
     res.json({ message: 'User updated successfully' });
   } catch (err) {
     console.error('Error updating user:', err);
@@ -239,8 +279,29 @@ app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req, res) => {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
     }
+    
+    // Get the user before deleting to log what was deleted
+    const userToDelete = await mainDb.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+    
     const result = await mainDb.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
     if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
+    
+    // Log the activity
+    await ActivityLog.create({
+      userId: req.user.id,
+      userEmail: req.user.username,
+      userRole: req.user.role,
+      action: 'delete',
+      resource: 'user',
+      resourceId: req.params.id,
+      details: {
+        deletedUser: userToDelete?.username,
+        deletedUserRole: userToDelete?.role
+      },
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+    
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
     console.error('Error deleting user:', err);

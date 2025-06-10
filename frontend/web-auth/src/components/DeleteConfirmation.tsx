@@ -19,9 +19,22 @@ const DeleteConfirmation: React.FC<DeleteConfirmationProps> = ({
     return null;
   }
 
+  // Handle backdrop click to close modal
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onCancel();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-md p-6">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-white rounded-lg w-full max-w-md p-6"
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+      >
         <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
         <p className="mb-6">
           Are you sure you want to delete the account for{' '}
