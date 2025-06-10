@@ -3,7 +3,41 @@ import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import Papa from "papaparse";
 
-// Types
+// Chart configuration for export formatting
+const CHART_CONFIGS = {
+  temperature: {
+    title: "Temperature Monitoring Report",
+    fieldName: "Temperature",
+    unit: "°C",
+    shortName: "temp"
+  },
+  humidity: {
+    title: "Humidity Monitoring Report", 
+    fieldName: "Humidity",
+    unit: "%",
+    shortName: "humidity"
+  },
+  soilMoisture: {
+    title: "Soil Moisture Monitoring Report",
+    fieldName: "Soil Moisture", 
+    unit: "%",
+    shortName: "soil-moisture"
+  },
+  soilPh: {
+    title: "Soil pH Level Monitoring Report",
+    fieldName: "Soil pH",
+    unit: "pH",
+    shortName: "soil-ph"
+  },
+  lightIntensity: {
+    title: "Light Intensity Monitoring Report",
+    fieldName: "Light Intensity",
+    unit: "lux",
+    shortName: "light-intensity"
+  }
+};
+
+// Data point interface
 interface ChartDataPoint {
   [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
   value: number | null;
@@ -29,228 +63,300 @@ interface ExportOptions {
   chartType: 'temperature' | 'humidity' | 'soilMoisture' | 'soilPh' | 'lightIntensity';
   currentOverview: 'hourly' | 'daily' | 'weekly' | 'monthly';
   dateRange?: DateRange;
-  customDateRange?: {
-    startDate: Date;
-    endDate: Date;
-  };
+  includeChartImage?: boolean;
+  includeTabularData?: boolean;
 }
 
-// Chart type configurations
-const CHART_CONFIGS = {
-  temperature: {
-    title: 'Temperature Dashboard',
-    unit: '°C',
-    fieldName: 'Temperature',
-    color: '#F97316',
-    thresholds: { min: 20, max: 30, critical: 35 }
-  },
-  humidity: {
-    title: 'Humidity Dashboard',
-    unit: '%',
-    fieldName: 'Humidity',
-    color: '#3B82F6',
-    thresholds: { min: 40, max: 80, critical: 90 }
-  },
-  soilMoisture: {
-    title: 'Soil Moisture Dashboard',
-    unit: '%',
-    fieldName: 'Soil Moisture',
-    color: '#8B5CF6',
-    thresholds: { min: 30, max: 70, critical: 80 }
-  },
-  soilPh: {
-    title: 'Soil pH Level Dashboard',
-    unit: 'pH',
-    fieldName: 'Soil pH',
-    color: '#10B981',
-    thresholds: { min: 6.0, max: 7.5, critical: 8.0 }
-  },
-  lightIntensity: {
-    title: 'Light Intensity Dashboard',
-    unit: 'lux',
-    fieldName: 'Light Intensity',
-    color: '#F59E0B',
-    thresholds: { min: 1000, max: 50000, critical: 100000 }
-  }
-};
-
-/**
- * Calculate statistics for the data
- */
+// Helper function to calculate statistics
 const calculateStatistics = (data: ChartDataPoint[]) => {
-  const validData = data.filter(item => item.value !== null && !isNaN(item.value as number));
+  const validData = data.filter(item => item.value !== null && item.value !== undefined);
+  
   if (validData.length === 0) return null;
-
+  
   const values = validData.map(item => item.value as number);
+  const sum = values.reduce((acc, val) => acc + val, 0);
+  const average = sum / values.length;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  
   return {
-    average: values.reduce((a, b) => a + b, 0) / values.length,
-    min: Math.min(...values),
-    max: Math.max(...values),
-    count: validData.length
+    average,
+    min,
+    max,
+    count: validData.length,
+    total: sum
   };
 };
 
-/**
- * Get status based on value and thresholds
- */
+// Helper function to get status based on thresholds
 const getStatus = (value: number, thresholds: { min: number; max: number; critical: number }): string => {
-  if (value < thresholds.min) return "Too Low";
+  if (value < thresholds.min) return "Low";
+  if (value > thresholds.max) return "High";
   if (value > thresholds.critical) return "Critical";
-  if (value > thresholds.max) return "Too High";
   return "Normal";
 };
 
+// Helper function to generate standardized filename
+const generateFilename = (chartType: string, format: string, overview: string, dateRange?: DateRange, customRange?: { startDate: Date; endDate: Date }) => {
+  const config = CHART_CONFIGS[chartType as keyof typeof CHART_CONFIGS];
+  const shortName = config.shortName;
+  const now = new Date();
+  const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  let period = overview;
+  if (customRange) {
+    const start = customRange.startDate.toISOString().split('T')[0];
+    const end = customRange.endDate.toISOString().split('T')[0];
+    period = `${start}_to_${end}`;
+  } else if (dateRange && dateRange.from && dateRange.to) {
+    period = `${dateRange.from}_to_${dateRange.to}`;
+  }
+  
+  return `MaizeWatch_${shortName}_${period}_${timestamp}.${format}`;
+};
+
+// Helper function to format date for display
+const formatDateForDisplay = (date: Date): string => {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 /**
- * Export to PDF with Maize Watch branding
+ * Export to PDF with professional formatting
  */
 const exportToPdf = async (
   chartData: ChartDataPoint[],
   xKey: string,
   title: string,
-  dateRange: DateRange
+  options: ExportOptions,
+  chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
   try {
-    const config = CHART_CONFIGS[xKey as 'temperature' | 'humidity' | 'soilMoisture' | 'soilPh' | 'lightIntensity'];
+    const config = CHART_CONFIGS[options.chartType];
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yCursor = margin;
     
     // Add Maize Watch logo
     try {
-      const logoWidth = 60;
-      const logoX = (pageWidth - logoWidth) / 2;
-      pdf.addImage("/maizewatch.png", "PNG", logoX, 10, logoWidth, 15);
+      const logoWidth = 50;
+      const logoX = margin;
+      pdf.addImage("/maizewatch.png", "PNG", logoX, yCursor, logoWidth, 12);
+      yCursor += 20;
     } catch (error) {
-      console.error("Error adding logo:", error);
+      console.warn("Could not add logo to PDF:", error);
+      yCursor += 15;
     }
     
-    // Add title and metadata
-    pdf.setFontSize(18);
+    // Add report header
+    pdf.setFontSize(20);
     pdf.setTextColor(37, 99, 235);
-    pdf.text(title, pageWidth / 2, 35, { align: "center" });
+    pdf.text(title, pageWidth / 2, yCursor, { align: "center" });
+    yCursor += 10;
     
-    // Add date range information
+    // Add report metadata
     pdf.setFontSize(12);
     pdf.setTextColor(75, 85, 99);
-    let dateRangeText = `${xKey.charAt(0).toUpperCase() + xKey.slice(1)} View`;
     
-    if (dateRange) {
-      const { from, to } = dateRange;
-      dateRangeText += ` - ${from} to ${to}`;
+    // Date range information
+    let dateRangeText = `${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)} Report`;
+    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      dateRangeText += ` - ${options.dateRange.from} to ${options.dateRange.to}`;
     }
     
-    pdf.text(dateRangeText, pageWidth / 2, 42, { align: "center" });
+    pdf.text(dateRangeText, pageWidth / 2, yCursor, { align: "center" });
+    yCursor += 8;
     
-    // Add timestamp
-    const now = new Date();
-    pdf.setFontSize(10);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text(`Generated: ${now.toLocaleString()}`, pageWidth - 15, pageHeight - 10, { align: "right" });
+    // Generation timestamp
+    const generatedAt = `Generated on ${formatDateForDisplay(new Date())}`;
+    pdf.text(generatedAt, pageWidth / 2, yCursor, { align: "center" });
+    yCursor += 20;
+    
+    // Add chart image if requested
+    if (options.includeChartImage && chartRef?.current) {
+      try {
+        const chartImgData = await htmlToImage.toPng(chartRef.current, { 
+          backgroundColor: "white", 
+          quality: 1.0,
+          width: 800,
+          height: 400
+        });
+        const imgProps = pdf.getImageProperties(chartImgData);
+        const imgWidth = contentWidth;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        
+        // Check if chart will fit on current page
+        if (yCursor + imgHeight + 30 > pageHeight - 50) {
+          pdf.addPage();
+          yCursor = margin;
+        }
+        
+        // Add chart title
+        pdf.setFontSize(14);
+        pdf.setTextColor(55, 65, 81);
+        pdf.text("Chart Visualization", margin, yCursor);
+        yCursor += 8;
+        
+        pdf.addImage(chartImgData, "PNG", margin, yCursor, imgWidth, imgHeight);
+        yCursor += imgHeight + 20;
+      } catch (err) {
+        console.error("Error rendering chart image for PDF:", err);
+      }
+    }
     
     // Calculate statistics
     const stats = calculateStatistics(chartData);
     
-    // Table settings
-    const startY = 55;
-    const margin = 15;
-    const availableWidth = pageWidth - (margin * 2);
-    
-    const headers = [xKey.charAt(0).toUpperCase() + xKey.slice(1), `${config.fieldName} (${config.unit})`, "Status"];
-    const columnWidths = [availableWidth * 0.4, availableWidth * 0.4, availableWidth * 0.2];
-    
-    const rowHeight = 8;
-    
-    // Draw table header
-    pdf.setFillColor(240, 240, 240);
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.1);
-    pdf.rect(margin, startY, availableWidth, rowHeight, 'FD');
-    
-    // Add header text
-    pdf.setFontSize(10);
-    pdf.setTextColor(0, 0, 0);
-    let xPos = margin;
-    
-    headers.forEach((header, index) => {
-      pdf.text(header, xPos + 2, startY + 5.5);
-      xPos += columnWidths[index];
-    });
-    
-    // Draw table rows
-    let yPos = startY + rowHeight;
-    const dataToShow = chartData.slice(0, 50);
-    
-    dataToShow.forEach((dataPoint, index) => {
-      // Draw row background
-      pdf.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 248);
-      pdf.rect(margin, yPos, availableWidth, rowHeight, 'FD');
-      
-      // Add row data
-      xPos = margin;
-      pdf.setFontSize(9);
-      
-      // X-axis value
-      const xValue = dataPoint[xKey] || dataPoint.timestamp || '';
-      pdf.text(String(xValue), xPos + 2, yPos + 5.5);
-      xPos += columnWidths[0];
-      
-      // Value
-      const value = dataPoint.value;
-      const valueText = value !== null ? `${value.toFixed(1)} ${config.unit}` : 'N/A';
-      pdf.text(valueText, xPos + 2, yPos + 5.5);
-      xPos += columnWidths[1];
-      
-      // Status
-      if (value !== null && dataPoint.threshold) {
-        const status = getStatus(value, dataPoint.threshold);
-        pdf.text(status, xPos + 2, yPos + 5.5);
-      } else {
-        pdf.text('N/A', xPos + 2, yPos + 5.5);
+    // Add statistics section with proper spacing
+    if (stats) {
+      // Check if we need a new page for statistics
+      if (yCursor + 60 > pageHeight - 50) {
+        pdf.addPage();
+        yCursor = margin;
       }
       
-      yPos += rowHeight;
+      pdf.setFontSize(14);
+      pdf.setTextColor(55, 65, 81);
+      pdf.text("Summary Statistics", margin, yCursor);
+      yCursor += 12;
       
-      // Add new page if needed
-      if (yPos > (pageHeight - 30) && index < dataToShow.length - 1) {
+      pdf.setFontSize(11);
+      pdf.setTextColor(75, 85, 99);
+      
+      // Statistics in a more compact layout
+      const statY = yCursor;
+      pdf.text(`Average: ${stats.average.toFixed(2)} ${config.unit}`, margin, statY);
+      pdf.text(`Minimum: ${stats.min.toFixed(2)} ${config.unit}`, margin + 70, statY);
+      pdf.text(`Maximum: ${stats.max.toFixed(2)} ${config.unit}`, margin + 140, statY);
+      yCursor += 8;
+      
+      pdf.text(`Total Records: ${stats.count}`, margin, yCursor);
+      pdf.text(`Sum: ${stats.total.toFixed(2)} ${config.unit}`, margin + 70, yCursor);
+      yCursor += 20;
+    }
+    
+    // Add tabular data if requested
+    if (options.includeTabularData && chartData.length > 0) {
+      // Check if we need a new page for table
+      if (yCursor + 40 > pageHeight - 50) {
         pdf.addPage();
-        yPos = 20;
+        yCursor = margin;
+      }
+      
+      pdf.setFontSize(14);
+      pdf.setTextColor(55, 65, 81);
+      pdf.text("Detailed Data", margin, yCursor);
+      yCursor += 12;
+      
+      // Table settings
+      const startY = yCursor;
+      const rowHeight = 8;
+      const headers = [
+        xKey.charAt(0).toUpperCase() + xKey.slice(1), 
+        `${config.fieldName} (${config.unit})`, 
+        "Status"
+      ];
+      const columnWidths = [contentWidth * 0.3, contentWidth * 0.5, contentWidth * 0.2];
+      
+      // Draw table header
+      pdf.setFillColor(240, 240, 240);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.2);
+      pdf.rect(margin, startY, contentWidth, rowHeight, 'FD');
+      
+      // Add header text
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      let xPos = margin;
+      
+      headers.forEach((header, index) => {
+        pdf.text(header, xPos + 2, startY + 5.5);
+        xPos += columnWidths[index];
+      });
+      
+      // Draw table rows (limit to first 25 rows for better fit)
+      let yPos = startY + rowHeight;
+      const dataToShow = chartData.slice(0, 25);
+      
+      dataToShow.forEach((dataPoint, index) => {
+        // Check if we need a new page
+        if (yPos + rowHeight > pageHeight - 30) {
+          pdf.addPage();
+          yPos = margin;
+          
+          // Draw header on new page
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(margin, yPos, contentWidth, rowHeight, 'FD');
+          
+          xPos = margin;
+          pdf.setFontSize(10);
+          headers.forEach((header, index) => {
+            pdf.text(header, xPos + 2, yPos + 5.5);
+            xPos += columnWidths[index];
+          });
+          
+          yPos += rowHeight;
+        }
         
-        // Draw header on new page
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(margin, yPos, availableWidth, rowHeight, 'FD');
+        // Draw row background
+        pdf.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 248);
+        pdf.rect(margin, yPos, contentWidth, rowHeight, 'FD');
         
+        // Add row data
         xPos = margin;
-        pdf.setFontSize(10);
-        headers.forEach((header, index) => {
-          pdf.text(header, xPos + 2, yPos + 5.5);
-          xPos += columnWidths[index];
-        });
+        pdf.setFontSize(9);
+        
+        // X-axis value
+        const xValue = dataPoint[xKey] || dataPoint.timestamp || '';
+        pdf.text(String(xValue), xPos + 2, yPos + 5.5);
+        xPos += columnWidths[0];
+        
+        // Value
+        const value = dataPoint.value;
+        const valueText = value !== null ? `${value.toFixed(1)} ${config.unit}` : 'N/A';
+        pdf.text(valueText, xPos + 2, yPos + 5.5);
+        xPos += columnWidths[1];
+        
+        // Status
+        if (value !== null && dataPoint.threshold) {
+          const status = getStatus(value, dataPoint.threshold);
+          pdf.text(status, xPos + 2, yPos + 5.5);
+        } else {
+          pdf.text('N/A', xPos + 2, yPos + 5.5);
+        }
         
         yPos += rowHeight;
+      });
+      
+      // Add note if data was truncated
+      if (chartData.length > 25) {
+        if (yPos + 10 > pageHeight - 30) {
+          pdf.addPage();
+          yPos = margin;
+        }
+        pdf.setFontSize(8);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`Note: Showing first 25 of ${chartData.length} records. Full data available in CSV export.`, margin, yPos + 5);
       }
-    });
-    
-    // Add statistics if available
-    if (stats) {
-      const statsY = yPos + 10;
-      pdf.setFontSize(12);
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Statistics:', margin, statsY);
-      pdf.setFontSize(10);
-      pdf.text(`Average: ${stats.average.toFixed(2)} ${config.unit}`, margin, statsY + 8);
-      pdf.text(`Minimum: ${stats.min.toFixed(2)} ${config.unit}`, margin, statsY + 16);
-      pdf.text(`Maximum: ${stats.max.toFixed(2)} ${config.unit}`, margin, statsY + 24);
-      pdf.text(`Data Points: ${stats.count}`, margin, statsY + 32);
     }
     
-    // Add note if data was truncated
-    if (chartData.length > 50) {
-      pdf.setFontSize(8);
-      pdf.text(`(Showing 50 of ${chartData.length} data points)`, margin, yPos + 5);
-    }
+    // Add footer on the last page
+    const footerY = pageHeight - 15;
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text("Maize Watch - Smart Agriculture Monitoring System", pageWidth / 2, footerY, { align: "center" });
     
-    // Save the PDF
-    const filename = `${xKey}-dashboard-${dateRange ? `${dateRange.from}-${dateRange.to}` : 'all'}-${new Date().toISOString().split('T')[0]}.pdf`;
+    // Save the PDF with standardized filename
+    const filename = generateFilename(options.chartType, 'pdf', options.currentOverview, options.dateRange, undefined);
     pdf.save(filename);
   } catch (error) {
     console.error("Error exporting to PDF:", error);
@@ -259,19 +365,21 @@ const exportToPdf = async (
 };
 
 /**
- * Export to SVG with metadata
+ * Export to SVG with professional formatting
  */
 const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
   try {
-    // Generate SVG with proper styling
+    // Generate SVG with proper styling and metadata
     const dataUrl = await htmlToImage.toSvg(chartNode, {
       quality: 1.0,
-      backgroundColor: "white"
+      backgroundColor: "white",
+      width: 1200,
+      height: 600
     });
     
-    // Create download link
+    // Create download link with standardized filename
     const link = document.createElement("a");
-    const filename = `${options.chartType}-chart-${options.currentOverview}-${new Date().toISOString().split('T')[0]}.svg`;
+    const filename = generateFilename(options.chartType, 'svg', options.currentOverview, options.dateRange, undefined);
     link.download = filename;
     link.href = dataUrl;
     link.click();
@@ -282,7 +390,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
 };
 
 /**
- * Export to CSV with proper formatting
+ * Export to CSV with professional formatting
  */
 const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
   try {
@@ -293,13 +401,13 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
     
-    // Convert data to CSV format
-    const csvData = chartData.map(item => {
+    // Create the main data rows
+    const dataRows = chartData.map(item => {
       const xValue = item[xKey] || item.timestamp || '';
       const value = item.value;
-      const valueText = value !== null ? value.toFixed(1) : 'N/A';
+      const valueText = value !== null ? value.toFixed(2) : 'N/A';
       
-      const csvRow: any = {
+      const csvRow: Record<string, string> = {
         [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: xValue,
         [`${config.fieldName} (${config.unit})`]: valueText
       };
@@ -313,27 +421,57 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
       return csvRow;
     });
     
-    // Add statistics if available
+    // Calculate statistics
     const stats = calculateStatistics(chartData);
+    
+    // Create summary analytics section
+    const summaryRows = [
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'SUMMARY ANALYTICS' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Report Details' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Chart Type: ${config.title}` },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Period: ${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)}` },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Year: ${new Date().getFullYear()}` },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Generated: ${formatDateForDisplay(new Date())}` }
+    ];
+    
+    // Add date range if available
+    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Date Range: ${options.dateRange.from} to ${options.dateRange.to}` });
+    }
+    
+    summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' });
+    
+    // Add statistics if available
     if (stats) {
-      csvData.push(
-        {},
+      summaryRows.push(
         { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Statistics' },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Average', [`${config.fieldName} (${config.unit})`]: stats.average.toFixed(2) },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Minimum', [`${config.fieldName} (${config.unit})`]: stats.min.toFixed(2) },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Maximum', [`${config.fieldName} (${config.unit})`]: stats.max.toFixed(2) },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Data Points', [`${config.fieldName} (${config.unit})`]: stats.count.toString() }
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Records: ${stats.count}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Average ${config.fieldName}: ${stats.average.toFixed(2)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Minimum ${config.fieldName}: ${stats.min.toFixed(2)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Maximum ${config.fieldName}: ${stats.max.toFixed(2)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sum ${config.fieldName}: ${stats.total.toFixed(2)} ${config.unit}` }
       );
     }
     
-    // Use PapaParse for robust CSV handling
-    const csv = Papa.unparse(csvData);
+    // Combine data and summary
+    const csvData = [...dataRows, ...summaryRows];
     
-    // Create download link
+    // Use PapaParse for robust CSV handling
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      delimiter: ',',
+      quotes: true,
+      quoteChar: '"',
+      escapeChar: '"'
+    });
+    
+    // Create download link with standardized filename
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const filename = `${options.chartType}-data-${options.currentOverview}-${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = generateFilename(options.chartType, 'csv', options.currentOverview, options.dateRange, undefined);
     link.download = filename;
     link.href = url;
     link.click();
@@ -363,11 +501,9 @@ const exportChartData = async (
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
     
-    const dateRange = options.dateRange || { from: '', to: '' };
-    
     switch (format) {
       case 'pdf':
-        await exportToPdf(chartData, xKey, config.title, dateRange);
+        await exportToPdf(chartData, xKey, config.title, options, chartRef);
         break;
       case 'svg':
         if (chartRef?.current) {

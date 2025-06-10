@@ -353,7 +353,7 @@ const LiveData: React.FC = () => {
                   <p className="text-sm font-medium text-[#4A7C59]">Light Intensity</p>
               </div>
                 <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
-                  <div 
+                <div 
                     className="bg-[#deb83c] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold transition-all duration-300"
                     style={{ width: `${Math.min(measurements.light_level / 10, 100)}%` }}
                 >

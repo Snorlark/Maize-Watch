@@ -24,10 +24,9 @@ const UnifiedExportModal = ({
     dateRange 
 }: UnifiedExportModalProps) => {
     const [exportFormat, setExportFormat] = useState<'pdf' | 'svg' | 'csv'>('pdf');
-    const [exportType, setExportType] = useState<'current' | 'custom'>('current');
-    const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // 7 days ago
-    const [endDate, setEndDate] = useState(new Date());
     const [isExporting, setIsExporting] = useState(false);
+    const [includeChartImage, setIncludeChartImage] = useState(true);
+    const [includeTabularData, setIncludeTabularData] = useState(true);
 
     const handleExport = async () => {
         setIsExporting(true);
@@ -36,8 +35,9 @@ const UnifiedExportModal = ({
                 format: exportFormat,
                 chartType,
                 currentOverview,
-                dateRange: exportType === 'current' && dateRange ? { from: dateRange, to: dateRange } : undefined,
-                customDateRange: exportType === 'custom' ? { startDate, endDate } : undefined
+                dateRange: dateRange ? { from: dateRange, to: dateRange } : undefined,
+                includeChartImage,
+                includeTabularData
             };
             
             await exportChartData(chartData, options, exportFormat, chartRef);
@@ -72,54 +72,6 @@ const UnifiedExportModal = ({
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {/* Export Type Selection */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3">Export Type</h3>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={exportType === 'current' ? 'default' : 'outline'}
-                                onClick={() => setExportType('current')}
-                                className="flex-1"
-                            >
-                                Current Period
-                            </Button>
-                            <Button
-                                variant={exportType === 'custom' ? 'default' : 'outline'}
-                                onClick={() => setExportType('custom')}
-                                className="flex-1"
-                            >
-                                Custom Range
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Date Range Selection */}
-                    {exportType === 'custom' && (
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-3">Select Date Range</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Start Date</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={startDate.toISOString().slice(0, 16)}
-                                        onChange={(e) => setStartDate(new Date(e.target.value))}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">End Date</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={endDate.toISOString().slice(0, 16)}
-                                        onChange={(e) => setEndDate(new Date(e.target.value))}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Format Selection */}
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-3">Export Format</h3>
@@ -151,6 +103,31 @@ const UnifiedExportModal = ({
                         </div>
                     </div>
 
+                    {/* PDF Options */}
+                    {exportFormat === 'pdf' && (
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">PDF Options</h3>
+                            <div className="flex gap-6">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeChartImage}
+                                        onChange={e => setIncludeChartImage(e.target.checked)}
+                                    />
+                                    Include chart image
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeTabularData}
+                                        onChange={e => setIncludeTabularData(e.target.checked)}
+                                    />
+                                    Include tabular data
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-3">
                         <Button variant="outline" onClick={onClose}>
@@ -158,7 +135,7 @@ const UnifiedExportModal = ({
                         </Button>
                         <Button
                             onClick={handleExport}
-                            disabled={isExporting || (exportType === 'custom' && (!startDate || !endDate))}
+                            disabled={isExporting}
                             className="flex items-center gap-2"
                         >
                             {isExporting ? (

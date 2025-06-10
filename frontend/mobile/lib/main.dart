@@ -10,6 +10,7 @@ import 'package:maize_watch/screen/landing_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io' show Platform;
 import 'package:maize_watch/services/notification_service.dart';
+import 'package:maize_watch/services/background_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -97,6 +98,7 @@ void main() async {
 
   await _requestPermissions();
   NotificationService().initialize();
+  BackgroundService().initialize();
 
   FlutterLocalNotificationsPlugin()
       .resolvePlatformSpecificImplementation<

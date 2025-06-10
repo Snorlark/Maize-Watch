@@ -8,6 +8,8 @@ import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { RefreshIndicator } from '../ui/refresh-indicator';
+import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
 
 // Types
 interface DataItem {
@@ -318,9 +320,23 @@ const SoilMoistureDashboard = () => {
     }
   };
 
+  // Intelligent refresh hook
+  const {
+    isRefreshing,
+    lastRefreshTime,
+    toggleAutoRefresh,
+    autoRefreshEnabled
+  } = useIntelligentRefresh({
+    refreshInterval: 30000, // 30 seconds instead of 15
+    enabled: true,
+    onRefresh: () => fetchData(overview, selectedDate, true) // true = silent refresh
+  });
+
   // Update the fetchData function
-  const fetchData = async (period: string, baseDate: Date = new Date()) => {
+  const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+    if (!silent) {
     setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -636,15 +652,6 @@ const SoilMoistureDashboard = () => {
   // Fetch data when overview or selectedDate changes
   useEffect(() => {
     fetchData(overview, selectedDate);
-  }, [overview, selectedDate]);
-
-  // Auto-refresh data every 15 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData(overview, selectedDate);
-    }, 15000);
-
-    return () => clearInterval(interval);
   }, [overview, selectedDate]);
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
@@ -1062,6 +1069,14 @@ const SoilMoistureDashboard = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          
+          {/* Refresh indicator */}
+          <RefreshIndicator
+            isRefreshing={isRefreshing}
+            lastRefreshTime={lastRefreshTime}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onToggleAutoRefresh={toggleAutoRefresh}
+          />
       </div>
 
         <div ref={chartRef} className="h-[450px] p-4 mb-2">

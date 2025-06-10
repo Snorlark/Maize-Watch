@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { RefreshIndicator } from '../ui/refresh-indicator';
+import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
 
 // Types
 interface DataItem {
@@ -311,6 +313,18 @@ const LightIntensityDashboard = () => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [xKey, setXKey] = useState<string>('day');
 
+  // Use intelligent refresh hook
+  const {
+    isRefreshing,
+    lastRefreshTime,
+    autoRefreshEnabled,
+    toggleAutoRefresh: toggleRefresh
+  } = useIntelligentRefresh({
+    refreshInterval: 15000,
+    enabled: true,
+    onRefresh: () => fetchData(overview, selectedDate, true)
+  });
+
   // API Configuration
   const API_CONFIG = {
     baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
@@ -322,8 +336,10 @@ const LightIntensityDashboard = () => {
   };
 
   // Update the fetchData function
-  const fetchData = async (period: string, baseDate: Date = new Date()) => {
+  const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+    if (!silent) {
     setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -635,14 +651,16 @@ const LightIntensityDashboard = () => {
     fetchData(overview, selectedDate);
   }, [overview, selectedDate]);
 
-  // Auto-refresh data every 15 seconds
+  // Use intelligent refresh for auto-refresh
   useEffect(() => {
+    if (autoRefreshEnabled) {
     const interval = setInterval(() => {
-      fetchData(overview, selectedDate);
+        fetchData(overview, selectedDate, true); // Silent refresh
     }, 15000);
 
     return () => clearInterval(interval);
-  }, [overview, selectedDate]);
+    }
+  }, [autoRefreshEnabled, overview, selectedDate]);
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
@@ -1056,6 +1074,14 @@ const LightIntensityDashboard = () => {
               </DropdownMenuContent>
             </DropdownMenu>
         </div>
+        
+        {/* Refresh indicator */}
+        <RefreshIndicator
+          isRefreshing={isRefreshing}
+          lastRefreshTime={lastRefreshTime}
+          autoRefreshEnabled={autoRefreshEnabled}
+          onToggleAutoRefresh={toggleRefresh}
+        />
         </div>
 
         <div ref={chartRef} className="h-[450px] p-4 mb-2">
@@ -1064,14 +1090,14 @@ const LightIntensityDashboard = () => {
         {renderSummary()}
       </CardContent>
       <UnifiedExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        currentOverview={overview}
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          currentOverview={overview}
         chartData={chartData}
-        chartRef={chartRef}
+          chartRef={chartRef}
         chartType="lightIntensity"
         dateRange={dateRange}
-      />
+        />
     </Card>
   );
 };

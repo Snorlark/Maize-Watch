@@ -177,6 +177,7 @@ app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
     if (!mainDb) {
       return res.status(500).json({ error: 'Database connection not established' });
     }
+    
     const users = await mainDb.collection('users').find({}).toArray();
     res.json(users);
   } catch (err) {

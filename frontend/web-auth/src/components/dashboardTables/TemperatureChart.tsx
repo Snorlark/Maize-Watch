@@ -35,6 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import UnifiedExportModal from '../UnifiedExportModal';
+import { RefreshIndicator } from '../ui/refresh-indicator';
+import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
 import { format } from "date-fns";
 
 // Types
@@ -338,9 +340,23 @@ const TemperatureDashboard = () => {
     }
   };
 
+  // Intelligent refresh hook
+  const {
+    isRefreshing,
+    lastRefreshTime,
+    toggleAutoRefresh,
+    autoRefreshEnabled
+  } = useIntelligentRefresh({
+    refreshInterval: 30000, // 30 seconds instead of 15
+    enabled: true,
+    onRefresh: () => fetchData(overview, selectedDate, true) // true = silent refresh
+  });
+
   // Update the fetchData function
-  const fetchData = async (period: string, baseDate: Date = new Date()) => {
+  const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+    if (!silent) {
     setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -405,7 +421,9 @@ const TemperatureDashboard = () => {
     }
 
       const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
+      if (!silent) {
       console.log(`Making API request to ${url} for ${period} view`);
+      }
       
       const response = await fetch(url, {
         headers: {
@@ -420,12 +438,14 @@ const TemperatureDashboard = () => {
       }
 
       const result = await response.json();
+      if (!silent) {
       console.log(`API response for ${period} view:`, {
         success: result.success,
         dataLength: result.data?.length,
         firstItem: result.data?.[0],
         lastItem: result.data?.[result.data?.length - 1]
       });
+      }
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch data');
@@ -436,30 +456,26 @@ const TemperatureDashboard = () => {
 
       // Handle empty or invalid data
     if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+        if (!silent) {
         console.warn(`No data available for ${period} view`);
+        }
         processedData = getDefaultData(period, phDate).chartData;
     } else {
         // Filter data to only include entries within our date range
         const filteredData = rawData.filter((item: any) => {
           const itemDate = new Date(item.timestamp);
           const isInRange = itemDate >= startDate && itemDate <= endDate;
-          if (!isInRange) {
-            console.log('Filtered out item:', {
-              timestamp: item.timestamp,
-              itemDate: itemDate.toISOString(),
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString()
-            });
-          }
           return isInRange;
         });
 
+        if (!silent) {
         console.log(`Filtered data for ${period} view:`, {
           totalItems: rawData.length,
           filteredItems: filteredData.length,
           firstFilteredItem: filteredData[0],
           lastFilteredItem: filteredData[filteredData.length - 1]
         });
+        }
 
       switch (period) {
         case 'hourly': {
@@ -487,6 +503,7 @@ const TemperatureDashboard = () => {
               }
             });
 
+            if (!silent) {
             console.log('Hourly data processing:', {
               totalHours: hourlyData.size,
               hoursWithData: Array.from(hourlyData.entries())
@@ -497,6 +514,7 @@ const TemperatureDashboard = () => {
                   average: data.sum / data.count
                 }))
             });
+            }
 
           processedData = Array.from(hourlyData.entries()).map(([hour, data]) => ({
             hour,
@@ -528,6 +546,7 @@ const TemperatureDashboard = () => {
               }
             });
 
+            if (!silent) {
             console.log('Daily data processing:', {
               totalDays: dailyData.size,
               daysWithData: Array.from(dailyData.entries())
@@ -538,6 +557,7 @@ const TemperatureDashboard = () => {
                   average: data.sum / data.count
                 }))
             });
+            }
 
             processedData = days.map(day => {
               const data = dailyData.get(day)!;
@@ -635,7 +655,7 @@ const TemperatureDashboard = () => {
 
       // Calculate trend using non-zero values
 
-      setChartData(processedData);
+    setChartData(processedData);
     setDateRange(formatDateRange(startDate, endDate));
     setError(null);
     } catch (error) {
@@ -653,15 +673,6 @@ const TemperatureDashboard = () => {
   // Fetch data when overview or selectedDate changes
   useEffect(() => {
     fetchData(overview, selectedDate);
-  }, [overview, selectedDate]);
-
-  // Auto-refresh data every 15 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData(overview, selectedDate);
-    }, 15000);
-
-    return () => clearInterval(interval);
   }, [overview, selectedDate]);
 
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
@@ -1076,6 +1087,14 @@ const TemperatureDashboard = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          
+          {/* Refresh indicator */}
+          <RefreshIndicator
+            isRefreshing={isRefreshing}
+            lastRefreshTime={lastRefreshTime}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onToggleAutoRefresh={toggleAutoRefresh}
+          />
         </div>
 
         <div ref={chartRef} className="h-[450px] p-4 mb-2">
@@ -1084,14 +1103,14 @@ const TemperatureDashboard = () => {
         {renderSummary()}
       </CardContent>
       <UnifiedExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
         currentOverview={overview}
-        chartData={chartData}
-        chartRef={chartRef}
+            chartData={chartData}
+            chartRef={chartRef}
         chartType="temperature"
         dateRange={dateRange}
-      />
+          />
     </Card>
   );
 };

@@ -10,6 +10,100 @@ import 'package:url_launcher/url_launcher.dart'; // for hyperlinks
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'forgot_password_overlay.dart';
 
+// Add this function to show privacy policy dialog
+void _showPrivacyPolicyDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Privacy Policy'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Privacy Policy for Maize Watch',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Last updated: ${DateTime.now().year}',
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 15),
+              Text(
+                'Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you use the Maize Watch application.',
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Information We Collect:\n• Account information\n• Farm data and sensor readings\n• App usage statistics',
+              ),
+              SizedBox(height: 10),
+              Text(
+                'How We Use Your Information:\n• To provide crop monitoring services\n• To improve our application\n• To send notifications about your crops',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+// Add this function to show terms of service dialog
+void _showTermsOfServiceDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Terms of Service'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Terms of Service for Maize Watch',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Last updated: ${DateTime.now().year}',
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 15),
+              Text(
+                'By using the Maize Watch application, you agree to these terms of service.',
+              ),
+              SizedBox(height: 10),
+              Text(
+                'User Responsibilities:\n• Provide accurate information\n• Use the app responsibly\n• Follow agricultural best practices',
+              ),
+              SizedBox(height: 10),
+              Text(
+                'Service Limitations:\n• App provides recommendations only\n• Users are responsible for final decisions\n• Service availability may vary',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 void showLoginOverlay(BuildContext context) {
   // Ensure we dispose any active overlays when the function exits
   OverlayEntry? activeOverlay;
@@ -234,10 +328,22 @@ void showLoginOverlay(BuildContext context) {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () async {
-                                  final url = Uri.parse(
-                                      'https://maize-watch.onrender.com/');
-                                  if (await canLaunchUrl(url)) {
-                                    await launchUrl(url);
+                                  try {
+                                    final url = Uri.parse(
+                                        'https://maize-watch.vercel.app/privacy-policy');
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                                    } else {
+                                      // Show fallback dialog if URL cannot be launched
+                                      if (context.mounted) {
+                                        _showPrivacyPolicyDialog(context);
+                                      }
+                                    }
+                                  } catch (e) {
+                                    // Show fallback dialog if there's an exception
+                                    if (context.mounted) {
+                                      _showPrivacyPolicyDialog(context);
+                                    }
                                   }
                                 },
                             ),
@@ -251,10 +357,22 @@ void showLoginOverlay(BuildContext context) {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () async {
-                                  final url = Uri.parse(
-                                      'https://maize-watch.onrender.com/');
-                                  if (await canLaunchUrl(url)) {
-                                    await launchUrl(url);
+                                  try {
+                                    final url = Uri.parse(
+                                        'https://maize-watch.vercel.app/terms-of-service');
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                                    } else {
+                                      // Show fallback dialog if URL cannot be launched
+                                      if (context.mounted) {
+                                        _showTermsOfServiceDialog(context);
+                                      }
+                                    }
+                                  } catch (e) {
+                                    // Show fallback dialog if there's an exception
+                                    if (context.mounted) {
+                                      _showTermsOfServiceDialog(context);
+                                    }
                                   }
                                 },
                             ),
