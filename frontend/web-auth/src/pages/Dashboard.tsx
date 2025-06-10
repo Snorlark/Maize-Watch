@@ -34,7 +34,7 @@ const Dashboard = () => {
                 <TrendingUp className="w-6 h-6 text-[#456C2D]" />
                 <h2 className="text-xl font-semibold text-[#1E441E]">Temperature Trends</h2>
               </div>
-              <TemperatureChart />
+        <TemperatureChart />
             </div>
           </div>
           <div>
@@ -43,7 +43,7 @@ const Dashboard = () => {
                 <BarChart3 className="w-6 h-6 text-[#456C2D]" />
                 <h2 className="text-xl font-semibold text-[#1E441E]">Soil Moisture</h2>
               </div>
-              <SoilMoistureChart />
+        <SoilMoistureChart />
             </div>
           </div>
           <div>
@@ -52,7 +52,7 @@ const Dashboard = () => {
                 <BarChart3 className="w-6 h-6 text-[#456C2D]" />
                 <h2 className="text-xl font-semibold text-[#1E441E]">Humidity Levels</h2>
               </div>
-              <HumidityChart />
+        <HumidityChart />
             </div>
           </div>
           <div>
@@ -61,7 +61,7 @@ const Dashboard = () => {
                 <BarChart3 className="w-6 h-6 text-[#456C2D]" />
                 <h2 className="text-xl font-semibold text-[#1E441E]">Light Intensity</h2>
               </div>
-              <LightIntensityChart />
+        <LightIntensityChart />
             </div>
           </div>
           <div>
@@ -70,8 +70,8 @@ const Dashboard = () => {
                 <BarChart3 className="w-6 h-6 text-[#456C2D]" />
                 <h2 className="text-xl font-semibold text-[#1E441E]">Soil pH Levels</h2>
               </div>
-              <SoilPhLevelChart />
-            </div>
+        <SoilPhLevelChart />
+      </div>
           </div>
         </div>
       </main>

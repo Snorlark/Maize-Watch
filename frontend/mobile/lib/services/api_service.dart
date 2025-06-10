@@ -21,11 +21,16 @@ class ApiResponse {
 }
 
 class ApiService {
-  final String baseUrl = 'http://localhost:8080';
+  final String baseUrl = 'https://maize-watch.onrender.com';
 
   static Map<String, dynamic>? currentUser;
   bool _isRefreshing = false;
   final _refreshQueue = <Future Function()>[];
+
+  // Add caching for API responses
+  static final Map<String, dynamic> _cache = {};
+  static final Map<String, DateTime> _cacheTimestamps = {};
+  static const Duration _cacheExpiry = Duration(minutes: 5);
 
   // Helper function for min calculation
   int min(int a, int b) {
@@ -38,6 +43,28 @@ class ApiService {
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
     return IOClient(httpClient);
+  }
+
+  // Cache management
+  void _setCache(String key, dynamic data) {
+    _cache[key] = data;
+    _cacheTimestamps[key] = DateTime.now();
+  }
+
+  dynamic _getCache(String key) {
+    final timestamp = _cacheTimestamps[key];
+    if (timestamp != null && DateTime.now().difference(timestamp) < _cacheExpiry) {
+      return _cache[key];
+    }
+    // Remove expired cache
+    _cache.remove(key);
+    _cacheTimestamps.remove(key);
+    return null;
+  }
+
+  void _clearCache() {
+    _cache.clear();
+    _cacheTimestamps.clear();
   }
 
   // Get token from shared preferences with improved error handling and logging
@@ -200,6 +227,9 @@ class ApiService {
       await prefs.remove('user_id');
       await prefs.remove('login_timestamp');
       currentUser = null;
+
+      // Clear API cache on logout
+      _clearCache();
 
       // Optionally, make an API call to invalidate the session server-side
       // await _dio.post('/logout');
@@ -464,14 +494,23 @@ class ApiService {
     }
   }
 
-  // Updated to match the backend API response structure
+  // Updated to match the backend API response structure with caching
   Future<List<SensorReading>> getLatestReadings() async {
+    const cacheKey = 'latest_readings';
+    
+    // Check cache first
+    final cachedData = _getCache(cacheKey);
+    if (cachedData != null) {
+      print('📊 Using cached latest readings');
+      return List<SensorReading>.from(cachedData);
+    }
+
     try {
       print('📊 Fetching latest readings at ${DateTime.now()}');
       final client = getClient();
       final response = await client
           .get(Uri.parse('$baseUrl/api/sensors/latest'))
-          .timeout(Duration(seconds: 15));
+          .timeout(Duration(seconds: 10)); // Reduced timeout
 
       client.close();
 
@@ -500,7 +539,12 @@ class ApiService {
             lightIntensity: data['lightIntensity'] ?? 0,
           );
           
-          return [reading];
+          final result = [reading];
+          
+          // Cache the result
+          _setCache(cacheKey, result);
+          
+          return result;
         } else {
           print('❌ Error: Response data structure is not as expected');
           throw Exception('Failed to parse latest readings response');

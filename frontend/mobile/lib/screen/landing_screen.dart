@@ -83,6 +83,7 @@ class _LandingScreenState extends State<LandingScreen> {
                             ],
                           ),
                         ),
+                        
                         Row(
                           children: [
                             CustomFont(
@@ -90,7 +91,7 @@ class _LandingScreenState extends State<LandingScreen> {
                               fontStyle: FontStyle.italic,
                               letterSpacing: 1,
                               color: MAIZE_PRIMARY_LIGHT,
-                              fontSize: 15,
+                              fontSize: 13,
                               textAlign: TextAlign.center,
                               shadows: [
                                 Shadow(
@@ -105,7 +106,7 @@ class _LandingScreenState extends State<LandingScreen> {
                               fontStyle: FontStyle.normal,
                               letterSpacing: 1,
                               color: MAIZE_PRIMARY_LIGHT,
-                              fontSize: 15,
+                              fontSize: 13,
                               textAlign: TextAlign.center,
                               shadows: [
                                 Shadow(

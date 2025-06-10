@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Download, X, Calendar as CalendarIcon, FileText } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { unifiedExport, type ChartDataPoint, type ExportOptions } from '../utils/UnifiedExportUtils';
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Download, X } from "lucide-react";
+import { exportChartData, type ChartDataPoint, type ExportOptions } from "../utils/UnifiedExportUtils";
 
 interface UnifiedExportModalProps {
     isOpen: boolean;
@@ -14,41 +14,39 @@ interface UnifiedExportModalProps {
     dateRange?: string;
 }
 
-const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
-    isOpen,
-    onClose,
-    currentOverview,
-    chartData = [],
-    chartRef,
-    chartType,
-    dateRange = ''
-}) => {
-    const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'svg'>('pdf');
-    const [exportType, setExportType] = useState<'current' | 'custom'>('current');
-    const [startDate, setStartDate] = useState<Date>(new Date());
-    const [endDate, setEndDate] = useState<Date>(new Date());
-    const [isLoadingExport, setIsLoadingExport] = useState<boolean>(false);
+const UnifiedExportModal = ({ 
+    isOpen, 
+    onClose, 
+    currentOverview, 
+    chartData, 
+    chartRef, 
+    chartType, 
+    dateRange 
+}: UnifiedExportModalProps) => {
+    const [exportFormat, setExportFormat] = useState<'pdf' | 'svg' | 'csv'>('pdf');
+    const [isExporting, setIsExporting] = useState(false);
+    const [includeChartImage, setIncludeChartImage] = useState(true);
+    const [includeTabularData, setIncludeTabularData] = useState(true);
 
     const handleExport = async () => {
-        setIsLoadingExport(true);
+        setIsExporting(true);
         try {
             const options: ExportOptions = {
                 format: exportFormat,
                 chartType,
                 currentOverview,
-                customDateRange: exportType === 'custom' ? {
-                    startDate,
-                    endDate
-                } : undefined
+                dateRange: dateRange ? { from: dateRange, to: dateRange } : undefined,
+                includeChartImage,
+                includeTabularData
             };
-
-            await unifiedExport(exportFormat, chartRef.current, chartData, options);
+            
+            await exportChartData(chartData, options, exportFormat, chartRef);
             onClose();
         } catch (error) {
-            console.error("Export error:", error);
+            console.error('Export failed:', error);
             alert("Export failed. Please try again.");
         } finally {
-            setIsLoadingExport(false);
+            setIsExporting(false);
         }
     };
 
@@ -74,54 +72,6 @@ const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {/* Export Type Selection */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3">Export Type</h3>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={exportType === 'current' ? 'default' : 'outline'}
-                                onClick={() => setExportType('current')}
-                                className="flex-1"
-                            >
-                                Current Period
-                            </Button>
-                            <Button
-                                variant={exportType === 'custom' ? 'default' : 'outline'}
-                                onClick={() => setExportType('custom')}
-                                className="flex-1"
-                            >
-                                Custom Range
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Date Range Selection */}
-                    {exportType === 'custom' && (
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-3">Select Date Range</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Start Date</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={startDate.toISOString().slice(0, 16)}
-                                        onChange={(e) => setStartDate(new Date(e.target.value))}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">End Date</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={endDate.toISOString().slice(0, 16)}
-                                        onChange={(e) => setEndDate(new Date(e.target.value))}
-                                        className="w-full p-2 border rounded-md"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Format Selection */}
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-3">Export Format</h3>
@@ -153,6 +103,31 @@ const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
                         </div>
                     </div>
 
+                    {/* PDF Options */}
+                    {exportFormat === 'pdf' && (
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">PDF Options</h3>
+                            <div className="flex gap-6">
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeChartImage}
+                                        onChange={e => setIncludeChartImage(e.target.checked)}
+                                    />
+                                    Include chart image
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeTabularData}
+                                        onChange={e => setIncludeTabularData(e.target.checked)}
+                                    />
+                                    Include tabular data
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-3">
                         <Button variant="outline" onClick={onClose}>
@@ -160,10 +135,10 @@ const UnifiedExportModal: React.FC<UnifiedExportModalProps> = ({
                         </Button>
                         <Button
                             onClick={handleExport}
-                            disabled={isLoadingExport || (exportType === 'custom' && (!startDate || !endDate))}
+                            disabled={isExporting}
                             className="flex items-center gap-2"
                         >
-                            {isLoadingExport ? (
+                            {isExporting ? (
                                 <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                     Exporting...

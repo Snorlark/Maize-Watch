@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import 'package:http/http.dart' as http;
 import '../model/prescription_model.dart';
 
 class PrescriptionService {
   final ApiService apiService = ApiService();
+  final NotificationService notificationService = NotificationService();
   
   // Keys for storing data in SharedPreferences
   static const String _lastCheckKey = 'last_prescription_check';
   static const String _prescriptionsStorageKey = 'prescriptions';
   static const String _lastErrorKey = 'last_prescription_error';
+  static const String _lastNotificationKey = 'last_prescription_notification';
 
   // Maximum number of retries for failed requests
   static const int _maxRetries = 3;
@@ -99,6 +102,9 @@ class PrescriptionService {
           print('📋 Generated ${prescriptions.length} prescriptions');
 
           if (prescriptions.isNotEmpty) {
+            // Check if these are new prescriptions that need notification
+            await _checkAndNotifyNewPrescriptions(prescriptions, prefs);
+            
             // Save prescriptions
             await _savePrescriptionsToLocal(prescriptions);
             print('💾 Saved prescriptions: ${prescriptions.length}');
@@ -130,6 +136,47 @@ class PrescriptionService {
             'success': false,
         'message': 'Error checking for prescriptions: $e'
       };
+    }
+  }
+
+  // Check for new prescriptions and send notifications
+  Future<void> _checkAndNotifyNewPrescriptions(
+    List<Prescription> prescriptions, 
+    SharedPreferences prefs
+  ) async {
+    try {
+      // Get the last notification timestamp
+      int lastNotificationTime = prefs.getInt(_lastNotificationKey) ?? 0;
+      
+      // Filter prescriptions that are newer than the last notification
+      final newPrescriptions = prescriptions.where((prescription) {
+        return prescription.timestamp.millisecondsSinceEpoch > lastNotificationTime;
+      }).toList();
+
+      if (newPrescriptions.isNotEmpty) {
+        print('🔔 Found ${newPrescriptions.length} new prescriptions to notify about');
+        
+        // Send notification for each new prescription
+        for (final prescription in newPrescriptions) {
+          await notificationService.showPrescriptionNotification(
+            title: 'New Crop Recommendation',
+            body: '${prescription.parameter}: ${prescription.recommendation}',
+            prescriptionId: prescription.id,
+          );
+          
+          // Add a small delay between notifications
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+        
+        // Update last notification timestamp
+        await prefs.setInt(_lastNotificationKey, DateTime.now().millisecondsSinceEpoch);
+        
+        print('✅ Sent notifications for ${newPrescriptions.length} new prescriptions');
+      } else {
+        print('ℹ️ No new prescriptions to notify about');
+      }
+    } catch (e) {
+      print('❌ Error sending prescription notifications: $e');
     }
   }
 

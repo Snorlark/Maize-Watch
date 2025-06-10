@@ -32,13 +32,13 @@ class CropConditionService {
     // Load initial data
     _loadLatestData();
     
-    // Start polling for updates
-    _dataRefreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Start polling for updates with longer interval to reduce load
+    _dataRefreshTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       _loadLatestData();
     });
   }
 
-  // Load latest sensor data
+  // Load latest sensor data with caching
   Future<void> _loadLatestData() async {
     if (_isUpdating) return;
     
@@ -47,7 +47,11 @@ class CropConditionService {
     try {
       final latestReadings = await _apiService.getLatestReadings();
       if (latestReadings.isNotEmpty) {
-        currentDataNotifier.value = latestReadings.first;
+        // Only update if data has changed to reduce unnecessary rebuilds
+        final newData = latestReadings.first;
+        if (currentDataNotifier.value?.timestamp != newData.timestamp) {
+          currentDataNotifier.value = newData;
+        }
       }
     } catch (e) {
       print('Error loading latest crop condition data: $e');

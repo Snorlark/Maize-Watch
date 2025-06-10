@@ -1,22 +1,23 @@
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import React, { useState } from 'react';
-import authService, { RegisterPayload } from '../../api/services/authService';
+import authService from '../../api/services/authService';
 
-const RegisterForm: React.FC = () => {
+const RegistrationForm: React.FC = () => {
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
-    const [formData, setFormData] = useState<RegisterPayload>({
+    const [formData, setFormData] = useState({
         username: '',
+        email: '',
         password: '',
+        confirmPassword: '',
         fullName: '',
         contactNumber: '',
         address: ''
     });
-    const [errors, setErrors] = useState<string>('');
-    const [success, setSuccess] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -28,29 +29,29 @@ const RegisterForm: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
-        setErrors('');
+        setIsLoading(true);
+        setError('');
         setSuccess('');
 
         // Simple validation
         if (!formData.username || !formData.password || !formData.fullName ||
             !formData.contactNumber || !formData.address) {
-            setErrors('All fields are required');
-            setLoading(false);
+            setError('All fields are required');
+            setIsLoading(false);
             return;
         }
 
         if (formData.password.length < 6) {
-            setErrors('Password must be at least 6 characters');
-            setLoading(false);
+            setError('Password must be at least 6 characters');
+            setIsLoading(false);
             return;
         }
 
         // Philippine phone number validation
         const phoneRegex = /^(09\d{9}|\+639\d{9})$/;
         if (!phoneRegex.test(formData.contactNumber)) {
-            setErrors('Please enter a valid Philippine mobile number');
-            setLoading(false);
+            setError('Please enter a valid Philippine mobile number');
+            setIsLoading(false);
             return;
         }
 
@@ -62,97 +63,25 @@ const RegisterForm: React.FC = () => {
                 // Reset form
                 setFormData({
                     username: '',
+                    email: '',
                     password: '',
+                    confirmPassword: '',
                     fullName: '',
                     contactNumber: '',
                     address: ''
                 });
                 navigate('/login');
             } else {
-                setErrors(response.message || 'Registration failed');
+                setError(response.message || 'Registration failed');
             }
         } catch (error) {
-            setErrors('Something went wrong. Please try again later.');
+            setError('Something went wrong. Please try again later.');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
     return (
-        // <div className="register-form">
-        //   <h2>Register</h2>
-        //   {errors && <div className="error-message">{errors}</div>}
-        //   {success && <div className="success-message">{success}</div>}
-
-        //   <form onSubmit={handleSubmit}>
-        //     <div className="form-group">
-        //       <label htmlFor="username">Username</label>
-        //       <input
-        //         type="text"
-        //         id="username"
-        //         name="username"
-        //         value={formData.username}
-        //         onChange={handleChange}
-        //         required
-        //       />
-        //     </div>
-
-        //     <div className="form-group">
-        //       <label htmlFor="password">Password</label>
-        //       <input
-        //         type="password"
-        //         id="password"
-        //         name="password"
-        //         value={formData.password}
-        //         onChange={handleChange}
-        //         required
-        //       />
-        //       <small>Password must be at least 6 characters</small>
-        //     </div>
-
-        //     <div className="form-group">
-        //       <label htmlFor="fullName">Full Name</label>
-        //       <input
-        //         type="text"
-        //         id="fullName"
-        //         name="fullName"
-        //         value={formData.fullName}
-        //         onChange={handleChange}
-        //         required
-        //       />
-        //     </div>
-
-        //     <div className="form-group">
-        //       <label htmlFor="contactNumber">Contact Number</label>
-        //       <input
-        //         type="text"
-        //         id="contactNumber"
-        //         name="contactNumber"
-        //         value={formData.contactNumber}
-        //         onChange={handleChange}
-        //         placeholder="e.g., 09123456789 or +639123456789"
-        //         required
-        //       />
-        //     </div>
-
-        //     <div className="form-group">
-        //       <label htmlFor="address">Address</label>
-        //       <input
-        //         type="text"
-        //         id="address"
-        //         name="address"
-        //         value={formData.address}
-        //         onChange={handleChange}
-        //         required
-        //       />
-        //     </div>
-
-        //     <button type="submit" disabled={loading}>
-        //       {loading ? 'Registering...' : 'Register'}
-        //     </button>
-        //   </form>
-        // </div>
-
         <main className="bg-white">
             <section className="bg-[url(/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
 
@@ -171,7 +100,7 @@ const RegisterForm: React.FC = () => {
                     {/* w-full max-w-xl */}
                     <div className=" bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 text-white shadow-lg mt-4 md:mt-5 mx-auto w-full max-w-[320px] lg:max-w-full">
                         <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">Sign Up</h2>
-                        {errors && <div className="error-message">{errors}</div>}
+                        {error && <div className="error-message">{error}</div>}
                         {success && <div className="success-message">{success}</div>}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
@@ -274,10 +203,10 @@ const RegisterForm: React.FC = () => {
                             
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={isLoading}
                                 className="w-full py-2 mt-2 bg-green-500 hover:bg-green-600 rounded-full font-semibold text-white bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250"
                             >
-                                {loading ? 'Registering...' : 'Register'}
+                                {isLoading ? 'Registering...' : 'Register'}
                             </button>
                         </form>
                     </div>
@@ -288,4 +217,4 @@ const RegisterForm: React.FC = () => {
     );
 };
 
-export default RegisterForm;
+export default RegistrationForm;

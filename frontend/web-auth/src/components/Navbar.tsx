@@ -338,8 +338,8 @@ const Navbar: React.FC = () => {
                       setMenuOpen(false);
                     }}
                   className="flex items-center justify-between w-full px-6 py-4 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 cursor-pointer"
-                >
-                  <div className="flex items-center">
+                  >
+                    <div className="flex items-center">
                     <LogOut size={24} className="mr-4" />
                     <span className="text-lg">Log out</span>
               </div>

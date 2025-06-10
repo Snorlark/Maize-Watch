@@ -1,6 +1,7 @@
 const Footer = () => {
   return (
-    <footer className="bg-[#E6F0D3] text-[#356B2C] text-sm border-t-1 border-[#356B2C] py-15 px-4 sm:px-8 lg:px-16">
+    <footer className="bg-[#E6F0D3] text-[#356B2C] text-sm border-t-1 border-[#356B2C] mt-12 py-15 px-4 sm:px-8 lg:px-16">
+      <br />
       <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-start gap-8 pb-6">
         
         {/* Logo & Socials */}

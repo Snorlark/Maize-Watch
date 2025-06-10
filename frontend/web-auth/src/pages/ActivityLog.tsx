@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, User, Activity, Clock, MapPin, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, User, Activity, Clock, MapPin, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
 import Footer from '../components/Footer';
 import apiClient from '../api/client';
 import authService from '../api/services/authService';
@@ -166,8 +166,8 @@ const ActivityLogPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
             <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
-            Activity Log
-          </h1>
+              Activity Log
+            </h1>
           <p className="text-[#456C2D] text-sm sm:text-base">
             Monitor all admin and user activities across the system
           </p>

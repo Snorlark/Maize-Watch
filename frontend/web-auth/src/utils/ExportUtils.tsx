@@ -33,7 +33,6 @@ const DAY_MAP: Record<string, number> = {
  */
 export const parseDateString = (
   dateStr: string | number,
-  dataType: string = "unknown",
   referenceDate?: Date
 ): Date | null => {
   if (typeof dateStr !== 'string') {
@@ -107,7 +106,6 @@ export const mapDateToDataKey = (date: Date, dataType: string): string => {
  * Exports chart as a PDF document with a table format and logo
  */
 const exportToPdf = async (
-  chartNode: HTMLElement,
   chartData: ChartDataPoint[],
   xKey: string,
   title: string,
@@ -255,7 +253,10 @@ const exportToPdf = async (
 /**
  * Exports chart as an SVG image
  */
-const exportToSvg = async (chartNode: HTMLElement, title: string) => {
+const exportToSvg = async (
+  chartNode: HTMLElement,
+  title: string
+) => {
   try {
     // Generate SVG with proper styling
     const dataUrl = await htmlToImage.toSvg(chartNode, {
@@ -423,7 +424,7 @@ export const handleExport = async (
         // For other data types, attempt to convert labels to dates
         filteredData = chartData.filter(item => {
           // Parse the item date based on data type
-          const itemDate = parseDateString(item[xKey] as string, dataType);
+          const itemDate = parseDateString(item[xKey] as string, new Date());
           
           // If we couldn't parse the date, include the item by default
           if (!itemDate) return true;
@@ -439,7 +440,7 @@ export const handleExport = async (
 
   // Export based on format
   if (format === "pdf") {
-    await exportToPdf(chartNode, filteredData, xKey, title, dateRange);
+    await exportToPdf(filteredData, xKey, title, dateRange);
   } else if (format === "svg") {
     await exportToSvg(chartNode, title);
   } else if (format === "csv") {

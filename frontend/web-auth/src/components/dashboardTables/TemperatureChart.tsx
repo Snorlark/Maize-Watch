@@ -1,55 +1,33 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
   LineChart,
   Line,
-  ReferenceLine,
+  XAxis,
+  YAxis,
   CartesianGrid,
+  Tooltip,
   Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  ReferenceLine,
 } from "recharts";
 import {
   Download,
-  X,
-  Calendar as CalendarIcon,
+  Calendar,
+  Clock,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  BarChart3,
-  LineChart as LineChartIcon,
-  Thermometer,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  List,
-  Table,
-  Minus,
-  Clock,
-  CalendarDays,
-  Calendar,
-  BarChart2,
   ChevronDown,
+  BarChart3,
+  Table,
+  Thermometer,
 } from "lucide-react";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { saveAs } from 'file-saver';
-import { Calendar as CalendarPicker } from "../ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { API_CONFIG } from '../../api/config';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +35,9 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import UnifiedExportModal from '../UnifiedExportModal';
+import { RefreshIndicator } from '../ui/refresh-indicator';
+import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
+import { format } from "date-fns";
 
 // Types
 interface DataItem {
@@ -98,46 +79,8 @@ const TEMPERATURE_COLORS = {
 };
 
 // Utility Functions
-const getWeekRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  
-  return { start, end };
-};
-
-const getMonthRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-  return { start, end };
-};
-
 const formatDateRange = (start: Date, end: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric',
-    timeZone: 'Asia/Manila'
-  };
-  return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
-};
-
-const convertToPhilippineTime = (utcDateString: string): Date => {
-  const utcDate = new Date(utcDateString);
-  // Philippines is UTC+8
-  const philippineTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
-  return philippineTime;
-};
-
-const getDayOfWeekName = (dayIndex: number): string => {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return dayNames[dayIndex];
+  return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -298,13 +241,19 @@ const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; p
 
 // Add the same utility functions as HumidityChart
 const getStartOfWeek = (date: Date): Date => {
-  const daysFromSunday = date.getDay();
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = start.getDate() - day;
+  start.setDate(diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
 };
 
 const getEndOfWeek = (date: Date): Date => {
-  const startOfWeek = getStartOfWeek(date);
-  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+  const end = new Date(date);
+  end.setDate(date.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
 };
 
 const getStartOfMonth = (date: Date): Date => {
@@ -315,26 +264,18 @@ const getEndOfMonth = (date: Date): Date => {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
 };
 
-const getStartOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-};
-
-const getEndOfDay = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-};
-
 // Update ViewType to include all options
 type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 
 // Add at the top of TemperatureDashboard
 const periodOptions = [
   { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
-  { label: 'Daily', value: 'daily', icon: <CalendarIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Monthly', value: 'monthly', icon: <CalendarDays className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
 ];
 const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChartIcon className="h-4 w-4 mr-1" /> },
+  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
   { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
   { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
@@ -378,33 +319,20 @@ const getWeekNumberInMonth = (date: Date): number => {
 
 // Replace the state and controls in TemperatureDashboard with the following:
 const TemperatureDashboard = () => {
-  const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('weekly');
   const [chartData, setChartData] = useState<DataItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<string>('');
-  const [currentOverview, setCurrentOverview] = useState(overview);
+  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('hourly');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [dateRange, setDateRange] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<ViewType>('line');
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [xKey, setXKey] = useState<string>('hour');
   const chartRef = useRef<HTMLDivElement>(null);
-  const [xKey, setXKey] = useState<string>('day');
-  const [trend, setTrend] = useState<{ trend: 'up' | 'down' | 'neutral'; percentage: number }>({ trend: 'neutral', percentage: 0 });
-
-  // Update hourly data type
-  interface HourlyData {
-    sum: number;
-    count: number;
-    dates: string[];
-  }
-
-  // Update the hourly data map
-  const hourlyData = new Map<string, HourlyData>();
 
   // API Configuration
   const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
     endpoints: {
       historical: '/api/sensors/historical',
       weekly: '/api/sensors/weekly-overview',
@@ -412,9 +340,23 @@ const TemperatureDashboard = () => {
     }
   };
 
+  // Intelligent refresh hook
+  const {
+    isRefreshing,
+    lastRefreshTime,
+    toggleAutoRefresh,
+    autoRefreshEnabled
+  } = useIntelligentRefresh({
+    refreshInterval: 30000, // 30 seconds instead of 15
+    enabled: true,
+    onRefresh: () => fetchData(overview, selectedDate, true) // true = silent refresh
+  });
+
   // Update the fetchData function
-  const fetchData = async (period: string, baseDate: Date = new Date()) => {
+  const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+    if (!silent) {
     setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -479,7 +421,9 @@ const TemperatureDashboard = () => {
     }
 
       const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
+      if (!silent) {
       console.log(`Making API request to ${url} for ${period} view`);
+      }
       
       const response = await fetch(url, {
         headers: {
@@ -494,12 +438,14 @@ const TemperatureDashboard = () => {
       }
 
       const result = await response.json();
+      if (!silent) {
       console.log(`API response for ${period} view:`, {
         success: result.success,
         dataLength: result.data?.length,
         firstItem: result.data?.[0],
         lastItem: result.data?.[result.data?.length - 1]
       });
+      }
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch data');
@@ -510,30 +456,26 @@ const TemperatureDashboard = () => {
 
       // Handle empty or invalid data
     if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+        if (!silent) {
         console.warn(`No data available for ${period} view`);
+        }
         processedData = getDefaultData(period, phDate).chartData;
     } else {
         // Filter data to only include entries within our date range
         const filteredData = rawData.filter((item: any) => {
           const itemDate = new Date(item.timestamp);
           const isInRange = itemDate >= startDate && itemDate <= endDate;
-          if (!isInRange) {
-            console.log('Filtered out item:', {
-              timestamp: item.timestamp,
-              itemDate: itemDate.toISOString(),
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString()
-            });
-          }
           return isInRange;
         });
 
+        if (!silent) {
         console.log(`Filtered data for ${period} view:`, {
           totalItems: rawData.length,
           filteredItems: filteredData.length,
           firstFilteredItem: filteredData[0],
           lastFilteredItem: filteredData[filteredData.length - 1]
         });
+        }
 
       switch (period) {
         case 'hourly': {
@@ -561,6 +503,7 @@ const TemperatureDashboard = () => {
               }
             });
 
+            if (!silent) {
             console.log('Hourly data processing:', {
               totalHours: hourlyData.size,
               hoursWithData: Array.from(hourlyData.entries())
@@ -571,6 +514,7 @@ const TemperatureDashboard = () => {
                   average: data.sum / data.count
                 }))
             });
+            }
 
           processedData = Array.from(hourlyData.entries()).map(([hour, data]) => ({
             hour,
@@ -602,6 +546,7 @@ const TemperatureDashboard = () => {
               }
             });
 
+            if (!silent) {
             console.log('Daily data processing:', {
               totalDays: dailyData.size,
               daysWithData: Array.from(dailyData.entries())
@@ -612,6 +557,7 @@ const TemperatureDashboard = () => {
                   average: data.sum / data.count
                 }))
             });
+            }
 
             processedData = days.map(day => {
               const data = dailyData.get(day)!;
@@ -708,13 +654,9 @@ const TemperatureDashboard = () => {
       });
 
       // Calculate trend using non-zero values
-      const validData = processedData.filter(item => item.value !== null && item.value !== 0);
-      const trend = calculateTrend(validData);
-      setTrend(trend);
 
     setChartData(processedData);
     setDateRange(formatDateRange(startDate, endDate));
-      setCurrentOverview(period);
     setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
@@ -733,24 +675,9 @@ const TemperatureDashboard = () => {
     fetchData(overview, selectedDate);
   }, [overview, selectedDate]);
 
-  // Auto-refresh data every 15 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchData(overview, selectedDate);
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [overview, selectedDate]);
-
   const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    setCurrentOverview(newOverview);
     fetchData(newOverview, selectedDate);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
   };
 
   const handlePreviousPeriod = () => {
@@ -1137,7 +1064,7 @@ const TemperatureDashboard = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="w-[180px] justify-between">
                   <div className="flex items-center">
-                    {viewType === 'line' ? <LineChartIcon className="h-4 w-4 mr-2" /> :
+                    {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
                       viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
                       <Table className="h-4 w-4 mr-2" />}
                     {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View
@@ -1160,6 +1087,14 @@ const TemperatureDashboard = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          
+          {/* Refresh indicator */}
+          <RefreshIndicator
+            isRefreshing={isRefreshing}
+            lastRefreshTime={lastRefreshTime}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onToggleAutoRefresh={toggleAutoRefresh}
+          />
         </div>
 
         <div ref={chartRef} className="h-[450px] p-4 mb-2">
@@ -1168,14 +1103,14 @@ const TemperatureDashboard = () => {
         {renderSummary()}
       </CardContent>
       <UnifiedExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
         currentOverview={overview}
-        chartData={chartData}
-        chartRef={chartRef}
+            chartData={chartData}
+            chartRef={chartRef}
         chartType="temperature"
         dateRange={dateRange}
-      />
+          />
     </Card>
   );
 };
