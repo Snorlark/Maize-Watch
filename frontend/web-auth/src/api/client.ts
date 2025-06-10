@@ -1,8 +1,6 @@
 // client.ts
 import axios, { AxiosError } from 'axios';
 import authService from '../api/services/authService';
-
-// Import the User interface from authService to ensure consistency
 import type { User } from '../api/services/authService';
 
 // Alternative: If you can't import from authService, define a compatible interface
@@ -20,7 +18,7 @@ import type { User } from '../api/services/authService';
 
 // Base URL configuration
 const isDevelopment = import.meta.env?.MODE === 'development';
-const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'http://localhost:8080';
+const apiBaseUrl = isDevelopment ? 'https://maize-watch.onrender.com' : 'https://maize-watch.onrender.com';
 console.log('API Base URL being used:', apiBaseUrl);
 
 // Create the Axios instance
@@ -103,7 +101,6 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      console.log('Making getUsers request to:', `${apiBaseUrl}/api/users`);
       const response = await apiClient.get('/api/users', {
         params: {
           fields: 'username,fullName,contactNumber,address,role'

@@ -22,7 +22,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   curved_navigation_bar: ^1.0.6
   syncfusion_flutter_charts: ^28.1.35
-  flutter_local_notifications: ^16.3.2
+  flutter_local_notifications: ^19.2.1
   permission_handler: ^12.0.0+1
   url_launcher: ^6.3.1
   sqflite: ^2.4.2

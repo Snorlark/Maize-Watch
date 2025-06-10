@@ -23,6 +23,9 @@ export interface User {
   address?: string;
   role: string;
   email?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface AuthResponse {

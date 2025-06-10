@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:maize_watch/custom/constants.dart';
 import 'package:maize_watch/custom/custom_font.dart';
 import 'package:maize_watch/widget/language_toggle.dart';
@@ -7,25 +9,26 @@ import 'package:maize_watch/widget/notification_settings_widget.dart';
 import 'package:maize_watch/widget/help_section_widget.dart';
 import 'package:maize_watch/widget/faq_section_widget.dart';
 import 'package:maize_watch/services/notification_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:maize_watch/services/sensor_sleep_service.dart';
+import 'package:maize_watch/services/prescription_service.dart';
 
 // ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
   bool isNotificationsEnabled;
+  bool isVibrationOnly;
   bool isHelpExpanded;
   bool isFAQsExpanded;
-  bool isVibrationOnly;
 
   SettingsScreen({
     super.key,
     this.isNotificationsEnabled = false,
+    this.isVibrationOnly = false,
     this.isHelpExpanded = false,
     this.isFAQsExpanded = false,
-    this.isVibrationOnly = false,
   });
 
   @override
-  _SettingsScreenState createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
@@ -35,6 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool soil = false;
 
   final NotificationService _notificationService = NotificationService();
+  final SensorSleepService _sensorSleepService = SensorSleepService();
+  final PrescriptionService _prescriptionService = PrescriptionService();
 
   Map<String, bool> previousSensorState = {
     'ldr': false,
@@ -47,8 +52,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _notificationService.initialize();
+    _sensorSleepService.initialize();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       fetchSensorData();
+      _checkForNewPrescriptions();
     });
   }
 
@@ -113,8 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 20),
                           NotificationSettingsWidget(
-                            isNotificationsEnabled:
-                                widget.isNotificationsEnabled,
+                            isNotificationsEnabled: widget.isNotificationsEnabled,
                             isVibrationOnly: widget.isVibrationOnly,
                             onNotificationToggled: (value) {
                               setState(() {
@@ -220,6 +227,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       };
 
       Future.delayed(const Duration(seconds: 5), fetchSensorData);
+    }
+  }
+
+  Future<void> _checkForNewPrescriptions() async {
+    if (widget.isNotificationsEnabled) {
+      try {
+        final result = await _prescriptionService.checkForNewPrescriptions(context);
+        if (result['success'] == true && result['hasNewPrescriptions'] == true) {
+          print('✅ New prescriptions found and notifications sent');
+        }
+      } catch (e) {
+        print('❌ Error checking for prescriptions: $e');
+      }
     }
   }
 }

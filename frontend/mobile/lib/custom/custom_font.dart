@@ -16,7 +16,7 @@ class CustomFont extends StatelessWidget {
   const CustomFont({
     super.key,
     required this.text,
-    this.fontSize = 18,
+    this.fontSize = 15,
     this.color = MAIZE_ACCENT,
     this.fontFamily = 'Montserrat',
     this.fontWeight = FontWeight.normal,
