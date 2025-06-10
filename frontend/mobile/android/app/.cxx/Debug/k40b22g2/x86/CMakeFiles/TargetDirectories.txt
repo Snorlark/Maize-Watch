@@ -1,0 +1,2 @@
+/Users/larkbabao/Desktop/Maize-Watch/frontend/mobile/android/app/.cxx/Debug/k40b22g2/x86/CMakeFiles/edit_cache.dir
+/Users/larkbabao/Desktop/Maize-Watch/frontend/mobile/android/app/.cxx/Debug/k40b22g2/x86/CMakeFiles/rebuild_cache.dir

@@ -101,7 +101,6 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      console.log('Making getUsers request to:', `${apiBaseUrl}/api/users`);
       const response = await apiClient.get('/api/users', {
         params: {
           fields: 'username,fullName,contactNumber,address,role'

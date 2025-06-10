@@ -10,6 +10,7 @@ interface UserContextType {
   farmers: User[]; // Farmers filtered from users
   loading: boolean;
   error: string | null;
+  errorType: 'network' | 'backend' | 'auth' | 'general' | null;
   currentUser: User | null;
   isAdmin: boolean;
   hasAdminAccess: boolean; // New property for both admin and super_admin
@@ -17,6 +18,7 @@ interface UserContextType {
   addUser: (userData: Omit<User, "_id">) => Promise<User>;
   updateUserById: (id: string, userData: Partial<User>) => Promise<User>;
   deleteUserById: (id: string) => Promise<void>;
+  clearError: () => void;
 }
 
 // Create the context with default values
@@ -33,6 +35,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'network' | 'backend' | 'auth' | 'general' | null>(null);
   const [fetchTriggered, setFetchTriggered] = useState(false);
   
   // Current user is directly from AuthContext (no conversion needed)
@@ -45,15 +48,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin';
 
   // Derive farmers from users whenever users change
-  const farmers = users.filter(user => user.role === 'user');
-
-  console.log('UserProvider initialized:', { 
-    isAuthenticated, 
-    isAdmin,
-    hasAdminAccess,
-    userId: user?._id || user?.userId,
-    userRole: user?.role
-  });
+  const farmers = users.filter(user => user.role === 'user' || user.role === 'farmer');
 
   // Fetch users only when explicitly called 
   // or when component is mounted with valid admin user
@@ -61,7 +56,6 @@ export function UserProvider({ children }: UserProviderProps) {
     const shouldFetchUsers = isAuthenticated && hasAdminAccess && !fetchTriggered;
     
     if (shouldFetchUsers) {
-      console.log('Initiating fetchUsers in UserProvider effect');
       setFetchTriggered(true);
       fetchUsers().catch(err => {
         console.error('Failed initial user fetch:', err);
@@ -75,42 +69,55 @@ export function UserProvider({ children }: UserProviderProps) {
 
   // Function to fetch all users
   const fetchUsers = async () => {
-    console.log('fetchUsers called, hasAdminAccess:', hasAdminAccess, 'isAuthenticated:', isAuthenticated);
-    
     // Verify authentication state before attempting to fetch
     if (!isAuthenticated) {
-      console.warn('User not authenticated');
-      setLoading(false);
       setError("Authentication required");
+      setErrorType('auth');
+      setLoading(false);
       return;
     }
     
     // Immediately return if not admin or super_admin to prevent unauthorized requests
     if (!hasAdminAccess) {
-      console.warn('Non-admin user attempted to fetch users');
-      setLoading(false);
       setError("Unauthorized: Admin privileges required");
+      setErrorType('auth');
+      setLoading(false);
       return;
     }
     
     // Check if token exists
     const token = authService.getToken();
     if (!token) {
-      console.warn('No auth token found');
       setError("Authentication token missing. Please log in again.");
+      setErrorType('auth');
       setLoading(false);
       return;
     }
     
     setLoading(true);
     setError(null);
+    setErrorType(null);
+    
     try {
-      console.log('Making API request to fetch users');
       const fetchedUsers = await userService.getUsers();
-      console.log(`Fetched ${fetchedUsers.length} users successfully`);
       setUsers(fetchedUsers);
     } catch (err: any) {
+      console.error('Error in fetchUsers:', err);
       
+      // Determine error type based on the error
+      if (err.code === 'ECONNABORTED' || err.message?.includes('Network Error')) {
+        setError('Connection timeout. Please check your internet connection.');
+        setErrorType('network');
+      } else if (err.response?.status >= 500) {
+        setError('Server error. Please try again later.');
+        setErrorType('backend');
+      } else if (err.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+        setErrorType('auth');
+      } else {
+        setError(err.message || 'Failed to fetch users');
+        setErrorType('general');
+      }
     } finally {
       setLoading(false);
     }
@@ -121,17 +128,20 @@ export function UserProvider({ children }: UserProviderProps) {
     if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
+      setErrorType('auth');
       throw error;
     }
 
     try {
       setError(null);
+      setErrorType(null);
       const newUser = await userService.createUser(userData);
       setUsers((prevUsers) => [...prevUsers, newUser]);
       return newUser;
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to add user. Please try again.";
       setError(errorMessage);
+      setErrorType(err.response?.status >= 500 ? 'backend' : 'general');
       console.error("Error adding user:", err);
       throw err;
     }
@@ -142,11 +152,13 @@ export function UserProvider({ children }: UserProviderProps) {
     if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
+      setErrorType('auth');
       throw error;
     }
 
     try {
       setError(null);
+      setErrorType(null);
       const updatedUser = await userService.updateUser(id, userData);
       setUsers((prevUsers) =>
         prevUsers.map((user) => (user._id === id ? updatedUser : user))
@@ -155,6 +167,7 @@ export function UserProvider({ children }: UserProviderProps) {
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to update user. Please try again.";
       setError(errorMessage);
+      setErrorType(err.response?.status >= 500 ? 'backend' : 'general');
       console.error("Error updating user:", err);
       throw err;
     }
@@ -165,19 +178,28 @@ export function UserProvider({ children }: UserProviderProps) {
     if (!hasAdminAccess) {
       const error = new Error("Unauthorized: Admin privileges required");
       setError(error.message);
+      setErrorType('auth');
       throw error;
     }
 
     try {
       setError(null);
+      setErrorType(null);
       await userService.deleteUser(id);
       setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id));
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete user. Please try again.";
       setError(errorMessage);
+      setErrorType(err.response?.status >= 500 ? 'backend' : 'general');
       console.error("Error deleting user:", err);
       throw err;
     }
+  };
+
+  // Function to clear error
+  const clearError = () => {
+    setError(null);
+    setErrorType(null);
   };
 
   const contextValue: UserContextType = {
@@ -185,13 +207,15 @@ export function UserProvider({ children }: UserProviderProps) {
     farmers,
     loading,
     error,
+    errorType,
     fetchUsers,
     addUser,
     updateUserById,
     deleteUserById,
     currentUser,
     isAdmin,
-    hasAdminAccess
+    hasAdminAccess,
+    clearError
   };
 
   return (
@@ -205,7 +229,7 @@ export function UserProvider({ children }: UserProviderProps) {
 export function useUserContext(): UserContextType {
   const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error("useUserContext must be used within a UserProvider");
+    throw new Error('useUserContext must be used within a UserProvider');
   }
   return context;
 }
