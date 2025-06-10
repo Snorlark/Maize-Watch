@@ -90,17 +90,12 @@ class SensorSleepService {
 
       final latestReading = readings.first;
       
-      // Determine sensor status based on readings
-      // If readings are very old (more than 5 minutes), consider sensors in sleep mode
-      final now = DateTime.now();
-      final readingAge = now.difference(latestReading.timestamp);
-      
-      // Update current status based on reading age and values
+      // Update current status based on ThingSpeak data
       _currentSensorStatus = {
-        'ldr': readingAge.inMinutes < 5 && latestReading.lightIntensity > 0,
-        'ph': readingAge.inMinutes < 5 && latestReading.soilPh > 0,
-        'dht': readingAge.inMinutes < 5 && latestReading.temperature > 0,
-        'soil': readingAge.inMinutes < 5 && latestReading.soilMoisture > 0,
+        'ldr': latestReading.lightIntensity > 0,
+        'ph': latestReading.soilPh > 0,
+        'dht': latestReading.temperature > 0,
+        'soil': latestReading.soilMoisture > 0,
       };
 
       // Check for status changes and send notifications
@@ -117,7 +112,7 @@ class SensorSleepService {
   // Check for status changes and send notifications
   Future<void> _checkStatusChanges() async {
     final changedSensors = <String>[];
-    final sleepingSensors = <String>[];
+    final inactiveSensors = <String>[];
     final activeSensors = <String>[];
 
     for (final entry in _currentSensorStatus.entries) {
@@ -131,7 +126,7 @@ class SensorSleepService {
         if (currentStatus) {
           activeSensors.add(_sensorNames[sensorKey] ?? sensorKey);
         } else {
-          sleepingSensors.add(_sensorNames[sensorKey] ?? sensorKey);
+          inactiveSensors.add(_sensorNames[sensorKey] ?? sensorKey);
         }
       }
     }
@@ -142,12 +137,12 @@ class SensorSleepService {
       
       // Send individual notifications for each changed sensor
       for (final sensorKey in changedSensors) {
-        final isSleeping = !_currentSensorStatus[sensorKey]!;
+        final isActive = _currentSensorStatus[sensorKey]!;
         final sensorName = _sensorNames[sensorKey] ?? sensorKey;
         
-        await _notificationService.showSleepModeNotification(
+        await _notificationService.showSensorStatusNotification(
           sensorName: sensorName,
-          isSleeping: isSleeping,
+          isActive: isActive,
         );
         
         // Add delay between notifications
@@ -156,8 +151,8 @@ class SensorSleepService {
 
       // Also send a summary notification if multiple sensors changed
       if (changedSensors.length > 1) {
-        await _notificationService.showMultipleSensorsSleepModeNotification(
-          sleepingSensors: sleepingSensors,
+        await _notificationService.showMultipleSensorsStatusNotification(
+          inactiveSensors: inactiveSensors,
           activeSensors: activeSensors,
         );
       }
@@ -170,9 +165,9 @@ class SensorSleepService {
   // Get current sensor status
   Map<String, bool> get currentSensorStatus => Map<String, bool>.from(_currentSensorStatus);
 
-  // Check if a specific sensor is in sleep mode
-  bool isSensorSleeping(String sensorKey) {
-    return !(_currentSensorStatus[sensorKey] ?? false);
+  // Check if a specific sensor is active
+  bool isSensorActive(String sensorKey) {
+    return _currentSensorStatus[sensorKey] ?? false;
   }
 
   // Get sensor status for display
@@ -181,8 +176,7 @@ class SensorSleepService {
       return MapEntry(key, {
         'name': _sensorNames[key] ?? key,
         'isActive': value,
-        'isSleeping': !value,
-        'status': value ? 'Active' : 'Sleep Mode',
+        'status': value ? 'Active' : 'Inactive',
       });
     });
   }

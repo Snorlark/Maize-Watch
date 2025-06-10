@@ -11,58 +11,88 @@ import 'package:maize_watch/widget/faq_section_widget.dart';
 import 'package:maize_watch/services/notification_service.dart';
 import 'package:maize_watch/services/sensor_sleep_service.dart';
 import 'package:maize_watch/services/prescription_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ignore: must_be_immutable
 class SettingsScreen extends StatefulWidget {
-  bool isNotificationsEnabled;
-  bool isVibrationOnly;
-  bool isHelpExpanded;
-  bool isFAQsExpanded;
-
-  SettingsScreen({
-    super.key,
-    this.isNotificationsEnabled = false,
-    this.isVibrationOnly = false,
-    this.isHelpExpanded = false,
-    this.isFAQsExpanded = false,
-  });
+  const SettingsScreen({Key? key}) : super(key: key);
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool ldr = false;
-  bool ph = false;
-  bool dht = false;
-  bool soil = false;
-
   final NotificationService _notificationService = NotificationService();
-  final SensorSleepService _sensorSleepService = SensorSleepService();
+  final SensorSleepService _sensorService = SensorSleepService();
   final PrescriptionService _prescriptionService = PrescriptionService();
-
-  Map<String, bool> previousSensorState = {
-    'ldr': false,
-    'ph': false,
-    'dht': false,
-    'soil': false,
-  };
+  
+  bool _notificationsEnabled = false;
+  bool _vibrationOnly = false;
+  bool _isLoading = true;
+  Map<String, bool> _sensorStatus = {};
+  List<Map<String, dynamic>> _prescriptions = [];
 
   @override
   void initState() {
     super.initState();
-    _notificationService.initialize();
-    _sensorSleepService.initialize();
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      fetchSensorData();
-      _checkForNewPrescriptions();
+    _loadSettings();
+    _fetchSensorData();
+    _checkNewPrescriptions();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+        _vibrationOnly = prefs.getBool('vibration_only') ?? false;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading settings: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _updateNotificationSettings(bool enabled, bool vibrationOnly) async {
+    setState(() {
+      _notificationsEnabled = enabled;
+      _vibrationOnly = vibrationOnly;
     });
+
+    await _notificationService.updateNotificationSettings(
+      enabled: enabled,
+      vibrationOnly: vibrationOnly,
+    );
+  }
+
+  Future<void> _fetchSensorData() async {
+    try {
+      final sensorData = await _sensorService.checkSensorStatus();
+      setState(() {
+        _sensorStatus = sensorData;
+      });
+    } catch (e) {
+      print('Error fetching sensor data: $e');
+    }
+  }
+
+  Future<void> _checkNewPrescriptions() async {
+    try {
+      final prescriptions = await _prescriptionService.getPrescriptions();
+      setState(() {
+        _prescriptions = prescriptions;
+      });
+    } catch (e) {
+      print('Error fetching prescriptions: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final local = AppLocalizations.of(context)!;
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Scaffold(
       body: Stack(
@@ -93,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(width: 8),
                           CustomFont(
-                            text: local.settings,
+                            text: AppLocalizations.of(context)!.settings,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: MAIZE_ACCENT,
@@ -113,25 +143,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           SensorStatusWidget(
-                            ldrSensor: ldr,
-                            phLevelSensor: ph,
-                            tempAndHumidSensor: dht,
-                            soilLevelSensor: soil,
-                            localization: local,
+                            ldrSensor: _sensorStatus['ldr'] ?? false,
+                            phLevelSensor: _sensorStatus['ph'] ?? false,
+                            tempAndHumidSensor: _sensorStatus['dht'] ?? false,
+                            soilLevelSensor: _sensorStatus['soil'] ?? false,
+                            localization: AppLocalizations.of(context)!,
                           ),
                           const SizedBox(height: 20),
                           NotificationSettingsWidget(
-                            isNotificationsEnabled: widget.isNotificationsEnabled,
-                            isVibrationOnly: widget.isVibrationOnly,
+                            isNotificationsEnabled: _notificationsEnabled,
+                            isVibrationOnly: _vibrationOnly,
                             onNotificationToggled: (value) {
-                              setState(() {
-                                widget.isNotificationsEnabled = value;
-                              });
+                              _updateNotificationSettings(value, _vibrationOnly);
                             },
                             onVibrationOnlyToggled: (value) {
-                              setState(() {
-                                widget.isVibrationOnly = value;
-                              });
+                              _updateNotificationSettings(_notificationsEnabled, value);
                             },
                           ),
                           const SizedBox(height: 20),
@@ -147,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Padding(
                                   padding: const EdgeInsets.only(left: 10.0),
                                   child: CustomFont(
-                                    text: local.language,
+                                    text: AppLocalizations.of(context)!.language,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -170,19 +196,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 20),
                           HelpSectionWidget(
-                            isExpanded: widget.isHelpExpanded,
+                            isExpanded: false,
                             onToggle: () {
-                              setState(() {
-                                widget.isHelpExpanded = !widget.isHelpExpanded;
-                              });
+                              // Implementation needed
                             },
                           ),
                           FAQSectionWidget(
-                            isExpanded: widget.isFAQsExpanded,
+                            isExpanded: false,
                             onToggle: () {
-                              setState(() {
-                                widget.isFAQsExpanded = !widget.isFAQsExpanded;
-                              });
+                              // Implementation needed
                             },
                           ),
                         ],
@@ -196,50 +218,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> fetchSensorData() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() {
-        ldr = !ldr; // Toggle for demo
-        ph = false;
-        dht = false;
-        soil = false;
-      });
-
-      if (widget.isNotificationsEnabled) {
-        if (previousSensorState['ldr'] != ldr) {
-          await _notificationService.showNotification(
-            title: 'Sensor Status Changed',
-            body: 'LDR Sensor is now: ${ldr ? "Active" : "Inactive"}',
-            playSound: !widget.isVibrationOnly,
-          );
-        }
-      }
-
-      previousSensorState = {
-        'ldr': ldr,
-        'ph': ph,
-        'dht': dht,
-        'soil': soil,
-      };
-
-      Future.delayed(const Duration(seconds: 5), fetchSensorData);
-    }
-  }
-
-  Future<void> _checkForNewPrescriptions() async {
-    if (widget.isNotificationsEnabled) {
-      try {
-        final result = await _prescriptionService.checkForNewPrescriptions(context);
-        if (result['success'] == true && result['hasNewPrescriptions'] == true) {
-          print('✅ New prescriptions found and notifications sent');
-        }
-      } catch (e) {
-        print('❌ Error checking for prescriptions: $e');
-      }
-    }
   }
 }
