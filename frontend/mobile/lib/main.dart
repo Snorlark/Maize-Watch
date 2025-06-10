@@ -38,10 +38,21 @@ final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('en'));
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Hide all system UI elements
+  // Configure system UI to handle safe areas properly
   SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.edgeToEdge,
-    overlays: [], // This will hide all system overlays
+    SystemUiMode.manual,
+    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+  );
+
+  // Set system UI overlay style for better appearance
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
   );
 
   try {

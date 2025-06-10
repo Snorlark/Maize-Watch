@@ -269,150 +269,152 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            color: MAIZE_BOTTOM_OVERLAY,
-          ),
-          child: _isLoading
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: Colors.green),
-                      SizedBox(height: 16),
-                      Text(
-                        'Loading profile...',
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontFamily: 'Montserrat',
+        body: SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: MAIZE_BOTTOM_OVERLAY,
+            ),
+            child: _isLoading
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.green),
+                        SizedBox(height: 16),
+                        Text(
+                          'Loading profile...',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontFamily: 'Montserrat',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : _errorMessage != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Error Loading Profile',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red,
-                                fontFamily: 'Montserrat',
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _errorMessage!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontFamily: 'Montserrat',
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 20),
-                            ElevatedButton.icon(
-                              onPressed: _loadUserData,
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Retry'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: MAIZE_ACCENT,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(30.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 40),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ],
+                    ),
+                  )
+                : _errorMessage != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(height: 16),
                               Text(
-                                localizations.account,
-                                style: TextStyle(
-                                  fontSize: 24,
+                                'Error Loading Profile',
+                                style: const TextStyle(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade900,
+                                  color: Colors.red,
                                   fontFamily: 'Montserrat',
                                 ),
                               ),
-                              Image.asset(
-                                'assets/images/maize_watch_logo.png',
-                                height: 60,
+                              const SizedBox(height: 8),
+                              Text(
+                                _errorMessage!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontFamily: 'Montserrat',
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: _loadUserData,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: MAIZE_ACCENT,
+                                  foregroundColor: Colors.white,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 5),
-                          CustomFont(
-                            text: localizations.about_user,
-                            fontSize: 16,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          const SizedBox(height: 20),
-
-                          UserInfoWidget(
-                            userName: userName,
-                            name: name,
-                            contactNumber: contactNumber,
-                            address: address,
-                            onUpdate: _handleProfileUpdate,
-                            isUpdating: _isUpdating,
-                          ),
-                          const SizedBox(height: 20),
-
-                          CustomButton(
-                            context: context,
-                            title: localizations.settings,
-                            screen: SettingsScreen(),
-                          ),
-                          CustomButton(
-                            context: context,
-                            title: localizations.about,
-                            screen: const AboutUsScreen(),
-                          ),
-                          const Spacer(),
-                          Center(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: MAIZE_LOGO_ICON,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.all(30.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20), // Reduced top spacing
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  localizations.account,
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade900,
+                                    fontFamily: 'Montserrat',
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                              ),
-                              onPressed: _handleLogout,
-                              child: Text(
-                                localizations.logout,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontFamily: 'Montserrat',
+                                Image.asset(
+                                  'assets/images/maize_watch_logo.png',
+                                  height: 60,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            CustomFont(
+                              text: localizations.about_user,
+                              fontSize: 16,
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            const SizedBox(height: 20),
+
+                            UserInfoWidget(
+                              userName: userName,
+                              name: name,
+                              contactNumber: contactNumber,
+                              address: address,
+                              onUpdate: _handleProfileUpdate,
+                              isUpdating: _isUpdating,
+                            ),
+                            const SizedBox(height: 20),
+
+                            CustomButton(
+                              context: context,
+                              title: localizations.settings,
+                              screen: SettingsScreen(),
+                            ),
+                            CustomButton(
+                              context: context,
+                              title: localizations.about,
+                              screen: const AboutUsScreen(),
+                            ),
+                            const Spacer(),
+                            Center(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: MAIZE_LOGO_ICON,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                                ),
+                                onPressed: _handleLogout,
+                                child: Text(
+                                  localizations.logout,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontFamily: 'Montserrat',
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                            const SizedBox(height: 20),
+                          ],
+                        ),
                       ),
-                    ),
+          ),
         ),
       ),
     );
