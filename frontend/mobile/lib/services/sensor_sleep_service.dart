@@ -191,4 +191,9 @@ class SensorSleepService {
     _checkTimer?.cancel();
     _checkTimer = null;
   }
+
+  // Add a public method to check sensor status
+  Future<void> checkSensorStatus() async {
+    await _checkSensorStatus();
+  }
 } 

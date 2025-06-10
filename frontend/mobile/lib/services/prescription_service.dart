@@ -868,4 +868,15 @@ Future<Map<String, dynamic>> forceRefreshPrescriptions(BuildContext context) asy
       print('❗ Error deleting all prescriptions: $e');
     }
   }
+
+  // Add a public method to get prescriptions
+  Future<List<Prescription>> getPrescriptions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final prescriptionsJson = prefs.getString(_prescriptionsStorageKey);
+    if (prescriptionsJson == null) {
+      return [];
+    }
+    final List<dynamic> decoded = json.decode(prescriptionsJson);
+    return decoded.map((item) => Prescription.fromJson(item)).toList();
+  }
 }
