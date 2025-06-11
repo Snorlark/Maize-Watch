@@ -1,9 +1,6 @@
 // API Configuration
-const isDevelopment = import.meta.env?.MODE === 'development';
-const baseUrl = isDevelopment ? 'http://localhost:8080' : 'https://maize-watch.onrender.com';
-
 export const API_CONFIG = {
-  baseUrl: baseUrl,
+  baseUrl: 'https://maize-watch.onrender.com',
   endpoints: {
     historical: '/api/sensors/historical',
     weekly: '/api/sensors/weekly-overview',
