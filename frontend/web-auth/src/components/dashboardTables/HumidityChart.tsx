@@ -328,7 +328,7 @@ const HumidityDashboard = () => {
   // Update the fetchData function
   const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
     if (!silent) {
-      setIsLoading(true);
+    setIsLoading(true);
     }
     setError(null);
 
@@ -342,6 +342,7 @@ const HumidityDashboard = () => {
 
       switch (period) {
         case 'hourly': {
+          // For hourly view, get data for the selected day
           startDate = new Date(phDate);
           startDate.setHours(0, 0, 0, 0);
           endDate = new Date(phDate);
@@ -349,17 +350,29 @@ const HumidityDashboard = () => {
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
+          console.log('Hourly view - Date range:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            phDate: phDate.toISOString()
+          });
           break;
         }
         case 'daily': {
+          // For daily view, get data for the week containing the selected date
           startDate = getStartOfWeek(phDate);
           endDate = getEndOfWeek(startDate);
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
+          console.log('Daily view - Week range:', {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            phDate: phDate.toISOString()
+          });
           break;
         }
         case 'weekly': {
+          // For weekly view, get data for the month containing the selected date
           startDate = getStartOfMonth(phDate);
           endDate = getEndOfMonth(phDate);
           endpoint = API_CONFIG.endpoints.historical;
@@ -368,8 +381,9 @@ const HumidityDashboard = () => {
           break;
         }
         case 'monthly': {
-          startDate = new Date(phDate.getFullYear(), 0, 1);
-          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999);
+          // For monthly view, get data for the entire year
+          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
+          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
