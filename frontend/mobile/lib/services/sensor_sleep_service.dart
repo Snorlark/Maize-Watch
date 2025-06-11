@@ -79,35 +79,58 @@ class SensorSleepService {
   }
 
   // Check sensor status from API
-  Future<void> _checkSensorStatus() async {
-    try {
-      // Get latest sensor readings
-      final readings = await _apiService.getLatestReadings();
-      if (readings.isEmpty) {
-        print('No sensor readings available');
-        return;
-      }
-
-      final latestReading = readings.first;
-      
-      // Update current status based on ThingSpeak data
+  // Check sensor status from API
+Future<void> _checkSensorStatus() async {
+  try {
+    // Get latest sensor readings
+    final readings = await _apiService.getLatestReadings();
+    if (readings.isEmpty) {
+      print('No sensor readings available');
+      // Set all sensors to inactive if no readings
       _currentSensorStatus = {
-        'ldr': latestReading.lightIntensity > 0,
-        'ph': latestReading.soilPh > 0,
-        'dht': latestReading.temperature > 0,
-        'soil': latestReading.soilMoisture > 0,
+        'ldr': false,
+        'ph': false,
+        'dht': false,
+        'soil': false,
       };
-
-      // Check for status changes and send notifications
-      await _checkStatusChanges();
-      
-      // Save current status
       await _saveCurrentStatus();
-      
-    } catch (e) {
-      print('Error checking sensor status: $e');
+      return;
     }
+
+    final latestReading = readings.first;
+    final now = DateTime.now();
+    final readingTime = DateTime.parse(latestReading.timestamp);
+    final timeDifference = now.difference(readingTime);
+    
+    // Consider sensor inactive if data is older than 5 minutes
+    final isDataFresh = timeDifference.inMinutes <= 5;
+    
+    // Update current status based on ThingSpeak data and freshness
+    _currentSensorStatus = {
+      'ldr': isDataFresh && latestReading.lightIntensity > 0,
+      'ph': isDataFresh && latestReading.soilPh > 0,
+      'dht': isDataFresh && latestReading.temperature > 0,
+      'soil': isDataFresh && latestReading.soilMoisture > 0,
+    };
+
+    // Check for status changes and send notifications
+    await _checkStatusChanges();
+    
+    // Save current status
+    await _saveCurrentStatus();
+    
+  } catch (e) {
+    print('Error checking sensor status: $e');
+    // Set all sensors to inactive on error
+    _currentSensorStatus = {
+      'ldr': false,
+      'ph': false,
+      'dht': false,
+      'soil': false,
+    };
+    await _saveCurrentStatus();
   }
+}
 
   // Check for status changes and send notifications
   Future<void> _checkStatusChanges() async {
