@@ -140,23 +140,29 @@ class NotificationService {
 
   // Show sensor status notification
   Future<void> showSensorStatusNotification({
-    required String sensorName,
-    required bool isActive,
-  }) async {
-    if (!_isNotificationsEnabled) return;
-
-    final title = isActive ? 'Sensor Active' : 'Sensor Inactive';
-    final body = isActive 
-        ? '$sensorName is now active and monitoring'
-        : '$sensorName is now inactive';
-
-    await showNotification(
-      title: title,
-      body: body,
-      playSound: true,
-      channelId: 'sensor_channel',
-    );
+  required String sensorName,
+  required bool isActive,
+}) async {
+  // Load latest settings before sending notification
+  await _loadNotificationSettings();
+  
+  if (!_isNotificationsEnabled) {
+    print('Notifications are disabled, skipping notification');
+    return;
   }
+
+  final title = isActive ? 'Sensor Active' : 'Sensor Inactive';
+  final body = isActive 
+      ? '$sensorName is now active and monitoring'
+      : '$sensorName is now inactive';
+
+  await showNotification(
+    title: title,
+    body: body,
+    playSound: true,
+    channelId: 'sensor_channel',
+  );
+}
 
   // Show multiple sensors status notification
   Future<void> showMultipleSensorsStatusNotification({
