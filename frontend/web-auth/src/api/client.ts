@@ -17,8 +17,7 @@ import type { User } from '../api/services/authService';
 // }
 
 // Base URL configuration
-const isDevelopment = import.meta.env?.MODE === 'development';
-const apiBaseUrl = isDevelopment ? 'http://localhost:8080' : 'https://maize-watch.onrender.com';
+const apiBaseUrl = 'https://maize-watch.onrender.com';
 console.log('API Base URL being used:', apiBaseUrl);
 console.log('Environment mode:', import.meta.env?.MODE);
 
