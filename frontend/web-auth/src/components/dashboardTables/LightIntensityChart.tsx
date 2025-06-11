@@ -372,31 +372,35 @@ const LightIntensityDashboard = () => {
           break;
         }
         case 'daily': {
-          startDate = getStartOfWeek(phDate);
-          endDate = getEndOfWeek(startDate);
+          const startOfWeek = getStartOfWeek(phDate);
+          const endOfWeek = getEndOfWeek(startOfWeek);
+          startDate = startOfWeek;
+          endDate = endOfWeek;
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
           break;
         }
         case 'weekly': {
-          startDate = getStartOfMonth(phDate);
-          endDate = getEndOfMonth(phDate);
+          const startOfMonth = getStartOfMonth(phDate);
+          const endOfMonth = getEndOfMonth(phDate);
+          startDate = startOfMonth;
+          endDate = endOfMonth;
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
           break;
         }
         case 'monthly': {
-          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
-          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
+          const startOfYear = new Date(phDate.getFullYear(), 0, 1);
+          const endOfYear = new Date(phDate.getFullYear(), 11, 31);
+          startDate = startOfYear;
+          endDate = endOfYear;
           endpoint = API_CONFIG.endpoints.historical;
           params.startDate = startDate.toISOString();
           params.endDate = endDate.toISOString();
           break;
         }
-        default:
-          throw new Error('Invalid period specified');
       }
 
       const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
