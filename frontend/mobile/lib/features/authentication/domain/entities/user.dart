@@ -1,0 +1,32 @@
+import 'package:equatable/equatable.dart';
+
+class User extends Equatable {
+  final String id;
+  final String username;
+  final String fullName;
+  final String contactNumber; // Make sure this matches your backend field
+  final String address;
+  final String? password;
+  final String role;
+
+  const User({
+    required this.id,
+    required this.username,
+    this.password,
+    required this.fullName,
+    required this.contactNumber,
+    required this.address,
+    required this.role,
+  });
+
+  @override
+  List<Object> get props => [
+    id,
+    username,
+    fullName,
+    contactNumber,
+    address,
+    role,
+    if (password != null) password!, // Include password only if it's not null
+  ];
+}
