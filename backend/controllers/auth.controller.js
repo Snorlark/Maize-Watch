@@ -1,19 +1,20 @@
-import User from '../models/user.model.js';
-import ActivityLog from '../models/activityLog.model.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { connectToDatabase } from '../db/mongodb.js';
+import User from "../models/user.model.js";
+import ActivityLog from "../models/activityLog.model.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { connectToDatabase } from "../db/mongodb.js";
 
 // Register new user
 export const register = async (req, res) => {
   try {
-    const { username, password, fullName, contactNumber, address, email } = req.body;
+    const { username, password, fullName, contactNumber, address, email } =
+      req.body;
 
     // Validate required fields
     if (!username || !password || !fullName || !contactNumber || !address) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
+        message: "All fields are required",
       });
     }
 
@@ -21,7 +22,7 @@ export const register = async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters'
+        message: "Password must be at least 6 characters",
       });
     }
 
@@ -30,7 +31,7 @@ export const register = async (req, res) => {
     if (!phoneRegex.test(contactNumber)) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter a valid Philippine mobile number'
+        message: "Please enter a valid Philippine mobile number",
       });
     }
 
@@ -39,7 +40,7 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Username already exists'
+        message: "Username already exists",
       });
     }
 
@@ -55,7 +56,7 @@ export const register = async (req, res) => {
       contactNumber,
       address,
       email,
-      role: 'user' // Default role
+      role: "user", // Default role
     });
 
     await user.save();
@@ -66,14 +67,14 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      data: userObj
+      message: "User registered successfully",
+      data: userObj,
     });
   } catch (error) {
-    console.error('Error in register:', error);
+    console.error("Error in register:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -81,12 +82,12 @@ export const register = async (req, res) => {
 // Login user
 export const login = async (req, res) => {
   try {
-    const { username, password, deviceType = 'web' } = req.body;
+    const { username, password, deviceType = "web" } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Username and password are required'
+        message: "Username and password are required",
       });
     }
 
@@ -95,7 +96,7 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -104,7 +105,7 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -112,22 +113,24 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: "24h" }
     );
 
     // Log the login activity
     await ActivityLog.create({
       userId: user._id,
       userEmail: user.email || username,
-      userRole: ['user', 'admin', 'super_admin'].includes(user.role) ? user.role : 'user',
-      action: deviceType === 'mobile' ? 'login' : 'login',
-      resource: 'auth',
+      userRole: ["user", "admin", "super_admin"].includes(user.role)
+        ? user.role
+        : "user",
+      action: deviceType === "mobile" ? "login" : "login",
+      resource: "auth",
       details: {
         deviceType,
-        loginMethod: 'password'
+        loginMethod: "password",
       },
       ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.headers['user-agent'] || 'unknown'
+      userAgent: req.headers["user-agent"] || "unknown",
     });
 
     // Remove password from user object
@@ -136,17 +139,17 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         user: userObj,
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
-    console.error('Error in login:', error);
+    console.error("Error in login:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -158,7 +161,7 @@ export const refreshToken = async (req, res) => {
     if (!token) {
       return res.status(400).json({
         success: false,
-        message: 'Token is required'
+        message: "Token is required",
       });
     }
 
@@ -169,7 +172,7 @@ export const refreshToken = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
@@ -177,19 +180,19 @@ export const refreshToken = async (req, res) => {
     const newToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: "24h" }
     );
 
     res.status(200).json({
       success: true,
-      message: 'Token refreshed successfully',
-      token: newToken
+      message: "Token refreshed successfully",
+      token: newToken,
     });
   } catch (error) {
-    console.error('Error in refreshToken:', error);
+    console.error("Error in refreshToken:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -202,29 +205,29 @@ export const getUserByUsername = async (req, res) => {
     if (!username) {
       return res.status(400).json({
         success: false,
-        message: 'Username is required'
+        message: "Username is required",
       });
     }
 
-    const user = await User.findOne({ username }).select('-password');
+    const user = await User.findOne({ username }).select("-password");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'User details retrieved successfully',
-      data: user
+      message: "User details retrieved successfully",
+      data: user,
     });
   } catch (error) {
-    console.error('Error getting user details:', error);
+    console.error("Error getting user details:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -239,7 +242,7 @@ export const updateUser = async (req, res) => {
     if (req.user.username !== username) {
       return res.status(403).json({
         success: false,
-        message: 'You can only update your own profile'
+        message: "You can only update your own profile",
       });
     }
 
@@ -249,41 +252,41 @@ export const updateUser = async (req, res) => {
       if (!phoneRegex.test(contactNumber)) {
         return res.status(400).json({
           success: false,
-          message: 'Please enter a valid Philippine mobile number'
+          message: "Please enter a valid Philippine mobile number",
         });
       }
     }
 
     const user = await User.findOneAndUpdate(
       { username },
-      { 
+      {
         $set: {
           fullName,
           contactNumber,
           address,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       },
       { new: true }
-    ).select('-password');
+    ).select("-password");
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Profile updated successfully',
-      data: user
+      message: "Profile updated successfully",
+      data: user,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error("Error updating user:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -296,7 +299,7 @@ export const verifyPhone = async (req, res) => {
     if (!phoneNumber) {
       return res.status(400).json({
         success: false,
-        message: 'Phone number is required'
+        message: "Phone number is required",
       });
     }
 
@@ -305,7 +308,7 @@ export const verifyPhone = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'Phone number not found'
+        message: "Phone number not found",
       });
     }
 
@@ -313,16 +316,16 @@ export const verifyPhone = async (req, res) => {
     // For now, we'll just return success
     res.status(200).json({
       success: true,
-      message: 'Phone number verified',
+      message: "Phone number verified",
       data: {
-        userId: user._id
-      }
+        userId: user._id,
+      },
     });
   } catch (error) {
-    console.error('Error verifying phone number:', error);
+    console.error("Error verifying phone number:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -335,7 +338,7 @@ export const resetPassword = async (req, res) => {
     if (!username || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Username and new password are required'
+        message: "Username and new password are required",
       });
     }
 
@@ -343,7 +346,7 @@ export const resetPassword = async (req, res) => {
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters'
+        message: "Password must be at least 6 characters",
       });
     }
 
@@ -352,7 +355,7 @@ export const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
@@ -366,13 +369,13 @@ export const resetPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Password reset successful'
+      message: "Password reset successful",
     });
   } catch (error) {
-    console.error('Error resetting password:', error);
+    console.error("Error resetting password:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
@@ -383,7 +386,7 @@ export const logout = async (req, res) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Not authenticated'
+        message: "Not authenticated",
       });
     }
 
@@ -391,26 +394,26 @@ export const logout = async (req, res) => {
     await ActivityLog.create({
       userId: req.user.id,
       userEmail: req.user.email || req.user.username,
-      userRole: req.user.role || 'user',
-      action: 'logout',
-      resource: 'auth',
+      userRole: req.user.role || "user",
+      action: "logout",
+      resource: "auth",
       details: {
-        deviceType: req.body.deviceType || 'web',
-        logoutMethod: 'manual'
+        deviceType: req.body.deviceType || "web",
+        logoutMethod: "manual",
       },
       ipAddress: req.ip || req.connection.remoteAddress,
-      userAgent: req.headers['user-agent'] || 'unknown'
+      userAgent: req.headers["user-agent"] || "unknown",
     });
 
     res.status(200).json({
       success: true,
-      message: 'Logged out successfully'
+      message: "Logged out successfully",
     });
   } catch (error) {
-    console.error('Error in logout:', error);
+    console.error("Error in logout:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 };
