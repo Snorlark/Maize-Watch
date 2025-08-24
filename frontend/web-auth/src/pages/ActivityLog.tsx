@@ -153,31 +153,35 @@ const ActivityLogPage: React.FC = () => {
     return 'Unknown';
   };
 
-  // Redirect if not admin - you can implement this check based on your auth system
-  // For now, I'll comment this out since we don't have access to UserContext
-  // if (authChecked && !isAdmin) {
-  //   return <Navigate to="/unauthorized" replace />;
-  // }
-
   return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
+          <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
             <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
               Activity Log
             </h1>
-          <p className="text-[#456C2D] text-sm sm:text-base">
+          <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             Monitor all admin and user activities across the system
           </p>
           <div className="mt-3 flex items-center gap-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#456C2D] text-[#F5F5DC]">
+            <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
               Admin Access
             </span>
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
+              style={{ fontSize: 'var(--text-sm)' }}
             >
               <Filter className="w-4 h-4" />
               Filters
@@ -193,7 +197,8 @@ const ActivityLogPage: React.FC = () => {
               <span className="font-medium">Error: {error}</span>
               <button
                 onClick={() => fetchLogs(currentPage)}
-                className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                style={{ fontSize: 'var(--text-sm)' }}
               >
                 Retry
               </button>
@@ -206,7 +211,7 @@ const ActivityLogPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-[#B8D4A8] p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#356B2C] mb-2">Search</label>
+                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Search</label>
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                   <input
@@ -215,16 +220,18 @@ const ActivityLogPage: React.FC = () => {
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
                     className="w-full pl-10 pr-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                    style={{ fontSize: 'var(--text-sm)' }}
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-[#356B2C] mb-2">Action</label>
+                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Action</label>
                 <select
                   value={filters.action}
                   onChange={(e) => handleFilterChange('action', e.target.value)}
                   className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                  style={{ fontSize: 'var(--text-sm)' }}
                 >
                   <option value="">All Actions</option>
                   <option value="login">Login</option>
@@ -236,11 +243,12 @@ const ActivityLogPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#356B2C] mb-2">Resource</label>
+                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Resource</label>
                 <select
                   value={filters.resource}
                   onChange={(e) => handleFilterChange('resource', e.target.value)}
                   className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                  style={{ fontSize: 'var(--text-sm)' }}
                 >
                   <option value="">All Resources</option>
                   <option value="user">User</option>
@@ -251,22 +259,24 @@ const ActivityLogPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#356B2C] mb-2">Start Date</label>
+                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Start Date</label>
                 <input
                   type="date"
                   value={filters.startDate}
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
                   className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                  style={{ fontSize: 'var(--text-sm)' }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#356B2C] mb-2">End Date</label>
+                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>End Date</label>
                 <input
                   type="date"
                   value={filters.endDate}
                   onChange={(e) => handleFilterChange('endDate', e.target.value)}
                   className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                  style={{ fontSize: 'var(--text-sm)' }}
                 />
               </div>
             </div>
@@ -275,6 +285,7 @@ const ActivityLogPage: React.FC = () => {
               <button
                 onClick={clearFilters}
                 className="px-4 py-2 text-[#4A7C59] hover:text-[#356B2C] transition-colors"
+                style={{ fontSize: 'var(--text-sm)' }}
               >
                 Clear Filters
               </button>
@@ -294,22 +305,22 @@ const ActivityLogPage: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-[#F5F9F1] border-b border-[#B8D4A8]">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         User
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         Role
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         Action
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         Resource
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         Timestamp
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-[#356B2C] uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
                         Details
                       </th>
                     </tr>
@@ -317,7 +328,7 @@ const ActivityLogPage: React.FC = () => {
                   <tbody className="bg-white divide-y divide-[#E8F2E0]">
                     {logs.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-[#4A7C59]">
+                        <td colSpan={6} className="px-6 py-12 text-center text-[#4A7C59]" style={{ fontSize: 'var(--text-base)' }}>
                           {error ? 'Failed to load activity logs' : 'No activity logs found'}
                         </td>
                       </tr>
@@ -332,53 +343,53 @@ const ActivityLogPage: React.FC = () => {
                                 </div>
                               </div>
                               <div className="ml-3">
-                                <div className="text-sm font-medium text-[#356B2C]">
+                                <div className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
                                   {log.userId?.name || 'Unknown User'}
                                 </div>
-                                <div className="text-sm text-[#4A7C59]">
+                                <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
                                   {log.userEmail}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(log.userRole)}`}>
+                            <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${getRoleColor(log.userRole)}`} style={{ fontSize: 'var(--text-xs)' }}>
                               {log.userRole}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getActionColor(log.action)}`}>
+                            <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${getActionColor(log.action)}`} style={{ fontSize: 'var(--text-xs)' }}>
                               {log.action}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-[#356B2C]">{log.resource}</div>
+                            <div className="text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>{log.resource}</div>
                             {log.resourceId && (
-                              <div className="text-xs text-[#4A7C59]">ID: {log.resourceId}</div>
+                              <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>ID: {log.resourceId}</div>
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center text-sm text-[#356B2C]">
+                            <div className="flex items-center text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
                               <Clock className="w-4 h-4 mr-1 text-[#4A7C59]" />
                               {formatDate(log.timestamp)}
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="space-y-1">
-                              <div className="flex items-center text-xs text-[#4A7C59]">
+                              <div className="flex items-center text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
                                 <MapPin className="w-3 h-3 mr-1" />
                                 {log.ipAddress}
                               </div>
-                              <div className="flex items-center text-xs text-[#4A7C59]">
+                              <div className="flex items-center text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
                                 <Smartphone className="w-3 h-3 mr-1" />
                                 {getBrowserFromUserAgent(log.userAgent)} on {getOSFromUserAgent(log.userAgent)}
                               </div>
                               {log.details && Object.keys(log.details).length > 0 && (
-                                <details className="text-xs">
+                                <details style={{ fontSize: 'var(--text-xs)' }}>
                                   <summary className="cursor-pointer text-[#356B2C] hover:text-[#2D5A24]">
                                     View Details
                                   </summary>
-                                  <pre className="mt-1 p-2 bg-[#F5F9F1] rounded text-xs overflow-x-auto text-[#356B2C]">
+                                  <pre className="mt-1 p-2 bg-[#F5F9F1] rounded overflow-x-auto text-[#356B2C]" style={{ fontSize: 'var(--text-xs)' }}>
                                     {JSON.stringify(log.details, null, 2)}
                                   </pre>
                                 </details>
@@ -395,21 +406,23 @@ const ActivityLogPage: React.FC = () => {
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="bg-[#F5F9F1] px-6 py-3 border-t border-[#B8D4A8] flex items-center justify-between">
-                  <div className="text-sm text-[#356B2C]">
+                  <div className="text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
                     Page {currentPage} of {totalPages}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => fetchLogs(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+                      className="px-3 py-1 border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+                      style={{ fontSize: 'var(--text-sm)' }}
                     >
                       Previous
                     </button>
                     <button
                       onClick={() => fetchLogs(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+                      className="px-3 py-1 border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
+                      style={{ fontSize: 'var(--text-sm)' }}
                     >
                       Next
                     </button>

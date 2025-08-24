@@ -63,9 +63,9 @@ const LIGHT_INTENSITY_COLORS = {
 
 // Utility Functions
 const formatDateRange = (start: Date, end: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { 
-    month: 'short', 
-    day: 'numeric', 
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
     year: 'numeric',
     timeZone: 'Asia/Manila'
   };
@@ -74,30 +74,13 @@ const formatDateRange = (start: Date, end: Date): string => {
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
   const today = baseDate ? new Date(baseDate) : new Date();
-      const defaultThreshold = {
-        min: LIGHT_INTENSITY_THRESHOLDS.min,
-        max: LIGHT_INTENSITY_THRESHOLDS.max,
-        critical: LIGHT_INTENSITY_THRESHOLDS.critical,
-      };
+  const defaultThreshold = {
+    min: LIGHT_INTENSITY_THRESHOLDS.min,
+    max: LIGHT_INTENSITY_THRESHOLDS.max,
+    critical: LIGHT_INTENSITY_THRESHOLDS.critical,
+  };
 
   switch (period) {
-    case 'hourly': {
-      const currentDate = new Date(today);
-      const chartData: DataItem[] = [];
-      for (let i = 0; i < 24; i++) {
-        chartData.push({
-          hour: `${i.toString().padStart(2, '0')}:00`,
-          value: null,
-          dataPoints: 0,
-          threshold: defaultThreshold
-        });
-      }
-      return {
-        chartData,
-        xKey: 'hour',
-        dateRange: formatDateRange(currentDate, currentDate)
-      };
-    }
     case 'daily': {
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const chartData: DataItem[] = days.map(day => ({
@@ -119,7 +102,7 @@ const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[
       const chartData: DataItem[] = Array.from({ length: weeksInMonth }, (_, i) => ({
         week: `Week ${i + 1}`,
         value: null,
-          dataPoints: 0,
+        dataPoints: 0,
         threshold: defaultThreshold
       }));
       const startOfMonth = getStartOfMonth(today);
@@ -138,7 +121,7 @@ const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[
       const chartData: DataItem[] = monthNames.map(month => ({
         month,
         value: null,
-          dataPoints: 0,
+        dataPoints: 0,
         threshold: defaultThreshold
       }));
       const startOfYear = new Date(today.getFullYear(), 0, 1);
@@ -174,20 +157,20 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       statusColor = "text-orange-600";
     }
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg max-w-xs">
         <div className="flex items-center gap-2 mb-2">
           <div className={`p-2 rounded-full ${LIGHT_INTENSITY_COLORS.background}`}>
             <Sun className={`w-4 h-4 ${LIGHT_INTENSITY_COLORS.text}`} />
           </div>
-          <p className="font-semibold text-gray-800">{label}</p>
+          <p className="font-semibold text-gray-800 text-sm">{label}</p>
         </div>
-        <p className={`text-[${LIGHT_INTENSITY_COLORS.primary}]`}>{`Light Intensity: ${value} lux`}</p>
+        <p className={`text-[${LIGHT_INTENSITY_COLORS.primary}] text-sm`}>{`Light Intensity: ${value} lux`}</p>
         <p className={`${statusColor} text-sm flex items-center gap-1`}>
           {statusIcon}
           {`Status: ${status}`}
         </p>
         {data.dataPoints !== undefined && (
-          <p className="text-gray-500 text-sm">{`Data Points: ${data.dataPoints}`}</p>
+          <p className="text-gray-500 text-xs">{`Data Points: ${data.dataPoints}`}</p>
         )}
         <div className="mt-2 text-xs text-gray-500">
           <p>Thresholds:</p>
@@ -210,7 +193,7 @@ const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; p
 
   const firstValue = validData[0].value as number;
   const lastValue = validData[validData.length - 1].value as number;
-  
+
   if (firstValue === 0) {
     return { trend: 'neutral', percentage: 0 };
   }
@@ -252,7 +235,6 @@ type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 
 // Add at the top of LightIntensityDashboard
 const periodOptions = [
-  { label: 'Hourly', value: 'hourly', icon: <Clock className="h-4 w-4 mr-1" /> },
   { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
   { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
@@ -283,11 +265,11 @@ const getWeeksInMonth = (date: Date): number => {
   const firstWeekday = firstDay.getDay();
   const lastWeekday = lastDay.getDay();
   const daysInMonth = lastDay.getDate();
-  
+
   // Calculate number of weeks
   let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
   if (lastWeekday < firstWeekday) weeks++;
-  
+
   return weeks;
 };
 
@@ -295,7 +277,7 @@ const getWeekNumberInMonth = (date: Date): number => {
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const firstWeekday = firstDay.getDay();
   const dayOfMonth = date.getDate();
-  
+
   // Calculate week number (1-based)
   return Math.ceil((dayOfMonth + firstWeekday) / 7);
 };
@@ -303,7 +285,7 @@ const getWeekNumberInMonth = (date: Date): number => {
 // Update the main component
 const LightIntensityDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'hourly' | 'daily' | 'weekly' | 'monthly'>('weekly');
+  const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [chartData, setChartData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -338,7 +320,7 @@ const LightIntensityDashboard = () => {
   // Update the fetchData function
   const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
     if (!silent) {
-    setIsLoading(true);
+      setIsLoading(true);
     }
     setError(null);
 
@@ -351,22 +333,6 @@ const LightIntensityDashboard = () => {
       let params: Record<string, string> = {};
 
       switch (period) {
-        case 'hourly': {
-          // For hourly view, get data for the selected day
-          startDate = new Date(phDate);
-          startDate.setHours(0, 0, 0, 0);
-          endDate = new Date(phDate);
-          endDate.setHours(23, 59, 59, 999);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          console.log('Hourly view - Date range:', {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            phDate: phDate.toISOString()
-          });
-          break;
-        }
         case 'daily': {
           // For daily view, get data for the week containing the selected date
           startDate = getStartOfWeek(phDate);
@@ -405,7 +371,7 @@ const LightIntensityDashboard = () => {
 
       const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
       console.log(`Making API request to ${url} for ${period} view`);
-      
+
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json'
@@ -425,7 +391,7 @@ const LightIntensityDashboard = () => {
         firstItem: result.data?.[0],
         lastItem: result.data?.[result.data?.length - 1]
       });
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch data');
       }
@@ -461,62 +427,17 @@ const LightIntensityDashboard = () => {
         });
 
         switch (period) {
-          case 'hourly': {
-            // Process hourly data for the selected day
-            const hourlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            
-            // Initialize all hours for the day
-            for (let i = 0; i < 24; i++) {
-              const hourKey = `${i.toString().padStart(2, '0')}:00`;
-              hourlyData.set(hourKey, { sum: 0, count: 0, dates: [] });
-            }
-            
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-              
-              const date = new Date(item.timestamp);
-              const hourKey = `${date.getHours().toString().padStart(2, '0')}:00`;
-              if (hourlyData.has(hourKey)) {
-                const current = hourlyData.get(hourKey)!;
-                if (typeof item.lightIntensity === 'number' && !isNaN(item.lightIntensity)) {
-                  current.sum += item.lightIntensity;
-                  current.count++;
-                  current.dates.push(date.toISOString());
-                }
-              }
-            });
-
-            console.log('Hourly data processing:', {
-              totalHours: hourlyData.size,
-              hoursWithData: Array.from(hourlyData.entries())
-                .filter(([_, data]) => data.count > 0)
-                .map(([hour, data]) => ({
-                  hour,
-                  count: data.count,
-                  average: data.sum / data.count
-                }))
-            });
-
-            processedData = Array.from(hourlyData.entries()).map(([hour, data]) => ({
-              hour,
-              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-              dataPoints: data.count,
-              threshold: LIGHT_INTENSITY_THRESHOLDS
-            }));
-            setXKey('hour');
-            break;
-          }
           case 'daily': {
             // Process daily data for the week
             const dailyData = new Map<string, { sum: number; count: number; dates: string[] }>();
             const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            
+
             // Initialize all days
             days.forEach(day => dailyData.set(day, { sum: 0, count: 0, dates: [] }));
-            
+
             filteredData.forEach((item: any) => {
               if (!item || typeof item !== 'object') return;
-              
+
               const date = new Date(item.timestamp);
               const dayKey = days[date.getDay()];
               const current = dailyData.get(dayKey)!;
@@ -554,19 +475,19 @@ const LightIntensityDashboard = () => {
             // Process weekly data for the month
             const weeksInMonth = getWeeksInMonth(phDate);
             const weeklyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            
+
             // Initialize all weeks
             for (let i = 1; i <= weeksInMonth; i++) {
               weeklyData.set(`Week ${i}`, { sum: 0, count: 0, dates: [] });
             }
-            
+
             filteredData.forEach((item: any) => {
               if (!item || typeof item !== 'object') return;
-              
+
               const date = new Date(item.timestamp);
               const weekNumber = getWeekNumberInMonth(date);
               const weekKey = `Week ${weekNumber}`;
-              
+
               if (weeklyData.has(weekKey)) {
                 const current = weeklyData.get(weekKey)!;
                 if (typeof item.lightIntensity === 'number' && !isNaN(item.lightIntensity)) {
@@ -593,13 +514,13 @@ const LightIntensityDashboard = () => {
               "January", "February", "March", "April", "May", "June",
               "July", "August", "September", "October", "November", "December"
             ];
-            
+
             // Initialize all months
             monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0, dates: [] }));
-            
+
             filteredData.forEach((item: any) => {
               if (!item || typeof item !== 'object') return;
-              
+
               const date = new Date(item.timestamp);
               const monthKey = monthNames[date.getMonth()];
               const current = monthlyData.get(monthKey)!;
@@ -654,15 +575,15 @@ const LightIntensityDashboard = () => {
   // Use intelligent refresh for auto-refresh
   useEffect(() => {
     if (autoRefreshEnabled) {
-    const interval = setInterval(() => {
+      const interval = setInterval(() => {
         fetchData(overview, selectedDate, true); // Silent refresh
-    }, 15000);
+      }, 15000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
     }
   }, [autoRefreshEnabled, overview, selectedDate]);
 
-  const handleOverviewChange = (newOverview: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
+  const handleOverviewChange = (newOverview: 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
     fetchData(newOverview, selectedDate);
   };
@@ -670,9 +591,6 @@ const LightIntensityDashboard = () => {
   const handlePreviousPeriod = () => {
     let newDate: Date;
     switch (overview) {
-      case 'hourly':
-        newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
-        break;
       case 'daily':
         newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
@@ -697,9 +615,6 @@ const LightIntensityDashboard = () => {
 
     let newDate: Date;
     switch (overview) {
-      case 'hourly':
-        newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
-        break;
       case 'daily':
         newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
@@ -752,56 +667,55 @@ const LightIntensityDashboard = () => {
       statusColor = 'text-orange-600';
     }
 
-      return (
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-card rounded-lg border">
+    return (
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-3 sm:p-4 bg-card rounded-lg border">
           <h3 className="text-sm font-medium text-muted-foreground">Current Status</h3>
-          <p className={`text-2xl font-bold ${statusColor}`}>{status}</p>
-          <p className="text-sm text-muted-foreground">Current: {currentValue.toFixed(1)} lux</p>
+          <p className={`text-lg sm:text-2xl font-bold ${statusColor}`}>{status}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Current: {currentValue.toFixed(1)} lux</p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
+        <div className="p-3 sm:p-4 bg-card rounded-lg border">
           <h3 className="text-sm font-medium text-muted-foreground">Average</h3>
-          <p className="text-2xl font-bold">{averageValue.toFixed(1)} lux</p>
-          <p className="text-sm text-muted-foreground">Based on {validData.length} data points</p>
+          <p className="text-lg sm:text-2xl font-bold">{averageValue.toFixed(1)} lux</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Based on {validData.length} data points</p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
+        <div className="p-3 sm:p-4 bg-card rounded-lg border">
           <h3 className="text-sm font-medium text-muted-foreground">Trend</h3>
           <div className="flex items-center gap-2">
-            <span className={`text-2xl font-bold ${
-              trend.trend === 'up' ? 'text-green-600' :
-              trend.trend === 'down' ? 'text-red-600' :
-              'text-gray-600'
-            }`}>
+            <span className={`text-lg sm:text-2xl font-bold ${trend.trend === 'up' ? 'text-green-600' :
+                trend.trend === 'down' ? 'text-red-600' :
+                  'text-gray-600'
+              }`}>
               {trend.trend === 'up' ? '↑' : trend.trend === 'down' ? '↓' : '→'}
             </span>
-            <p className="text-2xl font-bold">
+            <p className="text-lg sm:text-2xl font-bold">
               {trend.percentage > 0 ? `${trend.percentage}%` : 'Stable'}
             </p>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {trend.trend === 'up' ? 'Increasing' :
-             trend.trend === 'down' ? 'Decreasing' :
-             'No significant change'}
+              trend.trend === 'down' ? 'Decreasing' :
+                'No significant change'}
           </p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
+        <div className="p-3 sm:p-4 bg-card rounded-lg border">
           <h3 className="text-sm font-medium text-muted-foreground">Thresholds</h3>
-          <p className="text-sm">Min: {LIGHT_INTENSITY_THRESHOLDS.min} lux</p>
-          <p className="text-sm">Max: {LIGHT_INTENSITY_THRESHOLDS.max} lux</p>
-          <p className="text-sm text-red-600">Critical: {LIGHT_INTENSITY_THRESHOLDS.critical} lux</p>
+          <p className="text-xs sm:text-sm">Min: {LIGHT_INTENSITY_THRESHOLDS.min} lux</p>
+          <p className="text-xs sm:text-sm">Max: {LIGHT_INTENSITY_THRESHOLDS.max} lux</p>
+          <p className="text-xs sm:text-sm text-red-600">Critical: {LIGHT_INTENSITY_THRESHOLDS.critical} lux</p>
         </div>
-        </div>
-      );
+      </div>
+    );
   };
 
   // Update the renderChart function to ensure value is always a number
   const renderChart = () => {
-    if (isLoading) return <Skeleton className="h-[400px] w-full" />;
+    if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
     if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
-    
+
     // Always show chart even with empty data
-    const displayData = (chartData.length === 0 ? 
-      getDefaultData(overview, selectedDate).chartData : 
+    const displayData = (chartData.length === 0 ?
+      getDefaultData(overview, selectedDate).chartData :
       chartData.map(item => ({
         ...item,
         value: item.value ?? 0, // Use nullish coalescing to handle null values
@@ -813,17 +727,17 @@ const LightIntensityDashboard = () => {
 
     if (viewType === 'tabular') {
       return (
-        <div className="overflow-x-auto max-h-[500px]">
+        <div className="overflow-x-auto max-h-[400px] sm:max-h-[500px]">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {xKey === 'hour' ? 'Hour' : xKey === 'day' ? 'Day' : xKey === 'week' ? 'Week' : 'Month'}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Light Intensity (lux)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
               </tr>
@@ -831,13 +745,13 @@ const LightIntensityDashboard = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {displayData.map((item, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {renderTableCell(item)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.value?.toFixed(1) ?? '0.0'} lux
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
                     {getStatusBadge(item.value)}
                   </td>
                 </tr>
@@ -854,60 +768,71 @@ const LightIntensityDashboard = () => {
       <ReferenceLine key="critical" y={LIGHT_INTENSITY_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
     ];
 
-    // Customize X-axis labels based on view type
+    // Customize X-axis labels based on view type and screen size
     const getXAxisLabel = (value: string) => {
-      switch (overview) {
-        case 'hourly':
-          return `${value}:00`; // Add :00 to hour labels
-        case 'daily':
-          return value; // Already formatted as day names
-        case 'weekly':
-          return value; // Already formatted as Week 1, Week 2, etc.
-        case 'monthly':
-          return value; // Already formatted as month names
-        default:
-          return value;
+      // Truncate labels on mobile for better display
+      if (window.innerWidth < 640) {
+        switch (overview) {
+          case 'daily':
+            return value.substring(0, 3); // Sun, Mon, Tue, etc.
+          case 'weekly':
+            return value.replace('Week ', 'W'); // W1, W2, etc.
+          case 'monthly':
+            return value.substring(0, 3); // Jan, Feb, Mar, etc.
+          default:
+            return value;
+        }
       }
+      return value;
     };
 
+    const chartMargin = window.innerWidth < 640
+      ? { top: 20, right: 10, left: 10, bottom: 40 }
+      : { top: 20, right: 30, left: 20, bottom: 60 };
+
     if (viewType === 'line') {
-    return (
-        <div className="h-[500px] p-4 mb-4">
+      return (
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={displayData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              margin={chartMargin}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey={xKey}
-                height={80}
-                tick={{ fontSize: 12 }}
-                angle={0}
-                textAnchor="middle"
-                dy={10}
+                height={60}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                angle={window.innerWidth < 640 ? -45 : 0}
+                textAnchor={window.innerWidth < 640 ? "end" : "middle"}
+                dy={window.innerWidth < 640 ? -4 : 10}
                 padding={{ left: 20, right: 20 }}
                 tickFormatter={getXAxisLabel}
+                interval={0}
               />
               <YAxis
                 domain={[0, 15000]}
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value} lux`}
-                width={60}
-                tickMargin={10}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                tickFormatter={(value) => window.innerWidth < 640 ? `${value / 1000}k` : `${value} lux`}
+                width={window.innerWidth < 640 ? 40 : 60}
+                tickMargin={5}
                 axisLine={{ stroke: '#666' }}
                 tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend
+                verticalAlign="top"
+                height={36}
+                wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }}
+              />
               <Line
                 type="monotoneX"
                 dataKey="value"
                 name="Light Intensity"
                 stroke="#F59E0B"
-                strokeWidth={2}
-                dot={{ fill: '#fff', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: '#fff', stroke: '#F59E0B', strokeWidth: 2 }}
+                strokeWidth={window.innerWidth < 640 ? 1.5 : 2}
+                dot={{ fill: '#fff', strokeWidth: window.innerWidth < 640 ? 1.5 : 2, r: window.innerWidth < 640 ? 3 : 4 }}
+                activeDot={{ r: window.innerWidth < 640 ? 4 : 6, fill: '#fff', stroke: '#F59E0B', strokeWidth: 2 }}
                 connectNulls={true}
                 isAnimationActive={true}
                 animationDuration={500}
@@ -921,34 +846,39 @@ const LightIntensityDashboard = () => {
 
     if (viewType === 'bar') {
       return (
-        <div className="h-[500px] p-4 mb-4">
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={displayData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              margin={chartMargin}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey={xKey}
-                height={80}
-                tick={{ fontSize: 12 }}
-                angle={0}
-                textAnchor="middle"
-                dy={10}
+                height={60}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                angle={window.innerWidth < 640 ? -45 : 0}
+                textAnchor={window.innerWidth < 640 ? "end" : "middle"}
+                dy={window.innerWidth < 640 ? -4 : 10}
                 padding={{ left: 20, right: 20 }}
                 tickFormatter={getXAxisLabel}
+                interval={0}
               />
               <YAxis
                 domain={[0, 15000]}
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value} lux`}
-                width={60}
-                tickMargin={10}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                tickFormatter={(value) => window.innerWidth < 640 ? `${value / 1000}k` : `${value} lux`}
+                width={window.innerWidth < 640 ? 40 : 60}
+                tickMargin={5}
                 axisLine={{ stroke: '#666' }}
                 tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend
+                verticalAlign="top"
+                height={36}
+                wrapperStyle={{ fontSize: window.innerWidth < 640 ? '12px' : '14px' }}
+              />
               <Bar
                 dataKey="value"
                 name="Light Intensity"
@@ -958,8 +888,8 @@ const LightIntensityDashboard = () => {
               {thresholdLines}
             </BarChart>
           </ResponsiveContainer>
-      </div>
-    );
+        </div>
+      );
     }
     return null;
   };
@@ -974,130 +904,175 @@ const LightIntensityDashboard = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex flex-col space-y-3">
-          <div className="flex items-center justify-between">
+    <Card className="w-full max-w-full overflow-hidden">
+      <CardHeader className="px-4 sm:px-6">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Sun className="h-8 w-8 text-amber-600" />
-            </div>
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Light Intensity Dashboard</h1>
-                <p className="text-sm text-muted-foreground">{dateRange}</p>
-                  </div>
+              <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
+                <Sun className="h-6 w-6 sm:h-8 sm:w-8 text-sky-600" />
               </div>
-            <div className="flex flex-col items-end gap-2">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Light Intensity Dashboard</h1>
+                <p className="text-sm text-muted-foreground truncate">{dateRange}</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePreviousPeriod}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {overview === 'hourly' ? 'Previous Day' :
-                   overview === 'daily' ? 'Previous Week' :
-                   overview === 'weekly' ? 'Previous Week' :
-                   'Previous Month'}
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  <span className="hidden xs:inline">
+                    {overview === 'daily' ? 'Prev Week' :
+                      overview === 'weekly' ? 'Prev Month' :
+                        'Prev Year'}
+                  </span>
+                  <span className="xs:hidden">Prev</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleNextPeriod}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
                 >
-                  {overview === 'hourly' ? 'Next Day' :
-                   overview === 'daily' ? 'Next Week' :
-                   overview === 'weekly' ? 'Next Week' :
-                   'Next Month'}
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <span className="hidden xs:inline">
+                    {overview === 'daily' ? 'Next Week' :
+                      overview === 'weekly' ? 'Next Month' :
+                        'Next Year'}
+                  </span>
+                  <span className="xs:hidden">Next</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                 </Button>
-          </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExport}
-                className="w-full flex items-center justify-center"
+                className="flex items-center justify-center text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Download className="h-4 w-4 mr-1" />
-                Export Data
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden sm:inline">Export Data</span>
+                <span className="sm:hidden">Export</span>
               </Button>
-        </div>
-      </div>
+            </div>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3">
-            <Select
-                value={overview}
-              onValueChange={(value) => handleOverviewChange(value as 'hourly' | 'daily' | 'weekly' | 'monthly')}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                {periodOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+      <CardContent className="px-4 sm:px-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-3 gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+
+            <div className="relative">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full sm:w-[180px] justify-between">
                     <div className="flex items-center">
-                      {option.icon}
-                      <span className="ml-2">{option.label}</span>
+                      {periodOptions.find(option => option.value === overview)?.icon || <Calendar className="h-4 w-4 mr-2" />}
+                      <span className="hidden sm:inline">
+                        {periodOptions.find(option => option.value === overview)?.label || "Select period"}
+                      </span>
+                      <span className="sm:hidden">
+                        {overview ? overview.charAt(0).toUpperCase() + overview.slice(1) : "Period"}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  sideOffset={5}
+                  className="z-50 min-w-[180px]"
+                  avoidCollisions={true}
+                >
+                  {periodOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => handleOverviewChange(option.value as 'daily' | 'weekly' | 'monthly')}
+                    >
+                      <div className="flex items-center">
+                        {option.icon}
+                        <span className="ml-2">{option.label}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-[180px] justify-between">
-                  <div className="flex items-center">
-                    {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
-                     viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
-                     <Table className="h-4 w-4 mr-2" />}
-                    {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View
-        </div>
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {viewTypeOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    onClick={() => setViewType(option.value as ViewType)}
-                  >
+            <div className="relative">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full sm:w-[180px] justify-between">
                     <div className="flex items-center">
-                      {option.icon}
-                      <span className="ml-2">{option.label}</span>
+                      {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
+                        viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
+                          <Table className="h-4 w-4 mr-2" />}
+                      <span className="hidden sm:inline">
+                        {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View
+                      </span>
+                      <span className="sm:hidden">
+                        {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  sideOffset={5}
+                  className="z-50 min-w-[180px]"
+                  avoidCollisions={true}
+                >
+                  {viewTypeOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setViewType(option.value as ViewType)}
+                    >
+                      <div className="flex items-center">
+                        {option.icon}
+                        <span className="ml-2">{option.label}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-        
-        {/* Refresh indicator */}
-        <RefreshIndicator
-          isRefreshing={isRefreshing}
-          lastRefreshTime={lastRefreshTime}
-          autoRefreshEnabled={autoRefreshEnabled}
-          onToggleAutoRefresh={toggleRefresh}
-        />
+
+          {/* Refresh indicator */}
+          <div className="w-full sm:w-auto">
+            <RefreshIndicator
+              isRefreshing={isRefreshing}
+              lastRefreshTime={lastRefreshTime}
+              autoRefreshEnabled={autoRefreshEnabled}
+              onToggleAutoRefresh={toggleRefresh}
+            />
+          </div>
         </div>
 
-        <div ref={chartRef} className="h-[450px] p-4 mb-2">
+        {/* Chart container */}
+        <div ref={chartRef} className="w-full overflow-hidden">
           {renderChart()}
         </div>
+
+        {/* Summary */}
         {renderSummary()}
       </CardContent>
+
+      {/* Export Modal */}
       <UnifiedExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          currentOverview={overview}
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        currentOverview={overview}
         chartData={chartData}
-          chartRef={chartRef}
+        chartRef={chartRef}
         chartType="lightIntensity"
         dateRange={dateRange}
-        />
+      />
     </Card>
   );
 };
