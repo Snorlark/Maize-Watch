@@ -6,7 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Components
 import LoginForm from './components/auth/LoginForm';
-import Navbar from './components/Navbar';
+import Navbar from './components/Sidebar';
 import Unauthorized from './pages/Unauthorized';
 import NotFound from './pages/NotFound';
 
@@ -14,7 +14,8 @@ import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import AccountManagement from './pages/AccountManagement';
 import LiveData from './pages/LiveData';
-import ActivityLogPage from './pages/ActivityLog'; // <--- Import the ActivityLogPage
+import DataHistory from './pages/DataHistory'; 
+import ActivityLogPage from './pages/ActivityLog'; 
 import AdminLogs from './pages/AdminLogs';
 
 // Layout component for authenticated pages with Navbar
@@ -41,6 +42,7 @@ const App: React.FC = () => {
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/livedata" element={<LiveData />} />
+            <Route path="/datahistory" element={<DataHistory />} />
           </Route>
         </Route>
 

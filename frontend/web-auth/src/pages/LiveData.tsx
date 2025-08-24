@@ -89,11 +89,20 @@ const LiveData: React.FC = () => {
   }, []);
 
   if (loading) return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#356B2C]"></div>
-          <span className="ml-3 text-lg">Loading sensor data...</span>
+          <span className="ml-3" style={{ fontSize: 'var(--text-lg)' }}>Loading sensor data...</span>
         </div>
       </main>
       <Footer />
@@ -101,14 +110,24 @@ const LiveData: React.FC = () => {
   );
 
   if (error) return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
           <div className="flex items-center justify-between">
             <span className="font-medium">Error: {error}</span>
             <button
               onClick={() => window.location.reload()}
-              className="px-3 py-1 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              style={{ fontSize: 'var(--text-sm)' }}
             >
               Retry
             </button>
@@ -120,11 +139,20 @@ const LiveData: React.FC = () => {
   );
 
   if (!sensorData) return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         <div className="text-center py-12">
           <AlertTriangle className="w-12 h-12 mx-auto text-[#456C2D] mb-4" />
-          <div className="text-lg">No sensor data available</div>
+          <div style={{ fontSize: 'var(--text-lg)' }}>No sensor data available</div>
         </div>
       </main>
       <Footer />
@@ -145,19 +173,19 @@ const LiveData: React.FC = () => {
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center gap-3 mb-6">
         <Gauge className="w-6 h-6 text-[#456C2D]" />
-        <h2 className="text-xl font-semibold text-[#1E441E]">Sensor Status</h2>
+        <h2 className="font-semibold text-[#1E441E]" style={{ fontSize: 'var(--text-xl)' }}>Sensor Status</h2>
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
           <div className="flex items-center gap-3">
             <FaThermometerHalf className="text-[#e74c3c] text-lg" />
-            <span className="font-medium text-[#356B2C]">Temperature Sensor</span>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Temperature Sensor</span>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full font-medium ${
             sensorStatus.temperature 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
-          }`}>
+          }`} style={{ fontSize: 'var(--text-xs)' }}>
             {sensorStatus.temperature ? 'Active' : 'Inactive'}
           </span>
         </div>
@@ -165,13 +193,13 @@ const LiveData: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
           <div className="flex items-center gap-3">
             <IoWaterOutline className="text-[#2d67c4] text-lg" />
-            <span className="font-medium text-[#356B2C]">Humidity Sensor</span>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Humidity Sensor</span>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full font-medium ${
             sensorStatus.humidity 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
-          }`}>
+          }`} style={{ fontSize: 'var(--text-xs)' }}>
             {sensorStatus.humidity ? 'Active' : 'Inactive'}
           </span>
         </div>
@@ -179,13 +207,13 @@ const LiveData: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
           <div className="flex items-center gap-3">
             <FaMountain className="text-[#7a5c2d] text-lg" />
-            <span className="font-medium text-[#356B2C]">Soil Moisture Sensor</span>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture Sensor</span>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full font-medium ${
             sensorStatus.soil_moisture 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
-          }`}>
+          }`} style={{ fontSize: 'var(--text-xs)' }}>
             {sensorStatus.soil_moisture ? 'Active' : 'Inactive'}
           </span>
         </div>
@@ -193,13 +221,13 @@ const LiveData: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
           <div className="flex items-center gap-3">
             <FaMountain className="text-[#7a5c2d] text-lg" />
-            <span className="font-medium text-[#356B2C]">Soil pH Sensor</span>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil pH Sensor</span>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full font-medium ${
             sensorStatus.soil_ph 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
-          }`}>
+          }`} style={{ fontSize: 'var(--text-xs)' }}>
             {sensorStatus.soil_ph ? 'Active' : 'Inactive'}
           </span>
         </div>
@@ -207,20 +235,20 @@ const LiveData: React.FC = () => {
         <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
           <div className="flex items-center gap-3">
             <BsSun className="text-[#deb83c] text-lg" />
-            <span className="font-medium text-[#356B2C]">Light Intensity Sensor</span>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity Sensor</span>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-3 py-1 rounded-full font-medium ${
             sensorStatus.light_level 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
-          }`}>
+          }`} style={{ fontSize: 'var(--text-xs)' }}>
             {sensorStatus.light_level ? 'Active' : 'Inactive'}
           </span>
         </div>
       </div>
 
       <div className="mt-6 pt-4 border-t border-[#B8D4A8]">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-sm)' }}>
           <div className="flex items-center gap-2 text-[#4A7C59]">
             <Clock className="w-4 h-4" />
             <span>Last Updated:</span>
@@ -236,22 +264,31 @@ const LiveData: React.FC = () => {
   );
 
   return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
+          <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
             <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
             Live Data
           </h1>
-          <p className="text-[#456C2D] text-sm sm:text-base">
+          <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             Real-time monitoring of your farm's environmental conditions
           </p>
           <div className="mt-3 flex items-center gap-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#456C2D] text-[#F5F5DC]">
+            <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
               Real-time Monitoring
             </span>
-            <div className="flex items-center gap-2 text-[#4A7C59] text-sm">
+            <div className="flex items-center gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Auto-refreshing every 3 seconds</span>
             </div>
@@ -268,8 +305,8 @@ const LiveData: React.FC = () => {
               <FaThermometerHalf className="text-[#e74c3c] text-3xl" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-[#4A7C59] mb-1">TEMPERATURE</div>
-                  <div className="text-3xl font-bold text-[#356B2C]">{measurements.temperature}°C</div>
+                  <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>TEMPERATURE</div>
+                  <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.temperature}°C</div>
                 </div>
               </div>
             </div>
@@ -287,13 +324,13 @@ const LiveData: React.FC = () => {
                   <div className="p-3 bg-orange-50 rounded-lg w-fit mx-auto mb-4">
                     <FaMountain className="text-3xl text-[#7a5c2d]" />
                   </div>
-                  <p className="text-sm font-medium text-[#4A7C59] mb-2">Soil Moisture</p>
-                  <div className="text-3xl font-bold text-[#356B2C] mb-3">{measurements.soil_moisture}</div>
+                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture</p>
+                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_moisture}</div>
               <span className={`inline-block ${
                 measurements.soil_moisture < 30 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-green-100 text-green-800'
-              } text-xs font-medium px-3 py-1 rounded-full`}>
+              } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
                 {measurements.soil_moisture < 30 ? 'Low Moisture' : 'Good Condition'}
               </span>            
                 </div>
@@ -305,13 +342,13 @@ const LiveData: React.FC = () => {
                   <div className="p-3 bg-purple-50 rounded-lg w-fit mx-auto mb-4">
                     <FaMountain className="text-3xl text-[#7a5c2d]" />
                   </div>
-                  <p className="text-sm font-medium text-[#4A7C59] mb-2">Soil pH Level</p>
-                  <div className="text-3xl font-bold text-[#356B2C] mb-3">{measurements.soil_ph}</div>
+                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil pH Level</p>
+                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_ph}</div>
               <span className={`inline-block ${
                 measurements.soil_ph > 7 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-green-100 text-green-800'
-              } text-xs font-medium px-3 py-1 rounded-full`}>
+              } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
                 {measurements.soil_ph < 7 ? 'Good Condition' : 'Soil pH indicates alkalinity'}
               </span>          
                 </div>
@@ -323,12 +360,12 @@ const LiveData: React.FC = () => {
                   <div className="p-2 bg-blue-50 rounded-lg">
                 <IoWaterOutline className="text-2xl text-[#2d67c4]" />
                   </div>
-                  <p className="text-sm font-medium text-[#4A7C59]">Humidity</p>
+                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</p>
               </div>
                 <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
                 <div 
-                    className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.humidity, 100)}%` }}
+                    className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
+                    style={{ width: `${Math.min(measurements.humidity, 100)}%`, fontSize: 'var(--text-sm)' }}
                 >
                   {measurements.humidity}%
                 </div>
@@ -338,7 +375,7 @@ const LiveData: React.FC = () => {
                   measurements.humidity < 40 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-green-100 text-green-800'
-                } text-xs font-medium px-3 py-1 rounded-full`}>
+                } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
                   {measurements.humidity < 40 ? 'Too Low' : 'Good Condition'}
                 </span>
               </div>
@@ -350,12 +387,12 @@ const LiveData: React.FC = () => {
                   <div className="p-2 bg-yellow-50 rounded-lg">
                 <BsSun className="text-2xl text-[#deb83c]" />
                   </div>
-                  <p className="text-sm font-medium text-[#4A7C59]">Light Intensity</p>
+                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity</p>
               </div>
                 <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
                 <div 
-                    className="bg-[#deb83c] h-full rounded-full flex items-center justify-center text-white text-sm font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.light_level / 10, 100)}%` }}
+                    className="bg-[#deb83c] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
+                    style={{ width: `${Math.min(measurements.light_level / 10, 100)}%`, fontSize: 'var(--text-sm)' }}
                 >
                   {measurements.light_level} LUX
                 </div>
@@ -365,7 +402,7 @@ const LiveData: React.FC = () => {
                   measurements.light_level < 50 
                       ? 'bg-red-100 text-red-800' 
                       : 'bg-green-100 text-green-800'
-                } text-xs font-medium px-3 py-1 rounded-full`}>
+                } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
                   {measurements.light_level < 50 ? 'Low Light' : 'Best Condition'}
                 </span>
                 </div>

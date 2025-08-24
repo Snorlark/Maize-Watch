@@ -115,19 +115,28 @@ export default function AccountManagement() {
   }
 
   return (
-    <div className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8">
+    <div 
+      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
+      style={{ 
+        '--text-xs': '12px', 
+        '--text-sm': '14px', 
+        '--text-base': '16px', 
+        '--text-lg': '18px', 
+        '--text-xl': '20px' 
+      } as React.CSSProperties}
+    >
       <main className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1E441E] mb-2 flex items-center gap-3">
+          <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
             <Users className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
             Account Management
           </h1>
-          <p className="text-[#456C2D] text-sm sm:text-base">
+          <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             Manage farmer accounts and user permissions
           </p>
           <div className="mt-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-[#456C2D] text-[#F5F5DC]">
+            <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
             {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
             </span>
           </div>
@@ -148,6 +157,7 @@ export default function AccountManagement() {
           <button
             onClick={handleOpenCreateModal}
             className="flex items-center gap-2 px-6 py-3 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
+            style={{ fontSize: 'var(--text-base)' }}
           >
             <PlusCircle className="w-5 h-5" />
             Create New Account
