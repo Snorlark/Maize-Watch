@@ -79,6 +79,22 @@ web_modules/
 .env.production.local
 .env.local
 
+# Python virtual environment
+*.env/
+env/
+venv/
+ENV/
+.env/
+.venv/
+
+# Ignore virtual environments
+venv/
+env/
+*/corn_env/
+corn_env/
+
+analytics_v2/corn_env/
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
