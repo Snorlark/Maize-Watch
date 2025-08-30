@@ -111,11 +111,11 @@ class AnalyticsService {
       return {
         farm: {
           id: farm._id,
-          name: farm.name,
-          cropType: farm.cropType,
-          area: farm.area,
+          name: farm.fieldName,
+          cropType: 'Corn', // Fixed to corn for simplified system
+          location: farm.location,
           plantingDate: farm.plantingDate,
-          expectedHarvestDate: farm.expectedHarvestDate,
+          growthStage: farm.growthStage,
         },
         period: {
           start: startDate,
@@ -304,11 +304,10 @@ class AnalyticsService {
       });
 
       const insights = {
-        currentConditions: this.analyzeCurrentConditions(readings),
-        optimalRanges: this.getOptimalRanges(farm.cropType),
-        deviations: this.identifyDeviations(readings, farm.cropType),
+        optimalRanges: this.getOptimalRanges('Corn'),
+        deviations: this.identifyDeviations(readings, 'Corn'),
         actionableRecommendations: this.generateActionableRecommendations(readings, farm),
-        yieldImpactScore: this.calculateYieldImpactScore(readings, farm.cropType),
+        yieldImpactScore: this.calculateYieldImpactScore(readings, 'Corn'),
       };
 
       return insights;
@@ -686,7 +685,7 @@ class AnalyticsService {
     if (readings.length === 0) return recommendations;
 
     const latest = readings[readings.length - 1];
-    const optimal = this.getOptimalRanges(farm.cropType);
+    const optimal = this.getOptimalRanges('Corn');
 
     if (latest.data.soilMoisture < optimal.soilMoisture.min) {
       recommendations.push('Increase irrigation - soil moisture is below optimal range');

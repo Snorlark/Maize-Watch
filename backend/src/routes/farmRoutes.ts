@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createFarm,
+  createSimpleFarm,
   getFarms,
   getFarmById,
   updateFarm,
@@ -8,9 +9,10 @@ import {
   getFarmAnalytics,
   updateFarmStatus,
   addFarmImages,
-  updateWeatherData,
-  updateSoilData,
-  getFarmsNearby,
+  linkDeviceToFarm,
+  unlinkDeviceFromFarm,
+  getFarmByDeviceId,
+  getFarmsByLocation,
   getFarmStats,
   getHarvestPredictions
 } from '../controllers/farmController';
@@ -28,14 +30,17 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Get farms nearby (Admin only)
-router.get('/nearby', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getFarmsNearby);
+// Get farms by location (Admin only)
+router.get('/location', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getFarmsByLocation);
+
+// Get farm by device ID
+router.get('/device/:deviceId', validateObjectId, getFarmByDeviceId);
 
 // Get farm statistics (Admin only)
 router.get('/stats', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getFarmStats);
 
-// Create farm
-router.post('/', validateFarmCreation, createFarm);
+// Create farm (simplified for corn-only system)
+router.post('/', validateFarmCreation, createSimpleFarm);
 
 // Get farms (with pagination)
 router.get('/', validatePagination, getFarms);
@@ -58,11 +63,11 @@ router.patch('/:id/status', validateObjectId, updateFarmStatus);
 // Add farm images
 router.post('/:id/images', validateObjectId, addFarmImages);
 
-// Update weather data
-router.put('/:id/weather', validateObjectId, updateWeatherData);
+// Link device to farm
+router.post('/:id/link-device', validateObjectId, linkDeviceToFarm);
 
-// Update soil data
-router.put('/:id/soil', validateObjectId, updateSoilData);
+// Unlink device from farm
+router.delete('/:id/unlink-device', validateObjectId, unlinkDeviceFromFarm);
 
 // Get harvest predictions
 router.get('/:id/predictions', validateObjectId, getHarvestPredictions);

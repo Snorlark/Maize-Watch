@@ -32,6 +32,7 @@ export const validateUserRegistration: ValidationChain[] = [
     .withMessage('Username can only contain letters, numbers, and underscores'),
   
   body('email')
+    .if(body('deviceType').not().equals('mobile'))
     .isEmail()
     .withMessage('Please provide a valid email address')
     .normalizeEmail(),
@@ -51,39 +52,100 @@ export const validateUserRegistration: ValidationChain[] = [
     .matches(VALIDATION_RULES.PHONE.PATTERN)
     .withMessage('Please provide a valid Philippine mobile number'),
   
+  body('address')
+    .custom((value, { req }) => {
+      // Allow both string and object format for mobile and web
+      if (typeof value === 'string') {
+        return value.length >= 2 && value.length <= 100;
+      } else if (typeof value === 'object') {
+        return value.region && 
+               value.province && 
+               value.municipality && 
+               value.barangay;
+      }
+      return false;
+    })
+    .withMessage('Address is required'),
+
+  // Validate address fields when address is an object
   body('address.region')
+    .if(body('address').isObject())
     .isIn(PHILIPPINE_REGIONS)
     .withMessage('Please select a valid region'),
-  
+    
   body('address.province')
+    .if(body('address').isObject())
     .isLength({ min: 2, max: 50 })
     .withMessage('Province must be between 2 and 50 characters')
     .trim(),
   
   body('address.municipality')
+    .if(body('address').isObject())
     .isLength({ min: 2, max: 50 })
     .withMessage('Municipality must be between 2 and 50 characters')
     .trim(),
   
   body('address.barangay')
+    .if(body('address').isObject())
     .isLength({ min: 2, max: 50 })
     .withMessage('Barangay must be between 2 and 50 characters')
     .trim(),
-  
-  body('address.zipCode')
+
+  body('deviceType')
     .optional()
-    .matches(/^\d{4}$/)
-    .withMessage('Zip code must be 4 digits'),
+    .isIn(['web', 'mobile'])
+    .withMessage('Device type must be either web or mobile'),
 ];
 
 export const validateUserLogin: ValidationChain[] = [
-  body('login')
+  body('deviceType')
+    .optional()
+    .isIn(['web', 'mobile'])
+    .withMessage('Device type must be either web or mobile'),
+
+  // For mobile devices, require username
+  body('username')
+    .if(body('deviceType').equals('mobile'))
     .notEmpty()
-    .withMessage('Username or email is required'),
+    .withMessage('Username is required for mobile login')
+    .isLength({ min: 3, max: 30 })
+    .withMessage('Username must be between 3 and 30 characters'),
+
+  // For web devices, require email
+  body('email')
+    .if(body('deviceType').equals('web'))
+    .notEmpty()
+    .withMessage('Email is required for web login')
+    .isEmail()
+    .withMessage('Please provide a valid email address'),
+
+  // For devices without deviceType specified, accept either username or email
+  body('username')
+    .if(body('deviceType').not().exists())
+    .optional(),
+    
+  body('email')
+    .if(body('deviceType').not().exists())
+    .optional(),
+
+  // Custom validation to ensure either username or email is provided when deviceType is not specified
+  body().custom((value, { req }) => {
+    if (!req.body.deviceType && !req.body.username && !req.body.email) {
+      throw new Error('Either username or email is required');
+    }
+    return true;
+  }),
   
   body('password')
     .notEmpty()
     .withMessage('Password is required'),
+
+  body('totpCode')
+    .optional()
+    .isLength({ min: 6, max: 6 })
+    .withMessage('TOTP code must be 6 digits')
+    .isNumeric()
+    .withMessage('TOTP code must contain only numbers'),
 ];
 
 export const validateUserUpdate: ValidationChain[] = [

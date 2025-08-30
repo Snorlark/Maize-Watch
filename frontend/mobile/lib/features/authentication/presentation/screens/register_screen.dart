@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mobile/core/widgets/language_toggle.dart';
+import 'package:mobile/core/widgets/custom_snackbar.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
-import 'package:mobile/features/authentication/presentation/widgets/progress_indicator.dart';
+import 'package:mobile/features/authentication/presentation/widgets/register_app_bar.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../generated/l10n.dart';
@@ -36,17 +36,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
           Navigator.pushReplacementNamed(context, '/home');
         } else if (state.status == AuthenticationStatus.failure) {
-          _showErrorSnackBar(state.message!);
+          CustomSnackbar.showError(
+            context,
+            state.message ?? S.of(context).registration_failed,
+          );
         }
       },
       child: Scaffold(
-        appBar: _buildAppBar(),
+        appBar: RegisterAppBar(
+          onBackPressed: currentPage > 0 ? _goToPreviousPage : () => Navigator.of(context).pop(),
+        ),
         body: Container(
           decoration: const BoxDecoration(color: MAIZE_BOTTOM_OVERLAY),
           padding: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
           child: Column(
             children: [
-              BuildProgressIndicator(currentPage: currentPage),
               SizedBox(height: 20.h),
               Expanded(
                 child: PageView(
@@ -79,30 +83,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: MAIZE_BOTTOM_OVERLAY,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black87),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      actions: [
-        Padding(
-          padding: EdgeInsets.only(right: 16.w),
-          child: const LanguageToggle(color_toggle: MAIZE_ACCENT),
-        ),
-      ],
-    );
-  }
-
   Widget _buildNavigationButtons() {
     return BlocBuilder<AuthenticationBloc, AuthenticationState>(
       builder: (context, state) {
         final isLoading = state.status == AuthenticationStatus.loading;
 
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: 24.h),
+          padding: EdgeInsets.symmetric(vertical: kAppMediumPadding),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -139,7 +126,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isBack ? Colors.grey[300] : MAIZE_ACCENT,
+          backgroundColor: isBack ? Colors.white : MAIZE_ACCENT,
           foregroundColor: isBack ? Colors.black87 : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25.r),
@@ -197,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Final validation including password confirmation
     if (_controllers.passwordController.text !=
         _controllers.confirmPasswordController.text) {
-      _showErrorSnackBar(S.of(context).passwords_dont_match);
+      CustomSnackbar.showError(context, S.of(context).passwords_dont_match);
       return;
     }
 
@@ -213,21 +200,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _controllers.passwordController.text,
         fullName: fullName,
         contactNumber: _controllers.contactController.text.trim(),
-        address: _controllers.addressController.text.trim(),
+        address: _controllers.getAddressObject(),
         role: 'user', // Use the role as needed, e.g., 'user'
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red[600],
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(16.w),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-        duration: const Duration(seconds: 4),
       ),
     );
   }

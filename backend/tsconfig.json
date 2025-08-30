@@ -13,15 +13,20 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "skipDefaultLibCheck": true
   },
   "include": [
-    "src/**/*"
+    "src/**/*.ts",
+    "src/**/*.js"
   ],
   "exclude": [
-    "node_modules/**/*",
+    "node_modules",
     "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+    "node_modules/express-rate-limit/tsconfig.json"
+  ],
+  "ts-node": {
+    "files": true
+  }
 }

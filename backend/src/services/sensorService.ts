@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { getThingSpeakService, SensorData } from '../config/thingspeak';
 import { DEFAULT_THRESHOLDS, ALERT_SEVERITY } from '../utils/constants';
+import CacheService from './cacheService';
 // Lazy import to prevent startup connection
 const getEmailService = () => import('../utils/emailService').then(m => m.default);
 
@@ -73,9 +74,8 @@ class SensorService {
 
       await sensor.save();
 
-      // Add sensor to farm
-      farm.sensors.push(sensor.id);
-      await farm.save();
+      // Note: Simplified farm model doesn't track sensors array
+      // Sensor is linked to farm via sensor.farm field
 
       logger.info(`Sensor created: ${sensor.sensorId}`, {
         sensorId: sensor.sensorId,
@@ -227,7 +227,24 @@ class SensorService {
         alertCount: reading.alerts?.length || 0,
       });
 
-      return reading;
+      // Record the reading
+      const newReading = await this.recordReading({
+        sensor: sensor.sensorId,
+        farm: sensor.farm.toString(),
+        data: readingData.data,
+        metadata: {
+          source: 'direct',
+          quality: 'good'
+        }
+      });
+
+      // Cache the latest reading
+      await CacheService.cacheSensorLatest(sensor.sensorId, newReading);
+
+      // Invalidate related cache
+      await CacheService.invalidateSensorCache(sensor.sensorId);
+
+      return newReading;
     } catch (error) {
       logger.error('Error recording sensor reading:', error);
       throw error;
@@ -235,7 +252,7 @@ class SensorService {
   }
 
   /**
-   * Get sensor readings with pagination
+   * Get sensor readings with pagination and caching
    */
   async getSensorReadings(
     sensorId: string,
@@ -245,46 +262,80 @@ class SensorService {
     endDate?: Date
   ): Promise<{ readings: ISensorReading[]; total: number; pages: number }> {
     try {
-      const query: any = { sensor: sensorId };
+      const sensor = await Sensor.findById(sensorId);
+      if (!sensor) {
+        throw new AppError('Sensor not found', 404);
+      }
 
+      // Try cache first (only for first page without date filters)
+      if (page === 1 && !startDate && !endDate) {
+        const cached = await CacheService.getSensorReadings(sensorId, page);
+        if (cached) {
+          logger.debug(`Cache hit for sensor readings: ${sensorId}, page: ${page}`);
+          return cached;
+        }
+      }
+
+      const skip = (page - 1) * limit;
+      
+      // Build query
+      const query: any = { sensor: sensorId };
       if (startDate || endDate) {
         query.timestamp = {};
         if (startDate) query.timestamp.$gte = startDate;
         if (endDate) query.timestamp.$lte = endDate;
       }
 
-      const skip = (page - 1) * limit;
-
+      // Get readings and total count
       const [readings, total] = await Promise.all([
         SensorReading.find(query)
           .sort({ timestamp: -1 })
           .skip(skip)
           .limit(limit)
-          .populate('sensor', 'name sensorId type'),
-        SensorReading.countDocuments(query),
+          .populate('sensor', 'name type')
+          .populate('farm', 'name'),
+        SensorReading.countDocuments(query)
       ]);
 
-      return {
+      const result = {
         readings,
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / limit)
       };
+
+      // Cache first page without date filters
+      if (page === 1 && !startDate && !endDate) {
+        await CacheService.cacheSensorReadings(sensorId, page, result);
+      }
+
+      return result;
     } catch (error) {
-      logger.error('Error fetching sensor readings:', error);
-      throw error;
+      logger.error('Error getting sensor readings:', error);
+      throw error instanceof AppError ? error : new AppError('Failed to get sensor readings', 500);
     }
   }
 
   /**
-   * Get latest readings for all sensors in a farm
+   * Get latest readings for all sensors in a farm with caching
    */
   async getLatestReadingsByFarm(farmId: string): Promise<ISensorReading[]> {
     try {
+      // Try cache first
+      const cached = await CacheService.getFarmSensors(farmId);
+      if (cached) {
+        logger.debug(`Cache hit for farm sensors: ${farmId}`);
+        return cached;
+      }
+
       const readings = await SensorReading.getLatestByFarm(farmId);
+      
+      // Cache the results
+      await CacheService.cacheFarmSensors(farmId, readings);
+      
       return readings;
     } catch (error) {
-      logger.error('Error fetching latest readings by farm:', error);
-      throw error;
+      logger.error('Error getting latest readings by farm:', error);
+      throw error instanceof AppError ? error : new AppError('Failed to get latest readings', 500);
     }
   }
 
@@ -302,29 +353,39 @@ class SensorService {
         throw new AppError('ThingSpeak configuration not found for sensor', 400);
       }
 
+      // Check cache first
+      const cached = await CacheService.getThingSpeakData(sensor.thingspeakConfig.channelId);
+      if (cached) {
+        logger.debug(`Cache hit for ThingSpeak data: ${sensor.thingspeakConfig.channelId}`);
+        return;
+      }
+
       // Get latest data from ThingSpeak
       const thingSpeakService = getThingSpeakService();
       const data = await thingSpeakService.readLatestData();
       if (!data) {
-        logger.warn(`No data received from ThingSpeak for sensor: ${sensor.sensorId}`);
+        logger.warn(`No data received from ThingSpeak for sensor ${sensorId}`);
         return;
       }
 
+      // Cache the ThingSpeak data
+      await CacheService.cacheThingSpeakData(sensor.thingspeakConfig.channelId, data);
+
       // Record the reading
       await this.recordReading({
-        sensor: sensor.id.toString(),
+        sensor: sensorId,
         farm: sensor.farm.toString(),
         data,
         metadata: {
           source: 'thingspeak',
-          quality: 'good',
-        },
+          quality: 'good'
+        }
       });
 
-      logger.info(`ThingSpeak data synced for sensor: ${sensor.sensorId}`);
+      logger.info(`ThingSpeak data synced for sensor ${sensorId}`);
     } catch (error) {
-      logger.error('Error syncing ThingSpeak data:', error);
-      throw error;
+      logger.error('Error syncing from ThingSpeak:', error);
+      throw error instanceof AppError ? error : new AppError('Failed to sync from ThingSpeak', 500);
     }
   }
 
@@ -426,16 +487,16 @@ class SensorService {
   private async sendAlertNotifications(sensor: ISensor, alerts: any[]): Promise<void> {
     try {
       const farm = await Farm.findById(sensor.farm).populate('owner');
-      if (!farm || !farm.owner) return;
+      if (!farm || !farm.userId) return;
 
-      const user = farm.owner as any;
+      const user = farm.userId as any;
       
       for (const alert of alerts) {
         const emailService = await getEmailService();
         await emailService.sendAlertNotification(
           user.email,
           user.fullName,
-          farm.name,
+          farm.fieldName,
           alert.type,
           `${alert.type}: ${alert.value} (threshold: ${alert.threshold})`,
           this.determineSeverity(alert.type, alert.value, alert.threshold)

@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'core/di/injection_container.dart' as di;
 import 'core/presentation/splash/splash_screen.dart';
 import 'features/authentication/presentation/screens/landing_screen.dart';
+import 'features/farm/presentation/bloc/farm_bloc.dart';
+import 'features/farm/presentation/screens/corn_registration_screen.dart';
 import 'features/live_monitoring/presentation/screen/home_screen.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
@@ -44,6 +47,19 @@ class MaizeWatchApp extends StatelessWidget {
                 '/landing': (context) => const LandingScreen(),
                 '/home': (context) => const HomeScreen(),
                 '/settings': (context) => const SettingsScreen(),
+              },
+              onGenerateRoute: (settings) {
+                if (settings.name == '/farm-registration') {
+                  final userData = settings.arguments as Map<String, dynamic>;
+                  return MaterialPageRoute(
+                    builder:
+                        (context) => BlocProvider(
+                          create: (context) => di.sl<FarmBloc>(),
+                          child: FarmRegistrationScreen(userData: userData),
+                        ),
+                  );
+                }
+                return null;
               },
             );
           },

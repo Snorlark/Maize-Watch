@@ -16,7 +16,6 @@ interface IUser extends Document {
     province: string;
     municipality: string;
     barangay: string;
-    zipCode?: string;
   };
   role: "user" | "admin" | "super_admin";
   isActive: boolean;
@@ -153,10 +152,6 @@ const userSchema = new mongoose.Schema(
         required: [true, "Barangay is required"],
         trim: true,
         maxlength: [50, "Barangay name cannot exceed 50 characters"],
-      },
-      zipCode: {
-        type: String,
-        match: [/^\d{4}$/, "Please enter a valid 4-digit zip code"],
       },
     },
     role: {

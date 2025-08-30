@@ -11,8 +11,12 @@ import { HTTP_STATUS } from '../utils/constants';
  * @access  Public
  */
 export const register = catchAsync(async (req: Request, res: Response) => {
+  console.log('🚀 Registration endpoint hit!');
+  
+  console.log('📋 Checking validation...');
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('❌ Validation failed:', errors.array());
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
       message: 'Validation failed',
@@ -23,23 +27,33 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  console.log('✅ Validation passed, calling service...');
+
   const {
     username,
     email,
     password,
     fullName,
     contactNumber,
-    address
+    address,
+    deviceType
   } = req.body;
 
-  const result = await authService.register({
+  // For mobile farmers, email is optional; use contactNumber as fallback
+  const registrationData = {
     username,
-    email,
+    email: deviceType === 'mobile' ? (email || `${username}@maizewatch.com`) : email,
     password,
     fullName,
     contactNumber,
     address
-  });
+  };
+
+  console.log('📝 About to call authService.register with:', registrationData);
+  
+  const result = await authService.register(registrationData);
+  
+  console.log('✅ Registration successful:', result);
 
   // Set refresh token as httpOnly cookie
   res.cookie('refreshToken', result.tokens.refreshToken, {
@@ -72,8 +86,15 @@ export const register = catchAsync(async (req: Request, res: Response) => {
  * @access  Public
  */
 export const login = catchAsync(async (req: Request, res: Response) => {
+  logger.info('🔐 Login attempt received', { 
+    body: { ...req.body, password: '[REDACTED]' },
+    headers: req.headers,
+    ip: req.ip 
+  });
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    logger.warn('❌ Login validation failed', { errors: errors.array() });
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
       message: 'Validation failed',
@@ -84,35 +105,54 @@ export const login = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const { email, password, totpCode } = req.body;
-
-  const result = await authService.login(email, password, totpCode);
-
-  // Set refresh token as httpOnly cookie
-  res.cookie('refreshToken', result.tokens.refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  const { email, username, password, totpCode, deviceType } = req.body;
+  
+  // For mobile devices, use username; for web, use email
+  const loginIdentifier = deviceType === 'mobile' ? username : email;
+  
+  logger.info('🔍 Login processing', { 
+    deviceType, 
+    loginIdentifier, 
+    hasPassword: !!password,
+    hasTotpCode: !!totpCode 
   });
+  
+  if (!loginIdentifier) {
+    const errorMsg = deviceType === 'mobile' ? 'Username is required' : 'Email is required';
+    logger.warn('❌ Missing login identifier', { deviceType, errorMsg });
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: errorMsg
+    });
+  }
 
-  logger.info('User logged in successfully', {
-    userId: result.user._id,
-    username: result.user.username,
-    ip: req.ip,
-    userAgent: req.get('User-Agent')
-  });
+  try {
+    logger.info('🔍 Calling authService.login', { loginIdentifier });
+    const result = await authService.login(loginIdentifier, password, totpCode);
+    logger.info('✅ Login successful', { userId: result.user._id, username: result.user.username });
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: result.message,
-    data: {
-      user: result.user,
-      accessToken: result.tokens.accessToken,
-      expiresIn: result.tokens.expiresIn,
-      requiresTwoFactor: result.requiresTwoFactor
-    }
-  });
+    // Set refresh token as httpOnly cookie
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: result.message,
+      data: {
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+        expiresIn: result.tokens.expiresIn,
+        requiresTwoFactor: result.requiresTwoFactor
+      }
+    });
+  } catch (error) {
+    logger.error('❌ Login failed in service', { error: error instanceof Error ? error.message : String(error), loginIdentifier });
+    throw error;
+  }
 });
 
 /**

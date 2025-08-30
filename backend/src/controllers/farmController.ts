@@ -34,7 +34,7 @@ export const createFarm = catchAsync(async (req: Request, res: Response) => {
   logger.info('Farm created', {
     farmId: farm._id,
     ownerId: currentUser.id,
-    farmName: farm.name
+    farmName: farm.fieldName
   });
 
   res.status(HTTP_STATUS.CREATED).json({
@@ -65,16 +65,16 @@ export const getFarms = catchAsync(async (req: Request, res: Response) => {
     }
   }
 
-  const result = await farmService.getFarmsByOwner(ownerId, page, limit);
+  const farms = await farmService.getFarmsByOwner(ownerId);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: {
-      farms: result.farms,
+      farms,
       pagination: {
-        current: page,
-        pages: result.pages,
-        total: result.total,
+        page,
+        pages: Math.ceil(farms.length / limit),
+        total: farms.length,
         limit
       }
     }
@@ -93,7 +93,7 @@ export const getFarmById = catchAsync(async (req: Request, res: Response) => {
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -131,7 +131,7 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (existingFarm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -165,7 +165,7 @@ export const deleteFarm = catchAsync(async (req: Request, res: Response) => {
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (existingFarm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -176,7 +176,7 @@ export const deleteFarm = catchAsync(async (req: Request, res: Response) => {
   logger.info('Farm deleted', {
     farmId: id,
     deletedBy: currentUser.id,
-    farmName: existingFarm.name
+    farmName: existingFarm.fieldName
   });
 
   res.status(HTTP_STATUS.OK).json({
@@ -199,7 +199,7 @@ export const getFarmAnalytics = catchAsync(async (req: Request, res: Response) =
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -231,7 +231,7 @@ export const updateFarmStatus = catchAsync(async (req: Request, res: Response) =
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (existingFarm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -270,7 +270,7 @@ export const addFarmImages = catchAsync(async (req: Request, res: Response) => {
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (existingFarm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -292,89 +292,117 @@ export const addFarmImages = catchAsync(async (req: Request, res: Response) => {
 });
 
 /**
- * @desc    Update farm weather data
- * @route   PUT /api/farms/:id/weather
+ * @desc    Link device to farm
+ * @route   POST /api/farms/:id/link-device
  * @access  Private
  */
-export const updateWeatherData = catchAsync(async (req: Request, res: Response) => {
+export const linkDeviceToFarm = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const weatherData = req.body;
+  const { deviceId, macAddress } = req.body;
+  const currentUser = (req as any).user;
+
+  if (!deviceId) {
+    throw new AppError('Device ID is required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Get farm to check ownership
+  const existingFarm = await farmService.getFarmById(id);
+
+  // Check if user owns the farm or is admin
+  if (existingFarm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const farm = await farmService.linkDeviceToFarm(id, deviceId, macAddress);
+
+  logger.info('Device linked to farm', {
+    farmId: farm._id,
+    deviceId,
+    linkedBy: currentUser.id
+  });
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Device linked successfully',
+    data: { farm }
+  });
+});
+
+/**
+ * @desc    Unlink device from farm
+ * @route   DELETE /api/farms/:id/unlink-device
+ * @access  Private
+ */
+export const unlinkDeviceFromFarm = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
   const currentUser = (req as any).user;
 
   // Get farm to check ownership
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (existingFarm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
-  const farm = await farmService.updateWeatherData(id, weatherData);
+  const farm = await farmService.unlinkDeviceFromFarm(id);
 
-  logger.info('Farm weather data updated', {
+  logger.info('Device unlinked from farm', {
     farmId: farm._id,
-    updatedBy: currentUser.id
+    unlinkedBy: currentUser.id
   });
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    message: 'Weather data updated successfully',
+    message: 'Device unlinked successfully',
     data: { farm }
   });
 });
 
 /**
- * @desc    Update farm soil data
- * @route   PUT /api/farms/:id/soil
+ * @desc    Get farm by device ID
+ * @route   GET /api/farms/device/:deviceId
  * @access  Private
  */
-export const updateSoilData = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const soilData = req.body;
+export const getFarmByDeviceId = catchAsync(async (req: Request, res: Response) => {
+  const { deviceId } = req.params;
   const currentUser = (req as any).user;
 
-  // Get farm to check ownership
-  const existingFarm = await farmService.getFarmById(id);
+  const farm = await farmService.getFarmByDeviceId(deviceId);
+
+  if (!farm) {
+    throw new AppError('No farm found for this device', HTTP_STATUS.NOT_FOUND);
+  }
 
   // Check if user owns the farm or is admin
-  if (existingFarm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
-  const farm = await farmService.updateSoilData(id, soilData);
-
-  logger.info('Farm soil data updated', {
-    farmId: farm._id,
-    updatedBy: currentUser.id
-  });
-
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    message: 'Soil data updated successfully',
     data: { farm }
   });
 });
 
 /**
- * @desc    Get farms near location
- * @route   GET /api/farms/nearby
+ * @desc    Get farms by location (region/province/municipality)
+ * @route   GET /api/farms/location
  * @access  Private/Admin
  */
-export const getFarmsNearby = catchAsync(async (req: Request, res: Response) => {
-  const { longitude, latitude, maxDistance = 10000 } = req.query;
+export const getFarmsByLocation = catchAsync(async (req: Request, res: Response) => {
+  const { region, province, municipality } = req.query;
 
-  if (!longitude || !latitude) {
-    throw new AppError('Longitude and latitude are required', HTTP_STATUS.BAD_REQUEST);
-  }
-
-  const farms = await farmService.getFarmsNearLocation(
-    parseFloat(longitude as string),
-    parseFloat(latitude as string),
-    parseInt(maxDistance as string)
+  const farms = await farmService.getFarmsByLocation(
+    region as string,
+    province as string,
+    municipality as string
   );
 
   res.status(HTTP_STATUS.OK).json({
@@ -398,7 +426,7 @@ export const getFarmStats = catchAsync(async (req: Request, res: Response) => {
 });
 
 /**
- * @desc    Get harvest predictions
+ * @desc    Get corn harvest predictions
  * @route   GET /api/farms/:id/predictions
  * @access  Private
  */
@@ -410,7 +438,7 @@ export const getHarvestPredictions = catchAsync(async (req: Request, res: Respon
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -420,6 +448,42 @@ export const getHarvestPredictions = catchAsync(async (req: Request, res: Respon
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
+    message: 'Corn harvest predictions retrieved successfully',
     data: { predictions }
+  });
+});
+
+/**
+ * @desc    Create simple farm (for mobile registration)
+ * @route   POST /api/farms/simple
+ * @access  Private
+ */
+export const createSimpleFarm = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  
+  // Use user's address from registration
+  const farmData = {
+    userId: currentUser.id,
+    fieldName: req.body.name || req.body.fieldName,
+    location: `${req.body.address?.municipality || ''}, ${req.body.address?.province || ''}`.trim(),
+    soilType: req.body.soilType || 'Loam',
+    plantingDate: req.body.plantingDate,
+    growthStage: req.body.growthStage || 'VE',
+    deviceId: req.body.deviceId,
+    deviceMacAddress: req.body.deviceMacAddress
+  };
+
+  const farm = await farmService.createFarm(farmData);
+
+  logger.info('Simple farm created', {
+    farmId: farm._id,
+    ownerId: currentUser.id,
+    farmName: farm.fieldName
+  });
+
+  res.status(HTTP_STATUS.CREATED).json({
+    success: true,
+    message: 'Farm created successfully',
+    data: { farm }
   });
 });

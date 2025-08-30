@@ -21,6 +21,7 @@ class AppTheme {
           letterSpacing: 5,
           shadows: [
             Shadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.30),
               offset: Offset(2, 2),
               blurRadius: 10,
@@ -32,7 +33,7 @@ class AppTheme {
         headlineMedium: GoogleFonts.montserrat(
           fontWeight: FontWeight.bold,
           fontSize: 25.sp,
-          color: MAIZE_PRIMARY_LIGHT,
+          color: MAIZE_ACCENT,
           letterSpacing: 0,
           height: 0,
           decoration: TextDecoration.none,
@@ -62,7 +63,7 @@ class AppTheme {
         bodyLarge: GoogleFonts.montserrat(
           fontSize: 16.sp,
           fontWeight: FontWeight.bold,
-          color: MAIZE_PRIMARY_LIGHT,
+          color: MAIZE_ACCENT,
           letterSpacing: 0,
           height: 0,
           decoration: TextDecoration.none,

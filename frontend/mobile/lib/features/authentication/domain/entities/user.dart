@@ -5,7 +5,7 @@ class User extends Equatable {
   final String username;
   final String fullName;
   final String contactNumber; // Make sure this matches your backend field
-  final String address;
+  final Map<String, dynamic> address;
   final String? password;
   final String role;
 

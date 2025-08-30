@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/features/live_monitoring/presentation/widgets/secure_auth_example.dart';
+import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +13,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Text('Hello'));
+    return BlocListener<AuthenticationBloc, AuthenticationState>(
+      listener: (context, state) {
+        if (state.status == AuthenticationStatus.unauthenticated) {
+          // Navigate to landing screen when logged out
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/landing',
+            (route) => false,
+          );
+        }
+      },
+      child: SecureAuthExample(),
+    );
   }
 }

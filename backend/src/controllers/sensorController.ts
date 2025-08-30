@@ -29,7 +29,7 @@ export const createSensor = catchAsync(async (req: Request, res: Response) => {
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(sensorData.farm);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -55,7 +55,7 @@ export const getSensorsByFarm = catchAsync(async (req: Request, res: Response) =
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -82,7 +82,7 @@ export const getSensorById = catchAsync(async (req: Request, res: Response) => {
   
   // Verify user owns the farm
   const farm = await farmService.getFarmById(sensor.farm._id.toString());
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -120,7 +120,7 @@ export const updateSensor = catchAsync(async (req: Request, res: Response) => {
   const existingSensor = await sensorService.getSensorById(id);
   const farm = await farmService.getFarmById(existingSensor.farm._id.toString());
   
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -148,7 +148,7 @@ export const deleteSensor = catchAsync(async (req: Request, res: Response) => {
   const existingSensor = await sensorService.getSensorById(id);
   const farm = await farmService.getFarmById(existingSensor.farm._id.toString());
   
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -216,7 +216,7 @@ export const getSensorReadings = catchAsync(async (req: Request, res: Response) 
   const sensor = await sensorService.getSensorById(id);
   const farm = await farmService.getFarmById(sensor.farm._id.toString());
   
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -251,7 +251,7 @@ export const syncFromThingSpeak = catchAsync(async (req: Request, res: Response)
   const sensor = await sensorService.getSensorById(id);
   const farm = await farmService.getFarmById(sensor.farm._id.toString());
   
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -283,7 +283,7 @@ export const calibrateSensor = catchAsync(async (req: Request, res: Response) =>
   const existingSensor = await sensorService.getSensorById(id);
   const farm = await farmService.getFarmById(existingSensor.farm._id.toString());
   
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -337,7 +337,7 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);

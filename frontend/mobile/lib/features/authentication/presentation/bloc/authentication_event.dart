@@ -29,7 +29,7 @@ final class RegisterEvent extends AuthenticationEvent {
 
   final String fullName;
   final String contactNumber;
-  final String address;
+  final Map<String, dynamic> address;
   final String username;
   final String password;
   final String role; // Use the passed role instead of hardcoded 'user'
@@ -46,3 +46,5 @@ final class RegisterEvent extends AuthenticationEvent {
 }
 
 final class LogoutEvent extends AuthenticationEvent {}
+
+final class CheckAuthStatusEvent extends AuthenticationEvent {}
