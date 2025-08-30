@@ -48,8 +48,20 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "action_uncheck_all": MessageLookupByLibrary.simpleMessage("Uncheck All"),
     "address": MessageLookupByLibrary.simpleMessage("Address"),
+    "address_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Address contains invalid characters",
+    ),
+    "address_needs_alphanumeric": MessageLookupByLibrary.simpleMessage(
+      "Address must contain at least one letter or number",
+    ),
     "address_required": MessageLookupByLibrary.simpleMessage(
       "Address is required",
+    ),
+    "address_too_long": MessageLookupByLibrary.simpleMessage(
+      "Address must not exceed 200 characters",
+    ),
+    "address_too_short": MessageLookupByLibrary.simpleMessage(
+      "Address must be at least 10 characters long",
     ),
     "agreement_prefix": MessageLookupByLibrary.simpleMessage(
       "By logging in, you agree to our ",
@@ -62,11 +74,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "appName": MessageLookupByLibrary.simpleMessage("Maize Watch"),
     "back": MessageLookupByLibrary.simpleMessage("Back"),
     "back_button": MessageLookupByLibrary.simpleMessage("Back"),
+    "barangay": MessageLookupByLibrary.simpleMessage("Barangay"),
+    "barangay_required": MessageLookupByLibrary.simpleMessage(
+      "Barangay is required",
+    ),
     "bright": MessageLookupByLibrary.simpleMessage("Bright"),
     "button_retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Confirm Password",
+    ),
+    "confirm_password_required": MessageLookupByLibrary.simpleMessage(
+      "Please confirm your password",
     ),
     "connection_error": MessageLookupByLibrary.simpleMessage(
       "Connection error. Please check your internet and try again.",
@@ -74,6 +93,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "contactUs": MessageLookupByLibrary.simpleMessage("Contact us at:"),
     "contact_number": MessageLookupByLibrary.simpleMessage(
       "10-digit Contact Number",
+    ),
+    "contact_number_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Contact number must start with 9",
+    ),
+    "contact_number_invalid_length": MessageLookupByLibrary.simpleMessage(
+      "Contact number must be exactly 10 digits (without +63)",
+    ),
+    "contact_number_invalid_prefix": MessageLookupByLibrary.simpleMessage(
+      "Invalid Philippine mobile number prefix",
     ),
     "contact_number_required": MessageLookupByLibrary.simpleMessage(
       "Contact number is required",
@@ -154,6 +182,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "enable_notifications": MessageLookupByLibrary.simpleMessage(
       "Enable Notifications",
     ),
+    "enter_barangay": MessageLookupByLibrary.simpleMessage("Enter Barangay"),
     "error": MessageLookupByLibrary.simpleMessage("Error"),
     "error_delete_prescription": MessageLookupByLibrary.simpleMessage(
       "Error deleting prescription",
@@ -226,8 +255,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "filter_oldest": MessageLookupByLibrary.simpleMessage("Oldest First"),
     "filter_view_all": MessageLookupByLibrary.simpleMessage("View All"),
     "first_name": MessageLookupByLibrary.simpleMessage("First Name"),
+    "first_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "First name cannot have consecutive special characters",
+    ),
+    "first_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "First name can only contain letters, spaces, hyphens, apostrophes, and periods",
+    ),
+    "first_name_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "First name cannot start or end with special characters",
+    ),
     "first_name_required": MessageLookupByLibrary.simpleMessage(
       "First name is required",
+    ),
+    "first_name_too_long": MessageLookupByLibrary.simpleMessage(
+      "First name must not exceed 50 characters",
+    ),
+    "first_name_too_short": MessageLookupByLibrary.simpleMessage(
+      "First name must be at least 2 characters long",
     ),
     "forgot_password": MessageLookupByLibrary.simpleMessage("Forgot Password?"),
     "fully_developed_corn": MessageLookupByLibrary.simpleMessage(
@@ -304,8 +348,23 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "language": MessageLookupByLibrary.simpleMessage("Language"),
     "last_name": MessageLookupByLibrary.simpleMessage("Last Name"),
+    "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "Last name cannot have consecutive special characters",
+    ),
+    "last_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Last name can only contain letters, spaces, hyphens, apostrophes, and periods",
+    ),
+    "last_name_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Last name cannot start or end with special characters",
+    ),
     "last_name_required": MessageLookupByLibrary.simpleMessage(
       "Last name is required",
+    ),
+    "last_name_too_long": MessageLookupByLibrary.simpleMessage(
+      "Last name must not exceed 50 characters",
+    ),
+    "last_name_too_short": MessageLookupByLibrary.simpleMessage(
+      "Last name must be at least 2 characters long",
     ),
     "last_updated": MessageLookupByLibrary.simpleMessage("Last updated"),
     "ldrSensor": MessageLookupByLibrary.simpleMessage("LDR Sensor"),
@@ -372,6 +431,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "moisture_too_wet": MessageLookupByLibrary.simpleMessage(
       "The soil is too wet. Risk of root rot and fungal diseases is high.",
     ),
+    "municipality": MessageLookupByLibrary.simpleMessage("Municipality"),
+    "municipality_amadeo": MessageLookupByLibrary.simpleMessage("Amadeo"),
+    "municipality_required": MessageLookupByLibrary.simpleMessage(
+      "Municipality is required",
+    ),
     "next": MessageLookupByLibrary.simpleMessage("Next"),
     "next_button": MessageLookupByLibrary.simpleMessage("Next"),
     "no": MessageLookupByLibrary.simpleMessage("No"),
@@ -397,8 +461,26 @@ class MessageLookup extends MessageLookupByLibrary {
       "Temperature",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Password"),
+    "password_needs_lowercase": MessageLookupByLibrary.simpleMessage(
+      "Password must contain at least one lowercase letter",
+    ),
+    "password_needs_number": MessageLookupByLibrary.simpleMessage(
+      "Password must contain at least one number",
+    ),
+    "password_needs_special": MessageLookupByLibrary.simpleMessage(
+      "Password must contain at least one special character (!@#\$%^&*)",
+    ),
+    "password_needs_uppercase": MessageLookupByLibrary.simpleMessage(
+      "Password must contain at least one uppercase letter",
+    ),
     "password_required": MessageLookupByLibrary.simpleMessage(
       "Password is required",
+    ),
+    "password_too_common": MessageLookupByLibrary.simpleMessage(
+      "This password is too common. Please choose a stronger password",
+    ),
+    "password_too_long": MessageLookupByLibrary.simpleMessage(
+      "Password must not exceed 128 characters",
     ),
     "password_too_short": MessageLookupByLibrary.simpleMessage(
       "Password must be at least 6 characters",
@@ -472,6 +554,11 @@ class MessageLookup extends MessageLookupByLibrary {
       "Maize Watch Privacy Information",
     ),
     "privacy_policy": MessageLookupByLibrary.simpleMessage("Privacy Policy"),
+    "province": MessageLookupByLibrary.simpleMessage("Province"),
+    "province_cavite": MessageLookupByLibrary.simpleMessage("Cavite"),
+    "province_required": MessageLookupByLibrary.simpleMessage(
+      "Province is required",
+    ),
     "r1_silking": MessageLookupByLibrary.simpleMessage("Silking (R1)"),
     "r6_mature": MessageLookupByLibrary.simpleMessage("Mature (R6)"),
     "rainfall": MessageLookupByLibrary.simpleMessage("Rainfall"),
@@ -497,6 +584,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Adjust irrigation schedule based on soil moisture levels",
     ),
     "refresh": MessageLookupByLibrary.simpleMessage("Refresh"),
+    "region": MessageLookupByLibrary.simpleMessage("Region"),
+    "region_calabarzon": MessageLookupByLibrary.simpleMessage(
+      "CALABARZON (Region IV-A)",
+    ),
+    "region_required": MessageLookupByLibrary.simpleMessage(
+      "Region is required",
+    ),
     "register": MessageLookupByLibrary.simpleMessage("Register"),
     "register_corn_button": MessageLookupByLibrary.simpleMessage(
       "Register Corn",
@@ -508,13 +602,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Register your corn next",
     ),
     "register_page1_description": MessageLookupByLibrary.simpleMessage(
-      "Help us get to know you better.",
+      "Create your account by providing your personal information below.",
     ),
     "register_page1_title": MessageLookupByLibrary.simpleMessage(
       "Let\'s get you started",
     ),
     "register_page2_description": MessageLookupByLibrary.simpleMessage(
-      "Please fill in the form to proceed.",
+      "Now let\'s set up your login credentials to secure your account.",
     ),
     "register_page2_title": MessageLookupByLibrary.simpleMessage("Hi, "),
     "registration_failed": MessageLookupByLibrary.simpleMessage(
@@ -538,7 +632,17 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "seconds_ago": MessageLookupByLibrary.simpleMessage("seconds ago"),
     "see_more": MessageLookupByLibrary.simpleMessage("See More"),
+    "select_barangay": MessageLookupByLibrary.simpleMessage(
+      "Select your barangay",
+    ),
     "select_date": MessageLookupByLibrary.simpleMessage("Select Date"),
+    "select_municipality": MessageLookupByLibrary.simpleMessage(
+      "Select your municipality",
+    ),
+    "select_province": MessageLookupByLibrary.simpleMessage(
+      "Select your province",
+    ),
+    "select_region": MessageLookupByLibrary.simpleMessage("Select your region"),
     "sensors": MessageLookupByLibrary.simpleMessage("Sensors"),
     "session_expired": MessageLookupByLibrary.simpleMessage(
       "Your session has expired. Please log in again.",
@@ -686,8 +790,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "username_already_exists": MessageLookupByLibrary.simpleMessage(
       "Username already exists. Please try another one.",
     ),
+    "username_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "Username cannot have consecutive periods or underscores",
+    ),
+    "username_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Username can only contain letters, numbers, underscores, and periods",
+    ),
+    "username_invalid_end": MessageLookupByLibrary.simpleMessage(
+      "Username must end with a letter or number",
+    ),
+    "username_invalid_start": MessageLookupByLibrary.simpleMessage(
+      "Username must start with a letter or number",
+    ),
     "username_required": MessageLookupByLibrary.simpleMessage(
       "Username is required",
+    ),
+    "username_too_long": MessageLookupByLibrary.simpleMessage(
+      "Username must not exceed 20 characters",
     ),
     "username_too_short": MessageLookupByLibrary.simpleMessage(
       "Username must be at least 3 characters",
@@ -739,5 +858,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "welcome": MessageLookupByLibrary.simpleMessage("Welcome to Maize Watch"),
     "wet": MessageLookupByLibrary.simpleMessage("Wet"),
     "yes": MessageLookupByLibrary.simpleMessage("Yes"),
+    "zip_code": MessageLookupByLibrary.simpleMessage("Zip Code"),
+    "zip_code_invalid": MessageLookupByLibrary.simpleMessage(
+      "Please enter a valid zip code",
+    ),
+    "zip_code_optional": MessageLookupByLibrary.simpleMessage(
+      "Zip Code (Optional)",
+    ),
   };
 }

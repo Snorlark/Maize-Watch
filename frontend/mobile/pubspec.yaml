@@ -18,6 +18,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_screenutil: ^5.9.3
+  flutter_secure_storage: ^9.2.2
+  get_it: ^7.6.4
   google_fonts: ^6.3.0
   intl: any
   shared_preferences: ^2.2.2

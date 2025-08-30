@@ -1,10 +1,12 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+import { createAdapter } from '@socket.io/redis-adapter';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User, { IUser } from '../models/User';
 import Farm from '../models/Farm';
 import { logger } from '../utils/logger';
+import { redis } from '../config/redis';
 import sensorHandler from './sensorHandler';
 import farmHandler from './farmHandler';
 import alertHandler from './alertHandler';
@@ -24,6 +26,17 @@ export const initializeSocket = (server: HTTPServer) => {
     },
     transports: ['websocket', 'polling']
   });
+
+  // Setup Redis adapter for scaling across multiple instances
+  try {
+    const pubClient = redis.duplicate();
+    const subClient = redis.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+    logger.info('Socket.IO Redis adapter configured successfully');
+  } catch (error) {
+    logger.warn('Failed to configure Redis adapter for Socket.IO:', error);
+    logger.info('Socket.IO will run in single-instance mode');
+  }
 
   // Authentication middleware for socket connections
   io.use(async (socket: AuthenticatedSocket, next) => {

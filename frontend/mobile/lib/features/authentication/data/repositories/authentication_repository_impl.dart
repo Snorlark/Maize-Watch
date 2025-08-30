@@ -28,7 +28,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
     String password,
     String fullName,
     String contactNumber,
-    String address,
+    Map<String, dynamic> address,
     String role,
   ) async {
     try {

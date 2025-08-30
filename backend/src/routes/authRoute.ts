@@ -22,14 +22,15 @@ import {
   validateUserLogin,
   validatePasswordReset,
   validatePasswordChange,
-  validate2FAToken
+  validate2FAToken,
+  handleValidationErrors
 } from '../middleware/validation';
 
 const router = Router();
 
 // Registration and login routes
-router.post('/register', authLimiter, validateUserRegistration, register);
-router.post('/login', authLimiter, validateUserLogin, login);
+router.post('/register', authLimiter, ...validateUserRegistration, handleValidationErrors, register);
+router.post('/login', authLimiter, ...validateUserLogin, handleValidationErrors, login);
 
 // Token management
 router.post('/refresh', refreshToken);

@@ -24,6 +24,17 @@ class _LoginOverlayState extends State<LoginOverlay> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  void _checkFarmDataAndNavigate(BuildContext context, user) {
+    // Close the login overlay first
+    Navigator.of(context).pop();
+    
+    // Navigate to home screen using proper navigation
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -31,7 +42,10 @@ class _LoginOverlayState extends State<LoginOverlay> {
 
     return BlocListener<AuthenticationBloc, AuthenticationState>(
       listener: (context, state) {
+        print("🔐 LoginOverlay: State changed to ${state.status}");
+        
         if (state.status == AuthenticationStatus.loading) {
+          print("🔐 LoginOverlay: Showing loading dialog");
           // Show loading indicator
           showDialog(
             context: context,
@@ -40,11 +54,15 @@ class _LoginOverlayState extends State<LoginOverlay> {
                 (context) => const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == AuthenticationStatus.authenticated) {
+          print("🔐 LoginOverlay: Authentication successful, navigating...");
           // Dismiss loading indicator if shown
-          Navigator.of(context).pop();
-          // Navigate to home screen
-          Navigator.of(context).pushReplacementNamed('/home');
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          }
+          // Check for farm data before navigating
+          _checkFarmDataAndNavigate(context, state.user!);
         } else if (state.status == AuthenticationStatus.failure) {
+          print("🚨 LoginOverlay: Authentication failed: ${state.message}");
           // Dismiss loading indicator if shown
           if (Navigator.canPop(context)) {
             Navigator.of(context).pop();

@@ -9,7 +9,12 @@ import {
   getYieldOptimizationInsights,
   exportData,
   getDashboardData,
-  compareFarms
+  compareFarms,
+  runCornAnalytics,
+  getDailyRecommendations,
+  getGrowthStageAnalysis,
+  getRiskAssessment,
+  getAnalyticsHealth
 } from '../controllers/analyticsController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -32,6 +37,9 @@ router.get('/compare', compareFarms);
 // Get aggregated data
 router.get('/data', getAggregatedData);
 
+// System health check (Admin only)
+router.get('/health', authorize(USER_ROLES.ADMIN), getAnalyticsHealth);
+
 // Farm-specific analytics routes
 router.get('/farms/:farmId/report', validateObjectId('farmId'), generateFarmReport);
 router.get('/farms/:farmId/trends', validateObjectId('farmId'), validateDateRange, analyzeTrends);
@@ -40,5 +48,11 @@ router.post('/farms/:farmId/predict', validateObjectId('farmId'), generatePredic
 router.get('/farms/:farmId/anomalies', validateObjectId('farmId'), detectAnomalies);
 router.get('/farms/:farmId/optimization', validateObjectId('farmId'), getYieldOptimizationInsights);
 router.get('/farms/:farmId/export', validateObjectId('farmId'), validateDateRange, exportData);
+
+// Python Analytics v2 Integration Routes
+router.post('/farms/:farmId/corn-analytics', validateObjectId('farmId'), runCornAnalytics);
+router.get('/farms/:farmId/recommendations', validateObjectId('farmId'), getDailyRecommendations);
+router.get('/farms/:farmId/growth-stage', validateObjectId('farmId'), getGrowthStageAnalysis);
+router.get('/farms/:farmId/risk-assessment', validateObjectId('farmId'), getRiskAssessment);
 
 export default router;

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import analyticsService from '../services/analyticsService';
 import farmService from '../services/farmService';
+import pythonAnalyticsService from '../services/pythonAnalyticsService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
@@ -30,7 +31,7 @@ export const getAggregatedData = catchAsync(async (req: Request, res: Response) 
   // Verify access to farm if farmId is provided
   if (farmId) {
     const farm = await farmService.getFarmById(farmId as string);
-    if (farm.owner._id.toString() !== currentUser.id && 
+    if (farm.userId.toString() !== currentUser.id && 
         currentUser.role !== USER_ROLES.ADMIN && 
         currentUser.role !== USER_ROLES.SUPER_ADMIN) {
       throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -66,7 +67,7 @@ export const generateFarmReport = catchAsync(async (req: Request, res: Response)
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -102,7 +103,7 @@ export const analyzeTrends = catchAsync(async (req: Request, res: Response) => {
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -129,7 +130,7 @@ export const analyzeCorrelations = catchAsync(async (req: Request, res: Response
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -167,7 +168,7 @@ export const generatePredictiveModel = catchAsync(async (req: Request, res: Resp
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -200,7 +201,7 @@ export const detectAnomalies = catchAsync(async (req: Request, res: Response) =>
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -225,7 +226,7 @@ export const getYieldOptimizationInsights = catchAsync(async (req: Request, res:
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -255,7 +256,7 @@ export const exportData = catchAsync(async (req: Request, res: Response) => {
 
   // Verify user owns the farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.owner._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -304,12 +305,12 @@ export const getDashboardData = catchAsync(async (req: Request, res: Response) =
   
   if (currentUser.role === USER_ROLES.ADMIN || currentUser.role === USER_ROLES.SUPER_ADMIN) {
     // Admins can see all farms
-    const allFarms = await farmService.getFarmsByOwner('', 1, 1000);
-    farmIds = allFarms.farms.map((farm: any) => farm._id.toString());
+    const allFarms = await farmService.getFarmsByOwner('');
+    farmIds = allFarms.map((farm: any) => farm._id.toString());
   } else {
     // Regular users see only their farms
-    const userFarms = await farmService.getFarmsByOwner(currentUser.id, 1, 1000);
-    farmIds = userFarms.farms.map((farm: any) => farm._id.toString());
+    const userFarms = await farmService.getFarmsByOwner(currentUser.id);
+    farmIds = userFarms.map((farm: any) => farm._id.toString());
   }
 
   // Generate summary data for all accessible farms
@@ -368,7 +369,7 @@ export const compareFarms = catchAsync(async (req: Request, res: Response) => {
   // Verify user has access to all farms
   for (const farmId of farmIdArray) {
     const farm = await farmService.getFarmById(farmId);
-    if (farm.owner._id.toString() !== currentUser.id && 
+    if (farm.userId.toString() !== currentUser.id && 
         currentUser.role !== USER_ROLES.ADMIN && 
         currentUser.role !== USER_ROLES.SUPER_ADMIN) {
       throw new AppError(`Access denied to farm ${farmId}`, HTTP_STATUS.FORBIDDEN);
@@ -417,5 +418,132 @@ export const compareFarms = catchAsync(async (req: Request, res: Response) => {
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: { comparison }
+  });
+});
+
+/**
+ * @desc    Run Python analytics_v2 system for farm
+ * @route   POST /api/analytics/farms/:farmId/corn-analytics
+ * @access  Private
+ */
+export const runCornAnalytics = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const results = await pythonAnalyticsService.runCompleteAnalytics(farmId);
+
+  logger.info('Corn analytics completed', {
+    farmId,
+    generatedBy: currentUser.id,
+    priorityScore: results.prescriptive.priority_score
+  });
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { analytics: results }
+  });
+});
+
+/**
+ * @desc    Get daily recommendations for farm
+ * @route   GET /api/analytics/farms/:farmId/recommendations
+ * @access  Private
+ */
+export const getDailyRecommendations = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const recommendations = await pythonAnalyticsService.getDailyRecommendations(farmId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { recommendations }
+  });
+});
+
+/**
+ * @desc    Get growth stage analysis for farm
+ * @route   GET /api/analytics/farms/:farmId/growth-stage
+ * @access  Private
+ */
+export const getGrowthStageAnalysis = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const growthAnalysis = await pythonAnalyticsService.getGrowthStageAnalysis(farmId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { growthAnalysis }
+  });
+});
+
+/**
+ * @desc    Get risk assessment for farm
+ * @route   GET /api/analytics/farms/:farmId/risk-assessment
+ * @access  Private
+ */
+export const getRiskAssessment = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const riskAssessment = await pythonAnalyticsService.getRiskAssessment(farmId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { riskAssessment }
+  });
+});
+
+/**
+ * @desc    Health check for Python analytics system
+ * @route   GET /api/analytics/health
+ * @access  Private/Admin
+ */
+export const getAnalyticsHealth = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+
+  // Only admins can check system health
+  if (currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  const health = await pythonAnalyticsService.healthCheck();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { health }
   });
 });

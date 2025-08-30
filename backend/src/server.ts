@@ -23,8 +23,8 @@ import apiRoutes from './routes/index';
 const app = express();
 const server = createServer(app);
 
-// Initialize Socket.IO
-const io = initializeSocket(server);
+// Initialize Socket.IO - temporarily disabled for debugging
+// const io = initializeSocket(server);
 
 // Trust proxy for real client IPs when behind reverse proxies
 app.set('trust proxy', 1);
@@ -58,10 +58,10 @@ app.use(cors({
 // Compression middleware
 app.use(compression());
 
-// Rate limiting
-app.use(generalLimiter);
+// Rate limiting - temporarily disabled for debugging
+// app.use(generalLimiter);
 
-// Request logging
+// Request logging - temporarily disabled for debugging
 app.use(requestLogger);
 
 // Body parsing middleware
@@ -76,7 +76,7 @@ app.use(notFound);
 app.use(globalErrorHandler);
 
 // Server startup
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 async function startServer() {
   try {
@@ -126,4 +126,4 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start the server
 startServer();
 
-export { app, server, io };
+export { app, server };

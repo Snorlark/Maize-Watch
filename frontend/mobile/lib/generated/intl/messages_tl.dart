@@ -54,8 +54,20 @@ class MessageLookup extends MessageLookupByLibrary {
       "I-uncheck Lahat",
     ),
     "address": MessageLookupByLibrary.simpleMessage("Tirahan"),
+    "address_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Ang address ay may hindi wastong karakter",
+    ),
+    "address_needs_alphanumeric": MessageLookupByLibrary.simpleMessage(
+      "Ang address ay dapat may hindi bababa sa isang titik o numero",
+    ),
     "address_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang address",
+    ),
+    "address_too_long": MessageLookupByLibrary.simpleMessage(
+      "Ang address ay hindi dapat lumampas sa 200 karakter",
+    ),
+    "address_too_short": MessageLookupByLibrary.simpleMessage(
+      "Ang address ay dapat may hindi bababa sa 10 karakter",
     ),
     "agreement_prefix": MessageLookupByLibrary.simpleMessage(
       "Sa pag-login, sumasang-ayon ka sa aming ",
@@ -68,10 +80,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "appName": MessageLookupByLibrary.simpleMessage("Maize Watch"),
     "back": MessageLookupByLibrary.simpleMessage("Bumalik"),
     "back_button": MessageLookupByLibrary.simpleMessage("Bumalik"),
+    "barangay": MessageLookupByLibrary.simpleMessage("Barangay"),
+    "barangay_required": MessageLookupByLibrary.simpleMessage(
+      "Kailangan ang barangay",
+    ),
     "bright": MessageLookupByLibrary.simpleMessage("Maliwanag"),
     "button_retry": MessageLookupByLibrary.simpleMessage("Subukang Muli"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Kumpirmahin ang Password",
+    ),
+    "confirm_password_required": MessageLookupByLibrary.simpleMessage(
+      "Mangyaring i-confirm ang inyong password",
     ),
     "connection_error": MessageLookupByLibrary.simpleMessage(
       "May problema sa koneksyon. Pakisuri ang iyong internet at subukang muli.",
@@ -81,6 +100,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "contact_number": MessageLookupByLibrary.simpleMessage(
       "10-digit Numero ng Telepono",
+    ),
+    "contact_number_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Ang numero ng telepono ay dapat magsimula sa 9",
+    ),
+    "contact_number_invalid_length": MessageLookupByLibrary.simpleMessage(
+      "Ang numero ng telepono ay dapat eksaktong 10 digits (walang +63)",
+    ),
+    "contact_number_invalid_prefix": MessageLookupByLibrary.simpleMessage(
+      "Hindi wastong Philippine mobile number prefix",
     ),
     "contact_number_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang numero ng telepono",
@@ -160,6 +188,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "enable_notifications": MessageLookupByLibrary.simpleMessage(
       "Paganahin ang Mga Abiso",
     ),
+    "enter_barangay": MessageLookupByLibrary.simpleMessage(
+      "Maglagay ng Barangay",
+    ),
     "error": MessageLookupByLibrary.simpleMessage("Error"),
     "error_delete_prescription": MessageLookupByLibrary.simpleMessage(
       "Error sa pag-delete ng reseta",
@@ -236,8 +267,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "filter_oldest": MessageLookupByLibrary.simpleMessage("Pinakaluma Muna"),
     "filter_view_all": MessageLookupByLibrary.simpleMessage("Tingnan Lahat"),
     "first_name": MessageLookupByLibrary.simpleMessage("Pangalan"),
+    "first_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "Ang unang pangalan ay hindi dapat may magkakasunod na espesyal na karakter",
+    ),
+    "first_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Ang unang pangalan ay pwedeng may mga titik, espasyo, gitling, kudlit, at tuldok lamang",
+    ),
+    "first_name_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Ang unang pangalan ay hindi dapat magsimula o magtapos sa mga espesyal na karakter",
+    ),
     "first_name_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang pangalan",
+    ),
+    "first_name_too_long": MessageLookupByLibrary.simpleMessage(
+      "Ang unang pangalan ay hindi dapat lumampas sa 50 titik",
+    ),
+    "first_name_too_short": MessageLookupByLibrary.simpleMessage(
+      "Ang unang pangalan ay dapat may hindi bababa sa 2 titik",
     ),
     "forgot_password": MessageLookupByLibrary.simpleMessage(
       "Nakalimutan ang Password?",
@@ -317,8 +363,23 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "language": MessageLookupByLibrary.simpleMessage("Wika"),
     "last_name": MessageLookupByLibrary.simpleMessage("Apelyido"),
+    "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "Ang apelyido ay hindi dapat may magkakasunod na espesyal na karakter",
+    ),
+    "last_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Ang apelyido ay pwedeng may mga titik, espasyo, gitling, kudlit, at tuldok lamang",
+    ),
+    "last_name_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Ang apelyido ay hindi dapat magsimula o magtapos sa mga espesyal na karakter",
+    ),
     "last_name_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang apelyido",
+    ),
+    "last_name_too_long": MessageLookupByLibrary.simpleMessage(
+      "Ang apelyido ay hindi dapat lumampas sa 50 titik",
+    ),
+    "last_name_too_short": MessageLookupByLibrary.simpleMessage(
+      "Ang apelyido ay dapat may hindi bababa sa 2 titik",
     ),
     "last_updated": MessageLookupByLibrary.simpleMessage("Huling na-update"),
     "ldrSensor": MessageLookupByLibrary.simpleMessage("LDR Sensor"),
@@ -383,6 +444,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "moisture_too_wet": MessageLookupByLibrary.simpleMessage(
       "Sobrang basa ng lupa. Panganib ng pagkabulok ng ugat.",
     ),
+    "municipality": MessageLookupByLibrary.simpleMessage("Bayan"),
+    "municipality_amadeo": MessageLookupByLibrary.simpleMessage("Amadeo"),
+    "municipality_required": MessageLookupByLibrary.simpleMessage(
+      "Kailangan ang bayan",
+    ),
     "next": MessageLookupByLibrary.simpleMessage("Susunod"),
     "next_button": MessageLookupByLibrary.simpleMessage("Susunod"),
     "no": MessageLookupByLibrary.simpleMessage("Hindi"),
@@ -410,8 +476,26 @@ class MessageLookup extends MessageLookupByLibrary {
       "Temperatura",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Password"),
+    "password_needs_lowercase": MessageLookupByLibrary.simpleMessage(
+      "Ang password ay dapat may hindi bababa sa isang maliit na titik",
+    ),
+    "password_needs_number": MessageLookupByLibrary.simpleMessage(
+      "Ang password ay dapat may hindi bababa sa isang numero",
+    ),
+    "password_needs_special": MessageLookupByLibrary.simpleMessage(
+      "Ang password ay dapat may hindi bababa sa isang espesyal na karakter (!@#\$%^&*)",
+    ),
+    "password_needs_uppercase": MessageLookupByLibrary.simpleMessage(
+      "Ang password ay dapat may hindi bababa sa isang malaking titik",
+    ),
     "password_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang password",
+    ),
+    "password_too_common": MessageLookupByLibrary.simpleMessage(
+      "Ang password na ito ay masyadong common. Mangyaring pumili ng mas malakas na password",
+    ),
+    "password_too_long": MessageLookupByLibrary.simpleMessage(
+      "Ang password ay hindi dapat lumampas sa 128 karakter",
     ),
     "password_too_short": MessageLookupByLibrary.simpleMessage(
       "Ang password ay dapat may hindi bababa sa 6 na karakter",
@@ -484,6 +568,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "privacy_policy": MessageLookupByLibrary.simpleMessage(
       "Patakaran sa Pagkapribado",
     ),
+    "province": MessageLookupByLibrary.simpleMessage("Lalawigan"),
+    "province_cavite": MessageLookupByLibrary.simpleMessage("Cavite"),
+    "province_required": MessageLookupByLibrary.simpleMessage(
+      "Kailangan ang lalawigan",
+    ),
     "r1_silking": MessageLookupByLibrary.simpleMessage("Pagsilk (R1)"),
     "r6_mature": MessageLookupByLibrary.simpleMessage("Ganap na Mais (R6)"),
     "rainfall": MessageLookupByLibrary.simpleMessage("Ulan"),
@@ -509,6 +598,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "I-adjust ang iskedyul ng patubig batay sa antas ng halumigmig ng lupa",
     ),
     "refresh": MessageLookupByLibrary.simpleMessage("I-refresh"),
+    "region": MessageLookupByLibrary.simpleMessage("Rehiyon"),
+    "region_calabarzon": MessageLookupByLibrary.simpleMessage(
+      "CALABARZON (Rehiyon IV-A)",
+    ),
+    "region_required": MessageLookupByLibrary.simpleMessage(
+      "Kailangan ang rehiyon",
+    ),
     "register": MessageLookupByLibrary.simpleMessage("Magrehistro"),
     "register_corn_button": MessageLookupByLibrary.simpleMessage(
       "Magrehistro ng Mais",
@@ -520,13 +616,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "I-rehistro ang mais",
     ),
     "register_page1_description": MessageLookupByLibrary.simpleMessage(
-      "Tulungan mo kaming makilala ka nang mas mabuti.",
+      "Gumawa ng inyong account sa pamamagitan ng pagbibigay ng inyong personal na impormasyon sa ibaba.",
     ),
     "register_page1_title": MessageLookupByLibrary.simpleMessage(
       "Umpisahan na natin",
     ),
     "register_page2_description": MessageLookupByLibrary.simpleMessage(
-      "Pakisagutan ang form upang magpatuloy.",
+      "Ngayon naman ay mag-setup tayo ng inyong login credentials para ma-secure ang inyong account.",
     ),
     "register_page2_title": MessageLookupByLibrary.simpleMessage("Kamusta, "),
     "registration_failed": MessageLookupByLibrary.simpleMessage(
@@ -552,7 +648,19 @@ class MessageLookup extends MessageLookupByLibrary {
       "segundo ang nakalipas",
     ),
     "see_more": MessageLookupByLibrary.simpleMessage("Tingnan Pa"),
+    "select_barangay": MessageLookupByLibrary.simpleMessage(
+      "Piliin ang inyong barangay",
+    ),
     "select_date": MessageLookupByLibrary.simpleMessage("Pumili ng Petsa"),
+    "select_municipality": MessageLookupByLibrary.simpleMessage(
+      "Piliin ang inyong bayan",
+    ),
+    "select_province": MessageLookupByLibrary.simpleMessage(
+      "Piliin ang inyong lalawigan",
+    ),
+    "select_region": MessageLookupByLibrary.simpleMessage(
+      "Piliin ang inyong rehiyon",
+    ),
     "sensors": MessageLookupByLibrary.simpleMessage("Mga Sensor"),
     "settings": MessageLookupByLibrary.simpleMessage("Mga Setting"),
     "silks_emerging": MessageLookupByLibrary.simpleMessage(
@@ -699,8 +807,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "username_already_exists": MessageLookupByLibrary.simpleMessage(
       "Ginagamit na ang username. Pakisubukang muli gamit ang ibang username.",
     ),
+    "username_consecutive_special": MessageLookupByLibrary.simpleMessage(
+      "Ang username ay hindi dapat may magkakasunod na tuldok o underscore",
+    ),
+    "username_invalid_characters": MessageLookupByLibrary.simpleMessage(
+      "Ang username ay pwedeng may mga titik, numero, underscore, at tuldok lamang",
+    ),
+    "username_invalid_end": MessageLookupByLibrary.simpleMessage(
+      "Ang username ay dapat magtapos sa titik o numero",
+    ),
+    "username_invalid_start": MessageLookupByLibrary.simpleMessage(
+      "Ang username ay dapat magsimula sa titik o numero",
+    ),
     "username_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang username",
+    ),
+    "username_too_long": MessageLookupByLibrary.simpleMessage(
+      "Ang username ay hindi dapat lumampas sa 20 karakter",
     ),
     "username_too_short": MessageLookupByLibrary.simpleMessage(
       "Ang username ay dapat may hindi bababa sa 3 karakter",
@@ -766,5 +889,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "wet": MessageLookupByLibrary.simpleMessage("Basang-basa"),
     "yes": MessageLookupByLibrary.simpleMessage("Oo"),
+    "zip_code": MessageLookupByLibrary.simpleMessage("Zip Code"),
+    "zip_code_invalid": MessageLookupByLibrary.simpleMessage(
+      "Mangyaring maglagay ng wastong zip code",
+    ),
+    "zip_code_optional": MessageLookupByLibrary.simpleMessage(
+      "Zip Code (Opsyonal)",
+    ),
   };
 }

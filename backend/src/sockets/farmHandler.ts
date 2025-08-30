@@ -19,7 +19,7 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
       
       // Verify user has access to the farm
       const farm = await farmService.getFarmById(farmId);
-      if (farm.owner._id.toString() !== socket.userId && 
+      if (farm.userId._id.toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -67,7 +67,7 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
       
       // Verify access to farm
       const farm = await farmService.getFarmById(farmId);
-      if (farm.owner._id.toString() !== socket.userId && 
+      if (farm.userId._id.toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -97,7 +97,7 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
       
       // Verify access to farm
       const existingFarm = await farmService.getFarmById(farmId);
-      if (existingFarm.owner._id.toString() !== socket.userId && 
+      if (existingFarm.userId._id.toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -135,7 +135,7 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
       
       // Verify access to farm
       const farm = await farmService.getFarmById(farmId);
-      if (farm.owner._id.toString() !== socket.userId && 
+      if (farm.userId._id.toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -162,22 +162,22 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
   socket.on('farm:subscribeAll', async () => {
     try {
       // Get user's farms
-      const result = await farmService.getFarmsByOwner(socket.userId!, 1, 100);
+      const result = await farmService.getFarmsByOwner(socket.userId!);
       
       // Join all farm rooms
-      result.farms.forEach(farm => {
+      result.forEach(farm => {
         socket.join(`farm:${farm._id}`);
       });
       
       logger.info('User subscribed to all farms', {
         userId: socket.userId,
-        farmCount: result.farms.length,
+        farmCount: result.length,
         socketId: socket.id
       });
 
       socket.emit('farm:subscribedAll', { 
-        farmCount: result.farms.length,
-        farms: result.farms.map(f => ({ id: f._id, name: f.name }))
+        farmCount: result.length,
+        farms: result.map(f => ({ id: f._id, name: f.fieldName }))
       });
     } catch (error) {
       logger.error('Error subscribing to all farms:', error);

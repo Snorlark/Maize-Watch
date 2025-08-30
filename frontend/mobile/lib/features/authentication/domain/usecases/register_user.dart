@@ -1,28 +1,30 @@
 import 'package:dartz/dartz.dart';
+
 import '../../../../core/error/failures.dart';
 import '../entities/user.dart';
 import '../repositories/authentication_repository.dart';
 
+/// Register use case following clean architecture principles
 class RegisterUser {
   final AuthenticationRepository repository;
 
-  RegisterUser({required this.repository});
+  RegisterUser(this.repository);
 
-  Future<Either<Failure, User>> call(
-    String username,
-    String password,
-    String fullName,
-    String contactNumber,
-    String address,
-    String role,
-  ) async {
+  Future<Either<Failure, User>> call({
+    required String username,
+    required String password,
+    required String fullName,
+    required String contactNumber,
+    required Map<String, dynamic> address,
+    required String role,
+  }) async {
     return await repository.register(
       username,
       password,
       fullName,
       contactNumber,
       address,
-      role, // Use the passed role instead of hardcoded 'user'
+      role,
     );
   }
 }

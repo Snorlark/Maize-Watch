@@ -1,0 +1,15 @@
+# Python virtual environment
+*.env/
+env/
+venv/
+ENV/
+.env/
+.venv/
+
+# Ignore virtual environments
+venv/
+env/
+*/corn_env/
+corn_env/
+
+analytics_v2/corn_env/

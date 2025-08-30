@@ -109,10 +109,10 @@ class S {
     );
   }
 
-  /// `Help us get to know you better.`
+  /// `Create your account by providing your personal information below.`
   String get register_page1_description {
     return Intl.message(
-      'Help us get to know you better.',
+      'Create your account by providing your personal information below.',
       name: 'register_page1_description',
       desc: '',
       args: [],
@@ -154,10 +154,10 @@ class S {
     );
   }
 
-  /// `Please fill in the form to proceed.`
+  /// `Now let's set up your login credentials to secure your account.`
   String get register_page2_description {
     return Intl.message(
-      'Please fill in the form to proceed.',
+      'Now let\'s set up your login credentials to secure your account.',
       name: 'register_page2_description',
       desc: '',
       args: [],
@@ -2954,6 +2954,461 @@ class S {
     return Intl.message(
       'We may update these Terms of Use from time to time. Material changes will be communicated through our platform or via email. Continued use of Maize Watch means you accept the updated terms.',
       name: 'terms_section7_content',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name must be at least 2 characters long`
+  String get first_name_too_short {
+    return Intl.message(
+      'First name must be at least 2 characters long',
+      name: 'first_name_too_short',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name must not exceed 50 characters`
+  String get first_name_too_long {
+    return Intl.message(
+      'First name must not exceed 50 characters',
+      name: 'first_name_too_long',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name can only contain letters, spaces, hyphens, apostrophes, and periods`
+  String get first_name_invalid_characters {
+    return Intl.message(
+      'First name can only contain letters, spaces, hyphens, apostrophes, and periods',
+      name: 'first_name_invalid_characters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name cannot start or end with special characters`
+  String get first_name_invalid_format {
+    return Intl.message(
+      'First name cannot start or end with special characters',
+      name: 'first_name_invalid_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name cannot have consecutive special characters`
+  String get first_name_consecutive_special {
+    return Intl.message(
+      'First name cannot have consecutive special characters',
+      name: 'first_name_consecutive_special',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name must be at least 2 characters long`
+  String get last_name_too_short {
+    return Intl.message(
+      'Last name must be at least 2 characters long',
+      name: 'last_name_too_short',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name must not exceed 50 characters`
+  String get last_name_too_long {
+    return Intl.message(
+      'Last name must not exceed 50 characters',
+      name: 'last_name_too_long',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name can only contain letters, spaces, hyphens, apostrophes, and periods`
+  String get last_name_invalid_characters {
+    return Intl.message(
+      'Last name can only contain letters, spaces, hyphens, apostrophes, and periods',
+      name: 'last_name_invalid_characters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name cannot start or end with special characters`
+  String get last_name_invalid_format {
+    return Intl.message(
+      'Last name cannot start or end with special characters',
+      name: 'last_name_invalid_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name cannot have consecutive special characters`
+  String get last_name_consecutive_special {
+    return Intl.message(
+      'Last name cannot have consecutive special characters',
+      name: 'last_name_consecutive_special',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contact number must be exactly 10 digits (without +63)`
+  String get contact_number_invalid_length {
+    return Intl.message(
+      'Contact number must be exactly 10 digits (without +63)',
+      name: 'contact_number_invalid_length',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contact number must start with 9`
+  String get contact_number_invalid_format {
+    return Intl.message(
+      'Contact number must start with 9',
+      name: 'contact_number_invalid_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid Philippine mobile number prefix`
+  String get contact_number_invalid_prefix {
+    return Intl.message(
+      'Invalid Philippine mobile number prefix',
+      name: 'contact_number_invalid_prefix',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address must be at least 10 characters long`
+  String get address_too_short {
+    return Intl.message(
+      'Address must be at least 10 characters long',
+      name: 'address_too_short',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address must not exceed 200 characters`
+  String get address_too_long {
+    return Intl.message(
+      'Address must not exceed 200 characters',
+      name: 'address_too_long',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address contains invalid characters`
+  String get address_invalid_characters {
+    return Intl.message(
+      'Address contains invalid characters',
+      name: 'address_invalid_characters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address must contain at least one letter or number`
+  String get address_needs_alphanumeric {
+    return Intl.message(
+      'Address must contain at least one letter or number',
+      name: 'address_needs_alphanumeric',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username must not exceed 20 characters`
+  String get username_too_long {
+    return Intl.message(
+      'Username must not exceed 20 characters',
+      name: 'username_too_long',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username can only contain letters, numbers, underscores, and periods`
+  String get username_invalid_characters {
+    return Intl.message(
+      'Username can only contain letters, numbers, underscores, and periods',
+      name: 'username_invalid_characters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username must start with a letter or number`
+  String get username_invalid_start {
+    return Intl.message(
+      'Username must start with a letter or number',
+      name: 'username_invalid_start',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username must end with a letter or number`
+  String get username_invalid_end {
+    return Intl.message(
+      'Username must end with a letter or number',
+      name: 'username_invalid_end',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username cannot have consecutive periods or underscores`
+  String get username_consecutive_special {
+    return Intl.message(
+      'Username cannot have consecutive periods or underscores',
+      name: 'username_consecutive_special',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must not exceed 128 characters`
+  String get password_too_long {
+    return Intl.message(
+      'Password must not exceed 128 characters',
+      name: 'password_too_long',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must contain at least one uppercase letter`
+  String get password_needs_uppercase {
+    return Intl.message(
+      'Password must contain at least one uppercase letter',
+      name: 'password_needs_uppercase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must contain at least one lowercase letter`
+  String get password_needs_lowercase {
+    return Intl.message(
+      'Password must contain at least one lowercase letter',
+      name: 'password_needs_lowercase',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must contain at least one number`
+  String get password_needs_number {
+    return Intl.message(
+      'Password must contain at least one number',
+      name: 'password_needs_number',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must contain at least one special character (!@#$%^&*)`
+  String get password_needs_special {
+    return Intl.message(
+      'Password must contain at least one special character (!@#\$%^&*)',
+      name: 'password_needs_special',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This password is too common. Please choose a stronger password`
+  String get password_too_common {
+    return Intl.message(
+      'This password is too common. Please choose a stronger password',
+      name: 'password_too_common',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please confirm your password`
+  String get confirm_password_required {
+    return Intl.message(
+      'Please confirm your password',
+      name: 'confirm_password_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Region`
+  String get region {
+    return Intl.message('Region', name: 'region', desc: '', args: []);
+  }
+
+  /// `Select your region`
+  String get select_region {
+    return Intl.message(
+      'Select your region',
+      name: 'select_region',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Province`
+  String get province {
+    return Intl.message('Province', name: 'province', desc: '', args: []);
+  }
+
+  /// `Select your province`
+  String get select_province {
+    return Intl.message(
+      'Select your province',
+      name: 'select_province',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Municipality`
+  String get municipality {
+    return Intl.message(
+      'Municipality',
+      name: 'municipality',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select your municipality`
+  String get select_municipality {
+    return Intl.message(
+      'Select your municipality',
+      name: 'select_municipality',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Barangay`
+  String get barangay {
+    return Intl.message('Barangay', name: 'barangay', desc: '', args: []);
+  }
+
+  /// `Select your barangay`
+  String get select_barangay {
+    return Intl.message(
+      'Select your barangay',
+      name: 'select_barangay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Zip Code`
+  String get zip_code {
+    return Intl.message('Zip Code', name: 'zip_code', desc: '', args: []);
+  }
+
+  /// `Zip Code (Optional)`
+  String get zip_code_optional {
+    return Intl.message(
+      'Zip Code (Optional)',
+      name: 'zip_code_optional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Region is required`
+  String get region_required {
+    return Intl.message(
+      'Region is required',
+      name: 'region_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Province is required`
+  String get province_required {
+    return Intl.message(
+      'Province is required',
+      name: 'province_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Municipality is required`
+  String get municipality_required {
+    return Intl.message(
+      'Municipality is required',
+      name: 'municipality_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Barangay is required`
+  String get barangay_required {
+    return Intl.message(
+      'Barangay is required',
+      name: 'barangay_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid zip code`
+  String get zip_code_invalid {
+    return Intl.message(
+      'Please enter a valid zip code',
+      name: 'zip_code_invalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `CALABARZON (Region IV-A)`
+  String get region_calabarzon {
+    return Intl.message(
+      'CALABARZON (Region IV-A)',
+      name: 'region_calabarzon',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cavite`
+  String get province_cavite {
+    return Intl.message('Cavite', name: 'province_cavite', desc: '', args: []);
+  }
+
+  /// `Amadeo`
+  String get municipality_amadeo {
+    return Intl.message(
+      'Amadeo',
+      name: 'municipality_amadeo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter Barangay`
+  String get enter_barangay {
+    return Intl.message(
+      'Enter Barangay',
+      name: 'enter_barangay',
       desc: '',
       args: [],
     );

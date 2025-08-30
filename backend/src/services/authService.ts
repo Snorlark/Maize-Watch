@@ -18,8 +18,7 @@ interface UserRegistrationData {
     region: string;
     province: string;
     municipality: string;
-    barangay: string;
-    zipCode?: string;
+    barangay: string;    
   };
 }
 
@@ -65,17 +64,23 @@ class AuthService {
       const verificationToken = user.createEmailVerificationToken();
       await user.save();
 
-      // Send verification email
-      try {
-        const emailService = await getEmailService();
-        await emailService.sendVerificationEmail(
-          user.email,
-          verificationToken
-        );
-        logger.info('Verification email sent', { email: user.email });
-      } catch (emailError) {
-        logger.warn("Failed to send verification email:", emailError);
-        // Don't fail registration if email fails
+      // Send verification email (skip for mobile farmers with @farmer.local emails)
+      if (!user.email.endsWith('@farmer.local')) {
+        try {
+          const emailService = await getEmailService();
+          await emailService.sendVerificationEmail(
+            user.email,
+            verificationToken
+          );
+          logger.info('Verification email sent', { email: user.email });
+        } catch (emailError) {
+          logger.warn("Failed to send verification email:", emailError);
+          // Don't fail registration if email fails
+        }
+      } else {
+        logger.info('Skipping email verification for mobile farmer', { email: user.email });
+        // Auto-verify mobile farmers
+        user.emailVerified = true;
       }
 
       // Generate tokens

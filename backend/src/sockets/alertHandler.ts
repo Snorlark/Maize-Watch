@@ -21,7 +21,7 @@ export default function alertHandler(io: SocketIOServer, socket: AuthenticatedSo
       
       // Verify user has access to the farm
       const farm = await farmService.getFarmById(farmId);
-      if ((farm.owner._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
+      if ((farm.userId._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -69,7 +69,7 @@ export default function alertHandler(io: SocketIOServer, socket: AuthenticatedSo
       
       // Verify access to farm
       const farm = await farmService.getFarmById(farmId);
-      if ((farm.owner._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
+      if ((farm.userId._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -136,7 +136,7 @@ export default function alertHandler(io: SocketIOServer, socket: AuthenticatedSo
 
       // Verify access to farm
       const farm = await farmService.getFarmById(reading.farm.toString());
-      if ((farm.owner._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
+      if ((farm.userId._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });
@@ -184,7 +184,7 @@ export default function alertHandler(io: SocketIOServer, socket: AuthenticatedSo
       
       // Verify access to farm
       const farm = await farmService.getFarmById(farmId);
-      if ((farm.owner._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
+      if ((farm.userId._id as mongoose.Types.ObjectId).toString() !== socket.userId && 
           socket.user?.role !== USER_ROLES.ADMIN && 
           socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
         socket.emit('error', { message: 'Access denied to farm' });

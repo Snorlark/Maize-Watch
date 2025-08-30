@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/config/environment.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/storage/secure_storage.dart';
 import '../model/user_model.dart';
 
 abstract class AuthenticationRemoteDataSource {
@@ -14,44 +15,70 @@ abstract class AuthenticationRemoteDataSource {
 class AuthenticationRemoteDataSourceImpl
     implements AuthenticationRemoteDataSource {
   final Dio client;
-  final String baseUrl = 'http://10.250.104.206:8080';
+  final String baseUrl = AppConfig.baseUrl;
 
-  AuthenticationRemoteDataSourceImpl({required this.client});
+  AuthenticationRemoteDataSourceImpl({
+    required this.client,
+  });
 
   // ---------------- LOGIN ----------------
   @override
   Future<UserModel> login(String username, String password) async {
     try {
+      print("🔐 Frontend: Attempting login with username: $username");
+      print("🔐 Frontend: Sending request to: $baseUrl/api/auth/login");
+      
+      final requestData = {
+        "username": username, // Use username for mobile farmers
+        "password": password,
+        "deviceType": "mobile",
+      };
+      
+      print("🔐 Frontend: Request data: ${requestData.keys.join(', ')}");
+      
       final response = await client
           .post(
             '$baseUrl/api/auth/login',
-            data: {
-              "username": username,
-              "password": password,
-              "deviceType": "mobile",
-            },
+            data: requestData,
             options: Options(contentType: Headers.jsonContentType),
           )
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 10));
+
+      print("🔐 Frontend: Response status: ${response.statusCode}");
+      print("🔐 Frontend: Response data: ${response.data}");
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         final data = response.data['data'];
+        print("🔐 Frontend: Login data structure: $data");
 
-        if (data != null && data['token'] != null) {
-          await _saveTokens(data['token'], data['refreshToken']);
-          return UserModel.fromJson(data['user']);
+        if (data != null && data['accessToken'] != null) {
+          print("🔐 Frontend: Storing tokens...");
+          await SecureStorage.storeTokens(data['accessToken'], data['refreshToken']);
+          print("🔐 Frontend: Tokens stored, creating user model...");
+          
+          final userModel = UserModel.fromJson(data['user']);
+          print("🔐 Frontend: User model created: ${userModel.username}");
+          return userModel;
         } else {
+          print("🚨 Frontend: No valid token in response data");
           throw ServerException(
             "Authentication failed: No valid token received",
           );
         }
       } else {
+        print("🚨 Frontend: Login failed - Status: ${response.statusCode}, Success: ${response.data['success']}");
         throw ServerException(
           response.data['message'] ?? "Authentication failed",
         );
       }
     } on DioException catch (e) {
+      print("🚨 Frontend: DioException during login: ${e.toString()}");
+      print("🚨 Frontend: Response data: ${e.response?.data}");
+      print("🚨 Frontend: Status code: ${e.response?.statusCode}");
       throw _mapDioError(e, "Authentication failed");
+    } catch (e) {
+      print("🚨 Frontend: General exception during login: ${e.toString()}");
+      throw ServerException("Login failed: $e");
     }
   }
 
@@ -63,13 +90,27 @@ class AuthenticationRemoteDataSourceImpl
   @override
   Future<UserModel> register(Map<String, dynamic> userData) async {
     try {
+      // Format contact number to match backend expectations (09xxxxxxxxx - 11 digits with leading 0)
+      String formattedContactNumber = userData["contactNumber"];
+      final cleanNumber = formattedContactNumber.replaceAll(RegExp(r'\D'), '');
+      
+      if (cleanNumber.length == 10 && cleanNumber.startsWith('9')) {
+        // Add leading 0 to 9xxxxxxxxx to get 09xxxxxxxxx
+        formattedContactNumber = '0$cleanNumber';
+      } else if (cleanNumber.length == 11 && cleanNumber.startsWith('09')) {
+        // Already in correct format
+        formattedContactNumber = cleanNumber;
+      }
+
       final payload = {
         "username": userData["username"],
+        "email": userData["email"] ?? "${userData["username"]}@maizewatch.com", // Add email field for backend validation
         "password": userData["password"],
         "fullName": userData["fullName"],
-        "contactNumber": userData["contactNumber"],
+        "contactNumber": formattedContactNumber, // Format to 09xxxxxxxxx
         "address": userData["address"],
         "role": userData["role"] ?? "user",
+        "deviceType": "mobile", // Add deviceType to indicate mobile registration
       };
 
       print("📤 Register request payload: $payload");
@@ -91,14 +132,14 @@ class AuthenticationRemoteDataSourceImpl
 
           if (data != null && data['user'] != null) {
             // Save tokens if they exist (like in login)
-            if (data['token'] != null) {
-              await _saveTokens(data['token'], data['refreshToken']);
+            if (data['accessToken'] != null) {
+              await SecureStorage.storeTokens(data['accessToken'], data['refreshToken']);
             }
 
             print("📥 User data found: ${data['user']}");
             return UserModel.fromJson(
               data['user'],
-            ); // ✅ Pass only the user object
+            ); // Pass only the user object
           } else {
             throw ServerException("Registration failed: No user data received");
           }
@@ -126,7 +167,7 @@ class AuthenticationRemoteDataSourceImpl
   @override
   Future<String?> refreshToken() async {
     try {
-      final refreshToken = await _getRefreshToken();
+      final refreshToken = await SecureStorage.getRefreshToken();
       if (refreshToken == null) {
         throw ServerException("No refresh token available");
       }
@@ -138,8 +179,8 @@ class AuthenticationRemoteDataSourceImpl
       );
 
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final newAccessToken = response.data['token'];
-        await _saveTokens(newAccessToken, refreshToken);
+        final newAccessToken = response.data['data']['accessToken'];
+        await SecureStorage.storeTokens(newAccessToken, refreshToken);
         return newAccessToken;
       } else {
         throw ServerException(
@@ -152,19 +193,6 @@ class AuthenticationRemoteDataSourceImpl
   }
 
   // ---------------- HELPERS ----------------
-  Future<void> _saveTokens(String accessToken, String? refreshToken) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString("access_token", accessToken);
-    if (refreshToken != null) {
-      await prefs.setString("refresh_token", refreshToken);
-    }
-  }
-
-  Future<String?> _getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString("refresh_token");
-  }
-
   ServerException _mapDioError(DioException e, String defaultMessage) {
     if (e.type == DioExceptionType.connectionTimeout) {
       return ServerException("Connection timed out. Please try again.");

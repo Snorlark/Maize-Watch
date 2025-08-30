@@ -1,54 +1,74 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { Store } from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { HTTP_STATUS, RATE_LIMITS } from '../utils/constants';
 import { logger } from '../utils/logger';
+import { redis } from '../config/redis';
 
-// Store for rate limiting (in production, use Redis)
-const store = new Map();
+// Simple in-memory rate limit store compatible with express-rate-limit
+class MemoryRateLimitStore implements Store {
+  private store: Map<string, { count: number; resetTime: number }> = new Map();
+  public prefix: string;
+  private windowMs: number;
 
-// Custom rate limit store using Redis (when available)
-class CustomStore {
-  private prefix: string;
-
-  constructor(prefix: string = 'rl:') {
+  constructor(prefix: string = 'rl:', windowMs: number = 15 * 60 * 1000) {
     this.prefix = prefix;
+    this.windowMs = windowMs;
   }
 
-  async incr(key: string): Promise<{ totalHits: number; resetTime?: Date }> {
+  async increment(key: string): Promise<{ totalHits: number; resetTime: Date }> {
+    const now = Date.now();
     const fullKey = this.prefix + key;
-    const current = store.get(fullKey) || { count: 0, resetTime: Date.now() + 15 * 60 * 1000 };
     
-    if (Date.now() > current.resetTime) {
-      current.count = 1;
-      current.resetTime = Date.now() + 15 * 60 * 1000;
+    const existing = this.store.get(fullKey);
+    
+    if (!existing || now > existing.resetTime) {
+      // Create new entry or reset expired entry
+      const resetTime = now + this.windowMs;
+      this.store.set(fullKey, { count: 1, resetTime });
+      return {
+        totalHits: 1,
+        resetTime: new Date(resetTime)
+      };
     } else {
-      current.count++;
+      // Increment existing entry
+      existing.count++;
+      this.store.set(fullKey, existing);
+      return {
+        totalHits: existing.count,
+        resetTime: new Date(existing.resetTime)
+      };
     }
-    
-    store.set(fullKey, current);
-    
-    return {
-      totalHits: current.count,
-      resetTime: new Date(current.resetTime)
-    };
   }
 
   async decrement(key: string): Promise<void> {
     const fullKey = this.prefix + key;
-    const current = store.get(fullKey);
-    if (current && current.count > 0) {
-      current.count--;
-      store.set(fullKey, current);
+    const existing = this.store.get(fullKey);
+    
+    if (existing && existing.count > 0) {
+      existing.count--;
+      this.store.set(fullKey, existing);
     }
   }
 
   async resetKey(key: string): Promise<void> {
-    store.delete(this.prefix + key);
+    const fullKey = this.prefix + key;
+    this.store.delete(fullKey);
+  }
+
+  // Optional: Clean up expired entries periodically
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [key, value] of this.store.entries()) {
+      if (now > value.resetTime) {
+        this.store.delete(key);
+      }
+    }
   }
 }
 
-// General rate limiter
+// General rate limiter with Memory store
 export const generalLimiter = rateLimit({
+  store: new MemoryRateLimitStore('rl:general:', RATE_LIMITS.GENERAL.WINDOW_MS),
   windowMs: RATE_LIMITS.GENERAL.WINDOW_MS,
   max: RATE_LIMITS.GENERAL.MAX_REQUESTS,
   message: {
@@ -74,8 +94,9 @@ export const generalLimiter = rateLimit({
   },
 });
 
-// Authentication rate limiter (stricter)
+// Authentication rate limiter (stricter) with Memory store
 export const authLimiter = rateLimit({
+  store: new MemoryRateLimitStore('rl:auth:', RATE_LIMITS.AUTH.WINDOW_MS),
   windowMs: RATE_LIMITS.AUTH.WINDOW_MS,
   max: RATE_LIMITS.AUTH.MAX_REQUESTS,
   message: {
@@ -103,8 +124,9 @@ export const authLimiter = rateLimit({
   },
 });
 
-// API rate limiter
+// API rate limiter with Memory store
 export const apiLimiter = rateLimit({
+  store: new MemoryRateLimitStore('rl:api:', RATE_LIMITS.API.WINDOW_MS),
   windowMs: RATE_LIMITS.API.WINDOW_MS,
   max: RATE_LIMITS.API.MAX_REQUESTS,
   message: {
@@ -131,8 +153,9 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// File upload rate limiter
+// File upload rate limiter with Memory store
 export const uploadLimiter = rateLimit({
+  store: new MemoryRateLimitStore('rl:upload:', 60 * 1000),
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 uploads per minute
   message: {
@@ -158,8 +181,9 @@ export const uploadLimiter = rateLimit({
   },
 });
 
-// Password reset rate limiter
+// Password reset rate limiter with Memory store
 export const passwordResetLimiter = rateLimit({
+  store: new MemoryRateLimitStore('rl:password:', 60 * 60 * 1000),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 password reset attempts per hour
   message: {
@@ -184,9 +208,10 @@ export const passwordResetLimiter = rateLimit({
   },
 });
 
-// Create custom rate limiter
-export const createRateLimiter = (windowMs: number, max: number, message?: string) => {
+// Create custom rate limiter with Memory store
+export const createRateLimiter = (windowMs: number, max: number, message?: string, prefix?: string) => {
   return rateLimit({
+    store: new MemoryRateLimitStore(prefix || 'rl:custom:', windowMs),
     windowMs,
     max,
     message: {
