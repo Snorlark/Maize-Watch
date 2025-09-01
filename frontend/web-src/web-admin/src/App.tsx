@@ -33,24 +33,24 @@ const App: React.FC = () => {
     <AuthProvider>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginForm />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route index element={<Navigate to="login" replace />} />
+        <Route path="login" element={<LoginForm />} />
+        <Route path="unauthorized" element={<Unauthorized />} />
 
         {/* Protected Routes that require authentication */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/livedata" element={<LiveData />} />
-            <Route path="/datahistory" element={<DataHistory />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="livedata" element={<LiveData />} />
+            <Route path="datahistory" element={<DataHistory />} />
           </Route>
         </Route>
 
         {/* Admin-only routes */}
-        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="/login" />}>
+        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
           <Route element={<AuthenticatedLayout />}>
             <Route
-              path="/accountmanagement"
+              path="accountmanagement"
               element={
                 <UserProvider>
                   <AccountManagement />
@@ -61,16 +61,16 @@ const App: React.FC = () => {
         </Route>
 
         {/* Super Admin-only route */}
-        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="/login" />}>
+        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="login" />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="/admin/activity-logs" element={<ActivityLogPage />} />
+            <Route path="activity-logs" element={<ActivityLogPage />} />
           </Route>
         </Route>
 
         {/* Admin Logs route */}
-        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="/login" />}>
+        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="/admin/logs" element={<AdminLogs />} />
+            <Route path="logs" element={<AdminLogs />} />
           </Route>
         </Route>
 

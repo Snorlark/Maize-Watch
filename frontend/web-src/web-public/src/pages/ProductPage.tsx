@@ -1,206 +1,158 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import AOS from 'aos';
-import 'aos/dist/aos.css';
+import { useState } from 'react';
 import { X } from "lucide-react";
 
 
-export default function Index() {
+export default function ProductPage() {
   const navigate = useNavigate();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { pathname } = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
 
+   useEffect(() => {
+      AOS.init({ duration: 1000, once: true });
+    }, []);
+
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+      
+      const images = [
+          '/web-public/public/images/Phealthycorn.png',
+          '/web-public/public/images/Pdetailedtables.png'
+      ];
+  
+      const handlePrevImage = () => {
+          setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      };
+  
+      const handleNextImage = () => {
+          setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      };
+  
 
   useEffect(() => {
-    AOS.init({ duration: 1000, once: true });
-  }, []);
-
-    const images = [
-        '/images/healthycorn.png',
-        '/images/prescriptions.png',
-        '/images/detailedtables.png'
-    ];
-
-    const handlePrevImage = () => {
-        setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    };
-
-    const handleNextImage = () => {
-        setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    };
-
-    return (
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return (
     <>
-        <body className="bg-(--color-white) scroll-smooth">
-          <main>
-            
-          <div className="bg-[url(/images/background.png)] rounded-bl-[50px] rounded-br-[50px] rounded-tl-none rounded-tr-none relative h-197 bg-cover bg-center flex items-center justify-center">
-            <nav className="fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
-              <div className="w-10 md:w-20 py-2 flex items-center">
+      <body className="bg-(--color-white) min-h-screen">
+        <main>
+          <div className=" relative h-10 bg-cover bg-center flex items-center justify-center">
+            <nav className="bg-(--color-dgreen) fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
+              <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
-                  src="/images/smalllogo.png"
+                  onClick={() => navigate('/')}
+                  src="/web-public/public/images/smalllogo.png"
                   alt="Logo"
-                  className="h-14 w-14 md:h-18 md:w-18 object-cover"
+                  className="h-14 w-14 md:h-18 md:w-18 object-cover cursor-pointer ease-in-out duration-250 hover:scale-110"
                 />
               </div>
-  
               <div>
                 <ul className="flex items-center font-bold space-x-4 md:space-x-15">
                   <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Get App</button></li>
-                  <li>
-                    <button>
+                  <li><button>
                     <img
-                    onClick={() => navigate('/header-menu')}
-                    src="/images/menu-green.png"
-                    alt="Logo"
-                    className="h-8 w-8 md:h-10 md:w-10 object-cover opacity-80 hover:opacity-100 duration-300"
+                      onClick={() => navigate('/header-menu')}
+                      src="/web-public/public/images/menu-green.png"
+                      alt="Logo"
+                      className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
                     />
-                    </button>
-                  </li>
+                  </button></li>
                 </ul>
               </div>
             </nav>
-  
-            {/* HERO PAGE */}
-            <div className="relative flex flex-col items-center justify-center text-white text-center space-y-4 md:space-y-6 w-full px-4">
-              <div 
-                  data-aos="zoom-in" className="flex flex-col items-center">
-                <img src="/images/mainlogo.png" alt="Maize Watch Logo" className=" w-80 md:w-100 lg:w-180 xl:w-250 m-auto rounded-full transition-all duration-300 hover:scale-105" />
-              </div>
- 
-              <div 
-                  data-aos="fade-up" data-aos-delay="200" className='lg:mt-10 '>
-                <button onClick={() => {
-                  const target = document.getElementById('about-section');
-                  if (target) {
-                    const offset = -250; 
-                    const bodyRect = document.body.getBoundingClientRect().top;
-                    const elementRect = target.getBoundingClientRect().top;
-                    const elementPosition = elementRect - bodyRect;
-                    const offsetPosition = elementPosition + offset;
+          </div>
 
-                    window.scrollTo({
-                      top: offsetPosition,
-                      behavior: 'smooth'
-                    });
-                  }
-                }}className="animate-bounce mt-2 md:mt-4 px-6 hover:animate-none cursor-pointer md:px-8 py-3 md:py-3 border-2 border-white text-white rounded-full hover:scale-108 hover:bg-white hover:text-(--color-dgreen) transition-all ease-in-out duration-300 text-base md:text-lg font-medium align-text-center" >
-                  See more ↓
-                </button>
+          <div className="py-16 2xl:pt-20 px-4 md:px-20 mr-5">
+            <div className="container mx-auto px-4 md:px-20 lg:px-80">
+              <div className=" space-y-6">
+                <div className="flex items-center gap-3">
+                  <div data-aos="zoom-in" className="p-2 ">
+                    <img src="/web-public/public/images/header-product.png" alt="Brain Icon" className="w-full h-full" />
+                  </div>
+                </div>
+                <p data-aos="fade-up" data-aos-delay="200" className="py-5 xl:py-10  xl:text-lg">
+                 <b>Maize Watch</b>  offers a real-time, IoT-powered mobile and web application designed to revolutionize corn farming by turning raw environmental data into actionable insights. Using a network of smart sensors—monitoring temperature, humidity, soil moisture, light intensity, and soil pH—our system collects critical information from the field and transmits it instantly to the cloud via a SIM-enabled microcontroller.
+                </p>
+                <div className="items-center">
+                <button
+                    data-aos="fade" data-aos-delay="400"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center  text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                  >
+                    {isOpen ? "LESS -" : "MORE +"}
+                  </button>
+
+                  {isOpen && (
+                    <div className="py-5 xl:text-lg">
+                      <p>
+                      Weather forecasts, crop growth modeling, and historical yield data are all incorporated to assist farmers in making data-driven decisions that optimize output while preserving resources. As this project seeks to increase crop yields, decrease resource waste, and advance sustainable agriculture methods, it serves as a guide for farming decisions. 
+                      </p>
+
+                      <br/>
+
+                      <p>By supporting data-informed farming in the face of climate change, this technology approach supports a number of Sustainable Development Goals (SDGs), such as Zero Hunger, Climate Action, Life on Land, and Sustainable Cities and Communities.</p>
+
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-            
-            {/* ABOUT PART */}
-          <div data-aos="fade-up" data-aos-delay="200" className="relative -mt-12 pb-8 md:pb-4 ">
-              <div id="about-section"  className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
-                <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-[31px] p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-(--color-llgreen) cursor-pointer">
-                  <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
-                    <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">
-                        Maximize your yields,<br />minimize your worries.
-                      </h2>
-                      <p className="text-[14px] md:text-[16px] lg:text-[24px] xl:text-[18px] opacity-90 md:mr-10">
-                        Maize Watch is a smart farming system that monitors real-time corn field
-                        conditions using IoT sensors and delivers data-driven recommendations
-                        through AI-powered prescriptive analytics—helping farmers grow
-                        healthier crops, efficiently and sustainably.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-  
-            <div className="py-8 md:py-15 px-4 md:px-30">
-              <div className="container mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+          <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
-                  <div data-aos="fade-up" data-aos-delay="300">
-                  <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-40 lg:mr-10 ml-2 md:ml-8">
-                      <p className="text-sm md:text-base">
-                        We aim to support Filipino corn farmers by providing real-time insights
-                        for smarter, more efficient corn farming.
-                      </p>
-                    </div>
+          {/* See the prototype */}
+          <section className="py-16 px-4 md:px-20 ">
+            <div className="container mx-auto px-4 md:px-20 lg:px-80">
+              <div className=" space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="py-2 ">
+                    <h2 className=" text-right text-3xl md:text-6xl font-bold text-(--color-dgreen)">See the prototype.</h2>
                   </div>
-                  </div>
-  
-                  <div data-aos="fade-up" data-aos-delay="600" > 
-                  <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-45 lg:mr-10 ml-2 md:ml-8">
-                      <p className="text-sm md:text-base">
-                        We use IoT and Data Analytics to simplify decision-making, promote sustainable
-                        practices, and ensure accessible tools for all.
-                      </p>
-                    </div>
-                  </div>
-                  </div>
-  
-                  <div data-aos="fade-up" data-aos-delay="900">
-                  <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-[31px] text-white transition-all duration-300 hover:opacity-90 hover:text-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-35 mb-3 md:mr-45 lg:mr-10 ml-2 md:ml-8">
-                      <p className="text-sm md:text-base">
-                        We value innovation, sustainability, and empowering farmers through accurate,
-                        data-driven solutions.
-                      </p>
-                    </div>
-                  </div>
-                  </div>
+
                 </div>
               </div>
             </div>
-  
-            <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
-            
-            {/* APP PART */}
-            <div className="py-16 px-4 md:px-20">
-              <div className="container mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          </section>
+
+              <div className="container mx-auto 2xl:px-40 ">
+                <div data-aos="fade" data-aos-delay="200" className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   
-                  <div className=" ml-10  space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div data-aos="fade-down" data-aos-delay="400" className="p-2 ">
-                        <img src="/images/header.png" alt="Brain Icon" className="w-full h-full" />
+                  <div className="px-15 2xl:pl-35 mx-auto  space-y-10">
+                    <div className="flex items-center gap-2">
+                      <div data-aos="fade-down" data-aos-delay="400" >
+                        <h2 className="text-5xl md:text-4xl font-bold text-(--color-dgreen)">Real-time Monitoring</h2>
                       </div>
                     </div>
   
-                    <p  data-aos="fade-right" data-aos-delay="400" className="text-gray-700 text-sm md:text-base xl:text-lg max-w-xl">
-                    ──────── &nbsp;&nbsp;&nbsp; We also offer a real-time app that helps corn farmers optimize crop yield through IoT sensor data. It monitors key environmental factors and provides actionable insights from our prescriptive analytics, enabling smarter farming decisions for better productivity and sustainability.
+                    <p data-aos="fade-right" data-aos-delay="400" className=" xl:py-8 text-sm md:text-base xl:text-lg max-w-xl">
+                      Monitor your corn crops in real time with IoT sensors—track temperature, soil moisture, humidity, pH level, and light intensity for healthier harvests. Get instant visibility into field conditions, enabling quick decisions on irrigation, soil care, and crop management to support optimal growth and yield.
                     </p>
                     
-                    <div  data-aos="fade" data-aos-delay="500" className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90  ">
-                      <button onClick={() => navigate('/solutions')} className="cursor-pointer flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1">
-                        LEARN MORE
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
                       
-                      <div className="flex gap-4">
+                      <div className="pl-30 2xl:pl-35 flex gap-4">
                         <button 
                           onClick={handlePrevImage}
-                          className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
+                          className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                           </svg>
                         </button>
                         <button 
                           onClick={handleNextImage}
-                          className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
+                          className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </button>
-                      </div>
+                    
                     </div>
                   </div>
                   
@@ -209,91 +161,111 @@ export default function Index() {
                     <img
                       src={images[currentImageIndex]}
                       alt="Maize Watch App Preview"
-                      className="relative w-[280px] md:w-[400px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
+                      className="relative w-[280px] md:w-[300px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
                     />
                   </div>
                 </div>
               </div>
-            </div>
-  
-  <br /><br />
-  
-            {/* TECHNOLOGY PART */}
-            <div className="bg-[url(/images/background2.png)] rounded-tr-[50px] rounded-tl-[50px] rounded-bl-none relative min-h-screen bg-cover bg-center flex items-center justify-center py-8 md:py-20">
-                 <div  className="container px-4 md:px-16">
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-4 lg:gap-0">
-                    
-                    {/* colum1 */}
-                     <div data-aos="fade" className="text-white space-y-4 md:space-y-6 mt-4 md:mt-30 lg:mt-40 2xl:mt-100 px-2 md:px-0">
-                       <h2 data-aos="fade-down" data-aos-delay="400" className="text-2xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                         The Technology<br />Behind.
-                       </h2>
-                       <div data-aos-delay="500">
+              <br/> <br/>
+              
+          <hr className="my-5 border-t border-(--color-lgreen) mt-20  mx-10 xl:mx-40" />
 
-                       <button  onClick={() => navigate('/technology')} className="flex items-center gap-2 text-sm md:text-lg font-semibold text-(--color-white) border-b-2 border-(--color-white) pb-1 hover:text-(--color-lgreen) hover:border-(--color-lgreen) transition-all duration-300 cursor-pointer">
-                         LEARN MORE
-                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
-                           <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                         </svg>
-                       </button>
-                       
-                       </div>
-                     </div>
-                    
-                    {/* colum2 */}
-                      {/* subcolumn1 */}
-                    <div data-aos="fade-left" data-aos-delay="400" className="container mx-auto xl:col-span-2 2xl:col-span-1 px-4 xl:mx-0">
-                      <div className="grid grid-cols-1 xl:grid-cols-2 ">
-  
-                        <div className="text-white mt-4 md:mt-40 mx-auto w-full max-w-[320px] lg:max-w-full">
-                          <div className="bg-(--color-dgreen) 2xl:h-100 rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[30px] rounded-br-[30px] xl:rounded-tr-none xl:rounded-br-none p-6 md:p-15 lg:p-20 xl:p-20 2xl:p-17">
-                            <h3 className="text-md md:text-2xl lg:text-3xl 2xl:text-[28px] font-bold uppercase mb-3 md:mb-4 2xl:mb-7">
-                              Real-time<br />Monitoring
-                            </h3>
-                            <p className="leading-relaxed text-sm md:text-base lg:text-[18px] 2xl:text-[16px] text-white/90">
-                              Monitor your corn crops in real time with IoT sensors—track temperature, soil moisture, humidity, pH level, and light intensity for healthier harvests.
-                            </p>
-                          </div>
-                        </div>
-  
-                        {/* subcolumn2 */}
-                        <div className="text-white mt-4 md:mt-10 xl:mt-40 mx-auto w-full max-w-[320px] lg:max-w-full">
-                          <div className="bg-(--color-lgreen)  2xl:h-100 rounded-tl-[30px] rounded-tr-[30px] rounded-bl-[30px] rounded-br-[30px] xl:rounded-tl-none xl:rounded-bl-none p-6 md:p-15 lg:p-20 xl:p-20 2xl:p-17">
-                            <h3 className="text-md md:text-2xl lg:text-3xl 2xl:text-[28px] font-bold uppercase mb-3 md:mb-4 2xl:mb-6">
-                              Prescriptive<br />Insights
-                            </h3>
-                            <p className="leading-relaxed text-sm md:text-base lg:text-[18px] 2xl:text-[16px] text-white/90">
-                              We turn real-time corn crop data into smart recommendations—reducing risks, solve issues fast, and maximize your farm's potential.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                   </div>
-                 </div>
-             </div>
-             <br />
-  
-      
-             {/* FOOTER PART */}
-             <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-10">
+          <section className=" py-12 px-4 md:px-20">
+            <div data-aos="fade" data-aos-delay="400"  className="max-w-5xl mx-auto space-y-6 text-center">
+              <h2 data-aos="fade-down" data-aos-delay="400" className="text-3xl md:text-4xl font-bold text-(--color-dgreen)">Learn and Grow.</h2>
+
+              <div className="flex flex-col items-center space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-md max-w-3xl w-full xl:my-15">
+                  <div data-aos="fade-right" data-aos-delay="400"  className="bg-(--color-dgreen) text-white p-10 flex items-center justify-center">
+                    <p className="text-lg font-semibold text-left">Want to understand how the app works?</p>
+                  </div>
+                  <div data-aos="fade-left" data-aos-delay="400"  className="bg-(--color-lgreen) text-white p-12 flex items-center justify-center">
+                    <p className="text-sm md:text-base text-left">
+                      Navigate through our <span className="underline">knowledge hub</span>, just click the learn more below.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigate('/technology')}
+                  className="flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen)  hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                >
+                  LEARN MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
+
+          {/* <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-12">
+            <div className="container mx-auto max-w-6xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+                <div className="space-y-3">
+                  <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                  <div className="ml-7 flex gap-3">
+
+                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
+                      <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                    </a>
+                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
+                      <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
+                    </a>
+                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
+                      <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                    </a>
+                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
+                      <img src="/images/x.png" alt="X" className="h-5 w-5" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="mt-2 md:mt-0">
+                  <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Information</h4>
+                  <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
+                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">Privacy</a></li>
+                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">Terms of Use</a></li>
+                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">About us</a></li>
+                  </ul>
+                </div>
+
+                <div className="mt-2 md:mt-0">
+                  <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Contact Us</h4>
+                  <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
+                    <li>1234 Taft Avenue</li>
+                    <li>Malate, Manila 1004 Philippines</li>
+                    <li>Office: (02) 123-4567 (Mon-Fri)</li>
+                  </ul>
+                </div>
+
+                <div className="text-left md:text-right text-(--color-dgreen) text-xs md:text-sm mt-4 md:mt-12">
+                  © 2025 NOVU. All rights reserved.
+                </div>
+              </div>
+            </div>
+          </footer> */}
+
+           <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-10">
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
-                     <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                     <img src="/web-public/public/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
                      <div className="ml-7 flex gap-3">
                        
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                         <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
+                         <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                         <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/x.png" alt="X" className="h-5 w-5" />
+                         <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5" />
                        </a>
                      </div>
                    </div>
@@ -330,12 +302,11 @@ export default function Index() {
                  </div>
                </div>
              </footer>
-             <br />
-           </main>
-         </body>
+          <br />
+        </main>
+      </body>
 
-
-
+      
  {aboutModalOpen && (
         <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
           <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
@@ -349,7 +320,7 @@ export default function Index() {
             <div className="flex items-center gap-2 mb-4">
               <div className="rounded-full">
                 <img 
-                  src="/maizewatchlogo.png" 
+                  src="/web-public/public/maizewatchlogo.png" 
                   alt="Maize Watch Icon" 
                   className="h-10 w-10"
                   onError={(e) => {
@@ -390,7 +361,7 @@ export default function Index() {
             <div className="flex items-center gap-2 mb-4">
               <div className="rounded-full">
                 <img 
-                  src="/maizewatchlogo.png" 
+                  src="/web-public/public/maizewatchlogo.png" 
                   alt="Maize Watch Icon" 
                   className="h-10 w-10"
                   onError={(e) => {
@@ -502,7 +473,7 @@ export default function Index() {
             <div className="flex items-center gap-2 mb-4">
               <div className="rounded-full">
                 <img 
-                  src="/maizewatchlogo.png" 
+                  src="/web-public/public/maizewatchlogo.png" 
                   alt="Maize Watch Icon" 
                   className="h-10 w-10"
                   onError={(e) => {
@@ -580,5 +551,5 @@ export default function Index() {
         </div>
       )}
     </>
-    )
-  }
+  )
+}
