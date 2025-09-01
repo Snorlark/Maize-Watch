@@ -23,7 +23,7 @@ export default function GetAppPage() {
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   onClick={() => navigate('/')}
-                  src="/images/smalllogo.png"
+                  src="/web-public/public/images/smalllogo.png"
                   alt="Logo"
                   className="h-14 w-14 md:h-18 md:w-18 object-cover cursor-pointer ease-in-out duration-250 hover:scale-110"
                 />
@@ -35,7 +35,7 @@ export default function GetAppPage() {
                     <button>
                     <img
                     onClick={() => navigate('/header-menu')}
-                    src="/images/menu-green.png"
+                    src="/web-public/public/images/menu-green.png"
                     alt="Logo"
                     className="h-8 w-8 md:h-10 md:w-10 object-cover opacity-80 hover:opacity-100 duration-300"
                     />
@@ -54,7 +54,7 @@ export default function GetAppPage() {
                          w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15 transition-discrete ease-in-out duration-500"></div>
                             <img
                             data-aos="zoom-in"
-                            src="/images/getapp.png"
+                            src="/web-public/public/images/getapp.png"
                             alt="Maize Watch App Preview"
                             className="relative w-[340px] md:w-[460px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
                             />

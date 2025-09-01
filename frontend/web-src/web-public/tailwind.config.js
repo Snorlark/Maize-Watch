@@ -11,6 +11,8 @@ export default {
       },
       colors: {
         'custom-green': '#DFE8D1',
+        'dgreen': 'var(--color-dgreen)',
+        'lgreen': 'var(--color-lgreen)',
       },
     },
   },

@@ -156,12 +156,12 @@ const Sidebar: React.FC = () => {
   };
 
   const navItems = [
-    { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/datahistory", icon: ScrollText, label: "Data History" },
-    { to: "/livedata", icon: Activity, label: "Live Data" },
+    { to: "/admin-portal-xyz123/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/admin-portal-xyz123/datahistory", icon: ScrollText, label: "Data History" },
+    { to: "/admin-portal-xyz123/livedata", icon: Activity, label: "Live Data" },
     ...(user?.role === 'admin' || user?.role === 'super_admin' ? [
-      { to: "/accountmanagement", icon: Users, label: "Account Management" },
-      { to: "/admin/activity-logs", icon: ScrollText, label: "Activity Log" }
+      { to: "/admin-portal-xyz123/accountmanagement", icon: Users, label: "Account Management" },
+      { to: "/admin-portal-xyz123/activity-logs", icon: ScrollText, label: "Activity Log" }
     ] : [])
   ];
 
@@ -190,7 +190,7 @@ const Sidebar: React.FC = () => {
             <div className="flex items-center justify-between">
               {!isDesktopCollapsed && (
                 <img
-                  src="/maizewatch.png"
+                  src="/web-admin/public/maizewatch.png"
                   alt="Maize Watch Logo"
                   className="h-10 w-auto max-w-full"
                 />
@@ -321,7 +321,7 @@ const Sidebar: React.FC = () => {
               {/* Mobile Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#D1E7BC]">
                 <img
-                  src="/maizewatch.png"
+                  src="/web-admin/public/maizewatch.png"
                   alt="Maize Watch Logo"
                   className="h-10 w-auto max-w-[180px]"
                 />

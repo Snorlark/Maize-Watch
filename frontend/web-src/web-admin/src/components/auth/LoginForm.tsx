@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
+  const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'admin-portal-xyz123';
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
@@ -32,7 +33,7 @@ const LoginForm: React.FC = () => {
       
       if (success) {
         console.log('Login successful, attempting to navigate to dashboard');
-        navigate('/dashboard');
+        navigate(`/${ADMIN_PATH}/dashboard`);
         console.log('Navigation function called');
       } else {
         setError('Invalid username or password');
@@ -47,11 +48,11 @@ const LoginForm: React.FC = () => {
 
   return (
     <main className="bg-white">
-      <section className="bg-[url(/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
+      <section className="bg-[url(/web-admin/public/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
         <div className="mt-10 md:mt-10 flex flex-col items-center justify-center z-10 space-y-6  pt-0 pb-20">
           <div>
             <img
-              src="/images/loginsignuplogo.png"
+              src="/web-admin/public/images/loginsignuplogo.png"
               alt="Maize Watch Text"
               className="w-60 md:w-80 lg:w-160"
             />
