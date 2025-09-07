@@ -4,6 +4,30 @@ import { HTTP_STATUS, RATE_LIMITS } from '../utils/constants';
 import { logger } from '../utils/logger';
 import { redis } from '../config/redis';
 
+// Helper: allow temporary disable or IP whitelist via env
+// RATE_LIMIT_DISABLE=true will skip all rate limits
+// RATE_LIMIT_WHITELIST=ip1,ip2 will skip for those IPs
+const isRateLimitDisabled = () => process.env.RATE_LIMIT_DISABLE === 'true';
+const getWhitelistedIps = (): Set<string> => {
+  const raw = process.env.RATE_LIMIT_WHITELIST || '';
+  return new Set(
+    raw
+      .split(',')
+      .map(ip => ip.trim())
+      .filter(ip => ip.length > 0)
+  );
+};
+
+const shouldSkipRateLimit = (req: Request): boolean => {
+  if (isRateLimitDisabled()) return true;
+  const whitelist = getWhitelistedIps();
+  const ipCandidates = [req.ip, req.socket.remoteAddress, req.headers['x-forwarded-for'] as string | undefined]
+    .filter(Boolean)
+    .flatMap(val => (typeof val === 'string' ? val.split(',') : []))
+    .map(ip => ip.trim());
+  return ipCandidates.some(ip => whitelist.has(ip));
+};
+
 // Simple in-memory rate limit store compatible with express-rate-limit
 class MemoryRateLimitStore implements Store {
   private store: Map<string, { count: number; resetTime: number }> = new Map();
@@ -71,6 +95,7 @@ export const generalLimiter = rateLimit({
   store: new MemoryRateLimitStore('rl:general:', RATE_LIMITS.GENERAL.WINDOW_MS),
   windowMs: RATE_LIMITS.GENERAL.WINDOW_MS,
   max: RATE_LIMITS.GENERAL.MAX_REQUESTS,
+  skip: shouldSkipRateLimit,
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -99,6 +124,7 @@ export const authLimiter = rateLimit({
   store: new MemoryRateLimitStore('rl:auth:', RATE_LIMITS.AUTH.WINDOW_MS),
   windowMs: RATE_LIMITS.AUTH.WINDOW_MS,
   max: RATE_LIMITS.AUTH.MAX_REQUESTS,
+  skip: shouldSkipRateLimit,
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',
@@ -129,6 +155,7 @@ export const apiLimiter = rateLimit({
   store: new MemoryRateLimitStore('rl:api:', RATE_LIMITS.API.WINDOW_MS),
   windowMs: RATE_LIMITS.API.WINDOW_MS,
   max: RATE_LIMITS.API.MAX_REQUESTS,
+  skip: shouldSkipRateLimit,
   message: {
     success: false,
     message: 'API rate limit exceeded, please slow down.',
@@ -158,6 +185,7 @@ export const uploadLimiter = rateLimit({
   store: new MemoryRateLimitStore('rl:upload:', 60 * 1000),
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 uploads per minute
+  skip: shouldSkipRateLimit,
   message: {
     success: false,
     message: 'Too many file uploads, please try again later.',
@@ -186,6 +214,7 @@ export const passwordResetLimiter = rateLimit({
   store: new MemoryRateLimitStore('rl:password:', 60 * 60 * 1000),
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 password reset attempts per hour
+  skip: shouldSkipRateLimit,
   message: {
     success: false,
     message: 'Too many password reset attempts, please try again later.',
@@ -214,6 +243,7 @@ export const createRateLimiter = (windowMs: number, max: number, message?: strin
     store: new MemoryRateLimitStore(prefix || 'rl:custom:', windowMs),
     windowMs,
     max,
+    skip: shouldSkipRateLimit,
     message: {
       success: false,
       message: message || 'Rate limit exceeded, please try again later.',

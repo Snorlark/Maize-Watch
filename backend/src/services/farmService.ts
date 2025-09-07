@@ -1,19 +1,37 @@
 import Farm, { IFarm } from '../models/Farm';
+import Field from '../models/Field';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import User from '../models/User';
 import Sensor from '../models/Sensor';
 import SensorReading from '../models/SensorReading';
+import { HTTP_STATUS } from '../utils/constants';
 
 interface FarmCreationData {
   userId: string;
-  fieldName: string;
+  farmName: string;
   location: string;
-  soilType: string;
-  plantingDate: Date;
-  growthStage?: string;
+  fields?: Array<{
+    fieldName: string;
+    plantingDate: Date;
+    growthStage?: 'VE' | 'V3' | 'V8' | 'VT' | 'R1' | 'R6';
+    sensors: Array<{
+      deviceID: string;
+      sensorName: string;
+      description: string;
+      soilType: 'loamy' | 'sandy' | 'clay' | 'silty';
+      readings: {
+        soilMoisture?: number;
+        temperature?: number;
+        humidity?: number;
+        lightIntensity?: number;
+        soilPh?: number;
+      };
+    }>;
+  }>;
   // Legacy support for old interface
   owner?: string;
+  description?: string;
 }
 
 interface FarmAnalytics {
@@ -54,112 +72,221 @@ class FarmService {
    */
   async createFarm(farmData: FarmCreationData): Promise<IFarm> {
     try {
-      // Verify owner exists
-      const ownerId = farmData.userId || farmData.owner;
-      const owner = await User.findById(ownerId);
-      if (!owner) {
-        throw new AppError('Owner not found', 404);
+      logger.info('🏗️ FarmService.createFarm called', {
+        farmData: JSON.stringify(farmData, null, 2)
+      });
+
+      // Handle legacy owner field
+      const userId = farmData.userId || farmData.owner;
+      
+      if (!userId) {
+        logger.error('🚨 User ID is missing from farm data', { farmData });
+        throw new AppError('User ID is required', HTTP_STATUS.BAD_REQUEST);
       }
 
-      const farm = new Farm(farmData);
-      await farm.save();
+      logger.info('🔍 Checking if user exists', { userId });
 
-      logger.info(`Farm created: ${farm.fieldName}`, {
+      // Check if user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        logger.error('🚨 User not found', { userId });
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
+      }
+
+      logger.info('✅ User found', { 
+        userId, 
+        userFullName: user.fullName, 
+        userEmail: user.email 
+      });
+
+      // Check if user already has a farm (users can only have one farm with multiple fields)
+      const existingFarm = await Farm.findOne({ userId });
+      
+      if (existingFarm) {
+        logger.info('🔄 User already has a farm, adding fields to existing farm', { 
+          existingFarmId: existingFarm._id,
+          existingFarmName: existingFarm.farmName,
+          newFieldsCount: farmData.fields?.length || 0
+        });
+        
+        // Add new fields to existing farm
+        if (farmData.fields && farmData.fields.length > 0) {
+          // Ensure growthStage is set for each field
+          const fieldsToAdd = farmData.fields.map(field => ({
+            ...field,
+            growthStage: field.growthStage || 'VE' as const
+          }));
+          existingFarm.fields.push(...fieldsToAdd);
+          await existingFarm.save();
+          
+          logger.info('✅ Fields added to existing farm successfully', {
+            farmId: existingFarm._id,
+            totalFieldsCount: existingFarm.fields.length,
+            addedFieldsCount: farmData.fields.length
+          });
+          
+          return existingFarm;
+        } else {
+          logger.info('ℹ️ No new fields to add to existing farm', {
+            farmId: existingFarm._id,
+            existingFieldsCount: existingFarm.fields.length
+          });
+          
+          return existingFarm;
+        }
+      }
+
+      logger.info('🔍 Validating fields data', {
+        fieldsCount: farmData.fields?.length || 0,
+        fields: farmData.fields ? JSON.stringify(farmData.fields, null, 2) : 'No fields'
+      });
+
+      // Validate fields structure if provided
+      if (farmData.fields && farmData.fields.length > 0) {
+        for (let i = 0; i < farmData.fields.length; i++) {
+          const field = farmData.fields[i];
+          logger.info(`🔍 Validating field ${i + 1}`, {
+            fieldName: field.fieldName,
+            plantingDate: field.plantingDate,
+            growthStage: field.growthStage,
+            sensorsCount: field.sensors?.length || 0
+          });
+
+          if (!field.fieldName) {
+            logger.error('🚨 Field name is required', { fieldIndex: i, field });
+            throw new AppError(`Field ${i + 1}: fieldName is required`, HTTP_STATUS.BAD_REQUEST);
+          }
+
+          if (!field.plantingDate) {
+            logger.error('🚨 Planting date is required', { fieldIndex: i, field });
+            throw new AppError(`Field ${i + 1}: plantingDate is required`, HTTP_STATUS.BAD_REQUEST);
+          }
+
+          // Validate sensors if provided
+          if (field.sensors && field.sensors.length > 0) {
+            for (let j = 0; j < field.sensors.length; j++) {
+              const sensor = field.sensors[j];
+              logger.info(`🔍 Validating sensor ${j + 1} in field ${i + 1}`, {
+                deviceID: sensor.deviceID,
+                sensorName: sensor.sensorName,
+                soilType: sensor.soilType
+              });
+
+              if (!sensor.deviceID) {
+                logger.error('🚨 Sensor deviceID is required', { fieldIndex: i, sensorIndex: j, sensor });
+                throw new AppError(`Field ${i + 1}, Sensor ${j + 1}: deviceID is required`, HTTP_STATUS.BAD_REQUEST);
+              }
+            }
+          }
+        }
+      }
+
+      logger.info('🏗️ Creating farm document', {
+        userId,
+        farmName: farmData.farmName,
+        fieldsCount: farmData.fields?.length || 0
+      });
+
+      const farm = new Farm({
+        userId,
+        farmName: farmData.farmName,
+        location: farmData.location,
+        fields: farmData.fields || []
+      });
+
+      logger.info('💾 Saving farm to database');
+      await farm.save();
+      
+      logger.info('✅ Farm created successfully with new structure', {
         farmId: farm._id,
-        location: farm.location,
-        ownerId: ownerId
+        userId,
+        farmName: farm.farmName,
+        fieldsCount: farm.fields?.length || 0,
+        savedFarm: JSON.stringify(farm.toObject(), null, 2)
       });
 
       return farm;
     } catch (error) {
-      logger.error('Error creating farm:', error);
+      logger.error('🚨 Error creating farm', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        stack: error instanceof Error ? error.stack : undefined,
+        farmData: JSON.stringify(farmData, null, 2)
+      });
       throw error;
     }
   }
 
   /**
-   * Get farm by ID
+   * Get farm by ID with embedded fields
+   * @param farmId - Farm ID
+   * @returns Promise<IFarm>
    */
   async getFarmById(farmId: string): Promise<IFarm> {
     try {
       const farm = await Farm.findById(farmId);
+      
       if (!farm) {
-        throw new AppError('Farm not found', 404);
+        throw new AppError('Farm not found', HTTP_STATUS.NOT_FOUND);
       }
+      
       return farm;
     } catch (error) {
-      logger.error('Error fetching farm:', error);
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logger.error('Error fetching farm by ID', { error: error instanceof Error ? error.message : 'Unknown error', farmId });
+      throw new AppError('Failed to fetch farm', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
-   * Get farms by user ID
+   * Get farms by owner/user ID with embedded fields
+   * @param userId - User ID (optional for admin)
+   * @returns Promise<IFarm[]>
    */
-  async getFarmsByUserId(userId: string): Promise<IFarm[]> {
+  async getFarmsByOwner(userId?: string): Promise<IFarm[]> {
     try {
-      const farms = await Farm.find({ userId });
+      const query = userId ? { userId } : {};
+      const farms = await Farm.find(query)
+        .sort({ createdAt: -1 });
+      
       return farms;
     } catch (error) {
-      logger.error('Error fetching farms by user:', error);
-      throw error;
+      logger.error('Error fetching farms by owner', { error: error instanceof Error ? error.message : 'Unknown error', userId });
+      throw new AppError('Failed to fetch farms', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
-   * Get farms by owner (legacy method for backward compatibility)
+   * Update farm with embedded fields support
+   * @param farmId - Farm ID
+   * @param updateData - Update data
+   * @returns Promise<IFarm>
    */
-  async getFarmsByOwner(ownerId: string): Promise<IFarm[]> {
-    return this.getFarmsByUserId(ownerId);
-  }
-
-  /**
-   * Add missing addFarmImages method for backward compatibility
-   */
-  async addFarmImages(farmId: string, imageUrls: string[]): Promise<IFarm> {
-    try {
-      const farm = await Farm.findById(farmId);
-      if (!farm) {
-        throw new AppError('Farm not found', 404);
-      }
-
-      // Since simplified farm model doesn't support images, just return the farm
-      logger.info('Image upload attempted on simplified farm model', {
-        farmId: farm._id,
-        imageCount: imageUrls.length
-      });
-
-      return farm;
-    } catch (error) {
-      logger.error('Error adding farm images:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update farm
-   */
-  async updateFarm(farmId: string, updateData: Partial<IFarm>): Promise<IFarm> {
+  async updateFarm(farmId: string, updateData: Partial<FarmCreationData>): Promise<IFarm> {
     try {
       const farm = await Farm.findByIdAndUpdate(
         farmId,
-        { ...updateData, updatedAt: new Date() },
-        { new: true }
-      );
-
+        { $set: updateData },
+        { new: true, runValidators: true }
+      ).populate('userId', 'fullName email username');
+      
       if (!farm) {
-        throw new AppError('Farm not found', 404);
+        throw new AppError('Farm not found', HTTP_STATUS.NOT_FOUND);
       }
-
-      logger.info(`Farm updated: ${farm.fieldName}`, {
+      
+      logger.info('Farm updated successfully', {
         farmId: farm._id,
-        location: farm.location
+        updatedFields: Object.keys(updateData)
       });
-
+      
       return farm;
     } catch (error) {
-      logger.error('Error updating farm:', error);
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      }
+      logger.error('Error updating farm', { error: error instanceof Error ? error.message : 'Unknown error', farmId, updateData });
+      throw new AppError('Failed to update farm', HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -173,7 +300,7 @@ class FarmService {
         throw new AppError('Farm not found', 404);
       }
 
-      logger.info(`Farm deleted: ${farm.fieldName}`, {
+      logger.info(`Farm deleted: ${farm.farmName}`, {
         farmId: farm._id
       });
     } catch (error) {
@@ -195,8 +322,10 @@ class FarmService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Get all sensors for the farm
-      const sensors = await Sensor.find({ farm: farmId });
+      // Get all fields for the farm and their sensors
+      const fields = await Field.find({ farmId });
+      const fieldIds = fields.map(f => f._id);
+      const sensors = await Sensor.find({ field: { $in: fieldIds } });
       const sensorIds = sensors.map(s => s._id);
 
       // Get recent readings
@@ -351,7 +480,7 @@ class FarmService {
         throw new AppError('Farm not found', 404);
       }
 
-      logger.info(`Farm status updated: ${farm.fieldName} -> ${status}`, {
+      logger.info(`Farm status updated: ${farm.farmName} -> ${status}`, {
         farmId: farm._id,
         status,
         location: farm.location
@@ -394,7 +523,7 @@ class FarmService {
         throw new AppError('Farm not found', 404);
       }
 
-      logger.info(`Device linked to farm: ${farm.fieldName}`, {
+      logger.info(`Device linked to farm: ${farm.farmName}`, {
         farmId: farm._id,
         deviceId,
         macAddress
@@ -429,7 +558,7 @@ class FarmService {
         throw new AppError('Farm not found', 404);
       }
 
-      logger.info(`Device unlinked from farm: ${farm.fieldName}`, {
+      logger.info(`Device unlinked from farm: ${farm.farmName}`, {
         farmId: farm._id
       });
 
@@ -480,52 +609,30 @@ class FarmService {
   }
 
   private calculateEstimatedYield(farm: IFarm): any {
-    // Simplified yield calculation based on growth stage and planting date
-    const daysFromPlanting = Math.floor(
-      (new Date().getTime() - farm.plantingDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    // Basic corn yield estimation (tons per hectare)
+    // Simplified yield calculation for farm-level aggregation
     const baseYield = 8.5; // Average corn yield
-    const yieldFactor = Math.min(daysFromPlanting / 120, 1); // 120 days to maturity
     
     return {
-      estimated: (baseYield * yieldFactor).toFixed(2),
+      estimated: baseYield.toFixed(2),
       unit: 'tons/hectare',
       confidence: 'medium'
     };
   }
 
   private calculateHarvestReadiness(farm: IFarm): any {
-    const daysFromPlanting = Math.floor(
-      (new Date().getTime() - farm.plantingDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    // Corn typically ready for harvest at 100-120 days
-    const readinessPercentage = Math.min((daysFromPlanting / 110) * 100, 100);
-    
+    // Simplified harvest readiness for farm-level aggregation
     return {
-      percentage: Math.round(readinessPercentage),
-      status: readinessPercentage >= 95 ? 'ready' : readinessPercentage >= 80 ? 'almost_ready' : 'not_ready',
-      estimatedDays: Math.max(110 - daysFromPlanting, 0)
+      percentage: 50,
+      status: 'not_ready',
+      estimatedDays: 60
     };
   }
 
   private identifyRiskFactors(farm: IFarm): string[] {
     const risks: string[] = [];
     
-    // Basic risk assessment based on growth stage and timing
-    const daysFromPlanting = Math.floor(
-      (new Date().getTime() - farm.plantingDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysFromPlanting > 130) {
-      risks.push('Overmaturity risk');
-    }
-    
-    if (farm.growthStage === 'VE' && daysFromPlanting > 14) {
-      risks.push('Slow emergence');
-    }
+    // Basic risk assessment for farm-level aggregation
+    risks.push('Weather variability');
     
     return risks;
   }
@@ -533,20 +640,10 @@ class FarmService {
   private generateRecommendations(farm: IFarm): string[] {
     const recommendations: string[] = [];
     
-    const daysFromPlanting = Math.floor(
-      (new Date().getTime() - farm.plantingDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    
-    if (daysFromPlanting >= 100) {
-      recommendations.push('Monitor for harvest readiness');
-      recommendations.push('Check moisture content regularly');
-    } else if (daysFromPlanting >= 60) {
-      recommendations.push('Apply side-dress nitrogen if needed');
-      recommendations.push('Monitor for pest activity');
-    } else {
-      recommendations.push('Ensure adequate soil moisture');
-      recommendations.push('Monitor for early pest issues');
-    }
+    // Basic recommendations for farm-level management
+    recommendations.push('Monitor field conditions regularly');
+    recommendations.push('Maintain proper irrigation schedules');
+    recommendations.push('Check sensor data for anomalies');
     
     return recommendations;
   }

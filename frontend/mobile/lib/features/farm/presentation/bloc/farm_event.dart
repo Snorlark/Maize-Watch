@@ -55,7 +55,11 @@ class LinkDeviceEvent extends FarmEvent {
   });
 
   @override
-  List<Object> get props => [farmId, deviceId, if (macAddress != null) macAddress!];
+  List<Object> get props => [
+    farmId,
+    deviceId,
+    if (macAddress != null) macAddress!,
+  ];
 }
 
 class UnlinkDeviceEvent extends FarmEvent {
@@ -65,4 +69,24 @@ class UnlinkDeviceEvent extends FarmEvent {
 
   @override
   List<Object> get props => [farmId];
+}
+
+class CreateSensorEvent extends FarmEvent {
+  final String farmId;
+  final Map<String, dynamic> sensorData;
+
+  const CreateSensorEvent({required this.farmId, required this.sensorData});
+
+  @override
+  List<Object> get props => [farmId, sensorData];
+}
+
+class CreateFarmWithFieldEvent extends FarmEvent {
+  final Farm farm;
+  final Map<String, dynamic> fieldData;
+
+  const CreateFarmWithFieldEvent({required this.farm, required this.fieldData});
+
+  @override
+  List<Object> get props => [farm, fieldData];
 }

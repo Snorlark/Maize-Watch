@@ -40,7 +40,7 @@ export const validateUserRegistration: ValidationChain[] = [
   body('password')
     .isLength({ min: VALIDATION_RULES.PASSWORD.MIN_LENGTH })
     .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`)
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':\\|,.<>\/?~`.])/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   
   body('fullName')
@@ -174,67 +174,68 @@ export const validateUserUpdate: ValidationChain[] = [
     .withMessage('Please provide a valid Philippine mobile number'),
 ];
 
-// Farm validation rules
+// Simple Farm validation rules for new embedded structure
 export const validateFarmCreation: ValidationChain[] = [
-  body('name')
+  body('farmName')
     .isLength({ min: 2, max: 100 })
     .withMessage('Farm name must be between 2 and 100 characters')
     .trim(),
   
-  body('description')
+  body('location')
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Location must be between 5 and 200 characters')
+    .trim(),
+  
+  body('fields')
     .optional()
-    .isLength({ max: 500 })
-    .withMessage('Description cannot exceed 500 characters')
+    .isArray()
+    .withMessage('Fields must be an array'),
+  
+  body('fields.*.fieldName')
+    .if(body('fields').exists())
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Field name must be between 2 and 100 characters')
     .trim(),
   
-  body('location.coordinates')
-    .isArray({ min: 2, max: 2 })
-    .withMessage('Coordinates must be an array of [longitude, latitude]'),
-  
-  body('location.coordinates.*')
-    .isFloat()
-    .withMessage('Coordinates must be valid numbers'),
-  
-  body('location.address.region')
-    .isIn(PHILIPPINE_REGIONS)
-    .withMessage('Please select a valid region'),
-  
-  body('location.address.province')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Province must be between 2 and 50 characters')
-    .trim(),
-  
-  body('location.address.municipality')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Municipality must be between 2 and 50 characters')
-    .trim(),
-  
-  body('location.address.barangay')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Barangay must be between 2 and 50 characters')
-    .trim(),
-  
-  body('area.size')
-    .isFloat({ min: 0.01 })
-    .withMessage('Farm area must be greater than 0'),
-  
-  body('area.unit')
-    .isIn(['hectares', 'square_meters', 'acres'])
-    .withMessage('Area unit must be hectares, square_meters, or acres'),
-  
-  body('cropType')
-    .isIn(CROP_TYPES)
-    .withMessage('Please select a valid crop type'),
-  
-  body('plantingDate')
-    .optional()
+  body('fields.*.plantingDate')
+    .if(body('fields').exists())
     .isISO8601()
     .withMessage('Planting date must be a valid date'),
   
-  body('expectedHarvestDate')
+  body('fields.*.growthStage')
+    .if(body('fields').exists())
+    .isIn(['VE', 'V3', 'V8', 'VT', 'R1', 'R6'])
+    .withMessage('Growth stage must be one of: VE, V3, V8, VT, R1, R6'),
+  
+  body('fields.*.sensors')
+    .if(body('fields').exists())
     .optional()
-    .isISO8601()
-    .withMessage('Expected harvest date must be a valid date'),
+    .isArray()
+    .withMessage('Sensors must be an array'),
+  
+  body('fields.*.sensors.*.deviceID')
+    .if(body('fields.*.sensors').exists())
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Device ID must be between 1 and 50 characters')
+    .trim(),
+  
+  body('fields.*.sensors.*.sensorName')
+    .if(body('fields.*.sensors').exists())
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Sensor name must be between 1 and 100 characters')
+    .trim(),
+  
+  body('fields.*.sensors.*.description')
+    .if(body('fields.*.sensors').exists())
+    .optional()
+    .isLength({ max: 200 })
+    .withMessage('Sensor description cannot exceed 200 characters')
+    .trim(),
+  
+  body('fields.*.sensors.*.soilType')
+    .if(body('fields.*.sensors').exists())
+    .isIn(['loamy', 'sandy', 'clay', 'silty'])
+    .withMessage('Soil type must be one of: loamy, sandy, clay, silty'),
 ];
 
 // Sensor validation rules
@@ -374,7 +375,7 @@ export const validatePasswordChange: ValidationChain[] = [
   body('newPassword')
     .isLength({ min: VALIDATION_RULES.PASSWORD.MIN_LENGTH })
     .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`)
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':\\|,.<>\/?~`.])/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   
   body('confirmPassword')

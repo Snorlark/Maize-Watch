@@ -19,6 +19,8 @@ export interface ISensor extends Document {
   name: string;
   type: 'DHT11' | 'Soil_Moisture' | 'LDR' | 'pH_Sensor' | 'Multi_Sensor';
   farm: mongoose.Types.ObjectId;
+  fieldId?: mongoose.Types.ObjectId;
+  fieldName?: string;
   location: {
     coordinates: [number, number]; // [longitude, latitude]
     description?: string;
@@ -65,6 +67,7 @@ export interface ISensor extends Document {
       batteryLevel?: { min?: number };
     };
   };
+  readings?: any;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -108,6 +111,17 @@ const sensorSchema = new Schema<ISensor>(
       type: Schema.Types.ObjectId,
       ref: 'Farm',
       required: [true, 'Farm reference is required'],
+    },
+    fieldId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Field',
+      required: false,
+    },
+    fieldName: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Field name cannot exceed 100 characters'],
+      required: false,
     },
     location: {
       coordinates: {
@@ -224,6 +238,10 @@ const sensorSchema = new Schema<ISensor>(
         },
       },
     },
+    readings: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -248,6 +266,7 @@ sensorSchema.index({ 'location.coordinates': '2dsphere' });
 sensorSchema.index({ farm: 1, isActive: 1 });
 sensorSchema.index({ type: 1, status: 1 });
 sensorSchema.index({ status: 1, 'lastReading.timestamp': -1 });
+sensorSchema.index({ fieldId: 1 });
 
 // Virtual for sensor age in days
 sensorSchema.virtual('ageInDays').get(function() {

@@ -1,14 +1,12 @@
 import { Router } from 'express';
 import {
   createFarm,
-  createSimpleFarm,
   getFarms,
   getFarmById,
   updateFarm,
   deleteFarm,
   getFarmAnalytics,
   updateFarmStatus,
-  addFarmImages,
   linkDeviceToFarm,
   unlinkDeviceFromFarm,
   getFarmByDeviceId,
@@ -39,8 +37,8 @@ router.get('/device/:deviceId', validateObjectId, getFarmByDeviceId);
 // Get farm statistics (Admin only)
 router.get('/stats', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getFarmStats);
 
-// Create farm (simplified for corn-only system)
-router.post('/', validateFarmCreation, createSimpleFarm);
+// Create farm with new structure
+router.post('/', validateFarmCreation, createFarm);
 
 // Get farms (with pagination)
 router.get('/', validatePagination, getFarms);
@@ -60,8 +58,6 @@ router.get('/:id/analytics', validateObjectId, validateDateRange, getFarmAnalyti
 // Update farm status
 router.patch('/:id/status', validateObjectId, updateFarmStatus);
 
-// Add farm images
-router.post('/:id/images', validateObjectId, addFarmImages);
 
 // Link device to farm
 router.post('/:id/link-device', validateObjectId, linkDeviceToFarm);

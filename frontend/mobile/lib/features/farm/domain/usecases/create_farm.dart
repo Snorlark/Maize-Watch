@@ -11,12 +11,16 @@ class CreateFarm implements UseCase<Farm, CreateFarmParams> {
 
   @override
   Future<Either<Failure, Farm>> call(CreateFarmParams params) async {
+    if (params.fieldData != null) {
+      return await repository.createFarmWithField(params.farm, params.fieldData!);
+    }
     return await repository.createFarm(params.farm);
   }
 }
 
 class CreateFarmParams {
   final Farm farm;
+  final Map<String, dynamic>? fieldData;
 
-  CreateFarmParams({required this.farm});
+  CreateFarmParams({required this.farm, this.fieldData});
 }

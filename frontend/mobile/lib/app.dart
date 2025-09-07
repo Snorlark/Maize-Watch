@@ -7,8 +7,9 @@ import 'core/di/injection_container.dart' as di;
 import 'core/presentation/splash/splash_screen.dart';
 import 'features/authentication/presentation/screens/landing_screen.dart';
 import 'features/farm/presentation/bloc/farm_bloc.dart';
-import 'features/farm/presentation/screens/corn_registration_screen.dart';
-import 'features/live_monitoring/presentation/screen/home_screen.dart';
+import 'features/farm/presentation/screens/field_registration_screen.dart';
+import 'core/presentation/home/home_screen.dart';
+
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
 import 'generated/l10n.dart';
@@ -30,7 +31,6 @@ class MaizeWatchApp extends StatelessWidget {
               title: "Maize Watch",
               theme: AppTheme.lightTheme,
               debugShowCheckedModeBanner: false,
-
               // Internationalization
               locale: settingsState.locale,
               localizationsDelegates: const [
@@ -46,7 +46,9 @@ class MaizeWatchApp extends StatelessWidget {
                 '/splash': (context) => const SplashScreen(),
                 '/landing': (context) => const LandingScreen(),
                 '/home': (context) => const HomeScreen(),
-                '/settings': (context) => const SettingsScreen(),
+                '/settings': (context) => const SettingScreen(),
+                '/field-registration':
+                    (context) => FarmRegistrationScreen(userData: {}),
               },
               onGenerateRoute: (settings) {
                 if (settings.name == '/farm-registration') {
@@ -55,7 +57,10 @@ class MaizeWatchApp extends StatelessWidget {
                     builder:
                         (context) => BlocProvider(
                           create: (context) => di.sl<FarmBloc>(),
-                          child: FarmRegistrationScreen(userData: userData),
+                          child: FarmRegistrationScreen(
+                            userData: userData,
+                            fromRegistration: true,
+                          ),
                         ),
                   );
                 }

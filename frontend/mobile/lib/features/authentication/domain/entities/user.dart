@@ -8,6 +8,7 @@ class User extends Equatable {
   final Map<String, dynamic> address;
   final String? password;
   final String role;
+  final DateTime? createdAt;
 
   const User({
     required this.id,
@@ -17,6 +18,7 @@ class User extends Equatable {
     required this.contactNumber,
     required this.address,
     required this.role,
+    this.createdAt,
   });
 
   @override
@@ -27,6 +29,7 @@ class User extends Equatable {
     contactNumber,
     address,
     role,
+
     if (password != null) password!, // Include password only if it's not null
   ];
 }

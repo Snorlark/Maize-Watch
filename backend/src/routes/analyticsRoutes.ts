@@ -14,7 +14,11 @@ import {
   getDailyRecommendations,
   getGrowthStageAnalysis,
   getRiskAssessment,
-  getAnalyticsHealth
+  getAnalyticsHealth,
+  getCropStatus,
+  getCropAnalytics,
+  getCurrentWeatherForecast,
+  getWeatherForecast
 } from '../controllers/analyticsController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -54,5 +58,13 @@ router.post('/farms/:farmId/corn-analytics', validateObjectId('farmId'), runCorn
 router.get('/farms/:farmId/recommendations', validateObjectId('farmId'), getDailyRecommendations);
 router.get('/farms/:farmId/growth-stage', validateObjectId('farmId'), getGrowthStageAnalysis);
 router.get('/farms/:farmId/risk-assessment', validateObjectId('farmId'), getRiskAssessment);
+
+// Minimal mobile endpoints
+router.get('/crop-status/:farmId', validateObjectId('farmId'), getCropStatus);
+router.get('/crop/:farmId', validateObjectId('farmId'), getCropAnalytics);
+
+// Weather analytics endpoints
+router.get('/weather/current/:farmId', validateObjectId('farmId'), getCurrentWeatherForecast);
+router.get('/weather/forecast/:farmId', validateObjectId('farmId'), getWeatherForecast);
 
 export default router;

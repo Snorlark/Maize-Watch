@@ -111,11 +111,11 @@ class AnalyticsService {
       return {
         farm: {
           id: farm._id,
-          name: farm.fieldName,
+          name: farm.farmName,
           cropType: 'Corn', // Fixed to corn for simplified system
           location: farm.location,
-          plantingDate: farm.plantingDate,
-          growthStage: farm.growthStage,
+          plantingDate: (farm as any).plantingDate,
+          growthStage: (farm as any).growthStage,
         },
         period: {
           start: startDate,

@@ -25,7 +25,7 @@ class LandingScreenState extends State<LandingScreen> {
     super.initState();
     if (widget.showLoginOnLoad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        showLoginOverlay(context); // <-- Correct usage
+        showLoginOverlay(context);
       });
     }
   }

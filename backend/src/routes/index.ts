@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './authRoute';
 import userRoutes from './userRoutes';
 import farmRoutes from './farmRoutes';
+import fieldRoutes from './fieldRoutes';
 import sensorRoutes from './sensorRoutes';
 import analyticsRoutes from './analyticsRoutes';
 import { AppError } from '../middleware/errorHandler';
@@ -23,6 +24,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/farms', farmRoutes);
+router.use('/fields', fieldRoutes);
 router.use('/sensors', sensorRoutes);
 router.use('/analytics', analyticsRoutes);
 
