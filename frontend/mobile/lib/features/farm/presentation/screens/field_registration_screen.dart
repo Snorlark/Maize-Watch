@@ -399,29 +399,43 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     final now = DateTime.now();
 
     // Prepare farm data with fields array according to new structure
-    final sensors = _formControllers.devices.map((device) => {
-      'deviceID': device.deviceId,
-      'sensorName': device.deviceName.isNotEmpty ? device.deviceName : 'Sensor',
-      'description': device.description.isNotEmpty ? device.description : 'Field monitoring sensor',
-      'soilType': device.soilType.isNotEmpty ? device.soilType : 'loamy',
-      'readings': {
-        'soilMoisture': 0,
-        'temperature': 0,
-        'humidity': 0,
-        'lightIntensity': 0,
-        'soilPh': 0,
-      },
-    }).toList();
+    final sensors =
+        _formControllers.devices
+            .map(
+              (device) => {
+                'deviceID': device.deviceId,
+                'sensorName':
+                    device.deviceName.isNotEmpty ? device.deviceName : 'Sensor',
+                'description':
+                    device.description.isNotEmpty
+                        ? device.description
+                        : 'Field monitoring sensor',
+                'soilType':
+                    device.soilType.isNotEmpty ? device.soilType : 'loamy',
+                'readings': {
+                  'soilMoisture': 0,
+                  'temperature': 0,
+                  'humidity': 0,
+                  'lightIntensity': 0,
+                  'soilPh': 0,
+                },
+              },
+            )
+            .toList();
 
-    final fields = [{
-      'fieldName': _formControllers.fieldName,
-      'plantingDate': (_formControllers.plantingDate ?? DateTime.now()).toIso8601String(),
-      'growthStage': 'VE', // Initial growth stage
-      'sensors': sensors,
-    }];
+    final fields = [
+      {
+        'fieldName': _formControllers.fieldName,
+        'plantingDate':
+            (_formControllers.plantingDate ?? DateTime.now()).toIso8601String(),
+        'growthStage': 'VE', // Initial growth stage
+        'sensors': sensors,
+      },
+    ];
 
     final farmPayload = {
-      'farmName': '${widget.userData['fullName']?.split(' ').first ?? 'User'}\'s Farm',
+      'farmName':
+          '${widget.userData['fullName']?.split(' ').first ?? 'User'}\'s Farm',
       'fields': fields,
     };
 
@@ -433,18 +447,32 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     print('🚀 Planting Date: ${_formControllers.plantingDate}');
 
     // Create farm with embedded fields structure
-    final farmFields = fields.map((fieldJson) => Field(
-      fieldName: fieldJson['fieldName'] as String,
-      plantingDate: DateTime.parse(fieldJson['plantingDate'] as String),
-      growthStage: fieldJson['growthStage'] as String,
-      sensors: (fieldJson['sensors'] as List).map((sensorJson) => Sensor(
-        deviceID: sensorJson['deviceID'] as String,
-        sensorName: sensorJson['sensorName'] as String,
-        description: sensorJson['description'] as String,
-        soilType: sensorJson['soilType'] as String,
-        readings: SensorReadings.fromJson(sensorJson['readings'] as Map<String, dynamic>),
-      )).toList(),
-    )).toList();
+    final farmFields =
+        fields
+            .map(
+              (fieldJson) => Field(
+                fieldName: fieldJson['fieldName'] as String,
+                plantingDate: DateTime.parse(
+                  fieldJson['plantingDate'] as String,
+                ),
+                growthStage: fieldJson['growthStage'] as String,
+                sensors:
+                    (fieldJson['sensors'] as List)
+                        .map(
+                          (sensorJson) => Sensor(
+                            deviceID: sensorJson['deviceID'] as String,
+                            sensorName: sensorJson['sensorName'] as String,
+                            description: sensorJson['description'] as String,
+                            soilType: sensorJson['soilType'] as String,
+                            readings: SensorReadings.fromJson(
+                              sensorJson['readings'] as Map<String, dynamic>,
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            )
+            .toList();
 
     // Get user's address as location
     String userLocation = '';
@@ -455,14 +483,18 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
       } else if (address is Map) {
         // Construct location from address components
         final parts = <String>[];
-        if (address['barangay']?.toString().isNotEmpty == true) parts.add(address['barangay']);
-        if (address['municipality']?.toString().isNotEmpty == true) parts.add(address['municipality']);
-        if (address['province']?.toString().isNotEmpty == true) parts.add(address['province']);
-        if (address['region']?.toString().isNotEmpty == true) parts.add(address['region']);
+        if (address['barangay']?.toString().isNotEmpty == true)
+          parts.add(address['barangay']);
+        if (address['municipality']?.toString().isNotEmpty == true)
+          parts.add(address['municipality']);
+        if (address['province']?.toString().isNotEmpty == true)
+          parts.add(address['province']);
+        if (address['region']?.toString().isNotEmpty == true)
+          parts.add(address['region']);
         userLocation = parts.join(', ');
       }
     }
-    
+
     // Fallback to a default location if empty
     if (userLocation.isEmpty) {
       userLocation = 'Philippines';
@@ -478,9 +510,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     );
 
     // Use the new farm structure
-    context.read<FarmBloc>().add(
-      CreateFarmEvent(farm: farmData),
-    );
+    context.read<FarmBloc>().add(CreateFarmEvent(farm: farmData));
   }
 
   @override

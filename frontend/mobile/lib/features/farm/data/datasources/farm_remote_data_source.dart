@@ -398,7 +398,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
     try {
       final headers = await _authHeaders();
       final response = await client.get(
-        Uri.parse('${AppConfig.baseUrl}/api/farms/$farmId/analytics'),
+        Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/recommendations'),
         headers: headers,
       );
 
@@ -411,7 +411,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
         if (newToken != null) {
           final newHeaders = await _authHeaders();
           final retryResponse = await client.get(
-            Uri.parse('${AppConfig.baseUrl}/api/farms/$farmId/analytics'),
+            Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/recommendations'),
             headers: newHeaders,
           );
           

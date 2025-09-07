@@ -39,9 +39,13 @@ class WeatherRemoteDataSourceImpl implements WeatherRemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
+        print('🌐 Weather API Response: $responseData');
+        
         if (responseData['success'] == true && responseData['data'] != null) {
+          print('✅ Weather data received successfully from backend');
           return WeatherModel.fromInternalApi(responseData['data']);
         } else {
+          print('❌ Invalid weather data response: $responseData');
           throw ServerException('Invalid weather data response');
         }
       } else {

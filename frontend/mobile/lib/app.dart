@@ -9,6 +9,7 @@ import 'features/authentication/presentation/screens/landing_screen.dart';
 import 'features/farm/presentation/bloc/farm_bloc.dart';
 import 'features/farm/presentation/screens/field_registration_screen.dart';
 import 'core/presentation/home/home_screen.dart';
+import 'features/prescriptions/presentation/screens/detailed_prescription_screen.dart';
 
 import 'features/settings/presentation/bloc/settings_bloc.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
@@ -46,9 +47,11 @@ class MaizeWatchApp extends StatelessWidget {
                 '/splash': (context) => const SplashScreen(),
                 '/landing': (context) => const LandingScreen(),
                 '/home': (context) => const HomeScreen(),
-                '/settings': (context) => const SettingScreen(),
+                '/settings': (context) => const SettingsScreen(),
                 '/field-registration':
                     (context) => FarmRegistrationScreen(userData: {}),
+                '/detailed-prescription':
+                    (context) => const DetailedPrescriptionScreen(),
               },
               onGenerateRoute: (settings) {
                 if (settings.name == '/farm-registration') {

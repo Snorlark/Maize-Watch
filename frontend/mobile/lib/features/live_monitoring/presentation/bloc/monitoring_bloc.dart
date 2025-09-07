@@ -1,13 +1,14 @@
 // features/live_monitoring/presentation/bloc/monitoring_bloc.dart
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/sensor_reading.dart';
 import '../../domain/entities/weather_data.dart';
+import '../../domain/usecases/get_current_weather.dart';
 import '../../domain/usecases/get_historical_readings.dart';
 import '../../domain/usecases/get_latest_readings.dart';
-import '../../domain/usecases/get_current_weather.dart';
 import '../../../farm/domain/usecases/get_farm_analytics.dart';
+import '../../../../core/services/socket_service.dart';
 
 part 'monitoring_event.dart';
 part 'monitoring_state.dart';
@@ -30,9 +31,36 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
        super(const MonitoringState()) {
     on<LoadLatestReadingsEvent>(_onLoadLatestReadings);
     on<LoadHistoricalReadingsEvent>(_onLoadHistoricalReadings);
+    on<LoadFarmAnalyticsEvent>(_onLoadFarmAnalytics);
     on<RefreshReadingsEvent>(_onRefreshReadings);
     on<LoadWeatherDataEvent>(_onLoadWeatherData);
-    on<LoadFarmAnalyticsEvent>(_onLoadFarmAnalytics);
+    on<AnalyticsUpdatedEvent>(_onAnalyticsUpdated);
+    
+    // Initialize Socket.IO connection for real-time updates
+    _initializeSocket();
+  }
+
+  void _initializeSocket() {
+    SocketService.instance.connect();
+    SocketService.instance.onAnalyticsUpdated((data) {
+      final analytics = data['analytics'] as Map<String, dynamic>?;
+      if (analytics != null) {
+        add(AnalyticsUpdatedEvent(analytics: analytics));
+      }
+    });
+  }
+
+  Future<void> _onAnalyticsUpdated(
+    AnalyticsUpdatedEvent event,
+    Emitter<MonitoringState> emit,
+  ) async {
+    emit(state.copyWith(farmAnalytics: event.analytics));
+  }
+
+  @override
+  Future<void> close() {
+    SocketService.instance.offAnalyticsUpdated();
+    return super.close();
   }
 
   Future<void> _onLoadLatestReadings(

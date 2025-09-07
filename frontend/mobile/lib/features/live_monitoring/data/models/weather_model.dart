@@ -49,9 +49,17 @@ class WeatherModel extends WeatherData {
   }
 
   factory WeatherModel.fromInternalApi(Map<String, dynamic> json) {
+    // Debug logging to trace weather data
+    print('🌤️ WeatherModel.fromInternalApi received: $json');
+    
+    final temperature = (json['temperature'] as num?)?.toDouble() ?? 25.0;
+    final humidity = (json['humidity'] as num?)?.toDouble() ?? 65.0;
+    
+    print('🌡️ Parsed temperature: $temperature°C, humidity: $humidity%');
+    
     return WeatherModel(
-      temperature: (json['temperature'] as num?)?.toDouble() ?? 25.0,
-      humidity: (json['humidity'] as num?)?.toDouble() ?? 65.0,
+      temperature: temperature,
+      humidity: humidity,
       windSpeed: (json['windSpeed'] as num?)?.toDouble() ?? 5.2,
       condition: json['condition'] as String? ?? 'partly_cloudy',
       description: json['description'] as String? ?? 'Partly cloudy',

@@ -5,8 +5,8 @@ import '../bloc/settings_bloc.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/generated/l10n.dart';
 
-class SettingScreen extends StatelessWidget {
-  const SettingScreen({super.key});
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
