@@ -6,6 +6,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/core/widgets/policy_dialogs.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:mobile/features/farm/presentation/bloc/farm_bloc.dart';
 
 import 'package:mobile/generated/l10n.dart';
 import 'forgot_password_overlay.dart';
@@ -24,15 +25,32 @@ class _LoginOverlayState extends State<LoginOverlay> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  void _checkFarmDataAndNavigate(BuildContext context, user) {
-    // Close the login overlay first
-    Navigator.of(context).pop();
+  void _checkFarmDataAndNavigate(BuildContext context, user) async {
+    print("🔐 LoginOverlay: Starting farm data check for user ${user.id}");
     
-    // Navigate to home screen using proper navigation
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/home',
-      (route) => false,
-    );
+    // Check if user has farms and navigate directly
+    try {
+      context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+    } catch (e) {
+      print("🚨 LoginOverlay: Error checking farms, navigating to registration: $e");
+      // If error, navigate to farm registration as fallback
+      final userData = {
+        'id': user.id,
+        'username': user.username,
+        'fullName': user.fullName,
+        'contactNumber': user.contactNumber,
+        'address': user.address,
+        'role': user.role,
+      };
+      
+      // Close overlay and navigate
+      Navigator.of(context).pop();
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/farm-registration',
+        (route) => false,
+        arguments: userData,
+      );
+    }
   }
 
   @override
@@ -40,41 +58,104 @@ class _LoginOverlayState extends State<LoginOverlay> {
     final textTheme = Theme.of(context).textTheme;
     final textTranslation = S.of(context);
 
-    return BlocListener<AuthenticationBloc, AuthenticationState>(
-      listener: (context, state) {
-        print("🔐 LoginOverlay: State changed to ${state.status}");
-        
-        if (state.status == AuthenticationStatus.loading) {
-          print("🔐 LoginOverlay: Showing loading dialog");
-          // Show loading indicator
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder:
-                (context) => const Center(child: CircularProgressIndicator()),
-          );
-        } else if (state.status == AuthenticationStatus.authenticated) {
-          print("🔐 LoginOverlay: Authentication successful, navigating...");
-          // Dismiss loading indicator if shown
-          if (Navigator.canPop(context)) {
-            Navigator.of(context).pop();
-          }
-          // Check for farm data before navigating
-          _checkFarmDataAndNavigate(context, state.user!);
-        } else if (state.status == AuthenticationStatus.failure) {
-          print("🚨 LoginOverlay: Authentication failed: ${state.message}");
-          // Dismiss loading indicator if shown
-          if (Navigator.canPop(context)) {
-            Navigator.of(context).pop();
-          }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthenticationBloc, AuthenticationState>(
+          listener: (context, state) {
+            print("🔐 LoginOverlay: State changed to ${state.status}");
+            
+            if (state.status == AuthenticationStatus.loading) {
+              print("🔐 LoginOverlay: Showing loading dialog");
+              // Show loading indicator
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder:
+                    (context) => const Center(child: CircularProgressIndicator()),
+              );
+            } else if (state.status == AuthenticationStatus.authenticated) {
+              print("🔐 LoginOverlay: Authentication successful, checking farms...");
+              // Dismiss loading indicator if shown
+              if (Navigator.canPop(context)) {
+                Navigator.of(context).pop();
+              }
+              // Check for farm data before navigating
+              _checkFarmDataAndNavigate(context, state.user!);
+            } else if (state.status == AuthenticationStatus.failure) {
+              print("🚨 LoginOverlay: Authentication failed: ${state.message}");
+              // Dismiss loading indicator if shown
+              if (Navigator.canPop(context)) {
+                Navigator.of(context).pop();
+              }
 
-          ErrorDialog.show(
-            context,
-            title: S.of(context).login_error,
-            message: ErrorDialog.getErrorMessage(context, state.message!),
-          );
-        }
-      },
+              ErrorDialog.show(
+                context,
+                title: S.of(context).login_error,
+                message: ErrorDialog.getErrorMessage(context, state.message!),
+              );
+            }
+          },
+        ),
+        BlocListener<FarmBloc, FarmState>(
+          listener: (context, state) {
+            if (state is FarmsLoaded) {
+              final hasFarms = state.farms.isNotEmpty;
+              print("🌽 LoginOverlay: FarmsLoaded. hasFarms=$hasFarms");
+              
+              if (hasFarms) {
+                // Close overlay and navigate to home
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/home',
+                  (route) => false,
+                );
+              } else {
+                // Close overlay and navigate to farm registration
+                final authState = context.read<AuthenticationBloc>().state;
+                final user = authState.user;
+                final userData = {
+                  if (user != null) ...{
+                    'id': user.id,
+                    'username': user.username,
+                    'fullName': user.fullName,
+                    'contactNumber': user.contactNumber,
+                    'address': user.address,
+                    'role': user.role,
+                  }
+                };
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/farm-registration',
+                  (route) => false,
+                  arguments: userData,
+                );
+              }
+            } else if (state is FarmError) {
+              print("🚨 LoginOverlay: Error loading farms: ${state.message}. Navigating to registration.");
+              
+              final authState = context.read<AuthenticationBloc>().state;
+              final user = authState.user;
+              final userData = {
+                if (user != null) ...{
+                  'id': user.id,
+                  'username': user.username,
+                  'fullName': user.fullName,
+                  'contactNumber': user.contactNumber,
+                  'address': user.address,
+                  'role': user.role,
+                }
+              };
+              // Close overlay and navigate to farm registration
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/farm-registration',
+                (route) => false,
+                arguments: userData,
+              );
+            }
+          },
+        ),
+      ],
       child: Padding(
         padding: EdgeInsets.only(
           left: kAppLargePadding.w,

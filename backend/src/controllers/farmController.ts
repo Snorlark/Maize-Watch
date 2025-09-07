@@ -6,13 +6,31 @@ import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
 
 /**
- * @desc    Create a new farm
+ * @desc    Create a new farm with fields and sensors
  * @route   POST /api/farms
  * @access  Private
  */
 export const createFarm = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  
+  // Enhanced logging for debugging
+  logger.info('🚀 Farm creation request received', {
+    userId: currentUser?.id,
+    userFullName: currentUser?.fullName,
+    requestBody: JSON.stringify(req.body, null, 2),
+    headers: {
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers.authorization ? 'Bearer [REDACTED]' : 'None'
+    }
+  });
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    logger.error('🚨 Farm creation validation failed', {
+      userId: currentUser?.id,
+      errors: errors.array(),
+      requestBody: req.body
+    });
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
       message: 'Validation failed',
@@ -22,19 +40,36 @@ export const createFarm = catchAsync(async (req: Request, res: Response) => {
       }))
     });
   }
-
-  const currentUser = (req as any).user;
+  
+  // Extract farm data according to new structure
+  const { farmName, location, fields } = req.body;
+  
+  logger.info('🔍 Extracted farm data', {
+    farmName,
+    location,
+    fieldsCount: fields?.length || 0,
+    fields: fields ? JSON.stringify(fields, null, 2) : 'No fields provided'
+  });
+  
   const farmData = {
-    ...req.body,
-    owner: currentUser.id
+    userId: currentUser.id,
+    farmName: farmName || `${currentUser.fullName?.split(' ')[0] || 'User'}'s Farm`,
+    location: location || 'Philippines',
+    fields: fields || []
   };
+
+  logger.info('🏗️ Creating farm with processed data', {
+    farmData: JSON.stringify(farmData, null, 2)
+  });
 
   const farm = await farmService.createFarm(farmData);
 
-  logger.info('Farm created', {
+  logger.info('✅ Farm created successfully', {
     farmId: farm._id,
-    ownerId: currentUser.id,
-    farmName: farm.fieldName
+    userId: currentUser.id,
+    farmName: farm.farmName,
+    fieldsCount: farm.fields?.length || 0,
+    createdFarm: JSON.stringify(farm, null, 2)
   });
 
   res.status(HTTP_STATUS.CREATED).json({
@@ -93,7 +128,7 @@ export const getFarmById = catchAsync(async (req: Request, res: Response) => {
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -176,7 +211,7 @@ export const deleteFarm = catchAsync(async (req: Request, res: Response) => {
   logger.info('Farm deleted', {
     farmId: id,
     deletedBy: currentUser.id,
-    farmName: existingFarm.fieldName
+    farmName: existingFarm.farmName
   });
 
   res.status(HTTP_STATUS.OK).json({
@@ -199,7 +234,7 @@ export const getFarmAnalytics = catchAsync(async (req: Request, res: Response) =
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -248,45 +283,6 @@ export const updateFarmStatus = catchAsync(async (req: Request, res: Response) =
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Farm status updated successfully',
-    data: { farm }
-  });
-});
-
-/**
- * @desc    Add images to farm
- * @route   POST /api/farms/:id/images
- * @access  Private
- */
-export const addFarmImages = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { imageUrls } = req.body;
-  const currentUser = (req as any).user;
-
-  if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
-    throw new AppError('Image URLs are required', HTTP_STATUS.BAD_REQUEST);
-  }
-
-  // Get farm to check ownership
-  const existingFarm = await farmService.getFarmById(id);
-
-  // Check if user owns the farm or is admin
-  if (existingFarm.userId.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
-    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
-  }
-
-  const farm = await farmService.addFarmImages(id, imageUrls);
-
-  logger.info('Farm images added', {
-    farmId: farm._id,
-    addedBy: currentUser.id,
-    imageCount: imageUrls.length
-  });
-
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Images added successfully',
     data: { farm }
   });
 });
@@ -379,7 +375,7 @@ export const getFarmByDeviceId = catchAsync(async (req: Request, res: Response) 
   }
 
   // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -438,7 +434,7 @@ export const getHarvestPredictions = catchAsync(async (req: Request, res: Respon
   const farm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
+  if (farm.userId.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -453,37 +449,3 @@ export const getHarvestPredictions = catchAsync(async (req: Request, res: Respon
   });
 });
 
-/**
- * @desc    Create simple farm (for mobile registration)
- * @route   POST /api/farms/simple
- * @access  Private
- */
-export const createSimpleFarm = catchAsync(async (req: Request, res: Response) => {
-  const currentUser = (req as any).user;
-  
-  // Use user's address from registration
-  const farmData = {
-    userId: currentUser.id,
-    fieldName: req.body.name || req.body.fieldName,
-    location: `${req.body.address?.municipality || ''}, ${req.body.address?.province || ''}`.trim(),
-    soilType: req.body.soilType || 'Loam',
-    plantingDate: req.body.plantingDate,
-    growthStage: req.body.growthStage || 'VE',
-    deviceId: req.body.deviceId,
-    deviceMacAddress: req.body.deviceMacAddress
-  };
-
-  const farm = await farmService.createFarm(farmData);
-
-  logger.info('Simple farm created', {
-    farmId: farm._id,
-    ownerId: currentUser.id,
-    farmName: farm.fieldName
-  });
-
-  res.status(HTTP_STATUS.CREATED).json({
-    success: true,
-    message: 'Farm created successfully',
-    data: { farm }
-  });
-});

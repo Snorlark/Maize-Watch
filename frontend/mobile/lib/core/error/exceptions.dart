@@ -6,3 +6,12 @@ class ServerException implements Exception {
   @override
   String toString() => message;
 }
+
+class UnauthorizedException implements Exception {
+  final String message;
+
+  UnauthorizedException(this.message);
+
+  @override
+  String toString() => message;
+}

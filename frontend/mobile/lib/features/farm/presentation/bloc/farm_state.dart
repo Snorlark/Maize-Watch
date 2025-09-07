@@ -58,6 +58,8 @@ class DeviceUnlinked extends FarmState {
   List<Object> get props => [farm];
 }
 
+class SensorCreated extends FarmState {}
+
 class FarmError extends FarmState {
   final String message;
 

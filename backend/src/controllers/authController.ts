@@ -75,6 +75,7 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     data: {
       user: result.user,
       accessToken: result.tokens.accessToken,
+      refreshToken: result.tokens.refreshToken,
       expiresIn: result.tokens.expiresIn
     }
   });
@@ -145,6 +146,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       data: {
         user: result.user,
         accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
         expiresIn: result.tokens.expiresIn,
         requiresTwoFactor: result.requiresTwoFactor
       }
@@ -161,7 +163,10 @@ export const login = catchAsync(async (req: Request, res: Response) => {
  * @access  Public
  */
 export const refreshToken = catchAsync(async (req: Request, res: Response) => {
-  const { refreshToken: token } = req.cookies;
+  // Prefer cookie for web, but allow body token for mobile clients
+  const cookieToken = req.cookies?.refreshToken;
+  const bodyToken = (req.body && (req.body.refreshToken || req.body.token)) as string | undefined;
+  const token = cookieToken || bodyToken;
 
   if (!token) {
     throw new AppError('Refresh token not provided', HTTP_STATUS.UNAUTHORIZED);

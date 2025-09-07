@@ -4,52 +4,53 @@ class FarmModel extends Farm {
   const FarmModel({
     super.id,
     required super.userId,
-    required super.fieldName,
+    required super.farmName,
     required super.location,
-    required super.soilType,
-    required super.plantingDate,
-    required super.growthStage,
-    super.deviceId,
-    super.deviceMacAddress,
-    super.deviceRegisteredAt,
+    required super.fields,
     required super.createdAt,
     required super.updatedAt,
   });
 
   factory FarmModel.fromJson(Map<String, dynamic> json) {
+    // Handle userId - it can be either a string or an object with _id
+    String userIdValue = '';
+    if (json['userId'] is String) {
+      userIdValue = json['userId'];
+    } else if (json['userId'] is Map<String, dynamic>) {
+      userIdValue = json['userId']['_id'] ?? '';
+    }
+
     return FarmModel(
       id: json['_id'] ?? json['id'],
-      userId: json['userId'],
-      fieldName: json['fieldName'],
-      location: json['location'],
-      soilType: json['soilType'],
-      plantingDate: DateTime.parse(json['plantingDate']),
-      growthStage: json['growthStage'],
-      deviceId: json['deviceId'],
-      deviceMacAddress: json['deviceMacAddress'],
-      deviceRegisteredAt: json['deviceRegisteredAt'] != null
-          ? DateTime.parse(json['deviceRegisteredAt'])
-          : null,
+      userId: userIdValue,
+      farmName: json['farmName'] ?? '',
+      location: json['location'] ?? '',
+      fields: (json['fields'] as List<dynamic>? ?? [])
+          .map((fieldJson) => Field.fromJson(fieldJson))
+          .toList(),
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       if (id != null) '_id': id,
       'userId': userId,
-      'fieldName': fieldName,
-      'location': location,
-      'soilType': soilType,
-      'plantingDate': plantingDate.toIso8601String(),
-      'growthStage': growthStage,
-      if (deviceId != null) 'deviceId': deviceId,
-      if (deviceMacAddress != null) 'deviceMacAddress': deviceMacAddress,
-      if (deviceRegisteredAt != null)
-        'deviceRegisteredAt': deviceRegisteredAt!.toIso8601String(),
+      'farmName': farmName,
+      'fields': fields.map((field) => field.toJson()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  /// Convert to JSON for API requests (excludes timestamps and userId)
+  Map<String, dynamic> toApiJson() {
+    return {
+      'farmName': farmName,
+      'location': location,
+      'fields': fields.map((field) => field.toJson()).toList(),
     };
   }
 
@@ -57,14 +58,9 @@ class FarmModel extends Farm {
     return FarmModel(
       id: farm.id,
       userId: farm.userId,
-      fieldName: farm.fieldName,
+      farmName: farm.farmName,
       location: farm.location,
-      soilType: farm.soilType,
-      plantingDate: farm.plantingDate,
-      growthStage: farm.growthStage,
-      deviceId: farm.deviceId,
-      deviceMacAddress: farm.deviceMacAddress,
-      deviceRegisteredAt: farm.deviceRegisteredAt,
+      fields: farm.fields,
       createdAt: farm.createdAt,
       updatedAt: farm.updatedAt,
     );

@@ -9,6 +9,7 @@ import '../../../../core/theme/colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../generated/l10n.dart';
 import '../widgets/register_form_fields.dart';
+import 'registration_success_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -28,13 +29,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return BlocListener<AuthenticationBloc, AuthenticationState>(
       listener: (context, state) {
         if (state.status == AuthenticationStatus.registrationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(S.of(context).registration_successful),
-              backgroundColor: Colors.green,
+          print("🎉 Registration successful! Showing success screen...");
+
+          // Navigate to success screen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => RegistrationSuccessScreen(
+                    userName: _controllers.firstNameController.text,
+                    onContinue: () {
+                      print("🚀 Continue button pressed!");
+
+                      // Get current authentication state when button is pressed
+                      final currentState =
+                          context.read<AuthenticationBloc>().state;
+                      print("🔍 Current state: ${currentState.status}");
+                      print(
+                        "🔍 User data available: ${currentState.user != null}",
+                      );
+
+                      if (currentState.user != null) {
+                        print(
+                          "🔍 Context is mounted, attempting navigation...",
+                        );
+                        try {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/farm-registration',
+                            arguments: {
+                              'id': currentState.user!.id,
+                              'username': currentState.user!.username,
+                              'fullName': currentState.user!.fullName,
+                              'contactNumber': currentState.user!.contactNumber,
+                              'address': currentState.user!.address,
+                              'role': currentState.user!.role,
+                            },
+                          );
+                          print("✅ Navigation initiated successfully");
+                        } catch (e) {
+                          print("❌ Navigation error: $e");
+                        }
+                      } else {
+                        print("❌ No user data available");
+                      }
+                    },
+                  ),
             ),
           );
-          Navigator.pushReplacementNamed(context, '/home');
+        } else if (state.status == AuthenticationStatus.authenticated) {
+          print(
+            "🔐 User authenticated after registration, navigating to farm registration",
+          );
+
+          // Check if widget is still mounted before navigation
+          if (mounted && context.mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              '/farm-registration',
+              arguments: {
+                'id': state.user!.id,
+                'username': state.user!.username,
+                'fullName': state.user!.fullName,
+                'contactNumber': state.user!.contactNumber,
+                'address': state.user!.address,
+                'role': state.user!.role,
+              },
+            );
+          }
         } else if (state.status == AuthenticationStatus.failure) {
           CustomSnackbar.showError(
             context,
@@ -44,7 +106,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
       child: Scaffold(
         appBar: RegisterAppBar(
-          onBackPressed: currentPage > 0 ? _goToPreviousPage : () => Navigator.of(context).pop(),
+          onBackPressed:
+              currentPage > 1
+                  ? _goToPreviousPage
+                  : () => Navigator.of(context).pop(),
         ),
         body: Container(
           decoration: const BoxDecoration(color: MAIZE_BOTTOM_OVERLAY),
@@ -120,37 +185,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool isBack = false,
     bool isLoading = false,
   }) {
-    return SizedBox(
-      width: isBack ? 120.w : 180.w,
-      height: 50.h,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isBack ? Colors.white : MAIZE_ACCENT,
-          foregroundColor: isBack ? Colors.black87 : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25.r),
+    return Expanded(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 8.w),
+        height: 56.h,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isBack ? Colors.white : MAIZE_PRIMARY,
+            foregroundColor: isBack ? MAIZE_PRIMARY : Colors.white,
+            elevation: isBack ? 0 : 2,
+            shadowColor:
+                isBack ? Colors.transparent : MAIZE_PRIMARY.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
           ),
-          elevation: isBack ? 1 : 3,
-          shadowColor: Colors.black26,
+          child:
+              isLoading && !isBack
+                  ? SizedBox(
+                    width: 20.w,
+                    height: 20.h,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                  : Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
         ),
-        child:
-            isLoading
-                ? SizedBox(
-                  height: 22.h,
-                  width: 22.w,
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                : Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
       ),
     );
   }
@@ -165,43 +233,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleNextOrSubmit() {
-    // Validate current form
-    if (!_formKeys[currentPage].currentState!.validate()) return;
+    if (!_formKeys[currentPage].currentState!.validate()) {
+      return;
+    }
 
-    if (currentPage == 0) {
-      // Go to next page
+    if (currentPage < 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      // Submit registration
       _submitRegistration();
     }
   }
 
   void _submitRegistration() {
-    // Final validation including password confirmation
-    if (_controllers.passwordController.text !=
-        _controllers.confirmPasswordController.text) {
-      CustomSnackbar.showError(context, S.of(context).passwords_dont_match);
+    if (!_formKeys[currentPage].currentState!.validate()) {
       return;
     }
 
-    // Combine first name and last name into fullName
-    final fullName =
-        '${_controllers.firstNameController.text.trim()} ${_controllers.lastNameController.text.trim()}'
-            .trim();
+    final addressObject = _controllers.getAddressObject();
 
-    // Dispatch registration event
     context.read<AuthenticationBloc>().add(
       RegisterEvent(
-        username: _controllers.usernameController.text.trim(),
+        username: _controllers.usernameController.text,
         password: _controllers.passwordController.text,
-        fullName: fullName,
-        contactNumber: _controllers.contactController.text.trim(),
-        address: _controllers.getAddressObject(),
-        role: 'user', // Use the role as needed, e.g., 'user'
+        fullName:
+            '${_controllers.firstNameController.text} ${_controllers.lastNameController.text}',
+        contactNumber: _controllers.contactController.text,
+        address: addressObject,
+        role: 'user',
       ),
     );
   }

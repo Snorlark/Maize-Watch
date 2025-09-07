@@ -25,9 +25,28 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Farm>> createFarmWithField(Farm farm, Map<String, dynamic> fieldData) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.createFarmWithField(farm, fieldData);
+        return Right(result);
+      } on ServerException catch (e) {
+        // Pass through the specific server error message
+        return Left(ServerFailure(e.message));
+      } catch (e) {
+        return Left(NetworkFailure('Network error: $e'));
+      }
+    } else {
+      return Left(NetworkFailure('No internet connection'));
     }
   }
 
@@ -39,6 +58,8 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
@@ -53,6 +74,8 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
@@ -68,6 +91,8 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
@@ -82,6 +107,8 @@ class FarmRepositoryImpl implements FarmRepository {
         return const Right(null);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
@@ -96,6 +123,8 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());
@@ -110,6 +139,40 @@ class FarmRepositoryImpl implements FarmRepository {
         return Right(result);
       } on ServerException {
         return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
+      }
+    } else {
+      return Left(NetworkFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> createSensor(String farmId, Map<String, dynamic> sensorData) async {
+    if (await networkInfo.isConnected) {
+      try {
+        await remoteDataSource.createSensor(farmId, sensorData);
+        return const Right(null);
+      } on ServerException {
+        return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
+      }
+    } else {
+      return Left(NetworkFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getFarmAnalytics(String farmId) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.getFarmAnalytics(farmId);
+        return Right(result);
+      } on ServerException {
+        return Left(ServerFailure());
+      } catch (_) {
+        return Left(NetworkFailure());
       }
     } else {
       return Left(NetworkFailure());

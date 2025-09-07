@@ -5,8 +5,8 @@ import '../bloc/settings_bloc.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/generated/l10n.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+class SettingScreen extends StatelessWidget {
+  const SettingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,10 +14,9 @@ class SettingsScreen extends StatelessWidget {
       listener: (context, state) {
         if (state.status == AuthenticationStatus.unauthenticated) {
           // Navigate to landing screen when logged out
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/landing',
-            (route) => false,
-          );
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/landing', (route) => false);
         }
       },
       child: Scaffold(
@@ -33,7 +32,9 @@ class SettingsScreen extends StatelessWidget {
                   value: context.watch<SettingsBloc>().state.locale,
                   onChanged: (Locale? newLocale) {
                     if (newLocale != null) {
-                      context.read<SettingsBloc>().add(ChangeLanguage(newLocale));
+                      context.read<SettingsBloc>().add(
+                        ChangeLanguage(newLocale),
+                      );
                     }
                   },
                   items:
@@ -45,9 +46,9 @@ class SettingsScreen extends StatelessWidget {
                       }).toList(),
                 ),
               ),
-              
+
               const Divider(),
-              
+
               // Logout button
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
@@ -72,7 +73,9 @@ class SettingsScreen extends StatelessWidget {
                             onPressed: () {
                               Navigator.of(context).pop();
                               // Trigger logout event
-                              context.read<AuthenticationBloc>().add(LogoutEvent());
+                              context.read<AuthenticationBloc>().add(
+                                LogoutEvent(),
+                              );
                             },
                             child: const Text(
                               'Logout',

@@ -8,20 +8,25 @@ environment:
 
 dependencies:
   bloc: ^9.0.0
+  curved_navigation_bar: ^1.0.3
   dartz: ^0.10.1
   dio: ^5.9.0
   equatable: ^2.0.7
+  fl_chart: ^0.68.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_localization: ^0.3.3
   flutter_localizations:
     sdk: flutter
+  flutter_map: ^8.2.1
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^9.2.2
   get_it: ^7.6.4
   google_fonts: ^6.3.0
+  icons_flutter: ^0.0.5
   intl: any
+  latlong2: ^0.9.1
   shared_preferences: ^2.2.2
 
 dev_dependencies:
@@ -35,7 +40,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/lottie/
     - lib/l10n/
+  
 
 flutter_intl:
   enabled: true
@@ -43,3 +50,17 @@ flutter_intl:
   main_locale: en
   arb_dir: lib/l10n
   output_dir: lib/generated
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/corn-logo.png"
+  min_sdk_android: 21
+  remove_alpha_ios: false
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/corn-logo.png"
+  web:
+    generate: true
+    image_path: "assets/images/corn-logo.png"
+    background_color: "#00000000"
+    theme_color: "#00000000"

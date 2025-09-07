@@ -53,24 +53,35 @@ class AuthenticationBloc
         print("🔐 AuthBloc: Login successful for ${user.username}");
         try {
           // Store user session data
-          await SecureStorage.storeUserData(jsonEncode({
-            'id': user.id,
-            'username': user.username,
-            'fullName': user.fullName,
-            'contactNumber': user.contactNumber,
-            'address': user.address,
-            'role': user.role,
-          }));
-          
-          print("🔐 AuthBloc: Session data stored, emitting authenticated state");
-          emit(state.copyWith(status: AuthenticationStatus.authenticated, user: user));
+          await SecureStorage.storeUserData(
+            jsonEncode({
+              'id': user.id,
+              'username': user.username,
+              'fullName': user.fullName,
+              'contactNumber': user.contactNumber,
+              'address': user.address,
+              'role': user.role,
+            }),
+          );
+
+          print(
+            "🔐 AuthBloc: Session data stored, emitting authenticated state",
+          );
+          emit(
+            state.copyWith(
+              status: AuthenticationStatus.authenticated,
+              user: user,
+            ),
+          );
           print("🔐 AuthBloc: Authenticated state emitted successfully");
         } catch (e) {
           print("🚨 AuthBloc: Error storing session data: $e");
-          emit(state.copyWith(
-            status: AuthenticationStatus.failure,
-            message: "Failed to store session data: $e",
-          ));
+          emit(
+            state.copyWith(
+              status: AuthenticationStatus.failure,
+              message: "Failed to store session data: $e",
+            ),
+          );
         }
       },
     );
@@ -98,12 +109,18 @@ class AuthenticationBloc
           message: _mapFailureToString(failure),
         ),
       ),
-      (user) => emit(
-        state.copyWith(
-          status: AuthenticationStatus.registrationSuccess,
-          user: user,
-        ),
-      ),
+      (user) {
+        // Just emit registration success - let the UI handle navigation
+        print(
+          "🔐 AuthBloc: Registration successful for user: ${user.username}",
+        );
+        emit(
+          state.copyWith(
+            status: AuthenticationStatus.registrationSuccess,
+            user: user,
+          ),
+        );
+      },
     );
   }
 
@@ -112,17 +129,19 @@ class AuthenticationBloc
     Emitter<AuthenticationState> emit,
   ) async {
     print("🔐 AuthBloc: Starting logout process");
-    
+
     // Clear stored session data
     await SecureStorage.clearUserSession();
     print("🔐 AuthBloc: Session data cleared");
-    
+
     // Emit unauthenticated state to trigger navigation
-    emit(state.copyWith(
-      status: AuthenticationStatus.unauthenticated,
-      user: null,
-      message: null,
-    ));
+    emit(
+      state.copyWith(
+        status: AuthenticationStatus.unauthenticated,
+        user: null,
+        message: null,
+      ),
+    );
     print("🔐 AuthBloc: Logout complete, emitted unauthenticated state");
   }
 
@@ -131,14 +150,16 @@ class AuthenticationBloc
     Emitter<AuthenticationState> emit,
   ) async {
     print("🔐 AuthBloc: Checking authentication status");
-    
+
     try {
       final isLoggedIn = await SecureStorage.isLoggedIn();
       final hasToken = await SecureStorage.getToken();
       final userData = await SecureStorage.getUserData();
-      
-      print("🔐 AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${hasToken != null}, userData=${userData != null}");
-      
+
+      print(
+        "🔐 AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${hasToken != null}, userData=${userData != null}",
+      );
+
       if (isLoggedIn && hasToken != null && userData != null) {
         // Parse user data and emit authenticated state
         final userJson = jsonDecode(userData);
@@ -150,37 +171,56 @@ class AuthenticationBloc
           address: userJson['address'],
           role: userJson['role'],
         );
-        
-        emit(state.copyWith(
-          status: AuthenticationStatus.authenticated,
-          user: user,
-        ));
-        print("🔐 AuthBloc: User is authenticated, emitted authenticated state");
+
+        emit(
+          state.copyWith(
+            status: AuthenticationStatus.authenticated,
+            user: user,
+          ),
+        );
+        print(
+          "🔐 AuthBloc: User is authenticated, emitted authenticated state",
+        );
       } else {
         // Clear any stale data and emit unauthenticated state
         await SecureStorage.clearUserSession();
-        emit(state.copyWith(
-          status: AuthenticationStatus.unauthenticated,
-          user: null,
-        ));
-        print("🔐 AuthBloc: User is not authenticated, emitted unauthenticated state");
+        emit(
+          state.copyWith(
+            status: AuthenticationStatus.unauthenticated,
+            user: null,
+          ),
+        );
+        print(
+          "🔐 AuthBloc: User is not authenticated, emitted unauthenticated state",
+        );
       }
     } catch (e) {
       print("🚨 AuthBloc: Error checking auth status: $e");
       // Clear data on error and emit unauthenticated state
       await SecureStorage.clearUserSession();
-      emit(state.copyWith(
-        status: AuthenticationStatus.unauthenticated,
-        user: null,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthenticationStatus.unauthenticated,
+          user: null,
+        ),
+      );
     }
   }
 
   String _mapFailureToString(Failure failure) {
     if (failure is ServerFailure) {
-      return 'Server error. Please try again later.';
+      // Surface specific server message (e.g., invalid credentials)
+      return failure.message.isNotEmpty
+          ? failure.message
+          : 'Server error. Please try again later.';
+    } else if (failure is NetworkFailure) {
+      return failure.message.isNotEmpty
+          ? failure.message
+          : 'Network connection failed.';
     } else if (failure is CacheFailure) {
-      return 'Authentication failed due to a caching issue.';
+      return failure.message.isNotEmpty
+          ? failure.message
+          : 'Authentication failed due to a caching issue.';
     }
     return 'An unexpected error occurred.';
   }

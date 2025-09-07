@@ -45,7 +45,7 @@ class ErrorDialog {
                 children: [
                   SizedBox(height: kAppSmallPadding),
                   Text(
-                    message,
+                    getErrorMessage(context, message),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: MAIZE_ACCENT,
                       height: 1.5,
@@ -85,17 +85,59 @@ class ErrorDialog {
 
   static String getErrorMessage(BuildContext context, String error) {
     final l10n = S.of(context);
+    final normalized = error.trim();
 
-    if (error.contains('SocketException') ||
-        error.contains('Connection refused')) {
+    // If backend provided a clear message, surface it directly
+    final knownServerHints = [
+      'invalid credentials',
+      'invalid username or password',
+      'user not found',
+      'username is required',
+      'password is required',
+      'validation failed',
+      'account locked',
+      'too many attempts',
+      'unauthorized',
+      'forbidden',
+    ];
+    final lower = normalized.toLowerCase();
+    if (normalized.isNotEmpty &&
+        !lower.contains('socketexception') &&
+        !lower.contains('timeoutexception') &&
+        !lower.contains('unexpected error') &&
+        !lower.contains('exception') &&
+        knownServerHints.any((h) => lower.contains(h))) {
+      return normalized;
+    }
+
+    // Network/timeout mapping
+    if (lower.contains('socketexception') ||
+        lower.contains('connection refused') ||
+        lower.contains('no route to host') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('network is unreachable')) {
       return l10n.error_no_internet;
-    } else if (error.contains('TimeoutException')) {
+    }
+    if (lower.contains('timeoutexception') || lower.contains('connection timeout')) {
       return l10n.error_timeout;
-    } else if (error.contains('Invalid credentials')) {
+    }
+
+    // HTTP semantics embedded in message
+    if (lower.contains('401') || lower.contains('unauthorized')) {
       return l10n.error_invalid_credentials;
-    } else if (error.contains('Server error')) {
+    }
+    if (lower.contains('404')) {
+      return l10n.error_unknown; // fallback: not found not localized
+    }
+    if (lower.contains('500') || lower.contains('server error')) {
       return l10n.error_server;
     }
+
+    // Fallback to provided message if it's not a generic placeholder
+    if (normalized.isNotEmpty && !lower.contains('unexpected error')) {
+      return normalized;
+    }
+
     return l10n.error_unknown;
   }
 }

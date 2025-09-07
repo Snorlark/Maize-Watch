@@ -66,9 +66,7 @@ class AuthInterceptor extends Interceptor {
 
 /// Factory for creating configured Dio instance
 class DioFactory {
-  static Dio create({
-    String? baseUrl,
-  }) {
+  static Dio create({String? baseUrl}) {
     final dio = Dio();
 
     if (baseUrl != null) {
@@ -87,9 +85,10 @@ class DioFactory {
       ),
     );
 
-    // Set default timeout
-    dio.options.connectTimeout = const Duration(seconds: 20);
-    dio.options.receiveTimeout = const Duration(seconds: 20);
+    // Set default timeout - increased for slow network conditions
+    dio.options.connectTimeout = const Duration(seconds: 30);
+    dio.options.receiveTimeout = const Duration(seconds: 30);
+    dio.options.sendTimeout = const Duration(seconds: 30);
 
     return dio;
   }

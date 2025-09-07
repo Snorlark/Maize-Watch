@@ -547,3 +547,112 @@ export const getAnalyticsHealth = catchAsync(async (req: Request, res: Response)
     data: { health }
   });
 });
+
+/**
+ * @desc    Get overall crop status (minimal implementation for mobile)
+ * @route   GET /api/analytics/crop-status/:farmId
+ * @access  Private
+ */
+export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  // Placeholder: return NORMAL. Can be enhanced to compute from analyticsService
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { status: 'NORMAL' }
+  });
+});
+
+/**
+ * @desc    Get crop analytics summary (minimal implementation for mobile)
+ * @route   GET /api/analytics/crop/:farmId
+ * @access  Private
+ */
+export const getCropAnalytics = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  // Minimal empty analytics payload for now
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: {}
+  });
+});
+
+/**
+ * @desc    Get current weather forecast from predictive analytics
+ * @route   GET /api/analytics/weather/current/:farmId
+ * @access  Private
+ */
+export const getCurrentWeatherForecast = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify access to farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  try {
+    // Get predictive analytics weather forecast
+    const weatherData = await pythonAnalyticsService.getWeatherForecast(farmId);
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: weatherData
+    });
+  } catch (error) {
+    logger.error('Error getting weather forecast:', error);
+    throw new AppError('Failed to get weather forecast', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * @desc    Get weather forecast for multiple days from predictive analytics
+ * @route   GET /api/analytics/weather/forecast/:farmId
+ * @access  Private
+ */
+export const getWeatherForecast = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const { days = 7 } = req.query;
+  const currentUser = (req as any).user;
+
+  // Verify access to farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  try {
+    // Get extended weather forecast from predictive analytics
+    const forecastData = await pythonAnalyticsService.getExtendedWeatherForecast(farmId, parseInt(days as string));
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: forecastData
+    });
+  } catch (error) {
+    logger.error('Error getting extended weather forecast:', error);
+    throw new AppError('Failed to get weather forecast', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});

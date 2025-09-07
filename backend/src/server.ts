@@ -23,8 +23,8 @@ import apiRoutes from './routes/index';
 const app = express();
 const server = createServer(app);
 
-// Initialize Socket.IO - temporarily disabled for debugging
-// const io = initializeSocket(server);
+// Initialize Socket.IO
+const io = initializeSocket(server);
 
 // Trust proxy for real client IPs when behind reverse proxies
 app.set('trust proxy', 1);
@@ -58,8 +58,8 @@ app.use(cors({
 // Compression middleware
 app.use(compression());
 
-// Rate limiting - temporarily disabled for debugging
-// app.use(generalLimiter);
+// Rate limiting
+app.use(generalLimiter);
 
 // Request logging - temporarily disabled for debugging
 app.use(requestLogger);

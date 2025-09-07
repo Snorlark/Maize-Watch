@@ -4,6 +4,7 @@ import Farm from '../models/Farm';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { getThingSpeakService, SensorData } from '../config/thingspeak';
+import getIotSensorReadingModel from '../models/IotSensorReading';
 import { DEFAULT_THRESHOLDS, ALERT_SEVERITY } from '../utils/constants';
 import CacheService from './cacheService';
 // Lazy import to prevent startup connection
@@ -320,7 +321,28 @@ class SensorService {
    */
   async getLatestReadingsByFarm(farmId: string): Promise<ISensorReading[]> {
     try {
-      // Try cache first
+      // Prefer IoT DB if configured via MONGO_IOT_URI
+      const IotModel = await getIotSensorReadingModel();
+      if (IotModel) {
+        const docs = await IotModel.find({}).sort({ timestamp: -1 }).limit(4);
+        return docs.map((d: any) => ({
+          sensor: undefined as any,
+          farm: undefined as any,
+          timestamp: d.timestamp,
+          data: {
+            temperature: d.measurements.temperature,
+            humidity: d.measurements.humidity,
+            soilMoisture: normalizeSoilMoisture(d.measurements.soil_moisture),
+            lightIntensity: d.measurements.light_intensity,
+            pH: d.measurements.soil_ph,
+          },
+          metadata: { source: 'thingspeak', quality: 'good', processed: false },
+          createdAt: d.timestamp,
+          updatedAt: d.timestamp,
+        })) as any;
+      }
+
+      // Fallback to primary DB if IoT not configured
       const cached = await CacheService.getFarmSensors(farmId);
       if (cached) {
         logger.debug(`Cache hit for farm sensors: ${farmId}`);
@@ -328,10 +350,7 @@ class SensorService {
       }
 
       const readings = await SensorReading.getLatestByFarm(farmId);
-      
-      // Cache the results
       await CacheService.cacheFarmSensors(farmId, readings);
-      
       return readings;
     } catch (error) {
       logger.error('Error getting latest readings by farm:', error);
@@ -496,7 +515,7 @@ class SensorService {
         await emailService.sendAlertNotification(
           user.email,
           user.fullName,
-          farm.fieldName,
+          farm.farmName,
           alert.type,
           `${alert.type}: ${alert.value} (threshold: ${alert.threshold})`,
           this.determineSeverity(alert.type, alert.value, alert.threshold)
@@ -507,6 +526,14 @@ class SensorService {
       // Don't throw error to avoid breaking the main flow
     }
   }
+}
+
+function normalizeSoilMoisture(value: number): number {
+  if (value <= 100) return value;
+  if (value <= 1023) return ((1023 - value) / 1023) * 100;
+  if (value <= 4095) return ((4095 - value) / 4095) * 100;
+  if (value <= 65535) return ((65535 - value) / 65535) * 100;
+  return Math.max(0, Math.min(100, (value / Math.max(value, 1000)) * 100));
 }
 
 export default new SensorService();

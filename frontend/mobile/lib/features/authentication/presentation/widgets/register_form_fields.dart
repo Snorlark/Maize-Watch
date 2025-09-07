@@ -1,7 +1,6 @@
 // lib/presentation/pages/register/register_form_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/theme/colors.dart';
 import '../../../../generated/l10n.dart';
 import '../../../../core/constants/philippine_regions.dart';
 import '../../../../core/constants/address_data.dart';
@@ -84,9 +83,8 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
       SizedBox(height: 20.h),
       _buildInputField(
         S.of(context).contact_number,
-        '9123456789',
+        '09123456789',
         widget.controllers.contactController,
-        showPHPrefix: true,
         validator: UIFormValidators.contactNumberValidator(context),
       ),
       SizedBox(height: 20.h),
@@ -215,7 +213,7 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp)),
+        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp, fontWeight: FontWeight.w600)),
         SizedBox(height: 5.h),
         TextFormField(
           controller: controller,
@@ -225,7 +223,7 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: MAIZE_PRIMARY_LIGHT,
+            fillColor: Colors.white.withOpacity(0.8),
             hintStyle: TextStyle(
               color: const Color.fromARGB(122, 43, 70, 37),
               fontSize: 16.sp,
@@ -267,16 +265,17 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp)),
+        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp, fontWeight: FontWeight.w600)),
         SizedBox(height: 5.h),
         TextFormField(
           controller: controller,
           obscureText:
               isPasswordField ? !isPasswordVisible : !isConfirmPasswordVisible,
           style: textTheme.bodyMedium?.copyWith(fontSize: 16.sp),
+          onChanged: isPasswordField ? (value) => setState(() {}) : null,
           decoration: InputDecoration(
             filled: true,
-            fillColor: MAIZE_PRIMARY_LIGHT,
+            fillColor: Colors.white.withOpacity(0.8),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10.r),
             ),
@@ -336,7 +335,7 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp)),
+        Text(label, style: textTheme.bodyLarge?.copyWith(fontSize: 16.sp, fontWeight: FontWeight.w600)),
         SizedBox(height: 5.h),
         DropdownButtonFormField<String>(
           value: controller.text.isEmpty ? null : controller.text,
@@ -346,7 +345,7 @@ class _RegisterFormPageState extends State<RegisterFormPage> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: MAIZE_PRIMARY_LIGHT,
+            fillColor: Colors.white.withOpacity(0.8),
             hintStyle: TextStyle(
               color: const Color.fromARGB(122, 43, 70, 37),
               fontSize: 16.sp,

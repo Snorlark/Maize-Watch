@@ -7,7 +7,7 @@ import '../../../../core/widgets/language_toggle.dart';
 class RegisterAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
   final bool showBackButton;
-  
+
   const RegisterAppBar({
     super.key,
     this.onBackPressed,
@@ -22,10 +22,13 @@ class RegisterAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: MAIZE_BOTTOM_OVERLAY,
       elevation: 0,
-      leading: showBackButton ? IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.black87),
-        onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-      ) : null,
+      leading:
+          showBackButton
+              ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
+              )
+              : null,
       actions: [
         Padding(
           padding: EdgeInsets.only(right: 16.w),

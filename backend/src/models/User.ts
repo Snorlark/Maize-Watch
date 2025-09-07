@@ -293,7 +293,7 @@ userSchema.methods.generateAuthToken = function () {
   };
 
   return jwt.sign(payload, jwtSecret, {
-    expiresIn: process.env.JWT_EXPIRE || "1h",
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     issuer: "maize-watch-api",
     audience: "maize-watch-client",
   } as jwt.SignOptions);
@@ -309,7 +309,7 @@ userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     { id: this._id },
     refreshSecret,
-    { expiresIn: "7d" }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d" } as jwt.SignOptions
   );
 };
 

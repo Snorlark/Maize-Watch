@@ -69,6 +69,7 @@ class SecureStorageServiceImpl implements SecureStorageService {
   }
 
   /// Store both tokens at once for convenience
+  @override
   Future<void> storeTokens(String accessToken, String? refreshToken) async {
     await storeAccessToken(accessToken);
     if (refreshToken != null) {
@@ -77,6 +78,7 @@ class SecureStorageServiceImpl implements SecureStorageService {
   }
 
   /// Check if user has valid tokens
+  @override
   Future<bool> hasValidTokens() async {
     final accessToken = await getAccessToken();
     return accessToken != null && accessToken.isNotEmpty;

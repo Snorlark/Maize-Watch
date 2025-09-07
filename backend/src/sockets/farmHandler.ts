@@ -177,7 +177,7 @@ export default function farmHandler(io: SocketIOServer, socket: AuthenticatedSoc
 
       socket.emit('farm:subscribedAll', { 
         farmCount: result.length,
-        farms: result.map(f => ({ id: f._id, name: f.fieldName }))
+        farms: result.map(f => ({ id: f._id, name: f.farmName }))
       });
     } catch (error) {
       logger.error('Error subscribing to all farms:', error);

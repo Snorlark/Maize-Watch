@@ -160,6 +160,44 @@ class PythonAnalyticsService {
   }
 
   /**
+   * Get current weather forecast from predictive analytics
+   */
+  async getWeatherForecast(farmId: string): Promise<any> {
+    try {
+      const cachedResults = await this.getCachedResults(farmId);
+      if (cachedResults && this.isResultsFresh(cachedResults.timestamp)) {
+        return this.formatWeatherData(cachedResults.predictive.weather_forecast);
+      }
+
+      const results = await this.runCompleteAnalytics(farmId);
+      return this.formatWeatherData(results.predictive.weather_forecast);
+
+    } catch (error) {
+      logger.error(`Failed to get weather forecast for farm ${farmId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get extended weather forecast for multiple days
+   */
+  async getExtendedWeatherForecast(farmId: string, days: number = 7): Promise<any> {
+    try {
+      const cachedResults = await this.getCachedResults(farmId);
+      if (cachedResults && this.isResultsFresh(cachedResults.timestamp)) {
+        return this.formatExtendedWeatherData(cachedResults.predictive.weather_forecast, days);
+      }
+
+      const results = await this.runCompleteAnalytics(farmId);
+      return this.formatExtendedWeatherData(results.predictive.weather_forecast, days);
+
+    } catch (error) {
+      logger.error(`Failed to get extended weather forecast for farm ${farmId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Schedule daily analytics run for all active farms
    */
   async scheduleDailyAnalytics(): Promise<void> {
@@ -377,6 +415,162 @@ class PythonAnalyticsService {
     const now = new Date();
     const hoursDiff = (now.getTime() - timestamp.getTime()) / (1000 * 60 * 60);
     return hoursDiff < 24;
+  }
+
+  /**
+   * Format weather data for mobile app consumption
+   */
+  private formatWeatherData(weatherForecast: any): any {
+    if (!weatherForecast || typeof weatherForecast !== 'object') {
+      // Return default weather data structure
+      return {
+        temperature: 25.0,
+        humidity: 65.0,
+        windSpeed: 5.2,
+        condition: 'partly_cloudy',
+        description: 'Partly cloudy',
+        icon: '02d',
+        pressure: 1013.25,
+        visibility: 10.0,
+        uvIndex: 5,
+        timestamp: new Date().toISOString(),
+        location: 'Farm Location'
+      };
+    }
+
+    // Extract current weather from forecast data
+    const currentWeather = weatherForecast.current || weatherForecast.today || weatherForecast;
+    
+    return {
+      temperature: parseFloat(currentWeather.temperature || currentWeather.temp || 25.0),
+      humidity: parseFloat(currentWeather.humidity || 65.0),
+      windSpeed: parseFloat(currentWeather.wind_speed || currentWeather.windSpeed || 5.2),
+      condition: this.mapWeatherCondition(currentWeather.condition || currentWeather.weather || 'partly_cloudy'),
+      description: currentWeather.description || currentWeather.weather_description || 'Partly cloudy',
+      icon: this.mapWeatherIcon(currentWeather.condition || currentWeather.weather || 'partly_cloudy'),
+      pressure: parseFloat(currentWeather.pressure || 1013.25),
+      visibility: parseFloat(currentWeather.visibility || 10.0),
+      uvIndex: parseInt(currentWeather.uv_index || currentWeather.uvIndex || 5),
+      timestamp: new Date().toISOString(),
+      location: currentWeather.location || 'Farm Location'
+    };
+  }
+
+  /**
+   * Format extended weather data for multiple days
+   */
+  private formatExtendedWeatherData(weatherForecast: any, days: number): any[] {
+    if (!weatherForecast || typeof weatherForecast !== 'object') {
+      // Return default forecast data
+      return this.generateDefaultForecast(days);
+    }
+
+    const forecast = weatherForecast.forecast || weatherForecast.daily || [];
+    const formattedForecast = [];
+
+    for (let i = 0; i < Math.min(days, forecast.length || days); i++) {
+      const dayData = forecast[i] || this.generateDefaultDayForecast(i);
+      
+      formattedForecast.push({
+        temperature: parseFloat(dayData.temperature || dayData.temp || 25.0 + (Math.random() * 10 - 5)),
+        humidity: parseFloat(dayData.humidity || 65.0 + (Math.random() * 20 - 10)),
+        windSpeed: parseFloat(dayData.wind_speed || dayData.windSpeed || 5.2 + (Math.random() * 3 - 1.5)),
+        condition: this.mapWeatherCondition(dayData.condition || dayData.weather || 'partly_cloudy'),
+        description: dayData.description || dayData.weather_description || 'Partly cloudy',
+        icon: this.mapWeatherIcon(dayData.condition || dayData.weather || 'partly_cloudy'),
+        pressure: parseFloat(dayData.pressure || 1013.25 + (Math.random() * 20 - 10)),
+        visibility: parseFloat(dayData.visibility || 10.0),
+        uvIndex: parseInt(dayData.uv_index || dayData.uvIndex || 5),
+        timestamp: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString(),
+        location: dayData.location || 'Farm Location'
+      });
+    }
+
+    return formattedForecast;
+  }
+
+  /**
+   * Map weather conditions to standard format
+   */
+  private mapWeatherCondition(condition: string): string {
+    const conditionMap: { [key: string]: string } = {
+      'clear': 'clear',
+      'sunny': 'clear',
+      'cloudy': 'cloudy',
+      'partly_cloudy': 'partly_cloudy',
+      'overcast': 'cloudy',
+      'rain': 'rain',
+      'drizzle': 'rain',
+      'thunderstorm': 'thunderstorm',
+      'snow': 'snow',
+      'fog': 'fog',
+      'mist': 'fog'
+    };
+
+    const normalizedCondition = condition.toLowerCase().replace(/[^a-z]/g, '');
+    return conditionMap[normalizedCondition] || 'partly_cloudy';
+  }
+
+  /**
+   * Map weather conditions to icon codes
+   */
+  private mapWeatherIcon(condition: string): string {
+    const iconMap: { [key: string]: string } = {
+      'clear': '01d',
+      'partly_cloudy': '02d',
+      'cloudy': '03d',
+      'rain': '10d',
+      'thunderstorm': '11d',
+      'snow': '13d',
+      'fog': '50d'
+    };
+
+    const mappedCondition = this.mapWeatherCondition(condition);
+    return iconMap[mappedCondition] || '02d';
+  }
+
+  /**
+   * Generate default forecast for fallback
+   */
+  private generateDefaultForecast(days: number): any[] {
+    const forecast = [];
+    const baseTemp = 25.0;
+    const baseHumidity = 65.0;
+
+    for (let i = 0; i < days; i++) {
+      forecast.push({
+        temperature: baseTemp + (Math.random() * 10 - 5),
+        humidity: baseHumidity + (Math.random() * 20 - 10),
+        windSpeed: 5.2 + (Math.random() * 3 - 1.5),
+        condition: 'partly_cloudy',
+        description: 'Partly cloudy',
+        icon: '02d',
+        pressure: 1013.25 + (Math.random() * 20 - 10),
+        visibility: 10.0,
+        uvIndex: 5,
+        timestamp: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Farm Location'
+      });
+    }
+
+    return forecast;
+  }
+
+  /**
+   * Generate default day forecast
+   */
+  private generateDefaultDayForecast(dayOffset: number): any {
+    return {
+      temperature: 25.0 + (Math.random() * 10 - 5),
+      humidity: 65.0 + (Math.random() * 20 - 10),
+      wind_speed: 5.2 + (Math.random() * 3 - 1.5),
+      condition: 'partly_cloudy',
+      description: 'Partly cloudy',
+      pressure: 1013.25 + (Math.random() * 20 - 10),
+      visibility: 10.0,
+      uv_index: 5,
+      location: 'Farm Location'
+    };
   }
 
   /**

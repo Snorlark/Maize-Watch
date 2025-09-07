@@ -105,7 +105,7 @@ class AuthService {
         tokens: {
           accessToken,
           refreshToken,
-          expiresIn: process.env.JWT_EXPIRE || "1h",
+          expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         },
         message:
           "Registration successful! Please check your email to verify your account.",
@@ -175,7 +175,7 @@ class AuthService {
         tokens: {
           accessToken,
           refreshToken,
-          expiresIn: process.env.JWT_EXPIRE || "1h",
+          expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         },
         message: "Login successful",
       };
@@ -218,7 +218,7 @@ class AuthService {
 
       return {
         accessToken: newAccessToken,
-        expiresIn: process.env.JWT_EXPIRE || "1h",
+        expiresIn: process.env.JWT_EXPIRES_IN || "7d",
         message: "Token refreshed successfully",
       };
     } catch (error) {
