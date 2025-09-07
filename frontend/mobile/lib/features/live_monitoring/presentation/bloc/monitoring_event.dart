@@ -64,3 +64,12 @@ class LoadFarmAnalyticsEvent extends MonitoringEvent {
   @override
   List<Object?> get props => [farmId];
 }
+
+class AnalyticsUpdatedEvent extends MonitoringEvent {
+  final Map<String, dynamic> analytics;
+
+  const AnalyticsUpdatedEvent({required this.analytics});
+
+  @override
+  List<Object?> get props => [analytics];
+}

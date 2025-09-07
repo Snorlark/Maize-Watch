@@ -75,8 +75,25 @@ class FieldService {
       });
       await field.save();
 
-      // Add field to farm's fields array
-      await farm.addField(field._id as string);
+      // Add field to farm's fields array (convert devices to sensors for Farm model compatibility)
+      const fieldForFarm = {
+        fieldName: field.fieldName,
+        plantingDate: field.plantingDate,
+        growthStage: field.growthStage as 'VE' | 'V3' | 'V8' | 'VT' | 'R1' | 'R6',
+        sensors: field.devices.map(device => ({
+          deviceID: device.sensorId,
+          sensorName: device.name,
+          description: `Sensor for ${field.fieldName}`,
+          soilType: field.soilType as 'loamy' | 'sandy' | 'clay' | 'silty',
+          readings: {
+            soilMoisture: 0,
+            temperature: 0,
+            humidity: 0,
+            pH: 0
+          }
+        }))
+      };
+      await farm.addField(fieldForFarm);
 
       logger.info(`Field created: ${field.fieldName}`, {
         fieldId: field._id,

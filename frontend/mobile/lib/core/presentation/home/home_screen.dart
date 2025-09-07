@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               children: <Widget>[
                 PrescriptionScreen(),
                 const LiveMonitoringScreen(),
-                const SettingScreen(),
+                const SettingsScreen(),
               ],
               onPageChanged: (page) {
                 setState(() {
@@ -125,7 +125,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: SafeArea(
               child: CurvedNavigationBar(
                 index: _currentIndex,
-                backgroundColor: MAIZE_BOTTOM_OVERLAY,
+                backgroundColor:
+                    (_currentIndex == 1) ? Colors.white : MAIZE_BOTTOM_OVERLAY,
                 color: MAIZE_PRIMARY,
                 height: 60.h,
                 items: <Widget>[

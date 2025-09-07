@@ -25,6 +25,8 @@ const server = createServer(app);
 
 // Initialize Socket.IO
 const io = initializeSocket(server);
+import { setIO } from './sockets/index';
+setIO(io);
 
 // Trust proxy for real client IPs when behind reverse proxies
 app.set('trust proxy', 1);

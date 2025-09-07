@@ -127,3 +127,14 @@ export const initializeSocket = (server: HTTPServer) => {
   logger.info('Socket.IO server initialized');
   return io;
 };
+
+// Export function to get the IO instance
+let ioInstance: SocketIOServer | null = null;
+
+export const setIO = (io: SocketIOServer) => {
+  ioInstance = io;
+};
+
+export const getIO = (): SocketIOServer | null => {
+  return ioInstance;
+};
