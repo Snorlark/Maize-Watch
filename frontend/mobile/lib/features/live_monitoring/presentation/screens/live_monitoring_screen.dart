@@ -364,6 +364,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     return Padding(
                       padding: EdgeInsets.only(
                         right: index < tasks.length - 1 ? kAppSmallGap : 0,
+                        left: kAppSmallGap,
                       ),
                       child: _buildTaskCard(
                         time: task['time'],
@@ -691,6 +692,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 ),
             sensorReadings: monitoringState.latestReadings,
             onBack: _goBackToMap,
+            sensors: [],
           ),
         );
       },

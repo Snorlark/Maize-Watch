@@ -17,6 +17,7 @@ import {
   getAnalyticsHealth,
   getCropStatus,
   getCropAnalytics,
+  getWeeklyData,
   getCurrentWeatherForecast,
   getWeatherForecast
 } from '../controllers/analyticsController';
@@ -62,6 +63,7 @@ router.get('/farms/:farmId/risk-assessment', validateObjectId('farmId'), getRisk
 // Minimal mobile endpoints
 router.get('/crop-status/:farmId', validateObjectId('farmId'), getCropStatus);
 router.get('/crop/:farmId', validateObjectId('farmId'), getCropAnalytics);
+router.get('/farms/:farmId/weekly-data', validateObjectId('farmId'), getWeeklyData);
 
 // Weather analytics endpoints
 router.get('/weather/current/:farmId', validateObjectId('farmId'), getCurrentWeatherForecast);

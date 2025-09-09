@@ -61,4 +61,12 @@ class SecureStorage {
     await _storage.delete(key: _userDataKey);
     await _storage.delete(key: _isLoggedInKey);
   }
+
+  static write({required String key, required String value}) {
+    return _storage.write(key: key, value: value);
+  }
+
+  static read({required String key}) {
+    return _storage.read(key: key);
+  }
 }

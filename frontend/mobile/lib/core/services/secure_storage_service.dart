@@ -88,4 +88,16 @@ class SecureStorageServiceImpl implements SecureStorageService {
   Future<void> clearAll() async {
     await _storage.deleteAll();
   }
+
+  Future<void> storeCache(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  Future<String?> getCache(String key) async {
+    return await _storage.read(key: key);
+  }
+  
+  Future<void> clearCache(String key) async {
+    await _storage.delete(key: key);
+  }
 }
