@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import analyticsService from '../services/analyticsService';
 import farmService from '../services/farmService';
 import pythonAnalyticsService from '../services/pythonAnalyticsService';
+import thingSpeakService from '../services/thingspeakService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
@@ -555,6 +556,7 @@ export const getAnalyticsHealth = catchAsync(async (req: Request, res: Response)
  */
 export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
   const { farmId } = req.params;
+  const { fieldId } = req.query; // optional, reserved for per-field in future
   const currentUser = (req as any).user;
 
   const farm = await farmService.getFarmById(farmId);
@@ -564,11 +566,83 @@ export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
-  // Placeholder: return NORMAL. Can be enhanced to compute from analyticsService
+  try {
+    // Get latest sensor data from ThingSpeak
+    const latestData = await thingSpeakService.getLatestData();
+    
+    // Determine crop status based on sensor readings
+    let status = 'NORMAL';
+    let message = 'Your corn is in normal condition.';
+    let color = '#FFC107'; // Amber
+    let icon = 'normal';
+
+    // Analyze the data to determine crop condition
+    const { temperature, humidity, soilMoisture, soilPh, lightIntensity } = latestData;
+
+    // Check for critical conditions
+    if (soilMoisture < 20 || soilMoisture > 90 || 
+        temperature < 10 || temperature > 40 ||
+        soilPh < 5.0 || soilPh > 8.5) {
+      status = 'CRITICAL';
+      message = 'Your corn is in critical condition. Immediate action required.';
+      color = '#F44336'; // Red
+      icon = 'critical';
+    }
+    // Check for warning conditions
+    else if (soilMoisture < 30 || soilMoisture > 80 ||
+             temperature < 15 || temperature > 35 ||
+             soilPh < 5.5 || soilPh > 8.0 ||
+             humidity < 30 || humidity > 85) {
+      status = 'WARNING';
+      message = 'Your corn needs attention. Check soil moisture and nutrients.';
+      color = '#FF9800'; // Orange
+      icon = 'warning';
+    }
+    // Check for good conditions
+    else if (soilMoisture >= 40 && soilMoisture <= 70 &&
+             temperature >= 20 && temperature <= 30 &&
+             soilPh >= 6.0 && soilPh <= 7.5 &&
+             humidity >= 50 && humidity <= 75 &&
+             lightIntensity >= 400 && lightIntensity <= 1000) {
+      status = 'GOOD';
+      message = 'Your corn is growing well with good conditions.';
+      color = '#8BC34A'; // Light Green
+      icon = 'good';
+    }
+    // Check for excellent conditions
+    else if (soilMoisture >= 50 && soilMoisture <= 65 &&
+             temperature >= 22 && temperature <= 28 &&
+             soilPh >= 6.2 && soilPh <= 7.0 &&
+             humidity >= 55 && humidity <= 70 &&
+             lightIntensity >= 500 && lightIntensity <= 800) {
+      status = 'EXCELLENT';
+      message = 'Your corn is in excellent condition!';
+      color = '#4CAF50'; // Green
+      icon = 'excellent';
+    }
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: { 
+        status,
+        message,
+        color,
+        icon
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting crop status:', error);
+    // Return default status if there's an error
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    data: { status: 'NORMAL' }
-  });
+      data: { 
+        status: 'NORMAL',
+        message: 'Unable to determine crop condition. Check sensor connectivity.',
+        color: '#9E9E9E',
+        icon: 'unknown'
+      }
+    });
+  }
 });
 
 /**
@@ -578,6 +652,7 @@ export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
  */
 export const getCropAnalytics = catchAsync(async (req: Request, res: Response) => {
   const { farmId } = req.params;
+  const { fieldId } = req.query; // optional, reserved for per-field in future
   const currentUser = (req as any).user;
 
   const farm = await farmService.getFarmById(farmId);
@@ -587,11 +662,128 @@ export const getCropAnalytics = catchAsync(async (req: Request, res: Response) =
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
-  // Minimal empty analytics payload for now
+  try {
+    // Get latest sensor data from ThingSpeak
+    const latestData = await thingSpeakService.getLatestData();
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        soilPh: latestData.soilPh,
+        soilMoisture: latestData.soilMoisture,
+        temperature: latestData.temperature,
+        humidity: latestData.humidity,
+        lightIntensity: latestData.lightIntensity,
+        timestamp: latestData.timestamp
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting crop analytics:', error);
+    // Return default values if there's an error
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        soilPh: 6.5,
+        soilMoisture: 50.0,
+        temperature: 25.0,
+        humidity: 60.0,
+        lightIntensity: 500.0,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+});
+
+/**
+ * @desc    Get weekly historical data for mobile analytics
+ * @route   GET /api/analytics/farms/:farmId/weekly-data
+ * @access  Private
+ */
+export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const { fieldId } = req.query; // optional, reserved for per-field in future
+  const currentUser = (req as any).user;
+
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  try {
+    // Get historical data for the past 7 days
+    const historicalData = await thingSpeakService.getHistoricalData(60 * 24 * 7); // 7 days in minutes
+    
+    // Group data by day and calculate daily averages
+    const dailyData = [];
+    const now = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayData = historicalData.filter(data => {
+        const dataDate = new Date(data.timestamp);
+        return dataDate >= date && dataDate < nextDate;
+      });
+      
+      if (dayData.length > 0) {
+        const avgTemp = dayData.reduce((sum, d) => sum + d.temperature, 0) / dayData.length;
+        const avgHumidity = dayData.reduce((sum, d) => sum + d.humidity, 0) / dayData.length;
+        const avgSoilMoisture = dayData.reduce((sum, d) => sum + d.soilMoisture, 0) / dayData.length;
+        const avgSoilPh = dayData.reduce((sum, d) => sum + d.soilPh, 0) / dayData.length;
+        const avgLightIntensity = dayData.reduce((sum, d) => sum + d.lightIntensity, 0) / dayData.length;
+        
+        dailyData.push({
+          date: date.toISOString().split('T')[0],
+          temperature: Math.round(avgTemp * 100) / 100,
+          humidity: Math.round(avgHumidity * 100) / 100,
+          soilMoisture: Math.round(avgSoilMoisture * 100) / 100,
+          soilPh: Math.round(avgSoilPh * 100) / 100,
+          lightIntensity: Math.round(avgLightIntensity * 100) / 100,
+        });
+      } else {
+        // Add empty data for days with no readings
+        dailyData.push({
+          date: date.toISOString().split('T')[0],
+          temperature: 0,
+          humidity: 0,
+          soilMoisture: 0,
+          soilPh: 0,
+          lightIntensity: 0,
+        });
+      }
+    }
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        dailyData,
+        summary: {
+          totalDays: 7,
+          dataPoints: historicalData.length
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting weekly data:', error);
+    // Return empty data if there's an error
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    data: {}
-  });
+      data: {
+        dailyData: [],
+        summary: {
+          totalDays: 7,
+          dataPoints: 0
+        }
+      }
+    });
+  }
 });
 
 /**

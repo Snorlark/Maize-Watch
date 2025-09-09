@@ -24,3 +24,7 @@ class NetworkFailure extends Failure {
 class AuthFailure extends Failure {
   const AuthFailure([super.message = 'Authentication failed']);
 }
+
+class UnauthorizedFailure extends Failure {
+  const UnauthorizedFailure([super.message = 'Unauthorized access']);
+}

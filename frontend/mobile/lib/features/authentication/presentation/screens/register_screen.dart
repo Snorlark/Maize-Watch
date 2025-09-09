@@ -189,36 +189,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 8.w),
         height: 56.h,
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
             backgroundColor: isBack ? Colors.white : MAIZE_PRIMARY,
             foregroundColor: isBack ? MAIZE_PRIMARY : Colors.white,
             elevation: isBack ? 0 : 2,
             shadowColor:
                 isBack ? Colors.transparent : MAIZE_PRIMARY.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
+          shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.r),
             ),
-          ),
-          child:
+        ),
+        child:
               isLoading && !isBack
-                  ? SizedBox(
+                ? SizedBox(
                     width: 20.w,
                     height: 20.h,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                  : Text(
-                    text,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
                     ),
                   ),
-        ),
+                ),
       ),
     );
   }

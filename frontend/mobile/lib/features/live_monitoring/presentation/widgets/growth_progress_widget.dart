@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:lottie/lottie.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../farm/domain/entities/farm.dart';
 import '../../domain/entities/sensor_reading.dart';
 
 class GrowthProgressWidget extends StatefulWidget {
@@ -70,16 +69,61 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
   int _currentStageIndex = 0;
 
   int _daysToNextStage = -1;
-  String _trendKey = "stable";
-  String _currentStageName = "";
-  String _currentStageDescription = "";
 
   final List<Map<String, dynamic>> cornStages = [
+    {
+      "stage": "VE",
+      "progress": 0.10,
+      "name": "Emergence",
+      "description": "Seedling emergence visible above ground",
+    },
+    {
+      "stage": "V3",
+      "progress": 0.25,
+      "name": "3rd Leaf",
+      "description": "Three visible leaf collars",
+    },
+    {
+      "stage": "V6",
+      "progress": 0.40,
+      "name": "6th Leaf",
+      "description": "Six visible leaf collars",
+    },
+    {
+      "stage": "V8",
+      "progress": 0.55,
+      "name": "8th Leaf",
+      "description": "Eight visible leaf collars",
+    },
+    {
+      "stage": "V12",
+      "progress": 0.70,
+      "name": "12th Leaf",
+      "description": "Twelve visible leaf collars",
+    },
+    {
+      "stage": "VT",
+      "progress": 0.80,
+      "name": "Tasseling",
+      "description": "Tassel fully emerged",
+    },
+    {
+      "stage": "R1",
+      "progress": 0.85,
+      "name": "Silking",
+      "description": "Silks visible on most plants",
+    },
+    {
+      "stage": "R3",
+      "progress": 0.90,
+      "name": "Milk Stage",
+      "description": "Kernels contain milky fluid",
+    },
     {
       "stage": "R6",
       "progress": 1.0,
       "name": "Maturity",
-      "description": "Physiological maturity",
+      "description": "Physiological maturity reached",
     },
   ];
 
@@ -120,7 +164,6 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
       }
     }
 
-    _updateStageInformation(stageIndex);
 
     setState(() {
       _currentStageIndex = stageIndex;
@@ -137,11 +180,6 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
     widget.onStageChange?.call();
   }
 
-  void _updateStageInformation(int stageIndex) {
-    final stageData = cornStages[stageIndex];
-    _currentStageName = stageData["name"] as String;
-    _currentStageDescription = stageData["description"] as String;
-  }
 
   void _calculateGrowthTrend() {
     double sumOfChanges = 0.0;
@@ -162,14 +200,7 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
           4;
       sumOfChanges += currAvg - prevAvg;
     }
-    final rate = sumOfChanges / (widget.historicalData!.length - 1);
     setState(() {
-      _trendKey =
-          rate > 0.5
-              ? "increasing"
-              : rate < -0.5
-              ? "decreasing"
-              : "stable";
       _daysToNextStage = _calculateDaysToNextStage();
     });
   }
@@ -378,41 +409,3 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
   }
 }
 
-final List<Map<String, dynamic>> cornStages = [
-  {
-    "stage": "VE",
-    "progress": 0.0,
-    "name": "Emergence",
-    "description": "Seedling emergence visible above ground",
-  },
-  {
-    "stage": "V6",
-    "progress": 0.25,
-    "name": "Sixth Leaf",
-    "description": "Six visible leaf collars",
-  },
-  {
-    "stage": "VT",
-    "progress": 0.5,
-    "name": "Tasseling",
-    "description": "Tassel fully emerged",
-  },
-  {
-    "stage": "R1",
-    "progress": 0.65,
-    "name": "Silking",
-    "description": "Silks visible on most plants",
-  },
-  {
-    "stage": "R3",
-    "progress": 0.8,
-    "name": "Milk Stage",
-    "description": "Kernels are yellow with milky inner fluid",
-  },
-  {
-    "stage": "R6",
-    "progress": 1.0,
-    "name": "Maturity",
-    "description": "Physiological maturity reached",
-  },
-];

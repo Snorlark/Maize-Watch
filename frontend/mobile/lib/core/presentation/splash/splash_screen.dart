@@ -113,8 +113,8 @@ class _SplashScreenState extends State<SplashScreen>
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthenticationBloc, AuthenticationState>(
-          listener: (context, state) {
-            if (state.status == AuthenticationStatus.authenticated) {
+      listener: (context, state) {
+        if (state.status == AuthenticationStatus.authenticated) {
               // After authentication, request user's farms before deciding where to go
               if (!_requestedFarms && state.user != null) {
                 _requestedFarms = true;
@@ -159,9 +159,9 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                 }
               }
-            } else if (state.status == AuthenticationStatus.unauthenticated) {
-              // Navigate to landing screen if not authenticated
-              print("🔍 Splash: User not authenticated, navigating to landing");
+        } else if (state.status == AuthenticationStatus.unauthenticated) {
+          // Navigate to landing screen if not authenticated
+          print("🔍 Splash: User not authenticated, navigating to landing");
               _timeoutTimer?.cancel();
               _navigateTo(const LandingScreen());
             } else if (state.status == AuthenticationStatus.failure) {

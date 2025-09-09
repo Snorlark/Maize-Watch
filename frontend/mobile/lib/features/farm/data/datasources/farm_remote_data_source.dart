@@ -106,7 +106,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
 
       // First attempt
       var response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/api/farms'),
+      Uri.parse('${AppConfig.baseUrl}/api/farms'),
         headers: await _authHeaders(),
         body: json.encode(apiPayload),
       );
@@ -141,17 +141,17 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
         }
       }
 
-      if (response.statusCode == 201) {
+    if (response.statusCode == 201) {
         print('✅ Farm created successfully');
-        final responseData = json.decode(response.body);
+      final responseData = json.decode(response.body);
         print('✅ Response data: ${json.encode(responseData)}');
-        return FarmModel.fromJson(responseData['data']['farm']);
+      return FarmModel.fromJson(responseData['data']['farm']);
       } else if (response.statusCode == 401) {
         // Still unauthorized after refresh attempt - clear session
         print('🚨 Still unauthorized after refresh attempt');
         await SecureStorage.clearUserSession();
         throw ServerException('Authentication expired. Please log in again.');
-      } else {
+    } else {
         print('🚨 Farm creation failed with status: ${response.statusCode}');
         final responseBody = json.decode(response.body);
         print('🚨 Error response: ${json.encode(responseBody)}');
@@ -167,7 +167,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
   Future<List<FarmModel>> getUserFarms(String userId) async {
     try {
       // Backend uses authenticated user; userId param not required
-      final response = await client.get(
+    final response = await client.get(
         Uri.parse('${AppConfig.baseUrl}/api/farms'),
         headers: await _authHeaders(),
       );
@@ -175,15 +175,15 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
       print('🌽 Farm API Response: ${response.statusCode}');
       print('🌽 Farm API Body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        final List<dynamic> farmsJson = responseData['data']['farms'];
-        return farmsJson.map((json) => FarmModel.fromJson(json)).toList();
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      final List<dynamic> farmsJson = responseData['data']['farms'];
+      return farmsJson.map((json) => FarmModel.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
         throw ServerException('Authentication expired. Please log in again.');
       } else if (response.statusCode >= 500) {
         throw ServerException('Server error. Please try again later.');
-      } else {
+    } else {
         final responseData = json.decode(response.body);
         final message = responseData['message'] ?? 'Failed to load farms';
         throw ServerException(message);

@@ -23,6 +23,7 @@ import '../../features/authentication/domain/repositories/authentication_reposit
 import '../../features/authentication/presentation/bloc/authentication_bloc.dart';
 import '../config/environment.dart';
 import '../../features/farm/injection_container.dart' as farm_di;
+import '../../features/live_monitoring/injection_container.dart' as analytics_di;
 
 final sl = GetIt.instance;
 
@@ -53,6 +54,9 @@ Future<void> init() async {
 
   // Initialize farm feature dependencies
   await farm_di.initFarmFeature();
+  
+  // Initialize analytics feature dependencies
+  await analytics_di.initAnalyticsFeature();
 
   sl.registerLazySingleton<MonitoringRemoteDataSource>(
     () => MonitoringRemoteDataSourceImpl(dio: sl<Dio>()),
