@@ -59,8 +59,7 @@ class DescriptiveAnalytics:
             # Default to yesterday if no date provided
             if target_date is None:
                 manila_tz = pytz.timezone(self.config['system']['timezone'])
-                # target_date = datetime.now(manila_tz).date() - timedelta(days=1)
-                target_date = datetime(2025, 6, 11).date()  # <-- hardcoded date
+                target_date = datetime.now(manila_tz).date() - timedelta(days=1)
                 target_date = datetime.combine(target_date, datetime.min.time())
 
             

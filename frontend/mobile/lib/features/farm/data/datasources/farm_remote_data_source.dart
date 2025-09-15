@@ -398,12 +398,13 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
     try {
       final headers = await _authHeaders();
       final response = await client.get(
-        Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/recommendations'),
+        Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/complete'),
         headers: headers,
       );
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
+        print('🔍 Complete Analytics Response: $responseData');
         return responseData['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 401) {
         // Try to refresh token
@@ -411,12 +412,13 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
         if (newToken != null) {
           final newHeaders = await _authHeaders();
           final retryResponse = await client.get(
-            Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/recommendations'),
+            Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/complete'),
             headers: newHeaders,
           );
           
           if (retryResponse.statusCode == 200) {
             final responseData = json.decode(retryResponse.body);
+            print('🔍 Complete Analytics Response (retry): $responseData');
             return responseData['data'] as Map<String, dynamic>;
           }
         }

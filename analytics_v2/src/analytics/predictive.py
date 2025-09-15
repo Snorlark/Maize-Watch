@@ -8,6 +8,7 @@ from scipy import stats
 import pytz
 
 from database.mongodb_setup import db_manager
+from services.weather_service import amadeo_weather_service
 
 logger = logging.getLogger('corn_system')
 
@@ -38,14 +39,11 @@ class PredictiveAnalytics:
             
             logger.info(f"Starting predictive analysis for {farmer_id} from {current_date}")
             
-            # Step 1: Get historical weather patterns
-            historical_data = self._get_historical_weather_patterns(current_date)
-            if historical_data is None or historical_data.empty:
-                logger.error("No historical weather data found")
+            # Step 1: Get weather forecast using Amadeo weather service
+            weather_forecast = amadeo_weather_service.get_weather_forecast(days=3)
+            if not weather_forecast:
+                logger.error("No weather forecast available")
                 return None
-            
-            # Step 2: Generate weather forecast
-            weather_forecast = self._generate_weather_forecast(historical_data, current_date)
             
             # Step 3: Calculate risk probabilities
             risk_assessment = self._calculate_risk_probabilities(

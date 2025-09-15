@@ -9,6 +9,7 @@ import '../../../farm/presentation/bloc/farm_bloc.dart';
 import '../../../farm/domain/entities/farm.dart';
 import '../bloc/monitoring_bloc.dart';
 import '../widgets/farm_detail_widget.dart';
+import '../widgets/growth_stage_lottie.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 
 class LiveMonitoringScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class LiveMonitoringScreen extends StatefulWidget {
 class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     with SingleTickerProviderStateMixin {
   Farm? _selectedFarm;
+  Field? _selectedField;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -66,6 +68,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     _animationController.reverse().then((_) {
       setState(() {
         _selectedFarm = null;
+        _selectedField = null;
       });
       _animationController.forward();
     });
@@ -171,49 +174,65 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             final user = authState.user;
             return BlocBuilder<MonitoringBloc, MonitoringState>(
               builder: (context, monitoringState) {
-                // Use real weather data if available, otherwise fallback to sensor data
+                // Use analytics weather data if available, otherwise fallback to sensor data
                 final weatherData = monitoringState.weatherData;
                 final latestReading =
                     monitoringState.latestReadings.isNotEmpty
                         ? monitoringState.latestReadings.first
                         : null;
 
-                // Debug logging to trace weather data in UI
-                if (weatherData != null) {
-                  print(
-                    '🎯 UI using weather data: temp=${weatherData.temperature}°C, humidity=${weatherData.humidity}%',
-                  );
-                } else {
-                  print(
-                    '⚠️ UI using fallback data - no weather data available',
-                  );
-                }
+                // Try to get weather data from analytics first
+                double temperature = 16.0;
+                double humidity = 72.5;
+                double windSpeed = 5.2;
+                String weatherCondition = 'Partly Cloudy';
+                IconData weatherIcon = Icons.cloud;
+                String weatherDescription = 'Partly cloudy';
 
-                // Get temperature from weather API or sensor data
-                final temperature =
-                    weatherData?.temperature ??
-                    latestReading?.temperature ??
-                    16.0;
-                final humidity =
-                    weatherData?.humidity ?? latestReading?.humidity ?? 72.5;
-                final windSpeed =
-                    weatherData?.windSpeed ??
-                    _calculateWindSpeed(latestReading?.lightIntensity ?? 50.0);
-
-                // Get weather condition from API or calculate from sensor data
-                String weatherCondition;
-                IconData weatherIcon;
-
-                if (weatherData != null) {
+                // Check if we have analytics data with weather information
+                final analyticsData = monitoringState.farmAnalytics;
+                if (analyticsData != null && analyticsData['predictive'] != null) {
+                  final predictive = analyticsData['predictive'] as Map<String, dynamic>;
+                  if (predictive['weather_forecast'] != null) {
+                    final weatherForecast = predictive['weather_forecast'] as Map<String, dynamic>;
+                    if (weatherForecast['current'] != null) {
+                      final currentWeather = weatherForecast['current'] as Map<String, dynamic>;
+                      temperature = (currentWeather['temperature'] as num?)?.toDouble() ?? 16.0;
+                      humidity = (currentWeather['humidity'] as num?)?.toDouble() ?? 72.5;
+                      windSpeed = (currentWeather['wind_speed'] as num?)?.toDouble() ?? 5.2;
+                      weatherCondition = currentWeather['condition'] as String? ?? 'Partly Cloudy';
+                      weatherDescription = currentWeather['description'] as String? ?? 'Partly cloudy';
+                      weatherIcon = _getWeatherIcon(weatherCondition);
+                      
+                      print('🎯 UI using analytics weather data: temp=${temperature}°C, humidity=${humidity}%');
+                    }
+                  }
+                } else if (weatherData != null) {
+                  // Fallback to weather API data
+                  temperature = weatherData.temperature;
+                  humidity = weatherData.humidity;
+                  windSpeed = weatherData.windSpeed;
                   weatherCondition = weatherData.condition;
+                  weatherDescription = weatherData.description;
                   weatherIcon = _getWeatherIcon(weatherData.condition);
-                } else {
+                  
+                  print('🎯 UI using weather API data: temp=${temperature}°C, humidity=${humidity}%');
+                } else if (latestReading != null) {
+                  // Fallback to sensor data
+                  temperature = latestReading.temperature;
+                  humidity = latestReading.humidity;
+                  windSpeed = _calculateWindSpeed(latestReading.lightIntensity);
                   weatherCondition = _getWeatherCondition(
                     temperature,
                     humidity,
-                    latestReading?.lightIntensity ?? 50.0,
+                    latestReading.lightIntensity,
                   );
+                  weatherDescription = weatherCondition;
                   weatherIcon = _getWeatherIcon(weatherCondition);
+                  
+                  print('🎯 UI using sensor data: temp=${temperature}°C, humidity=${humidity}%');
+                } else {
+                  print('⚠️ UI using default fallback data - no data available');
                 }
 
                 return Column(
@@ -257,7 +276,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                                 ),
                                 horizontalSpace(8),
                                 Text(
-                                  weatherData?.description ?? weatherCondition,
+                                  weatherDescription,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     color: Colors.white,
@@ -290,13 +309,25 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                           '${humidity.toStringAsFixed(1)}%',
                           Icons.water_drop,
                         ),
-                        if (weatherData?.pressure != null) ...[
-                          SizedBox(width: kAppSmallGap),
-                          _buildWeatherStat(
-                            '${weatherData?.pressure.toStringAsFixed(0) ?? '0'} hPa',
-                            Icons.speed,
-                          ),
-                        ],
+                        // Add pressure if available from analytics
+                        ...(() {
+                          if (analyticsData != null && 
+                              analyticsData['predictive'] != null &&
+                              analyticsData['predictive']['weather_forecast'] != null &&
+                              analyticsData['predictive']['weather_forecast']['current'] != null) {
+                            final currentWeather = analyticsData['predictive']['weather_forecast']['current'] as Map<String, dynamic>;
+                            if (currentWeather['pressure'] != null) {
+                              return [
+                                SizedBox(width: kAppSmallGap),
+                                _buildWeatherStat(
+                                  '${(currentWeather['pressure'] as num).toStringAsFixed(0)} hPa',
+                                  Icons.speed,
+                                ),
+                              ];
+                            }
+                          }
+                          return <Widget>[];
+                        })(),
                       ],
                     ),
                   ],
@@ -313,11 +344,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.2),
+        color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
       ),
-
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: Colors.white, size: 18.sp),
           horizontalSpace(6),
@@ -461,6 +493,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     );
   }
 
+
   Widget _buildFarmFieldsSection() {
     return Container(
       margin: EdgeInsets.only(top: kAppSmallPadding),
@@ -580,6 +613,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         if (farm != null) {
           setState(() {
             _selectedFarm = farm;
+            _selectedField = farm.fields.isNotEmpty ? farm.fields.first : null;
           });
         }
       },
@@ -598,11 +632,20 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               height: 50.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12.r),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/corn-logo.png'),
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.grey[100],
               ),
+              child: farm?.fields.isNotEmpty == true
+                  ? GrowthStageLottie(
+                      growthStage: farm!.fields.first.growthStage,
+                      width: 50.w,
+                      height: 50.h,
+                      fit: BoxFit.contain,
+                    )
+                  : Icon(
+                      Icons.agriculture,
+                      size: 24.sp,
+                      color: Colors.grey[600],
+                    ),
             ),
             horizontalSpace(16),
             Expanded(
@@ -692,6 +735,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 ),
             sensorReadings: monitoringState.latestReadings,
             onBack: _goBackToMap,
+            selectedField: _selectedField,
             sensors: [],
           ),
         );
@@ -783,50 +827,18 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       if (analyticsData != null) {
         print('🔍 Analytics Keys: ${analyticsData.keys.toList()}');
         print('🔍 Has Prescriptive: ${analyticsData['prescriptive'] != null}');
-        print(
-          '🔍 Has Direct Recommendations: ${analyticsData['recommendations'] != null}',
-        );
+        print('🔍 Has Descriptive: ${analyticsData['descriptive'] != null}');
+        print('🔍 Has Predictive: ${analyticsData['predictive'] != null}');
       }
 
       List<dynamic> recommendations = [];
 
       if (analyticsData != null) {
-        // Check for prescriptive.recommendations structure first
+        // The complete analytics endpoint returns data directly with prescriptive key
         if (analyticsData['prescriptive'] != null) {
-          final prescriptive = analyticsData['prescriptive'];
-          recommendations =
-              prescriptive['recommendations'] as List<dynamic>? ?? [];
-        }
-        // Fallback to direct recommendations key
-        else if (analyticsData['recommendations'] != null) {
-          final recommendationsData = analyticsData['recommendations'];
-          print(
-            '🔍 Recommendations Data Type: ${recommendationsData.runtimeType}',
-          );
-          print('🔍 Recommendations Data: $recommendationsData');
-
-          // Handle both List and Map structures
-          if (recommendationsData is List<dynamic>) {
-            recommendations = recommendationsData;
-          } else if (recommendationsData is Map<String, dynamic>) {
-            // Check if it has prescriptive.recommendations structure
-            if (recommendationsData['prescriptive'] != null) {
-              final prescriptive =
-                  recommendationsData['prescriptive'] as Map<String, dynamic>;
-              if (prescriptive['recommendations'] is List<dynamic>) {
-                recommendations =
-                    prescriptive['recommendations'] as List<dynamic>;
-              }
-            }
-            // If it's a map, check if it has a recommendations array inside
-            else if (recommendationsData['recommendations'] is List<dynamic>) {
-              recommendations =
-                  recommendationsData['recommendations'] as List<dynamic>;
-            } else {
-              // Convert single recommendation map to list
-              recommendations = [recommendationsData];
-            }
-          }
+          final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+          recommendations = prescriptive['recommendations'] as List<dynamic>? ?? [];
+          print('🔍 Found prescriptive recommendations: ${recommendations.length}');
         }
 
         print('🔍 Final Recommendations Count: ${recommendations.length}');
@@ -1032,6 +1044,39 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
   // Get farm growth status based on analytics and sensor data
   String _getFarmGrowthStatus(Farm? farm, MonitoringState? monitoringState) {
+    // Try to get growth stage from analytics first
+    if (monitoringState?.farmAnalytics != null) {
+      final analyticsData = monitoringState!.farmAnalytics!;
+      if (analyticsData['descriptive'] != null) {
+        final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+        final growthStage = descriptive['growth_stage'] as String? ?? 'VE';
+        final daysSincePlanting = descriptive['daysSincePlanting'] as int? ?? 0;
+        
+        // Calculate growth percentage based on stage (more accurate mapping)
+        final growthPercentages = {
+          'VE': 5,
+          'V2': 15,
+          'V3': 25,
+          'V4': 35,
+          'V5': 45,
+          'V6': 55,
+          'V7': 65,
+          'V8': 70,
+          'VT': 75,
+          'R1': 80,
+          'R2': 85,
+          'R3': 90,
+          'R4': 92,
+          'R5': 95,
+          'R6': 100,
+        };
+
+        final percentage = growthPercentages[growthStage] ?? 10;
+        return 'Growth: $percentage% (${daysSincePlanting}d)';
+      }
+    }
+
+    // Fallback to farm field data
     if (farm?.fields.isNotEmpty == true) {
       final field = farm!.fields.first;
       final growthStage = field.growthStage;
@@ -1057,9 +1102,36 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   String _getFarmActivityCount(Farm? farm, MonitoringState? monitoringState) {
     if (monitoringState?.farmAnalytics != null) {
       final analytics = monitoringState!.farmAnalytics!;
-      final sensorCount = analytics['totalSensors'] ?? 0;
-      final alertCount = analytics['alerts']?['total'] ?? 0;
-      final totalActivities = sensorCount + alertCount;
+      
+      // Get sensor count from farm fields
+      int sensorCount = 0;
+      if (farm?.fields.isNotEmpty == true) {
+        for (final field in farm!.fields) {
+          sensorCount += field.sensors.length;
+        }
+      }
+      
+      // Get recommendations count from prescriptive analytics
+      int recommendationsCount = 0;
+      if (analytics['prescriptive'] != null) {
+        final prescriptive = analytics['prescriptive'] as Map<String, dynamic>;
+        recommendationsCount = prescriptive['total_recommendations'] as int? ?? 0;
+      }
+      
+      // Get alerts count if available
+      int alertCount = 0;
+      if (analytics['predictive'] != null) {
+        final predictive = analytics['predictive'] as Map<String, dynamic>;
+        if (predictive['risk_assessment'] != null) {
+          final riskAssessment = predictive['risk_assessment'] as Map<String, dynamic>;
+          final riskLevel = riskAssessment['overall_risk_level'] as String? ?? 'low';
+          if (riskLevel == 'high' || riskLevel == 'urgent') {
+            alertCount = 1;
+          }
+        }
+      }
+      
+      final totalActivities = sensorCount + recommendationsCount + alertCount;
       return '$totalActivities Activities';
     }
 
@@ -1100,6 +1172,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       onTap: () {
         setState(() {
           _selectedFarm = farm;
+          _selectedField = field;
         });
       },
       child: Container(
@@ -1117,10 +1190,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               height: 50.h,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12.r),
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/corn-logo.png'),
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.grey[100],
+              ),
+              child: GrowthStageLottie(
+                growthStage: field.growthStage,
+                width: 50.w,
+                height: 50.h,
+                fit: BoxFit.contain,
               ),
             ),
             horizontalSpace(16),
@@ -1154,12 +1230,19 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     decoration: BoxDecoration(
                       color: _getGrowthStageColor(field.growthStage),
                       borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _getGrowthStageColor(field.growthStage).withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Text(
                       _getGrowthStageText(field.growthStage),
                       style: TextStyle(
                         fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
@@ -1167,23 +1250,25 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   verticalSpace(8),
                   Row(
                     children: [
-                      Icon(Icons.grass, size: 14.sp, color: Colors.grey[600]),
+                      Icon(Icons.grass, size: 14.sp, color: _getGrowthStatusColor(field.growthStage)),
                       horizontalSpace(4),
                       Text(
                         _getFieldGrowthStatus(field),
                         style: TextStyle(
                           fontSize: 12.sp,
-                          color: Colors.grey[600],
+                          color: _getGrowthStatusColor(field.growthStage),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       horizontalSpace(16),
-                      Icon(Icons.sensors, size: 14.sp, color: Colors.grey[600]),
+                      Icon(Icons.sensors, size: 14.sp, color: field.sensors.isNotEmpty ? Colors.green : Colors.grey[600]),
                       horizontalSpace(4),
                       Text(
                         _getFieldDeviceCount(field),
                         style: TextStyle(
                           fontSize: 12.sp,
-                          color: Colors.grey[600],
+                          color: field.sensors.isNotEmpty ? Colors.green : Colors.grey[600],
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -1199,17 +1284,55 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   // Helper methods for field display
+  Color _getGrowthStatusColor(String growthStage) {
+    // Color based on growth stage progress
+    switch (growthStage) {
+      case 'VE':
+      case 'V2':
+      case 'V3':
+      case 'V4':
+        return Colors.blue; // Early stages - blue
+      case 'V5':
+      case 'V6':
+      case 'V7':
+      case 'V8':
+        return Colors.green; // Good vegetative growth - green
+      case 'VT':
+        return Colors.orange; // Transition - orange
+      case 'R1':
+      case 'R2':
+      case 'R3':
+        return Colors.purple; // Reproductive - purple
+      case 'R4':
+      case 'R5':
+        return Colors.deepOrange; // Maturing - deep orange
+      case 'R6':
+        return Colors.red; // Maturity - red
+      default:
+        return Colors.grey;
+    }
+  }
+
   Color _getGrowthStageColor(String growthStage) {
     switch (growthStage) {
       case 'VE':
         return Colors.green[300]!;
+      case 'V2':
       case 'V3':
+      case 'V4':
         return Colors.green[400]!;
+      case 'V5':
+      case 'V6':
+      case 'V7':
       case 'V8':
-        return Colors.green[500]!;
       case 'VT':
-        return Colors.orange[400]!;
+        return Colors.green[500]!;
       case 'R1':
+      case 'R2':
+      case 'R3':
+        return Colors.orange[400]!;
+      case 'R4':
+      case 'R5':
         return Colors.orange[500]!;
       case 'R6':
         return Colors.red[400]!;
@@ -1222,34 +1345,52 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     switch (growthStage) {
       case 'VE':
         return 'Emergence';
+      case 'V2':
       case 'V3':
-        return '3rd Leaf';
+      case 'V4':
+        return 'Early Vegetative';
+      case 'V5':
+      case 'V6':
+      case 'V7':
       case 'V8':
-        return '8th Leaf';
       case 'VT':
-        return 'Tasseling';
+        return 'Mid Vegetative';
       case 'R1':
-        return 'Silking';
+      case 'R2':
+      case 'R3':
+        return 'Reproductive';
+      case 'R4':
+      case 'R5':
+        return 'Maturing';
       case 'R6':
-        return 'Maturity';
+        return 'Maturity/Harvest';
       default:
         return 'Unknown';
     }
   }
 
   String _getFieldGrowthStatus(Field field) {
-    // Calculate growth percentage based on growth stage
+    // Calculate growth percentage based on growth stage (more accurate mapping)
     final growthStage = field.growthStage;
     final growthPercentages = {
-      'VE': 10,
+      'VE': 5,
+      'V2': 15,
       'V3': 25,
-      'V8': 50,
+      'V4': 35,
+      'V5': 45,
+      'V6': 55,
+      'V7': 65,
+      'V8': 70,
       'VT': 75,
-      'R1': 85,
-      'R6': 95,
+      'R1': 80,
+      'R2': 85,
+      'R3': 90,
+      'R4': 92,
+      'R5': 95,
+      'R6': 100,
     };
 
-    final percentage = growthPercentages[growthStage] ?? 10;
+    final percentage = growthPercentages[growthStage] ?? 5;
     return 'Growth: $percentage%';
   }
 
