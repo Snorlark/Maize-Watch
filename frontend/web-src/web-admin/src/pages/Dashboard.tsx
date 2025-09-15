@@ -381,7 +381,7 @@ const AdminDashboard = () => {
                 <h2 style={{ fontSize: 'var(--text-xl)' }} className="font-semibold text-[#1E441E]">Current Temperature</h2>
               </div>
               <button 
-                onClick={() => navigate('/livedata')}
+                onClick={() => navigate('/admin-portal-xyz123/livedata')}
                 className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
                 style={{ fontSize: 'var(--text-sm)' }}
               >
@@ -414,7 +414,7 @@ const AdminDashboard = () => {
                 <h2 style={{ fontSize: 'var(--text-xl)' }} className="font-semibold text-[#1E441E]">Temperature Trends</h2>
               </div>
               <button 
-                onClick={() => navigate('/datahistory')}
+                onClick={() => navigate('/admin-portal-xyz123/datahistory')}
                 className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
                 style={{ fontSize: 'var(--text-sm)' }}
               >

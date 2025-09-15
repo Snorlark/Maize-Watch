@@ -54,14 +54,52 @@ interface DataItem {
   timestamp?: string;
 }
 
-// Add temperature thresholds
+interface ApiResponse {
+  success: boolean;
+  data: any[];
+  error?: string;
+  message?: string;
+}
+
+interface WeeklyOverviewItem {
+  dayOfWeek: number;
+  date: string;
+  dayName: string;
+  timestamp: string;
+  hasData: boolean;
+  dataPoints: number;
+  measurements: {
+    temperature: number | null;
+    humidity: number | null;
+    soil_moisture: number | null;
+    soil_ph: number | null;
+    light_intensity: number | null;
+  };
+}
+
+// Update the SensorReading interface to match your historical API structure
+interface SensorReading {
+  timestamp: string;
+  temperature: number;
+  humidity?: number;
+  soilMoisture?: number; // Changed from soil_moisture
+  lightIntensity?: number; // Changed from light_intensity
+  soilPh?: number; // Changed from soil_ph
+  nitrogen?: number;
+  phosphorus?: number;
+  potassium?: number;
+  created_at?: string;
+}
+
+
+// Temperature thresholds
 const TEMPERATURE_THRESHOLDS = {
   min: 20, // Minimum optimal temperature
   max: 30, // Maximum optimal temperature
   critical: 35, // Critical temperature
 };
 
-// Update the color constants
+// Color constants
 const TEMPERATURE_COLORS = {
   primary: "#F97316", // Orange-500
   min: "#FDBA74", // Orange-300
@@ -79,6 +117,93 @@ const TEMPERATURE_COLORS = {
 // Utility Functions
 const formatDateRange = (start: Date, end: Date): string => {
   return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
+};
+
+const getStartOfWeek = (date: Date): Date => {
+  console.log('getStartOfWeek input:', {
+    inputDate: date.toISOString(),
+    inputLocalDate: date.toDateString(),
+    inputDay: date.getDay(),
+    inputDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]
+  });
+  
+  // Create a new date in local time to avoid timezone issues
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Calculate days to subtract to get to Sunday
+  // If it's already Sunday (day === 0), we don't subtract anything
+  const daysToSubtract = day; 
+  
+  // Subtract days to get to Sunday
+  start.setDate(start.getDate() - daysToSubtract);
+  start.setHours(0, 0, 0, 0);
+  
+  console.log('getStartOfWeek calculation:', {
+    originalDay: day,
+    originalDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day],
+    daysSubtracted: daysToSubtract,
+    resultDate: start.toISOString(),
+    resultLocalDate: start.toDateString(),
+    resultDay: start.getDay(),
+    resultDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][start.getDay()],
+    isSunday: start.getDay() === 0
+  });
+  
+  // Verify we got Sunday
+  if (start.getDay() !== 0) {
+    console.error('CRITICAL ERROR: getStartOfWeek did not return a Sunday!', {
+      expected: 0,
+      actual: start.getDay(),
+      date: start.toISOString()
+    });
+    
+    // Emergency fix: force to previous Sunday
+    const emergencyStart = new Date(start);
+    emergencyStart.setDate(start.getDate() - start.getDay());
+    emergencyStart.setHours(0, 0, 0, 0);
+    
+    console.log('Emergency fix applied:', {
+      originalResult: start.toISOString(),
+      emergencyResult: emergencyStart.toISOString(),
+      emergencyDay: emergencyStart.getDay()
+    });
+    
+    return emergencyStart;
+  }
+  
+  return start;
+};
+
+
+const getEndOfWeek = (date: Date): Date => {
+  const end = new Date(date);
+  end.setDate(date.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+const getStartOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const getEndOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+const getWeeksInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const firstWeekday = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+  return Math.ceil((daysInMonth + firstWeekday) / 7);
+};
+
+const getWeekNumberInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const firstWeekday = firstDay.getDay();
+  const dayOfMonth = date.getDate();
+  return Math.ceil((dayOfMonth + firstWeekday) / 7);
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -152,10 +277,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const data = payload[0].payload;
     const value = payload[0].value;
     const threshold = data.threshold;
+    
     let status = "Normal";
     let statusColor = "text-green-600";
     let statusIcon = <Thermometer className="w-4 h-4" />;
-    if (value < threshold.min) {
+    
+    if (value === null || value === 0) {
+      status = "No Data";
+      statusColor = "text-gray-600";
+    } else if (value < threshold.min) {
       status = "Too Cold";
       statusColor = "text-blue-600";
     } else if (value > threshold.critical) {
@@ -165,15 +295,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       status = "Too Hot";
       statusColor = "text-orange-600";
     }
+    
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <div className={`p-2 rounded-full ${TEMPERATURE_COLORS.background}`}>
-            <Thermometer className={`w-4 h-4 ${TEMPERATURE_COLORS.text}`} />
+            <Thermometer className={`w-4 h-4 text-orange-800`} />
           </div>
           <p className="font-semibold text-gray-800">{label}</p>
         </div>
-        <p className={`text-[${TEMPERATURE_COLORS.primary}]`}>{`Temperature: ${value}°C`}</p>
+        <p className="text-orange-500">{`Temperature: ${value || 0}°C`}</p>
         <p className={`${statusColor} text-sm flex items-center gap-1`}>
           {statusIcon}
           {`Status: ${status}`}
@@ -183,9 +314,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         )}
         <div className="mt-2 text-xs text-gray-500">
           <p>Thresholds:</p>
-          <p className="text-[#FDBA74]">Min: {threshold.min}°C</p>
-          <p className="text-[#EA580C]">Max: {threshold.max}°C</p>
-          <p className="text-[#C2410C]">Critical: {threshold.critical}°C</p>
+          <p className="text-orange-300">Min: {threshold.min}°C</p>
+          <p className="text-orange-600">Max: {threshold.max}°C</p>
+          <p className="text-orange-700">Critical: {threshold.critical}°C</p>
         </div>
       </div>
     );
@@ -193,9 +324,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Update the calculateTrend function to handle null values
 const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; percentage: number } => {
-  const validData = data.filter(item => item.value !== null);
+  const validData = data.filter(item => item.value !== null && item.value !== 0);
   if (validData.length < 2) {
     return { trend: 'neutral', percentage: 0 };
   }
@@ -220,48 +350,11 @@ const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; p
   };
 };
 
-// Add the utility functions
-const getStartOfWeek = (date: Date): Date => {
-  const start = new Date(date);
-  const day = start.getDay();
-  const diff = start.getDate() - day;
-  start.setDate(diff);
-  start.setHours(0, 0, 0, 0);
-  return start;
-};
-
-const getEndOfWeek = (date: Date): Date => {
-  const end = new Date(date);
-  end.setDate(date.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return end;
-};
-
-const getStartOfMonth = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-};
-
-const getEndOfMonth = (date: Date): Date => {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-};
-
-// Update ViewType to include all options
-type ViewType = 'line' | 'bar' | 'list' | 'tabular';
-
-// Add period and view options
-const periodOptions = [
-  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
-];
-const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
-  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
-  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
-];
-
-// Add the getStatusBadge function
-const getStatusBadge = (value: number) => {
+const getStatusBadge = (value: number | null) => {
+  if (value === null || value === 0) {
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">No Data</span>;
+  }
+  
   if (value >= TEMPERATURE_THRESHOLDS.critical) {
     return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>;
   } else if (value >= TEMPERATURE_THRESHOLDS.max) {
@@ -273,29 +366,19 @@ const getStatusBadge = (value: number) => {
   }
 };
 
-// Add helper functions for week calculations
-const getWeeksInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  const firstWeekday = firstDay.getDay();
-  const lastWeekday = lastDay.getDay();
-  const daysInMonth = lastDay.getDate();
+type ViewType = 'line' | 'bar' | 'list' | 'tabular';
 
-  // Calculate number of weeks
-  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
-  if (lastWeekday < firstWeekday) weeks++;
+const periodOptions = [
+  { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
+  { label: 'Weekly', value: 'weekly', icon: <Calendar className="h-4 w-4 mr-1" /> },
+  { label: 'Monthly', value: 'monthly', icon: <Calendar className="h-4 w-4 mr-1" /> },
+];
 
-  return weeks;
-};
-
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
+const viewTypeOptions = [
+  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
+  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
+  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
+];
 
 // Main Component
 const TemperatureDashboard = () => {
@@ -312,7 +395,7 @@ const TemperatureDashboard = () => {
 
   // API Configuration
   const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
+    baseUrl: 'https://maize-watch.onrender.com',
     endpoints: {
       historical: '/api/sensors/historical',
       weekly: '/api/sensors/weekly-overview',
@@ -329,261 +412,334 @@ const TemperatureDashboard = () => {
   } = useIntelligentRefresh({
     refreshInterval: 30000, // 30 seconds
     enabled: true,
-    onRefresh: () => fetchData(overview, selectedDate, true) // true = silent refresh
+    onRefresh: () => fetchData(overview, selectedDate, true)
   });
 
-  // Update the fetchData function
-  const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
-    if (!silent) {
-      setIsLoading(true);
-    }
-    setError(null);
-
+  // Enhanced API call with better error handling and logging
+  const makeApiCall = async (url: string): Promise<ApiResponse> => {
+    console.log('Making API request to:', url);
+    
     try {
-      // Convert baseDate to Philippine time
-      const phDate = new Date(baseDate.getTime() + (8 * 60 * 60 * 1000));
-      let startDate: Date;
-      let endDate: Date;
-      let endpoint: string;
-      let params: Record<string, string> = {};
-
-      switch (period) {
-        case 'daily': {
-          // For daily view, get data for the week containing the selected date
-          startDate = getStartOfWeek(phDate);
-          endDate = getEndOfWeek(startDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          console.log('Daily view - Week range:', {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            phDate: phDate.toISOString()
-          });
-          break;
-        }
-        case 'weekly': {
-          // For weekly view, get data for the month containing the selected date
-          startDate = getStartOfMonth(phDate);
-          endDate = getEndOfMonth(phDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          break;
-        }
-        case 'monthly': {
-          // For monthly view, get data for the entire year
-          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
-          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          break;
-        }
-        default:
-          throw new Error('Invalid period specified');
-      }
-
-      const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
-      if (!silent) {
-        console.log(`Making API request to ${url} for ${period} view`);
-      }
-
       const response = await fetch(url, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        // Add timeout
+        signal: AbortSignal.timeout(30000) // 30 second timeout
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
       }
 
-      const result = await response.json();
-      if (!silent) {
-        console.log(`API response for ${period} view:`, {
-          success: result.success,
-          dataLength: result.data?.length,
-          firstItem: result.data?.[0],
-          lastItem: result.data?.[result.data?.length - 1]
-        });
-      }
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch data');
-      }
-
-      let processedData: DataItem[] = [];
-      const rawData = result.data;
-
-      // Handle empty or invalid data
-      if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
-        if (!silent) {
-          console.warn(`No data available for ${period} view`);
-        }
-        processedData = getDefaultData(period, phDate).chartData;
-      } else {
-        // Filter data to only include entries within our date range
-        const filteredData = rawData.filter((item: any) => {
-          const itemDate = new Date(item.timestamp);
-          const isInRange = itemDate >= startDate && itemDate <= endDate;
-          return isInRange;
-        });
-
-        if (!silent) {
-          console.log(`Filtered data for ${period} view:`, {
-            totalItems: rawData.length,
-            filteredItems: filteredData.length,
-            firstFilteredItem: filteredData[0],
-            lastFilteredItem: filteredData[filteredData.length - 1]
-          });
-        }
-
-        switch (period) {
-          case 'daily': {
-            // Process daily data for the week
-            const dailyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-            // Initialize all days
-            days.forEach(day => dailyData.set(day, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const dayKey = days[date.getDay()];
-              const current = dailyData.get(dayKey)!;
-              if (typeof item.temperature === 'number' && !isNaN(item.temperature)) {
-                current.sum += item.temperature;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            if (!silent) {
-              console.log('Daily data processing:', {
-                totalDays: dailyData.size,
-                daysWithData: Array.from(dailyData.entries())
-                  .filter(([_, data]) => data.count > 0)
-                  .map(([day, data]) => ({
-                    day,
-                    count: data.count,
-                    average: data.sum / data.count
-                  }))
-              });
-            }
-
-            processedData = days.map(day => {
-              const data = dailyData.get(day)!;
-              return {
-                day,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: TEMPERATURE_THRESHOLDS
-              };
-            });
-            setXKey('day');
-            break;
-          }
-          case 'weekly': {
-            // Process weekly data for the month
-            const weeksInMonth = getWeeksInMonth(phDate);
-            const weeklyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-
-            // Initialize all weeks
-            for (let i = 1; i <= weeksInMonth; i++) {
-              weeklyData.set(`Week ${i}`, { sum: 0, count: 0, dates: [] });
-            }
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const weekNumber = getWeekNumberInMonth(date);
-              const weekKey = `Week ${weekNumber}`;
-
-              if (weeklyData.has(weekKey)) {
-                const current = weeklyData.get(weekKey)!;
-                if (typeof item.temperature === 'number' && !isNaN(item.temperature)) {
-                  current.sum += item.temperature;
-                  current.count++;
-                  current.dates.push(date.toISOString());
-                }
-              }
-            });
-
-            processedData = Array.from(weeklyData.entries()).map(([week, data]) => ({
-              week,
-              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-              dataPoints: data.count,
-              threshold: TEMPERATURE_THRESHOLDS
-            }));
-            setXKey('week');
-            break;
-          }
-          case 'monthly': {
-            // Process monthly data for the year
-            const monthlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const monthNames = [
-              "January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"
-            ];
-
-            // Initialize all months
-            monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const monthKey = monthNames[date.getMonth()];
-              const current = monthlyData.get(monthKey)!;
-              if (typeof item.temperature === 'number' && !isNaN(item.temperature)) {
-                current.sum += item.temperature;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            processedData = monthNames.map(month => {
-              const data = monthlyData.get(month)!;
-              return {
-                month,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: TEMPERATURE_THRESHOLDS
-              };
-            });
-            setXKey('month');
-            break;
-          }
-        }
-      }
-
-      console.log(`Final processed data for ${period} view:`, {
-        dataLength: processedData.length,
-        dataWithValues: processedData.filter(item => item.value !== null).length,
-        firstItem: processedData[0],
-        lastItem: processedData[processedData.length - 1]
+      const data = await response.json();
+      console.log('API response received:', {
+        success: data.success,
+        dataLength: Array.isArray(data.data) ? data.data.length : 'Not an array',
+        dataType: typeof data.data,
+        firstItem: Array.isArray(data.data) && data.data.length > 0 ? data.data[0] : null,
+        structure: data
       });
 
-      setChartData(processedData);
-      setDateRange(formatDateRange(startDate, endDate));
-      setError(null);
+      return data;
     } catch (error) {
-      console.error(`Error fetching ${period} data:`, error);
-      setError("Failed to fetch data. Please try again later.");
-      const defaultData = getDefaultData(period, baseDate);
-      setChartData(defaultData.chartData);
-      setXKey(defaultData.xKey);
-      setDateRange(defaultData.dateRange);
-    } finally {
-      setIsLoading(false);
+      console.error('API call failed:', error);
+      throw error;
     }
   };
+
+const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+  if (!silent) {
+    setIsLoading(true);
+  }
+  setError(null);
+
+  try {
+    let url: string;
+    let startDate: Date;
+    let endDate: Date;
+    let useWeeklyOverview = false;
+
+    // Determine which endpoint and date range to use
+    switch (period) {
+      case 'daily': {
+        startDate = getStartOfWeek(baseDate);
+        endDate = getEndOfWeek(startDate);
+        
+        // Use weekly-overview with date parameters for daily view
+        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.weekly}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
+        useWeeklyOverview = true;
+        break;
+      }
+      case 'weekly': {
+        startDate = getStartOfMonth(baseDate);
+        endDate = getEndOfMonth(baseDate);
+        
+        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.historical}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
+        break;
+      }
+      case 'monthly': {
+        startDate = new Date(baseDate.getFullYear(), 0, 1);
+        endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999);
+        
+        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.historical}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
+        break;
+      }
+      default:
+        throw new Error('Invalid period specified');
+    }
+
+    console.log(`Fetching ${period} data for date range:`, {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      url,
+      useWeeklyOverview
+    });
+
+    const result = await makeApiCall(url);
+
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'Failed to fetch data');
+    }
+
+    let processedData: DataItem[] = [];
+    const rawData = result.data;
+
+    // Check if we have valid data
+    if (!rawData || !Array.isArray(rawData)) {
+      console.warn('Invalid data format received:', rawData);
+      processedData = getDefaultData(period, baseDate).chartData;
+    } else if (rawData.length === 0) {
+      console.warn('No data available for the selected period');
+      processedData = getDefaultData(period, baseDate).chartData;
+    } else {
+      // Process the data based on period and data source
+      processedData = await processDataByPeriod(rawData, period, baseDate, startDate, endDate, useWeeklyOverview);
+    }
+
+    console.log('Final processed data:', {
+      period,
+      dataLength: processedData.length,
+      itemsWithData: processedData.filter(item => item.value !== null && item.value !== 0).length,
+      sampleItems: processedData.slice(0, 3)
+    });
+
+    setChartData(processedData);
+    setDateRange(formatDateRange(startDate, endDate));
+    setError(null);
+
+  } catch (error) {
+    console.error(`Error fetching ${period} data:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    setError(`Failed to fetch data: ${errorMessage}`);
+    
+    // Set default data on error
+    const defaultData = getDefaultData(period, baseDate);
+    setChartData(defaultData.chartData);
+    setXKey(defaultData.xKey);
+    setDateRange(defaultData.dateRange);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const processDataByPeriod = async (
+  rawData: any[], 
+  period: string, 
+  baseDate: Date,
+  startDate: Date,
+  endDate: Date,
+  useWeeklyOverview: boolean = false
+): Promise<DataItem[]> => {
+  console.log(`Processing ${rawData.length} records for ${period} view`, {
+    baseDate: baseDate.toISOString(),
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    useWeeklyOverview,
+    sampleData: rawData[0]
+  });
+
+  switch (period) {
+    case 'daily': {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      if (useWeeklyOverview) {
+        // Process weekly-overview data structure
+        console.log('Processing weekly-overview data for daily view');
+        setXKey('day');
+        
+        // Filter the weekly overview data to only include items within our target date range
+        const filteredData = rawData.filter((item: WeeklyOverviewItem) => {
+          const itemDate = new Date(item.date);
+          return itemDate >= startDate && itemDate <= endDate;
+        });
+        
+        console.log('Filtered weekly overview data:', {
+          originalCount: rawData.length,
+          filteredCount: filteredData.length,
+          targetDateRange: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+          filteredItems: filteredData.map(item => ({ date: item.date, dayName: item.dayName, temperature: item.measurements?.temperature }))
+        });
+        
+        return days.map(day => {
+          const dayData = filteredData.find((item: WeeklyOverviewItem) => item.dayName === day);
+          
+          const result = {
+            day,
+            value: dayData?.measurements?.temperature || null,
+            dataPoints: dayData?.dataPoints || 0,
+            threshold: TEMPERATURE_THRESHOLDS
+          };
+          
+          console.log(`Day ${day}:`, result);
+          return result;
+        });
+      } else {
+        // Process historical data structure for daily view
+        console.log('Processing historical data for daily view');
+        const dailyData = new Map<string, { sum: number; count: number; }>();
+        days.forEach(day => dailyData.set(day, { sum: 0, count: 0 }));
+
+        rawData.forEach((item: SensorReading) => {
+          if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
+            return;
+          }
+
+          const date = new Date(item.timestamp);
+          // Filter data to only include items within the specified date range
+          if (date < startDate || date > endDate) {
+            return;
+          }
+
+          const dayKey = days[date.getDay()];
+          const current = dailyData.get(dayKey);
+          
+          if (current) {
+            current.sum += item.temperature;
+            current.count++;
+          }
+        });
+
+        console.log('Daily data processing result:', Object.fromEntries(dailyData));
+        
+        setXKey('day');
+        return days.map(day => {
+          const data = dailyData.get(day)!;
+          return {
+            day,
+            value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+            dataPoints: data.count,
+            threshold: TEMPERATURE_THRESHOLDS
+          };
+        });
+      }
+    }
+
+    case 'weekly': {
+      const weeksInMonth = getWeeksInMonth(baseDate);
+      const weeklyData = new Map<string, { sum: number; count: number; }>();
+
+      // Initialize all weeks
+      for (let i = 1; i <= weeksInMonth; i++) {
+        weeklyData.set(`Week ${i}`, { sum: 0, count: 0 });
+      }
+
+      // Process historical data for weekly view
+      rawData.forEach((item: SensorReading) => {
+        if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
+          return;
+        }
+
+        const date = new Date(item.timestamp);
+        // Filter data to only include items within the specified date range
+        if (date < startDate || date > endDate) {
+          return;
+        }
+
+        // Check if the date falls within the target month
+        if (date.getMonth() !== baseDate.getMonth() || date.getFullYear() !== baseDate.getFullYear()) {
+          return;
+        }
+
+        const weekNumber = getWeekNumberInMonth(date);
+        const weekKey = `Week ${weekNumber}`;
+
+        if (weeklyData.has(weekKey)) {
+          const current = weeklyData.get(weekKey)!;
+          current.sum += item.temperature;
+          current.count++;
+        }
+      });
+
+      console.log('Weekly data processing result:', Object.fromEntries(weeklyData));
+
+      setXKey('week');
+      return Array.from(weeklyData.entries()).map(([week, data]) => ({
+        week,
+        value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+        dataPoints: data.count,
+        threshold: TEMPERATURE_THRESHOLDS
+      }));
+    }
+
+    case 'monthly': {
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      const monthlyData = new Map<string, { sum: number; count: number; }>();
+
+      // Initialize all months
+      monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0 }));
+
+      // Process historical data for monthly view
+      rawData.forEach((item: SensorReading) => {
+        if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
+          return;
+        }
+
+        const date = new Date(item.timestamp);
+        // Filter data to only include items within the specified date range
+        if (date < startDate || date > endDate) {
+          return;
+        }
+
+        // Check if the date falls within the target year
+        if (date.getFullYear() !== baseDate.getFullYear()) {
+          return;
+        }
+
+        const monthKey = monthNames[date.getMonth()];
+        const current = monthlyData.get(monthKey)!;
+        current.sum += item.temperature;
+        current.count++;
+      });
+
+      console.log('Monthly data processing result:', Object.fromEntries(monthlyData));
+
+      setXKey('month');
+      return monthNames.map(month => {
+        const data = monthlyData.get(month)!;
+        return {
+          month,
+          value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
+          dataPoints: data.count,
+          threshold: TEMPERATURE_THRESHOLDS
+        };
+      });
+    }
+
+    default:
+      return getDefaultData(period, baseDate).chartData;
+  }
+};
 
   // Fetch data when overview or selectedDate changes
   useEffect(() => {
@@ -592,67 +748,73 @@ const TemperatureDashboard = () => {
 
   const handleOverviewChange = (newOverview: 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
-    fetchData(newOverview, selectedDate);
   };
 
-  const handlePreviousPeriod = () => {
-    let newDate: Date;
-    switch (overview) {
-      case 'daily':
-        newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
-        break;
-      case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
-        break;
-      default:
-        newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
-    }
-    setSelectedDate(newDate);
-  };
+const handlePreviousPeriod = () => {
+  let newDate: Date;
+  switch (overview) {
+    case 'daily':
+      // Move to the previous week's Sunday
+      const currentWeekStart = getStartOfWeek(selectedDate);
+      console.log('Previous period - current week start:', currentWeekStart.toISOString());
+      newDate = new Date(currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+      console.log('Previous period - new date:', newDate.toISOString());
+      break;
+    case 'weekly':
+      newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+      break;
+    case 'monthly':
+      newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
+      break;
+    default:
+      newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
+  }
+  console.log('handlePreviousPeriod result:', { overview, oldDate: selectedDate.toISOString(), newDate: newDate.toISOString() });
+  setSelectedDate(newDate);
+};
 
-  const handleNextPeriod = () => {
-    // Don't allow navigation to future dates
-    const now = new Date();
-    if (selectedDate >= now) {
-      return;
-    }
 
-    let newDate: Date;
-    switch (overview) {
-      case 'daily':
-        newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
-        break;
-      case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
-        break;
-      default:
-        newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
-    }
+const handleNextPeriod = () => {
+  const now = new Date();
+  
+  let newDate: Date;
+  switch (overview) {
+    case 'daily':
+      // Move to the next week's Sunday
+      const currentWeekStart = getStartOfWeek(selectedDate);
+      newDate = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'weekly':
+      newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+      break;
+    case 'monthly':
+      newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
+      break;
+    default:
+      newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
+  }
 
-    // Ensure we don't go beyond current date
-    if (newDate > now) {
-      newDate = now;
-    }
-    setSelectedDate(newDate);
-  };
+  // Don't navigate to future dates
+  if (newDate > now) {
+    newDate = now;
+  }
+  console.log('handleNextPeriod:', { overview, selectedDate, newDate, now });
+  setSelectedDate(newDate);
+};
 
   const handleExport = () => {
     setShowExportModal(true);
   };
 
-  // Update the renderSummary function to handle null values
   const renderSummary = () => {
-    const validData = chartData.filter(item => item.value !== null);
+    const validData = chartData.filter(item => item.value !== null && item.value !== 0);
     if (validData.length === 0) {
       return (
         <div className="mt-4 p-4 bg-muted rounded-lg">
-          <p className="text-sm text-muted-foreground">No data available for the selected period</p>
+          <p className="text-sm text-muted-foreground">No temperature data available for the selected period</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Try selecting a different time period or check if sensors are collecting data.
+          </p>
         </div>
       );
     }
@@ -715,22 +877,21 @@ const TemperatureDashboard = () => {
     );
   };
 
-  // Update the renderChart function to ensure value is always a number
   const renderChart = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
-    if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
+    
+    if (error) return (
+      <Alert variant="destructive">
+        <AlertTitle>Error Loading Data</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
 
-    // Always show chart even with empty data
-    const displayData = (chartData.length === 0 ?
-      getDefaultData(overview, selectedDate).chartData :
-      chartData.map(item => ({
-        ...item,
-        value: item.value ?? 0, // Use nullish coalescing to handle null values
-        threshold: TEMPERATURE_THRESHOLDS
-      }))).map(item => ({
-        ...item,
-        value: Number(item.value) // Ensure value is always a number
-      }));
+    const displayData = chartData.map(item => ({
+      ...item,
+      value: item.value ?? 0,
+      threshold: TEMPERATURE_THRESHOLDS
+    }));
 
     if (viewType === 'tabular') {
       return (
@@ -756,7 +917,7 @@ const TemperatureDashboard = () => {
                     {renderTableCell(item)}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.value?.toFixed(1) ?? '0.0'}°C
+                    {item.value ? item.value.toFixed(1) : '0.0'}°C
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
                     {getStatusBadge(item.value)}
@@ -775,20 +936,6 @@ const TemperatureDashboard = () => {
       <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
     ];
 
-    // Customize X-axis labels based on view type
-    const getXAxisLabel = (value: string) => {
-      switch (overview) {
-        case 'daily':
-          return value; // Already formatted as day names
-        case 'weekly':
-          return value; // Already formatted as Week 1, Week 2, etc.
-        case 'monthly':
-          return value; // Already formatted as month names
-        default:
-          return value;
-      }
-    };
-
     if (viewType === 'line') {
       return (
         <div className="h-[300px] sm:h-[400px] lg:h-[500px] p-2 sm:p-4 mb-4">
@@ -806,7 +953,6 @@ const TemperatureDashboard = () => {
                 textAnchor={window.innerWidth < 640 ? 'end' : 'middle'}
                 dy={10}
                 padding={{ left: 20, right: 20 }}
-                tickFormatter={getXAxisLabel}
                 interval="preserveStartEnd"
               />
               <YAxis
@@ -828,7 +974,7 @@ const TemperatureDashboard = () => {
                 strokeWidth={2}
                 dot={{ fill: '#fff', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6, fill: '#fff', stroke: '#F97316', strokeWidth: 2 }}
-                connectNulls={true}
+                connectNulls={false}
                 isAnimationActive={true}
                 animationDuration={500}
               />
@@ -856,7 +1002,6 @@ const TemperatureDashboard = () => {
                 textAnchor={window.innerWidth < 640 ? 'end' : 'middle'}
                 dy={10}
                 padding={{ left: 20, right: 20 }}
-                tickFormatter={getXAxisLabel}
                 interval="preserveStartEnd"
               />
               <YAxis
@@ -885,7 +1030,6 @@ const TemperatureDashboard = () => {
     return null;
   };
 
-  // Update table cell rendering
   const renderTableCell = (item: DataItem) => {
     const value = item[xKey];
     if (typeof value === 'string' || typeof value === 'number') {
@@ -901,8 +1045,8 @@ const TemperatureDashboard = () => {
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
-                  <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-sky-600" />
+                <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+                  <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Temperature Dashboard</h1>
@@ -957,7 +1101,6 @@ const TemperatureDashboard = () => {
         <CardContent className="px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-3 gap-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-
               <div className="relative">
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
@@ -1035,7 +1178,6 @@ const TemperatureDashboard = () => {
               </div>
             </div>
 
-            {/* Refresh indicator */}
             <div className="flex justify-center sm:justify-end">
               <RefreshIndicator
                 isRefreshing={isRefreshing}
