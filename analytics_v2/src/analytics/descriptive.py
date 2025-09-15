@@ -7,6 +7,7 @@ import pytz
 # Import our modules
 from database.mongodb_setup import db_manager
 from apis.thingspeak_client import thingspeak_client
+from apis.iot_data_service import iot_data_service
 
 logger = logging.getLogger('corn_system')
 
@@ -71,8 +72,11 @@ class DescriptiveAnalytics:
                 logger.error(f"No growth stage found for farmer {farmer_id}")
                 return None
             
-            # Step 2: Get yesterday's sensor averages from ThingSpeak
-            sensor_data = thingspeak_client.get_daily_averages(target_date)
+            # Step 2: Get yesterday's sensor averages from IoT DB first, fallback to ThingSpeak
+            field_id = None  # Optionally derive from farmer's active field if available
+            sensor_data = iot_data_service.get_daily_averages(target_date, field_id=field_id)
+            if not sensor_data:
+                sensor_data = thingspeak_client.get_daily_averages(target_date)
             if not sensor_data:
                 logger.error(f"No sensor data found for {target_date}")
                 return None
