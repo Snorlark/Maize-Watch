@@ -12,6 +12,7 @@ import {
   compareFarms,
   runCornAnalytics,
   getDailyRecommendations,
+  getCompleteAnalytics,
   getGrowthStageAnalysis,
   getRiskAssessment,
   getAnalyticsHealth,
@@ -57,6 +58,7 @@ router.get('/farms/:farmId/export', validateObjectId('farmId'), validateDateRang
 // Python Analytics v2 Integration Routes
 router.post('/farms/:farmId/corn-analytics', validateObjectId('farmId'), runCornAnalytics);
 router.get('/farms/:farmId/recommendations', validateObjectId('farmId'), getDailyRecommendations);
+router.get('/farms/:farmId/complete', validateObjectId('farmId'), getCompleteAnalytics);
 router.get('/farms/:farmId/growth-stage', validateObjectId('farmId'), getGrowthStageAnalysis);
 router.get('/farms/:farmId/risk-assessment', validateObjectId('farmId'), getRiskAssessment);
 

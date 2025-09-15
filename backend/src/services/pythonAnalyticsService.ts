@@ -79,40 +79,47 @@ export class PythonAnalyticsService {
     }
   }
 
-  async runAnalyticsV2(farm: any): Promise<AnalyticsV2Results> {
+  async runAnalyticsV2(farm: any, fieldId?: string): Promise<AnalyticsV2Results> {
     if (!this.config.enabled) {
       logger.warn('Python analytics is disabled, using fallback data');
       return this.parseAnalyticsResults(this.generateFallbackAnalyticsOutput());
     }
 
     const farmId = farm._id.toString();
+    const queueKey = fieldId ? `${farmId}_${fieldId}` : farmId;
     
-    // Check if there's already an execution in progress for this farm
-    if (this.executionQueue.has(farmId)) {
-      logger.info(`Analytics already in progress for farm ${farmId}, waiting for completion`);
-      return await this.executionQueue.get(farmId)!;
+    // Check if there's already an execution in progress for this farm/field
+    if (this.executionQueue.has(queueKey)) {
+      logger.info(`Analytics already in progress for farm ${farmId}${fieldId ? ` field ${fieldId}` : ''}, waiting for completion`);
+      return await this.executionQueue.get(queueKey)!;
     }
 
     // Create execution promise and add to queue
-    const executionPromise = this.executeAnalytics(farm);
-    this.executionQueue.set(farmId, executionPromise);
+    const executionPromise = this.executeAnalytics(farm, fieldId);
+    this.executionQueue.set(queueKey, executionPromise);
 
     try {
       const results = await executionPromise;
+      logger.info(`Analytics completed for farm ${farmId}${fieldId ? ` field ${fieldId}` : ''}: ${JSON.stringify(results, null, 2)}`);
       return results;
     } finally {
       // Remove from queue when done
-      this.executionQueue.delete(farmId);
+      this.executionQueue.delete(queueKey);
     }
   }
 
-  private async executeAnalytics(farm: any): Promise<AnalyticsV2Results> {
+  private async executeAnalytics(farm: any, fieldId?: string): Promise<AnalyticsV2Results> {
     try {
       const farmerId = this.mapFarmToFarmerId(farm);
-      logger.info(`Starting analytics_v2 for farm ${farm._id} (farmer_id: ${farmerId})`);
+      const fieldInfo = fieldId ? ` for field ${fieldId}` : '';
+      logger.info(`Starting analytics_v2 for farm ${farm._id} (farmer_id: ${farmerId})${fieldInfo}`);
       
-      const output = await this.executePythonScript('run_complete_system.py', [farmerId]);
+      const args = fieldId ? [farmerId, fieldId] : [farmerId];
+      const output = await this.executePythonScript('run_complete_system.py', args);
+      logger.info(`Python script output for farm ${farm._id}: ${output}`);
+      
       const results = this.parseAnalyticsResults(output);
+      logger.info(`Parsed analytics results for farm ${farm._id}: ${JSON.stringify(results, null, 2)}`);
       
       // Cache results
       const { CacheService } = require('./cacheService');
@@ -134,8 +141,9 @@ export class PythonAnalyticsService {
       
       return results;
     } catch (error) {
-      logger.warn(`Analytics_v2 failed for farm ${farm._id}: ${(error as Error).message}, using fallback data`);
-      return this.parseAnalyticsResults(this.generateFallbackAnalyticsOutput());
+      logger.error(`Analytics_v2 failed for farm ${farm._id}: ${(error as Error).message}`);
+      // Don't use fallback data - throw the error so the client knows it failed
+      throw error;
     }
   }
 
@@ -299,8 +307,7 @@ export class PythonAnalyticsService {
         logger.error(`Python executable not found at ${this.config.pythonPath}`);
         logger.error(`Analytics path: ${this.config.analyticsPath}`);
         logger.error(`Current working directory: ${process.cwd()}`);
-        logger.warn(`Using fallback data instead of real analytics`);
-        resolve(this.generateFallbackAnalyticsOutput());
+        reject(new Error(`Python executable not found at ${this.config.pythonPath}`));
         return;
       }
 
@@ -338,8 +345,8 @@ export class PythonAnalyticsService {
         if (code === 0) {
           resolve(stdout);
         } else {
-          logger.warn(`Python script failed with code ${code}: ${stderr}, using fallback data`);
-          resolve(this.generateFallbackAnalyticsOutput());
+          logger.error(`Python script failed with code ${code}: ${stderr}`);
+          reject(new Error(`Python script failed with code ${code}: ${stderr}`));
         }
       });
 
@@ -348,8 +355,8 @@ export class PythonAnalyticsService {
         isResolved = true;
         clearTimeout(timeoutHandle);
         
-        logger.warn(`Failed to execute Python script: ${error.message}, using fallback data`);
-        resolve(this.generateFallbackAnalyticsOutput());
+        logger.error(`Failed to execute Python script: ${error.message}`);
+        reject(new Error(`Failed to execute Python script: ${error.message}`));
       });
 
       // Set timeout with proper cleanup
@@ -358,8 +365,8 @@ export class PythonAnalyticsService {
         isResolved = true;
         
         pythonProcess.kill('SIGTERM');
-        logger.warn('Python script execution timeout, using fallback data');
-        resolve(this.generateFallbackAnalyticsOutput());
+        logger.error('Python script execution timeout');
+        reject(new Error('Python script execution timeout'));
       }, this.config.timeout);
     });
   }
@@ -368,7 +375,11 @@ export class PythonAnalyticsService {
    * Map farm object to farmer_id format expected by Python system
    */
   private mapFarmToFarmerId(farm: any): string {
-    // Use farm ID or create a farmer ID based on user and farm
+    // Use the actual user ID from the farm to create a proper farmer ID
+    if (farm.userId) {
+      return `FARMER_${farm.userId.toString().slice(-8).toUpperCase()}`;
+    }
+    // Fallback to farm ID if no user ID
     return farm.deviceId || `FARM_${farm._id.toString().slice(-8).toUpperCase()}`;
   }
 

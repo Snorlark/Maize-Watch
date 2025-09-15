@@ -79,7 +79,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   void _loadAnalyticsData() {
     if (widget.farm.id == null) return;
 
-    _analyticsBloc.add(LoadAnalyticsData(farmId: widget.farm.id!));
+    _analyticsBloc.add(LoadAnalyticsData(
+      farmId: widget.farm.id!,
+      fieldId: widget.selectedField?.fieldName,
+    ));
   }
 
   @override

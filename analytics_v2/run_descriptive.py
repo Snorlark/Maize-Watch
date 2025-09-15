@@ -22,8 +22,9 @@ def main():
     print(" Corn Monitoring - Descriptive Analytics")
     print("=" * 50)
     
-    # Get farmer ID (for now, use a test ID)
-    farmer_id = "FARMER001"  # You can change this
+    # Get farmer ID from command line argument or use default
+    import sys
+    farmer_id = sys.argv[1] if len(sys.argv) > 1 else "FARMER001"
     
     print(f" Analyzing for Farmer: {farmer_id}")
     

@@ -479,6 +479,37 @@ export const getDailyRecommendations = catchAsync(async (req: Request, res: Resp
 });
 
 /**
+ * @desc    Get complete analytics data for farm (descriptive, predictive, prescriptive)
+ * @route   GET /api/analytics/farms/:farmId/complete
+ * @access  Private
+ */
+export const getCompleteAnalytics = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  try {
+    // Get complete analytics data
+    const analytics = await pythonAnalyticsService.runCompleteAnalytics(farmId);
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: analytics
+    });
+  } catch (error) {
+    logger.error('Error getting complete analytics:', error);
+    throw new AppError('Failed to get analytics data', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
  * @desc    Get growth stage analysis for farm
  * @route   GET /api/analytics/farms/:farmId/growth-stage
  * @access  Private

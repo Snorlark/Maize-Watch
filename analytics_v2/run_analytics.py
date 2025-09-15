@@ -83,5 +83,6 @@ def print_combined_summary(descriptive: dict, predictive: dict):
     print(f"\nReady for prescriptive analytics...")
 
 if __name__ == "__main__":
-    farmer_id = "FARMER001"
+    import sys
+    farmer_id = sys.argv[1] if len(sys.argv) > 1 else "FARMER001"
     run_combined_analytics(farmer_id)

@@ -13,7 +13,7 @@ from src.analytics.descriptive import descriptive_analytics
 from src.analytics.predictive import predictive_analytics
 from src.analytics.prescriptive import prescriptive_analytics
 
-def run_complete_system(farmer_id: str):
+def run_complete_system(farmer_id: str, field_id: str = None):
     """Run the complete analytics system"""
     
     logger = setup_logger()
@@ -21,6 +21,8 @@ def run_complete_system(farmer_id: str):
     print("Corn Growth Monitoring System - Complete Analytics")
     print("=" * 60)
     print(f"Farmer ID: {farmer_id}")
+    if field_id:
+        print(f"Field ID: {field_id}")
     print(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print("=" * 60)
     
@@ -47,7 +49,7 @@ def run_complete_system(farmer_id: str):
     # Step 3: Prescriptive Analytics
     print("\nStep 3: Generating actionable recommendations...")
     prescriptive_results = prescriptive_analytics.generate_recommendations(
-        descriptive_results, predictive_results
+        descriptive_results, predictive_results, field_id
     )
     
     if not prescriptive_results:
@@ -140,5 +142,7 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
     print("="*60)
 
 if __name__ == "__main__":
-    farmer_id = "FARMER001"
-    results = run_complete_system(farmer_id)
+    import sys
+    farmer_id = sys.argv[1] if len(sys.argv) > 1 else "FARMER001"
+    field_id = sys.argv[2] if len(sys.argv) > 2 else None
+    results = run_complete_system(farmer_id, field_id)

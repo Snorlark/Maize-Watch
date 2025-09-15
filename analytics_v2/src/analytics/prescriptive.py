@@ -22,21 +22,23 @@ class PrescriptiveAnalytics:
         
         self.recommendations_collection = db_manager.get_collection('daily_recommendations')
         
-    def generate_recommendations(self, descriptive_results: Dict, predictive_results: Dict) -> Optional[Dict]:
+    def generate_recommendations(self, descriptive_results: Dict, predictive_results: Dict, field_id: str = None) -> Optional[Dict]:
         """
         Main function: Generate daily recommendations
         
         Args:
             descriptive_results: Output from descriptive analytics
             predictive_results: Output from predictive analytics
+            field_id: Specific field ID for field-specific recommendations
             
         Returns:
             Complete recommendations with priorities
         """
         try:
             farmer_id = descriptive_results['farmer_id']
+            field_info = f" for field {field_id}" if field_id else ""
             
-            logger.info(f"Generating recommendations for {farmer_id}")
+            logger.info(f"Generating recommendations for {farmer_id}{field_info}")
             
             # Step 1: Analyze current stress conditions
             immediate_actions = self._generate_immediate_actions(descriptive_results)
@@ -60,6 +62,7 @@ class PrescriptiveAnalytics:
             
             results = {
                 "farmer_id": farmer_id,
+                "field_id": field_id,
                 "date": descriptive_results['date'],
                 "recommendation_date": datetime.combine(datetime.now(pytz.timezone(self.config['system']['timezone'])).date(), datetime.min.time()),
                 "total_recommendations": len(prioritized_recommendations),
