@@ -1,62 +1,71 @@
-name: maize_watch
-description: "Maize Watch - Smart Corn Farming Management System"
-publish_to: 'none'
-version: 1.0.0+1
+name: mobile
+description: "A new Flutter project."
+publish_to: "none"
+version: 0.1.0
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ^3.7.2
 
 dependencies:
+  bloc: ^9.0.0
+  curved_navigation_bar: ^1.0.3
+  dartz: ^0.10.1
+  dio: ^5.9.0
+  equatable: ^2.0.7
+  fl_chart: ^0.68.0
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.1
+  flutter_localization: ^0.3.3
   flutter_localizations:
     sdk: flutter
-
-  intl: 0.19.0
-
-  shared_preferences: ^2.5.3
-  http: ^1.3.0
-  
-  icons_flutter: ^0.0.5
-  google_fonts: ^6.2.1
+  flutter_map: ^8.2.1
   flutter_screenutil: ^5.9.3
-  curved_navigation_bar: ^1.0.6
-  syncfusion_flutter_charts: ^28.1.35
-  flutter_local_notifications: ^19.2.1
-  permission_handler: ^12.0.0+1
-  url_launcher: ^6.3.1
-  sqflite: ^2.4.2
-  flutter_dotenv: ^5.2.1
-  lottie: ^2.6.0
-  twilio_flutter: ^0.9.0
+  flutter_secure_storage: ^9.2.2
+  get_it: ^7.6.4
+  google_fonts: ^6.3.0
+  icons_flutter: ^0.0.5
+  intl: any
+  latlong2: ^0.9.1
+  lottie: ^3.3.1
+  meta: ^1.16.0
+  shared_preferences: ^2.2.2
+  socket_io_client: ^2.0.3+1
+  syncfusion_flutter_gauges: ^31.1.17
+  web_socket_channel: ^3.0.3
 
 dev_dependencies:
+  flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.13.1
+  intl_utils: any
 
 flutter:
   generate: true
   uses-material-design: true
   assets:
-    - lib/l10n/
     - assets/images/
-    - assets/fonts/
-    - assets/gif/
     - assets/lottie/
-    - .env
+    - lib/l10n/
+  
+
+flutter_intl:
+  enabled: true
+  class_name: S
+  main_locale: en
+  arb_dir: lib/l10n
+  output_dir: lib/generated
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/maize_watch_logo.png"
+  image_path: "assets/images/corn-logo.png"
   min_sdk_android: 21
   remove_alpha_ios: false
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/maize_watch_logo.png"
+  adaptive_icon_foreground: "assets/images/corn-logo.png"
   web:
     generate: true
-    image_path: "assets/images/maize_watch_logo.png"
+    image_path: "assets/images/corn-logo.png"
     background_color: "#00000000"
     theme_color: "#00000000"
