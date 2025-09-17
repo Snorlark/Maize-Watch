@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
-        android:label="maize_watch"
+        android:label="Maize Watch"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
 
