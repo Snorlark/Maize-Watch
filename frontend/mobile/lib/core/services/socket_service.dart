@@ -61,4 +61,7 @@ class SocketService {
   }
 
   bool get isConnected => _socket?.connected == true;
+  
+  /// Returns the socket instance if connected, otherwise null
+  IO.Socket? get socket => _socket?.connected == true ? _socket : null;
 }

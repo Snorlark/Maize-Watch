@@ -1,307 +1,337 @@
-import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
-import pytz
+from typing import Optional, Dict, Any
 
-# Import our modules
 from database.mongodb_setup import db_manager
-from apis.thingspeak_client import thingspeak_client
-from apis.iot_data_service import iot_data_service
 
-logger = logging.getLogger('corn_system')
+logger = logging.getLogger("corn_system")
 
 class DescriptiveAnalytics:
-    """Simple descriptive analytics - yesterday's performance"""
-    
     def __init__(self):
-        """Initialize descriptive analytics"""
-        # Load configurations
-        with open('config/settings.json', 'r') as f:
-            self.config = json.load(f)
-        
-        # Get collections
-        self.growth_collection = db_manager.get_collection('growth_stages')
-        self.stress_collection = db_manager.get_collection('stress_assessments')
-        self.config_collection = db_manager.get_collection('system_config')
-        
-        # Load growth matrix
-        self.growth_matrix = self._load_growth_matrix()
-        self.stress_thresholds = self.config['thresholds']['stress_levels']
-    
-    def _load_growth_matrix(self) -> Dict:
-        """Load growth matrix from database"""
         try:
-            matrix_doc = self.config_collection.find_one(
-                {"config_type": "growth_matrix", "is_active": True}
-            )
-            if matrix_doc:
-                return matrix_doc['config_data']
-            else:
-                # Fallback to file if not in database
-                with open('config/growth_matrix.json', 'r') as f:
-                    return json.load(f)
+            self.stress_collection = db_manager.get_collection("stress_assessments")
+            self.growth_collection = db_manager.get_collection("growth_stages")
+            self.weather_collection = db_manager.get_collection("historical_weather")
+            self.recommendation_collection = db_manager.get_collection("daily_recommendations")
         except Exception as e:
-            logger.error(f"Failed to load growth matrix: {e}")
-            return {}
-    
-    def analyze_daily_performance(self, farmer_id: str, target_date: datetime = None) -> Optional[Dict]:
+            logger.error(f"Failed to initialize collections: {e}")
+            self.stress_collection = None
+            self.growth_collection = None
+            self.weather_collection = None
+            self.recommendation_collection = None
+
+    def analyze_daily_performance(self, farmer_id: str, use_today: bool = False) -> Optional[Dict[str, Any]]:
         """
-        Main function: Analyze yesterday's performance
+        Analyze daily performance data.
         
         Args:
-            farmer_id: Farmer identifier
-            target_date: Date to analyze (defaults to yesterday)
-        
+            farmer_id: The ID of the farmer to analyze
+            use_today: If True, analyze today's data. Otherwise, analyze yesterday's data.
+            
         Returns:
-            Complete stress assessment or None if failed
+            Dictionary with analysis results or None if analysis fails
         """
         try:
-            # Default to yesterday if no date provided
-            if target_date is None:
-                manila_tz = pytz.timezone(self.config['system']['timezone'])
-                target_date = datetime.now(manila_tz).date() - timedelta(days=1)
-                target_date = datetime.combine(target_date, datetime.min.time())
+            # Use today's date if use_today is True, otherwise use yesterday's date
+            target_date = datetime.now() if use_today else datetime.now() - timedelta(days=1)
+            start_of_day = datetime(target_date.year, target_date.month, target_date.day)
+            end_of_day = start_of_day + timedelta(days=1)
 
-            
-            logger.info(f" Starting descriptive analysis for {farmer_id} on {target_date}")
-            
-            # Step 1: Get farmer's current growth stage
-            current_stage = self._get_current_growth_stage(farmer_id)
-            if not current_stage:
-                logger.error(f"No growth stage found for farmer {farmer_id}")
+            # ✅ Explicitly check for None instead of truthiness
+            if self.stress_collection is None:
+                logger.error("Stress collection not initialized")
                 return None
-            
-            # Step 2: Get yesterday's sensor averages from IoT DB first, fallback to ThingSpeak
-            field_id = None  # Optionally derive from farmer's active field if available
-            sensor_data = iot_data_service.get_daily_averages(target_date, field_id=field_id)
-            if not sensor_data:
-                sensor_data = thingspeak_client.get_daily_averages(target_date)
-            if not sensor_data:
-                logger.error(f"No sensor data found for {target_date}")
+            if self.growth_collection is None:
+                logger.error("Growth collection not initialized")
                 return None
-            
-            # Step 3: Get optimal ranges for current growth stage
-            optimal_ranges = self._get_optimal_ranges(current_stage['growth_stage'])
-            if not optimal_ranges:
-                logger.error(f"No optimal ranges found for stage {current_stage['growth_stage']}")
+            if self.weather_collection is None:
+                logger.error("Weather collection not initialized")
                 return None
+
+            logger.info(f"Starting descriptive analysis for {farmer_id} on {start_of_day}")
+
+            # Fetch data safely
+            stress_data = list(
+                self.stress_collection.find(
+                    {"farmer_id": farmer_id, "date": {"$gte": start_of_day, "$lt": end_of_day}}
+                )
+            )
+            growth_data = list(
+                self.growth_collection.find(
+                    {"farmer_id": farmer_id}
+                ).sort("created_at", -1).limit(1)
+            )
+            weather_data = list(
+                self.weather_collection.find(
+                    {"date": {"$gte": start_of_day, "$lt": end_of_day}}
+                )
+            )
+
+            if not stress_data:
+                logger.warning(f"No stress data found for {farmer_id} on {start_of_day}")
+                # Check for the most recent data available
+                most_recent = list(self.stress_collection.find(
+                    {"farmer_id": farmer_id},
+                    sort=[("date", -1)],
+                    limit=1
+                ))
+                
+                if most_recent:
+                    last_date = most_recent[0]['date'].strftime('%Y-%m-%d')
+                    logger.warning(f"Most recent data for {farmer_id} is from {last_date} ({(yesterday - most_recent[0]['date']).days} days ago)")
+                else:
+                    logger.warning(f"No historical stress data found for {farmer_id}")
+                
+                # Safely get growth stage from growth_data
+                growth_stage = "Unknown"
+                if growth_data and isinstance(growth_data, list) and len(growth_data) > 0:
+                    growth_stage = growth_data[0].get("stage", 
+                                                    growth_data[0].get("growth_stage", 
+                                                                    "Unknown"))
+                
+                # Return a minimal response with available data
+                return {
+                    "farmer_id": farmer_id,  # Added for consistency
+                    "date": start_of_day.strftime("%Y-%m-%d"),
+                    "growth_stage": growth_stage,
+                    "overall_stress": "unknown",
+                    "stress_analysis": {},
+                    "weather_summary": self._summarize_weather(weather_data) if weather_data else {},
+                    "status": "no_recent_data",
+                    "message": f"No stress data available for {start_of_day.strftime('%Y-%m-%d')}"
+                }
+
+            # Perform analysis (simplified example)
+            overall_stress = self._calculate_overall_stress(stress_data)
             
-            # Step 4: Compare actual vs optimal (stress analysis)
-            stress_analysis = self._calculate_stress_levels(sensor_data, optimal_ranges)
-            
-            # Step 5: Determine overall condition
-            overall_stress = self._determine_overall_stress(stress_analysis)
-            
-            # Step 6: Create results
+            # Safely get growth stage from growth_data
+            growth_stage = "Unknown"
+            if growth_data and isinstance(growth_data, list) and len(growth_data) > 0:
+                growth_stage = growth_data[0].get("stage", 
+                                               growth_data[0].get("growth_stage", 
+                                                               "Unknown"))
+
             results = {
-                "farmer_id": farmer_id,
-                "date": target_date,
-                "growth_stage": current_stage['growth_stage'],
-                "sensor_data": sensor_data,
-                "optimal_ranges": optimal_ranges,
-                "stress_analysis": stress_analysis,
+                "farmer_id": farmer_id,  # Added for compatibility with predictive analytics
+                "date": start_of_day.strftime("%Y-%m-%d"),
+                "growth_stage": growth_stage,
                 "overall_stress": overall_stress,
-                "analysis_timestamp": datetime.utcnow()
+                "stress_analysis": self._analyze_stress_factors(stress_data),
+                "weather_summary": self._summarize_weather(weather_data)
             }
-            
-            # Step 7: Save to database
-            self._save_assessment(results)
-            
-            logger.info(f"// Descriptive analysis completed - Overall: {overall_stress}")
+
             return results
-            
+
         except Exception as e:
             logger.error(f"XX Descriptive analysis failed: {e}")
             return None
-    
-    def _get_current_growth_stage(self, farmer_id: str) -> Optional[Dict]:
-        """Get farmer's current active growth stage"""
-        try:
-            stage_doc = self.growth_collection.find_one(
-                {"farmer_id": farmer_id, "is_active": True},
-                sort=[("updated_at", -1)]
-            )
-            return stage_doc
-        except Exception as e:
-            logger.error(f"Failed to get growth stage: {e}")
-            return None
-    
-    def _get_optimal_ranges(self, growth_stage: str) -> Optional[Dict]:
-        """Get optimal parameter ranges for growth stage"""
-        try:
-            stages = self.growth_matrix.get('growth_stages', {})
-            stage_data = stages.get(growth_stage, {})
-            
-            if not stage_data:
-                logger.error(f"Growth stage {growth_stage} not found in matrix")
-                return None
-            
-            return {
-                "temperature": stage_data.get('temperature_range'),
-                "humidity": stage_data.get('humidity_range'),
-                "soil_moisture": stage_data.get('soil_moisture_range'),
-                "soil_ph": stage_data.get('ph_range'),
-                "light_intensity": stage_data.get('light_intensity_range')
-            }
-        except Exception as e:
-            logger.error(f"Failed to get optimal ranges: {e}")
-            return None
-    
-    def _calculate_stress_levels(self, sensor_data: Dict, optimal_ranges: Dict) -> Dict:
+
+    def _calculate_overall_stress(self, stress_data: list) -> str:
         """
-        Simple stress calculation: compare actual vs optimal
+        Calculate overall stress level based on stress data.
         
-        Returns stress level for each parameter:
-        - optimal: within range
-        - mild: 10-20% deviation  
-        - moderate: 20-35% deviation
-        - severe: >35% deviation
+        Args:
+            stress_data: List of stress assessment records
+            
+        Returns:
+            String indicating overall stress level: 'low', 'medium', 'high', or 'unknown'
         """
-        stress_results = {}
+        if not stress_data:
+            return "unknown"
+            
+        # Define stress indicators and their weights
+        stress_indicators = [
+            ('temperature', 0.3, lambda x: x > 30 or x < 20),  # Outside 20-30°C is stressful
+            ('humidity', 0.2, lambda x: x < 40 or x > 80),     # Outside 40-80% is stressful
+            ('soil_moisture', 0.3, lambda x: x < 30 or x > 70), # Outside 30-70% is stressful
+            ('leaf_wetness', 0.2, lambda x: x > 50),            # Above 50% is stressful
+        ]
         
-        for param, actual_value in sensor_data.items():
-            if param in ['data_points', 'date'] or actual_value is None:
-                continue
+        try:
+            # Calculate stress score (0-100)
+            total_score = 0
+            total_weight = 0
+            
+            for record in stress_data:
+                for field, weight, is_stress_condition in stress_indicators:
+                    if field in record and record[field] is not None:
+                        if is_stress_condition(record[field]):
+                            total_score += weight * 100  # Full stress for this factor
+                        total_weight += weight
+            
+            if total_weight == 0:
+                return "unknown"
                 
-            optimal_range = optimal_ranges.get(param)
-            if not optimal_range or len(optimal_range) != 2:
-                continue
+            # Normalize score to 0-100 range
+            normalized_score = total_score / total_weight
             
-            min_val, max_val = optimal_range
-            
-            # Calculate deviation percentage
-            if min_val <= actual_value <= max_val:
-                # Within optimal range
-                deviation_percent = 0
-                stress_level = "optimal"
+            # Determine stress level
+            if normalized_score > 70:
+                return "high"
+            elif normalized_score > 30:
+                return "medium"
             else:
-                # Calculate how far outside the range
-                if actual_value < min_val:
-                    deviation_percent = ((min_val - actual_value) / min_val) * 100
-                else:  # actual_value > max_val
-                    deviation_percent = ((actual_value - max_val) / max_val) * 100
+                return "low"
                 
-                # Classify stress level
-                if deviation_percent <= self.stress_thresholds['mild'][1]:
-                    stress_level = "mild"
-                elif deviation_percent <= self.stress_thresholds['moderate'][1]:
-                    stress_level = "moderate"
-                else:
-                    stress_level = "severe"
-            
-            stress_results[param] = {
-                "actual_value": actual_value,
-                "optimal_range": optimal_range,
-                "deviation_percent": round(deviation_percent, 2),
-                "stress_level": stress_level,
-                "status": "/" if stress_level == "optimal" else "!" if stress_level == "mild" else "!!" if stress_level == "moderate" else "!!!"
-            }
-        
-        return stress_results
-    
-
-    # Add this method to the existing DescriptiveAnalytics class
-    def get_results_for_predictive(self, farmer_id: str) -> Optional[Dict]:
-        """Get descriptive results formatted for predictive analytics"""
-        try:
-            latest = self.get_latest_assessment(farmer_id)
-            if not latest:
-                return None
-            
-            return {
-                "farmer_id": farmer_id,
-                "date": latest['date'],
-                "growth_stage": latest['growth_stage'],
-                "stress_analysis": latest['stress_analysis'],
-                "overall_stress": latest['overall_stress'],
-                "sensor_data": latest['sensor_data']
-            }
         except Exception as e:
-            logger.error(f"Failed to get results for predictive: {e}")
-            return None
-
-    # if only one sensor screams severe but four others are fine, the system says “okei naman sila! overall is mild/moderate, but hey! — temp is severe haha lagot"
-    def _determine_overall_stress(self, stress_analysis: Dict) -> str:
-        """Determine overall stress by majority levels instead of worst-case only"""
-        stress_levels = [param['stress_level'] for param in stress_analysis.values()]
-
-        if not stress_levels:
+            logger.warning(f"Error calculating stress level: {e}")
             return "unknown"
 
-        # Count occurrences of each stress level
-        counts = {level: stress_levels.count(level) for level in ["severe", "moderate", "mild", "optimal"]}
-
-        # Pick the most common stress level
-        overall = max(counts, key=counts.get)
-        return overall
-
-    
-    def _save_assessment(self, results: Dict):
-        """Save stress assessment to database"""
-        try:
-            # Prepare document
-            from database.data_models import StressAssessment
-            
-            assessment_doc = StressAssessment.create_document(
-                farmer_id=results['farmer_id'],
-                date=results['date'],
-                sensor_data=results['sensor_data'],
-                stress_analysis=results['stress_analysis']
-            )
-            
-            # Add extra fields
-            assessment_doc.update({
-                "growth_stage": results['growth_stage'],
-                "overall_stress": results['overall_stress'],
-                "optimal_ranges": results['optimal_ranges']
-            })
-            
-            # Upsert (update if exists, insert if new)
-            self.stress_collection.update_one(
-                {
-                    "farmer_id": results['farmer_id'],
-                    "date": results['date']
-                },
-                {"$set": assessment_doc},
-                upsert=True
-            )
-            
-            logger.info(" Stress assessment saved to database")
-            
-        except Exception as e:
-            logger.error(f"Failed to save assessment: {e}")
-    
-    def get_latest_assessment(self, farmer_id: str) -> Optional[Dict]:
-        """Get the most recent assessment for a farmer"""
-        try:
-            assessment = self.stress_collection.find_one(
-                {"farmer_id": farmer_id},
-                sort=[("date", -1)]
-            )
-            return assessment
-        except Exception as e:
-            logger.error(f"Failed to get latest assessment: {e}")
-            return None
-    
-    def print_simple_report(self, results: Dict):
-        """Print a simple readable report"""
-        if not results:
-            print("XXX No results to display")
-            return
+    def _analyze_stress_factors(self, stress_data: list) -> Dict[str, Any]:
+        """
+        Generate stress analysis for each factor in the stress data.
         
-        print(f"\n Daily Corn Report - {results['date']}")
-        print(f" Growth Stage: {results['growth_stage']}")
-        print(f" Overall Condition: {results['overall_stress'].upper()}")
-        print("-" * 50)
+        Args:
+            stress_data: List of stress assessment records
+            
+        Returns:
+            Dictionary with analysis for each stress factor
+        """
+        if not stress_data:
+            return {}
+            
+        # Define optimal ranges for each factor
+        optimal_ranges = {
+            'temperature': (20, 30),      # °C
+            'humidity': (40, 80),         # %
+            'soil_moisture': (30, 70),    # %
+            'leaf_wetness': (0, 50),      # % (lower is better)
+            'ndvi': (0.7, 0.9)           # Normalized Difference Vegetation Index
+        }
         
-        for param, analysis in results['stress_analysis'].items():
-            print(f"{analysis['status']} {param.replace('_', ' ').title()}: {analysis['stress_level'].upper()}")
-            print(f"   Value: {analysis['actual_value']}")
-            print(f"   Optimal: {analysis['optimal_range'][0]}-{analysis['optimal_range'][1]}")
-            if analysis['deviation_percent'] > 0:
-                print(f"   Deviation: {analysis['deviation_percent']}%")
-            print()
+        # Define human-readable factor names
+        factor_names = {
+            'temperature': 'Temperature',
+            'humidity': 'Humidity',
+            'soil_moisture': 'Soil Moisture',
+            'leaf_wetness': 'Leaf Wetness',
+            'ndvi': 'Vegetation Health (NDVI)'
+        }
+        
+        analysis = {}
+        
+        # Process each record in the stress data
+        for record in stress_data:
+            for field, value in record.items():
+                # Skip non-numeric fields and None values
+                if not isinstance(value, (int, float)) or field.startswith('_'):
+                    continue
+                    
+                # Get optimal range for this field
+                opt_min, opt_max = optimal_ranges.get(field, (None, None))
+                
+                # Determine status and stress level
+                status = "OK"
+                stress_level = "low"
+                
+                if opt_min is not None and opt_max is not None:
+                    if value < opt_min:
+                        status = "LOW"
+                        stress_level = "high" if (opt_min - value) > (opt_min * 0.3) else "medium"
+                    elif value > opt_max:
+                        status = "HIGH"
+                        stress_level = "high" if (value - opt_max) > (opt_max * 0.3) else "medium"
+                
+                # Add to analysis
+                factor_name = factor_names.get(field, field.replace('_', ' ').title())
+                analysis[factor_name] = {
+                    "status": status,
+                    "stress_level": stress_level,
+                    "actual_value": round(value, 2) if isinstance(value, float) else value,
+                    "optimal_range": [opt_min, opt_max] if opt_min is not None else ["N/A", "N/A"],
+                    "recommendation": self._get_recommendation(field, value, status, stress_level)
+                }
+        
+        return analysis
 
-# Global instance for easy access
+    def _get_recommendation(self, factor: str, value: float, status: str, stress_level: str) -> str:
+        """
+        Generate a recommendation for a stress factor.
+        
+        Args:
+            factor: The stress factor (e.g., 'temperature', 'humidity')
+            value: The measured value
+            status: Status of the factor ('OK', 'LOW', 'HIGH')
+            stress_level: Stress level ('low', 'medium', 'high')
+            
+        Returns:
+            A recommendation string
+        """
+        if status == "OK":
+            return f"Optimal {factor} level maintained."
+            
+        factor_name = factor.lower()
+        recommendations = {
+            'temperature': {
+                'LOW': "Consider using row covers or mulch to retain soil heat.",
+                'HIGH': "Provide shade or increase irrigation to cool the plants."
+            },
+            'humidity': {
+                'LOW': "Increase irrigation or use misting to raise humidity levels.",
+                'HIGH': "Improve ventilation or reduce irrigation to lower humidity."
+            },
+            'soil_moisture': {
+                'LOW': "Increase irrigation to maintain proper soil moisture.",
+                'HIGH': "Reduce irrigation and improve drainage to prevent waterlogging."
+            },
+            'leaf wetness': {
+                'HIGH': "Reduce overhead irrigation and improve air circulation.",
+            },
+            'vegetation health (ndvi)': {
+                'LOW': "Check for nutrient deficiencies, pests, or diseases.",
+                'HIGH': "Excellent vegetation health detected."
+            }
+        }
+        
+        # Get the appropriate recommendation
+        factor_key = factor_name
+        if factor_name not in recommendations:
+            for key in recommendations:
+                if key in factor_name:
+                    factor_key = key
+                    break
+        
+        if status in recommendations.get(factor_key, {}):
+            return recommendations[factor_key][status]
+            
+        return f"Monitor {factor_name} levels and adjust management practices as needed."
+
+    def _summarize_weather(self, weather_data: list) -> Dict[str, Any]:
+        """Summarize weather data for yesterday."""
+        if not weather_data:
+            return {}
+            
+        # Extract relevant data points
+        temps = []
+        humidity = []
+        rainfall = []
+        
+        for w in weather_data:
+            if isinstance(w.get('temperature'), (int, float)):
+                temps.append(w['temperature'])
+            if isinstance(w.get('humidity'), (int, float)):
+                humidity.append(w['humidity'])
+            if isinstance(w.get('rainfall'), (int, float)):
+                rainfall.append(w['rainfall'])
+        
+        # Calculate statistics
+        summary = {}
+        if temps:
+            summary['avg_temp'] = round(sum(temps) / len(temps), 1)
+            summary['min_temp'] = min(temps)
+            summary['max_temp'] = max(temps)
+            
+        if humidity:
+            summary['avg_humidity'] = round(sum(humidity) / len(humidity), 1)
+            summary['min_humidity'] = min(humidity)
+            summary['max_humidity'] = max(humidity)
+            
+        if rainfall:
+            summary['total_rainfall'] = round(sum(rainfall), 1)
+            summary['rain_events'] = len([r for r in rainfall if r > 0])
+        
+        return summary
+
+
+# Global instance
 descriptive_analytics = DescriptiveAnalytics()
