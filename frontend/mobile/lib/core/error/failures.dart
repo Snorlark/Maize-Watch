@@ -28,3 +28,11 @@ class AuthFailure extends Failure {
 class UnauthorizedFailure extends Failure {
   const UnauthorizedFailure([super.message = 'Unauthorized access']);
 }
+
+class NotFoundFailure extends Failure {
+  const NotFoundFailure([super.message = 'The requested resource was not found']);
+}
+
+class ConnectionFailure extends Failure {
+  const ConnectionFailure([super.message = 'Failed to establish connection']);
+}

@@ -27,8 +27,8 @@ def run_complete_system(farmer_id: str, field_id: str = None):
     print("=" * 60)
     
     # Step 1: Descriptive Analytics
-    print("\nStep 1: Analyzing yesterday's performance...")
-    descriptive_results = descriptive_analytics.analyze_daily_performance(farmer_id)
+    print("\nStep 1: Analyzing today's performance...")
+    descriptive_results = descriptive_analytics.analyze_daily_performance(farmer_id, use_today=True)
     
     if not descriptive_results:
         print("FAILED: Could not complete descriptive analysis")
@@ -88,26 +88,66 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
         print(f"   Value: {analysis['actual_value']}, Optimal: {analysis['optimal_range'][0]}-{analysis['optimal_range'][1]}")
     
     # Weather Forecast
-    weather = predictive['weather_forecast']
-    print(f"\n{predictive['forecast_period_days']}-DAY WEATHER FORECAST:")
-    print(f"Temperature: {weather['temperature_forecast']['min_temp']}-{weather['temperature_forecast']['max_temp']}°C")
-    print(f"Humidity: {weather['humidity_forecast']}%")
-    print(f"Rain Probability: {weather['rainfall_probability']['light_rain_probability']}%")
+    weather = predictive.get('weather_forecast', {})
+    forecast_days = predictive.get('forecast_period_days', 3)  # Default to 3 days if not specified
+    print(f"\n{forecast_days}-DAY WEATHER FORECAST:")
+    
+    # Safely get temperature forecast
+    temp_forecast = weather.get('temperature_forecast', {})
+    if temp_forecast and 'min_temp' in temp_forecast and 'max_temp' in temp_forecast:
+        print(f"Temperature: {temp_forecast['min_temp']}-{temp_forecast['max_temp']}°C")
+    else:
+        print("Temperature: Data not available")
+    
+    # Safely get humidity forecast
+    humidity = weather.get('humidity_forecast', 'N/A')
+    print(f"Humidity: {humidity}%")
+    
+    # Safely get rain probability
+    rain_prob = weather.get('rainfall_probability', {})
+    if rain_prob and 'light_rain_probability' in rain_prob:
+        print(f"Rain Probability: {rain_prob['light_rain_probability']}%")
+    else:
+        print("Rain Probability: Data not available")
     
     # Risk Assessment
-    risks = predictive['risk_assessment']
+    risks = predictive.get('risk_assessment', {})
     print(f"\nRISK ASSESSMENT:")
-    print(f"Drought: {risks['drought_risk']['level'].upper()} ({risks['drought_risk']['probability']}%)")
-    print(f"Excess Moisture: {risks['excess_moisture_risk']['level'].upper()} ({risks['excess_moisture_risk']['probability']}%)")
-    print(f"Temperature Stress: {risks['temperature_stress_risk']['level'].upper()} ({risks['temperature_stress_risk']['probability']}%)")
-    print(f"Overall Risk Level: {risks['overall_risk_level'].upper()}")
+    
+    # Safely get and print drought risk
+    drought = risks.get('drought_risk', {})
+    print(f"Drought: {drought.get('level', 'UNKNOWN').upper()} ({drought.get('probability', 'N/A')}%)")
+    
+    # Safely get and print excess moisture risk
+    moisture = risks.get('excess_moisture_risk', {})
+    print(f"Excess Moisture: {moisture.get('level', 'UNKNOWN').upper()} ({moisture.get('probability', 'N/A')}%)")
+    
+    # Safely get and print temperature stress risk
+    temp_stress = risks.get('temperature_stress_risk', {})
+    print(f"Temperature Stress: {temp_stress.get('level', 'UNKNOWN').upper()} ({temp_stress.get('probability', 'N/A')}%)")
+    
+    # Safely get and print overall risk
+    print(f"Overall Risk Level: {risks.get('overall_risk_level', 'UNKNOWN').upper()}")
     
     # Growth Timeline
-    growth = predictive['growth_timeline']
+    growth = predictive.get('growth_timeline', {})
     print(f"\nGROWTH PROGRESSION:")
-    print(f"Current Stage: {growth['current_stage']}")
-    print(f"Next Stage: {growth['next_stage']} (estimated {growth['estimated_days_to_next']} days)")
-    print(f"Status: {growth['progression_status'].upper()}")
+    
+    # Safely get and print current stage
+    current_stage = growth.get('current_stage', 'UNKNOWN')
+    print(f"Current Stage: {current_stage}")
+    
+    # Safely get and print next stage info
+    next_stage = growth.get('next_stage', 'UNKNOWN')
+    days_to_next = growth.get('estimated_days_to_next', 'N/A')
+    print(f"Next Stage: {next_stage} (estimated {days_to_next} days)")
+    
+    # Safely get and print status
+    status = growth.get('progression_status', 'UNKNOWN')
+    if isinstance(status, str):
+        print(f"Status: {status.upper()}")
+    else:
+        print("Status: UNKNOWN")
     
     # Daily Recommendations
     print(f"\nTODAY'S ACTION PLAN >>")
