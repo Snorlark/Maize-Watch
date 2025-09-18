@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -18,6 +19,8 @@ import {
 } from 'lucide-react';
 import apiClient from '../api/client';
 import authService from '../api/services/authService';
+import TwentyFourHourOverview from '../components/widgets/TwentyFourHourOverview';
+import LiveDataWidget from '../components/widgets/LiveDataWidget';
 
 // Activity logs API service
 const activityLogAPI = {
@@ -369,104 +372,15 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Temperature Widgets */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Current Temperature */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-50 rounded-lg">
-                  <Thermometer className="w-6 h-6 text-orange-600" />
-                </div>
-                <h2 style={{ fontSize: 'var(--text-xl)' }} className="font-semibold text-[#1E441E]">Current Temperature</h2>
-              </div>
-              <button 
-                onClick={() => navigate('/admin-portal-xyz123/livedata')}
-                className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
-                style={{ fontSize: 'var(--text-sm)' }}
-              >
-                <Eye className="w-4 h-4" />
-                View Live Data
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-[#356B2C] mb-2" style={{ fontSize: '48px' }}>
-                {data.currentTemperature.value}°C
-              </div>
-              <p className={`font-medium ${tempStatus.color} mb-4`} style={{ fontSize: 'var(--text-lg)' }}>
-                Status: {tempStatus.status}
-              </p>
-              <div className="flex justify-center items-center gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
-                <Clock className="w-4 h-4" />
-                Last updated: {formatDate(data.currentTemperature.timestamp)}
-              </div>
-            </div>
+        {/* Live Data Widget + 24-hour Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Live Data Widget (toggle metrics) - smaller column */}
+          <div className="lg:col-span-1">
+            <LiveDataWidget />
           </div>
-
-          {/* Temperature Trends */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <BarChart3 className="w-6 h-6 text-blue-600" />
-                </div>
-                <h2 style={{ fontSize: 'var(--text-xl)' }} className="font-semibold text-[#1E441E]">Temperature Trends</h2>
-              </div>
-              <button 
-                onClick={() => navigate('/admin-portal-xyz123/datahistory')}
-                className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
-                style={{ fontSize: 'var(--text-sm)' }}
-              >
-                <BarChart3 className="w-4 h-4" />
-                View History
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="h-40">
-              <svg viewBox="0 0 400 160" className="w-full h-full">
-                <defs>
-                  <pattern id="grid" width="40" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 20" fill="none" stroke="#E5E7EB" strokeWidth="1"/>
-                  </pattern>
-                </defs>
-                <rect width="400" height="160" fill="url(#grid)" />
-                <polyline
-                  fill="none"
-                  stroke="#F97316"
-                  strokeWidth="3"
-                  points={data.temperatureChart.map((point, index) => 
-                    `${(index * 80) + 20},${160 - ((point.temp - 20) * 4)}`
-                  ).join(' ')}
-                />
-                {data.temperatureChart.map((point, index) => (
-                  <circle
-                    key={index}
-                    cx={(index * 80) + 20}
-                    cy={160 - ((point.temp - 20) * 4)}
-                    r="4"
-                    fill="#F97316"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                ))}
-                {data.temperatureChart.map((point, index) => (
-                  <text
-                    key={index}
-                    x={(index * 80) + 20}
-                    y="155"
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill="#4A7C59"
-                  >
-                    {point.time}
-                  </text>
-                ))}
-              </svg>
-            </div>
-            <div className="text-center" style={{ fontSize: 'var(--text-sm)' }}>
-              24-hour temperature overview
-            </div>
+          {/* 24-hour Overview Widget - take more space */}
+          <div className="lg:col-span-2">
+            <TwentyFourHourOverview />
           </div>
         </div>
 
