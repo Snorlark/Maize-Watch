@@ -179,7 +179,7 @@ const periodOptions = [
 ];
 
 const viewTypeOptions = [
-  { label: 'Line Chart', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
+  { label: 'Line View', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
   { label: 'Bar Chart', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
   { label: 'Table View', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
@@ -512,9 +512,11 @@ const TemperatureDashboard = () => {
     }
 
     const displayData = chartData.map((item: ChartDataItem) => ({
-  ...item,
-  [xKey]: item[xKey as keyof ChartDataItem] || item.label,
-}));
+      ...item,
+      // Ensure the xKey exists for axis and coalesce value to 0 for gaps
+      [xKey]: item[xKey as keyof ChartDataItem] || item.label,
+      value: item.value ?? 0,
+    }));
 
 
     if (viewType === 'tabular') {
@@ -565,53 +567,52 @@ const TemperatureDashboard = () => {
       <ReferenceLine key="max" y={TEMPERATURE_THRESHOLDS.max} stroke="#F59E0B" strokeDasharray="3 3" label={{ value: `Max ${TEMPERATURE_THRESHOLDS.max}°C`, position: 'right', fill: '#F59E0B' }} />,
       <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="#EF4444" strokeDasharray="3 3" label={{ value: `Critical ${TEMPERATURE_THRESHOLDS.critical}°C`, position: 'right', fill: '#EF4444' }} />,
     ];
-
-    const commonProps = {
-      data: displayData,
-      margin: { top: 20, right: 30, left: 20, bottom: 60 }
-    };
-
-    const commonAxisProps = {
-      xAxis: {
-        dataKey: xKey,
-        height: 80,
-        tick: { fontSize: 12 },
-        angle: -45,
-        textAnchor: 'end' as const,
-        interval: 0
-      },
-      yAxis: {
-        domain: [0, 50] as const,
-        tick: { fontSize: 12 },
-        tickFormatter: (value: number) => `${value}°C`,
-        width: 60
-      }
+    // Responsive chart margins and settings similar to SoilMoistureChart
+    const chartMargins = {
+      top: 20,
+      right: 20,
+      left: 10,
+      bottom: window.innerWidth < 640 ? 40 : 60,
     };
 
     if (viewType === 'line') {
       return (
-        <div className="h-[300px] sm:h-[400px] lg:h-[450px] w-full">
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart {...commonProps}>
+            <LineChart data={displayData} margin={chartMargins}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis {...commonAxisProps.xAxis} />
-              <YAxis 
+              <XAxis
+                dataKey={xKey}
+                height={window.innerWidth < 640 ? 50 : 80}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                angle={window.innerWidth < 640 ? -45 : 0}
+                textAnchor={window.innerWidth < 640 ? 'end' : 'middle'}
+                dy={window.innerWidth < 640 ? 5 : 10}
+                padding={{ left: 20, right: 20 }}
+                interval={window.innerWidth < 640 ? 1 : 0}
+              />
+              <YAxis
                 domain={[0, 50]}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                 tickFormatter={(value: number) => `${value}°C`}
-                width={60}
+                width={window.innerWidth < 640 ? 50 : 60}
+                tickMargin={5}
+                axisLine={{ stroke: '#666' }}
+                tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
+              <Legend verticalAlign="top" height={36} />
               <Line
                 type="monotoneX"
                 dataKey="value"
                 name="Temperature (°C)"
                 stroke={TEMPERATURE_COLORS.primary}
-                strokeWidth={3}
-                dot={{ fill: TEMPERATURE_COLORS.primary, strokeWidth: 2, r: 5 }}
-                activeDot={{ r: 7, fill: TEMPERATURE_COLORS.primary, stroke: '#fff', strokeWidth: 2 }}
-                connectNulls={false}
+                strokeWidth={2}
+                dot={{ fill: '#fff', strokeWidth: 2, r: window.innerWidth < 640 ? 3 : 4 }}
+                activeDot={{ r: window.innerWidth < 640 ? 5 : 6, fill: '#fff', stroke: TEMPERATURE_COLORS.primary, strokeWidth: 2 }}
+                connectNulls={true}
+                isAnimationActive={true}
+                animationDuration={500}
               />
               {thresholdLines}
             </LineChart>
@@ -624,10 +625,17 @@ const TemperatureDashboard = () => {
       return (
         <div className="h-[300px] sm:h-[400px] lg:h-[450px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart {...commonProps}>
+            <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis {...commonAxisProps.xAxis} />
-              <YAxis 
+              <XAxis
+                dataKey={xKey}
+                height={80}
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor={'end'}
+                interval={0}
+              />
+              <YAxis
                 domain={[0, 50]}
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value: number) => `${value}°C`}
