@@ -10,7 +10,8 @@ import {
   syncFromThingSpeak,
   calibrateSensor,
   getSensorsNeedingMaintenance,
-  getSensorStats
+  getSensorStats,
+  getLatestReadingsByFarm
 } from '../controllers/sensorController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -56,5 +57,11 @@ router.post('/:id/sync', validateObjectId, syncFromThingSpeak);
 
 // Calibrate sensor
 router.post('/:id/calibrate', validateObjectId, calibrateSensor);
+
+// Get latest readings for farm (mobile compatibility)
+router.get('/farms/:farmId/readings/latest', validateObjectId('farmId'), getLatestReadingsByFarm);
+
+// Backward-compat path expected by mobile client
+router.get('/readings/latest/:farmId', validateObjectId('farmId'), getLatestReadingsByFarm);
 
 export default router;

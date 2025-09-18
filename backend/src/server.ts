@@ -16,6 +16,7 @@ import { initializeSocket } from './sockets/index';
 import globalErrorHandler, { notFound, catchAsync } from './middleware/errorHandler';
 import { requestLogger } from './middleware/logging';
 import { generalLimiter } from './middleware/rateLimiter';
+import historicalDataRouter from './routes/historical_data.routes';
 
 // Import routes
 import apiRoutes from './routes/index';
@@ -51,9 +52,13 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: [
+    "http://localhost:3000", // React default
+    "http://localhost:5173", // Vite default
+  ],
   credentials: true
 }));
+
 
 // Compression middleware
 app.use(compression());
