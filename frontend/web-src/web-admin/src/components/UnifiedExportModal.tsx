@@ -44,7 +44,29 @@ const UnifiedExportModal = ({
             onClose();
         } catch (error) {
             console.error('Export failed:', error);
-            alert("Export failed. Please try again.");
+            // Create styled error message that matches the theme
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-semibold">Export Failed</p>
+                        <p class="text-sm mt-1">${errorMessage}. Please try again.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(errorDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 5000);
         } finally {
             setIsExporting(false);
         }
@@ -64,18 +86,86 @@ const UnifiedExportModal = ({
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={handleBackdropClick}
         >
-            <Card className="w-full max-w-2xl bg-white shadow-lg" onClick={e => e.stopPropagation()}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xl font-bold">Export Data</CardTitle>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <X className="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    {/* Format Selection */}
+            <div className="bg-[#E6F0D3] rounded-xl shadow-lg max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-[#1E441E]">Export Options</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-[#456C2D] hover:text-[#1E441E] transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Export Format */}
+                <div className="mb-6">
+                    <label className="text-sm font-medium text-[#1E441E] mb-3 block">
+                        Export Format
+                    </label>
+                    <div className="flex gap-2">
+                        {[
+                            { value: 'csv' as const, label: 'CSV' },
+                            { value: 'pdf' as const, label: 'PDF' },
+                            { value: 'svg' as const, label: 'SVG' }
+                        ].map((option) => (
+                            <button
+                                key={option.value}
+                                onClick={() => setExportFormat(option.value)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                    exportFormat === option.value
+                                        ? 'bg-[#456C2D] text-white'
+                                        : 'bg-white text-[#456C2D] border border-[#456C2D] hover:bg-[#456C2D] hover:text-white'
+                                }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Export Type */}
+                <div className="mb-6">
+                    <label className="text-sm font-medium text-[#1E441E] mb-3 block">
+                        Date Range Selection
+                    </label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setExportType('predefined')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                exportType === 'predefined'
+                                    ? 'bg-[#456C2D] text-white'
+                                    : 'bg-white text-[#456C2D] border border-[#456C2D] hover:bg-[#456C2D] hover:text-white'
+                            }`}
+                        >
+                            Predefined Period
+                        </button>
+                        <button
+                            onClick={() => setExportType('custom')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                exportType === 'custom'
+                                    ? 'bg-[#456C2D] text-white'
+                                    : 'bg-white text-[#456C2D] border border-[#456C2D] hover:bg-[#456C2D] hover:text-white'
+                            }`}
+                        >
+                            Custom Range
+                        </button>
+                    </div>
+                    {/* <p className="text-xs text-[#456C2D] mt-2">
+                        {exportType === 'predefined' 
+                            ? 'Select from common time periods (last day, week, month, year)'
+                            : 'Choose specific start and end dates for your export'
+                        }
+                    </p> */}
+                </div>
+
+                {/* Time Frame (for predefined) */}
+                {exportType === 'predefined' && (
                     <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3">Export Format</h3>
-                        <div className="grid grid-cols-3 gap-4">
+                        {/*  <label className="text-sm font-medium text-[#1E441E] mb-3 block">
+                            Time Period
+                        </label>
+                       <div className="grid grid-cols-2 gap-2">
                             {[
                                 { value: 'csv' as const, label: 'CSV', description: 'Excel compatible spreadsheet' },
                                 { value: 'pdf' as const, label: 'PDF', description: 'Chart and data report' },
@@ -100,56 +190,46 @@ const UnifiedExportModal = ({
                                     </div>
                                 </label>
                             ))}
-                        </div>
+                        </div> 
+                        <p className="text-xs text-[#456C2D] mt-2">
+                            Data will be filtered to show only the selected time period from now backwards
+                        </p>*/}
                     </div>
 
-                    {/* PDF Options */}
-                    {exportFormat === 'pdf' && (
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-3">PDF Options</h3>
-                            <div className="flex gap-6">
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={includeChartImage}
-                                        onChange={e => setIncludeChartImage(e.target.checked)}
-                                    />
-                                    Include chart image
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={includeTabularData}
-                                        onChange={e => setIncludeTabularData(e.target.checked)}
-                                    />
-                                    Include tabular data
-                                </label>
+                {/* Custom Date Range */}
+                {exportType === 'custom' && (
+                    <div className="mb-6 space-y-4">
+                        <div>
+                            <label className="text-sm font-medium text-[#1E441E] mb-2 block">
+                                Start Date
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full h-10 px-3 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
+                                    placeholder="YYYY-MM-DD"
+                                />
                             </div>
                         </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleExport}
-                            disabled={isExporting}
-                            className="flex items-center gap-2"
-                        >
-                            {isExporting ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    Exporting...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="h-4 w-4" />
-                                    Export {exportFormat.toUpperCase()}
-                                </>
-                            )}
-                        </Button>
+                        <div>
+                            <label className="text-sm font-medium text-[#1E441E] mb-2 block">
+                                End Date
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="w-full h-10 px-3 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
+                                    placeholder="YYYY-MM-DD"
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-[#456C2D]">
+                            Select the exact date range you want to include in your export
+                        </p>
                     </div>
                 </CardContent>
             </Card>

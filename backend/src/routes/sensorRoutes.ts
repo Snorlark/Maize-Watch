@@ -7,6 +7,7 @@ import {
   deleteSensor,
   recordReading,
   getSensorReadings,
+  getHistoricalReadings,
   syncFromThingSpeak,
   calibrateSensor,
   getSensorsNeedingMaintenance,
@@ -51,6 +52,9 @@ router.post('/:id/readings', validateObjectId, validateSensorReading, recordRead
 
 // Get sensor readings
 router.get('/:id/readings', validateObjectId, validatePagination, validateDateRange, getSensorReadings);
+
+// Historical readings for current user (by date range across their farms)
+router.get('/historical', validateDateRange, getHistoricalReadings);
 
 // Sync from ThingSpeak
 router.post('/:id/sync', validateObjectId, syncFromThingSpeak);
