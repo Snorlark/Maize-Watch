@@ -169,3 +169,25 @@ Thumbs.db
 .vscode/
 *.swp
 *.sublime-workspace
+
+# Ignore the corn_env directory
+analytics_v2/corn_env/
+
+# Ignore Python bytecode
+*.pyc
+__pycache__/
+
+# Ignore environment directories
+env/
+venv/
+.env/
+.venv/
+
+# Ignore compiled files (e.g., pyd, lib)
+*.pyd
+*.lib
+
+# Ignore IDE/editor configurations
+.idea/
+.vscode/
+*.iml

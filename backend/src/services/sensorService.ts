@@ -442,6 +442,7 @@ class SensorService {
     }
   }
 
+
   /**
    * Private helper methods
    */
