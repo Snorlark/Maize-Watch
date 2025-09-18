@@ -350,3 +350,4 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
     data: { readings }
   });
 });
+

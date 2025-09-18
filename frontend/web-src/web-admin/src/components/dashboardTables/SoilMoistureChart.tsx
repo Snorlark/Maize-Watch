@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { RefreshIndicator } from '../ui/refresh-indicator';
 import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
+import { apiService } from '../../api/config';
 
 // Types
 interface DataItem {
@@ -293,16 +294,6 @@ const SoilMoistureDashboard = () => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [xKey, setXKey] = useState<string>('day');
 
-  // API Configuration
-  const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
-    endpoints: {
-      historical: '/api/sensors/historical',
-      weekly: '/api/sensors/weekly-overview',
-      latest: '/api/sensors/latest'
-    }
-  };
-
   // Intelligent refresh hook
   const {
     isRefreshing,
@@ -315,7 +306,7 @@ const SoilMoistureDashboard = () => {
     onRefresh: () => fetchData(overview, selectedDate, true) // true = silent refresh
   });
 
-  // Update the fetchData function
+  // Update the fetchData function to use MongoDB-backed apiService
   const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
     if (!silent) {
       setIsLoading(true);
@@ -323,240 +314,85 @@ const SoilMoistureDashboard = () => {
     setError(null);
 
     try {
-      // Convert baseDate to Philippine time
-      const phDate = new Date(baseDate.getTime() + (8 * 60 * 60 * 1000));
-      let startDate: Date;
-      let endDate: Date;
-      let endpoint: string;
-      let params: Record<string, string> = {};
-
+      // Determine limit based on period
+      let limit = 7;
       switch (period) {
-        case 'daily': {
-          // For daily view, get data for the week containing the selected date
-          startDate = getStartOfWeek(phDate);
-          endDate = getEndOfWeek(startDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          console.log('Daily view - Week range:', {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            phDate: phDate.toISOString()
-          });
+        case 'weekly':
+          limit = 4; // weeks in a month
           break;
-        }
-        case 'weekly': {
-          // For weekly view, get data for the month containing the selected date
-          startDate = getStartOfMonth(phDate);
-          endDate = getEndOfMonth(phDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
+        case 'monthly':
+          limit = 12; // months in a year
           break;
-        }
-        case 'monthly': {
-          // For monthly view, get data for the entire year
-          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
-          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          break;
-        }
-        default:
-          throw new Error('Invalid period specified');
       }
 
-      const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
-      console.log(`Making API request to ${url} for ${period} view`);
-
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      // Use unified apiService with baseDate
+      const result = await apiService.fetchHistoricalData(period as 'daily' | 'weekly' | 'monthly', limit, baseDate);
+      if (!result.success || !result.data) {
+        throw new Error(result.message || 'Failed to fetch soil moisture data');
       }
 
-      const result = await response.json();
-      console.log(`API response for ${period} view:`, {
-        success: result.success,
-        dataLength: result.data?.length,
-        firstItem: result.data?.[0],
-        lastItem: result.data?.[result.data?.length - 1]
-      });
+      // Map to chart data structure
+      const processedData: DataItem[] = result.data.map((item: any) => ({
+        ...item,
+        value: item.soilMoisture ?? null,
+        day: period === 'daily' ? item.label : undefined,
+        week: period === 'weekly' ? item.label : undefined,
+        month: period === 'monthly' ? item.label : undefined,
+        threshold: SOIL_MOISTURE_THRESHOLDS,
+      }));
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch data');
-      }
-
-      let processedData: DataItem[] = [];
-      const rawData = result.data;
-
-      // Handle empty or invalid data
-      if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
-        console.warn(`No data available for ${period} view`);
-        processedData = getDefaultData(period, phDate).chartData;
-      } else {
-        // Filter data to only include entries within our date range
-        const filteredData = rawData.filter((item: any) => {
-          const itemDate = new Date(item.timestamp);
-          const isInRange = itemDate >= startDate && itemDate <= endDate;
-          if (!isInRange) {
-            console.log('Filtered out item:', {
-              timestamp: item.timestamp,
-              itemDate: itemDate.toISOString(),
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString()
-            });
-          }
-          return isInRange;
-        });
-
-        console.log(`Filtered data for ${period} view:`, {
-          totalItems: rawData.length,
-          filteredItems: filteredData.length,
-          firstFilteredItem: filteredData[0],
-          lastFilteredItem: filteredData[filteredData.length - 1]
-        });
-
+      // Determine date range string from raw data if available, else fallback
+      let displayRange = '';
+      if (result.data.length > 0) {
+        const firstItem = result.data[0];
+        const lastItem = result.data[result.data.length - 1];
         switch (period) {
-          case 'daily': {
-            // Process daily data for the week
-            const dailyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-            // Initialize all days
-            days.forEach(day => dailyData.set(day, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const dayKey = days[date.getDay()];
-              const current = dailyData.get(dayKey)!;
-              if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
-                const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
-                current.sum += convertedValue;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            console.log('Daily data processing:', {
-              totalDays: dailyData.size,
-              daysWithData: Array.from(dailyData.entries())
-                .filter(([_, data]) => data.count > 0)
-                .map(([day, data]) => ({
-                  day,
-                  count: data.count,
-                  average: data.sum / data.count
-                }))
-            });
-
-            processedData = days.map(day => {
-              const data = dailyData.get(day)!;
-              return {
-                day,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: SOIL_MOISTURE_THRESHOLDS
-              };
-            });
-            setXKey('day');
-            break;
-          }
-          case 'weekly': {
-            // Process weekly data for the month
-            const weeksInMonth = getWeeksInMonth(phDate);
-            const weeklyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-
-            // Initialize all weeks
-            for (let i = 1; i <= weeksInMonth; i++) {
-              weeklyData.set(`Week ${i}`, { sum: 0, count: 0, dates: [] });
+          case 'daily':
+            if (firstItem.date && lastItem.date) {
+              displayRange = formatDateRange(new Date(firstItem.date), new Date(lastItem.date));
             }
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const weekNumber = getWeekNumberInMonth(date);
-              const weekKey = `Week ${weekNumber}`;
-
-              if (weeklyData.has(weekKey)) {
-                const current = weeklyData.get(weekKey)!;
-                if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
-                  const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
-                  current.sum += convertedValue;
-                  current.count++;
-                  current.dates.push(date.toISOString());
-                }
-              }
-            });
-
-            processedData = Array.from(weeklyData.entries()).map(([week, data]) => ({
-              week,
-              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-              dataPoints: data.count,
-              threshold: SOIL_MOISTURE_THRESHOLDS
-            }));
-            setXKey('week');
             break;
-          }
-          case 'monthly': {
-            // Process monthly data for the year
-            const monthlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const monthNames = [
-              "January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"
-            ];
-
-            // Initialize all months
-            monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const monthKey = monthNames[date.getMonth()];
-              const current = monthlyData.get(monthKey)!;
-              if (typeof item.soilMoisture === 'number' && !isNaN(item.soilMoisture)) {
-                const convertedValue = convertSoilMoistureToPercentage(item.soilMoisture);
-                current.sum += convertedValue;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            processedData = monthNames.map(month => {
-              const data = monthlyData.get(month)!;
-              return {
-                month,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: SOIL_MOISTURE_THRESHOLDS
-              };
-            });
-            setXKey('month');
+          case 'weekly':
+            if (firstItem.weekStart && lastItem.weekEnd) {
+              displayRange = formatDateRange(new Date(firstItem.weekStart), new Date(lastItem.weekEnd));
+            }
             break;
-          }
+          case 'monthly':
+            if (firstItem.monthStart && lastItem.monthEnd) {
+              displayRange = formatDateRange(new Date(firstItem.monthStart), new Date(lastItem.monthEnd));
+            }
+            break;
         }
       }
+      if (!displayRange) {
+        let startDate: Date, endDate: Date;
+        switch (period) {
+          case 'daily':
+            startDate = getStartOfWeek(baseDate);
+            endDate = getEndOfWeek(startDate);
+            break;
+          case 'weekly':
+            startDate = getStartOfMonth(baseDate);
+            endDate = getEndOfMonth(baseDate);
+            break;
+          case 'monthly':
+            startDate = new Date(baseDate.getFullYear(), 0, 1);
+            endDate = new Date(baseDate.getFullYear(), 11, 31);
+            break;
+          default:
+            startDate = baseDate; endDate = baseDate;
+        }
+        displayRange = formatDateRange(startDate, endDate);
+      }
 
-      console.log(`Final processed data for ${period} view:`, {
-        dataLength: processedData.length,
-        dataWithValues: processedData.filter(item => item.value !== null).length,
-        firstItem: processedData[0],
-        lastItem: processedData[processedData.length - 1]
-      });
+      // Set xKey by period
+      let chartXKey = 'day';
+      if (period === 'weekly') chartXKey = 'week';
+      if (period === 'monthly') chartXKey = 'month';
 
-      // Calculate trend using non-zero values
       setChartData(processedData);
-      setDateRange(formatDateRange(startDate, endDate));
+      setXKey(chartXKey);
+      setDateRange(displayRange);
       setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
