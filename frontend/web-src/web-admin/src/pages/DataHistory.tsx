@@ -17,7 +17,7 @@ const DataHistory = () => {
             Data History
           </h1>
           <p className="text-[#456C2D] text-sm">
-            Monitor your farm's environmental conditions in real-time. Each chart has its own export functionality.
+            Monitor your farm's environmental conditions in real-time
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#456C2D] text-[#F5F5DC]">

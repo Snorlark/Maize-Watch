@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import sensorService from '../services/sensorService';
 import farmService from '../services/farmService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
+import SensorReading from '../models/SensorReading';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
 
@@ -348,5 +349,38 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: { readings }
+  });
+});
+
+/**
+ * @desc    Get historical readings across user's farms by date range
+ * @route   GET /api/sensors/historical?startDate&endDate
+ * @access  Private
+ */
+export const getHistoricalReadings = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+
+  if (!startDate || !endDate) {
+    throw new AppError('Start date and end date are required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Get all farms owned by the user
+  const farms = await farmService.getFarmsByOwner(currentUser.id);
+  const farmIds = farms.map((f: any) => f._id.toString());
+
+  // Fetch readings for these farms within range
+  const readings = await SensorReading.find({
+    farm: { $in: farmIds },
+    timestamp: { $gte: new Date(startDate), $lte: new Date(endDate) }
+  })
+    .sort({ timestamp: 1 })
+    .select('timestamp data.temperature data.humidity data.soilMoisture data.lightIntensity data.pH farm sensor')
+    .populate('sensor', 'name type sensorId')
+    .lean();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: readings
   });
 });

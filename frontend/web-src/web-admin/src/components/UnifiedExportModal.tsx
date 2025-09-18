@@ -72,7 +72,29 @@ const UnifiedExportModal = ({
             onClose();
         } catch (error) {
             console.error('Export failed:', error);
-            alert(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
+            // Create styled error message that matches the theme
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <p class="font-semibold">Export Failed</p>
+                        <p class="text-sm mt-1">${errorMessage}. Please try again.</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(errorDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 5000);
         } finally {
             setIsExporting(false);
         }
@@ -157,21 +179,21 @@ const UnifiedExportModal = ({
                             Custom Range
                         </button>
                     </div>
-                    <p className="text-xs text-[#456C2D] mt-2">
+                    {/* <p className="text-xs text-[#456C2D] mt-2">
                         {exportType === 'predefined' 
                             ? 'Select from common time periods (last day, week, month, year)'
                             : 'Choose specific start and end dates for your export'
                         }
-                    </p>
+                    </p> */}
                 </div>
 
                 {/* Time Frame (for predefined) */}
                 {exportType === 'predefined' && (
                     <div className="mb-6">
-                        <label className="text-sm font-medium text-[#1E441E] mb-3 block">
+                        {/*  <label className="text-sm font-medium text-[#1E441E] mb-3 block">
                             Time Period
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
+                       <div className="grid grid-cols-2 gap-2">
                             {[
                                 { value: 'day' as const, label: 'Last 24 Hours' },
                                 { value: 'week' as const, label: 'Last 7 Days' },
@@ -190,10 +212,10 @@ const UnifiedExportModal = ({
                                     {option.label}
                                 </button>
                             ))}
-                        </div>
+                        </div> 
                         <p className="text-xs text-[#456C2D] mt-2">
                             Data will be filtered to show only the selected time period from now backwards
-                        </p>
+                        </p>*/}
                     </div>
                 )}
 
@@ -209,10 +231,9 @@ const UnifiedExportModal = ({
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="w-full h-10 px-3 pr-10 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
+                                    className="w-full h-10 px-3 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
                                     placeholder="YYYY-MM-DD"
                                 />
-                                <Calendar className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#456C2D]" />
                             </div>
                         </div>
                         <div>
@@ -224,10 +245,9 @@ const UnifiedExportModal = ({
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="w-full h-10 px-3 pr-10 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
+                                    className="w-full h-10 px-3 py-2 bg-white border border-[#456C2D] rounded-md text-[#1E441E] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#456C2D] appearance-none"
                                     placeholder="YYYY-MM-DD"
                                 />
-                                <Calendar className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#456C2D]" />
                             </div>
                         </div>
                         <p className="text-xs text-[#456C2D]">
