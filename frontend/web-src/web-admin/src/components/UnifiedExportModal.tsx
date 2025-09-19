@@ -37,11 +37,62 @@ const UnifiedExportModal = ({
             // Validate custom date range if selected
             if (exportType === 'custom') {
                 if (!startDate || !endDate) {
-                    alert('Please select both start and end dates for custom range');
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 z-50 bg-white border border-[#456C2D] text-[#456C2D] px-6 py-4 rounded-lg shadow-lg max-w-md';
+                    toast.innerHTML = `
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-[#456C2D] mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-4a1 1 0 00-.894.553l-3 6A1 1 0 007 14h6a1 1 0 00.894-1.447l-3-6A1 1 0 0010 6zm0 8a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <p class="font-semibold">Invalid date range</p>
+                                <p class="text-sm mt-1">Please select both start and end dates for the custom range.</p>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5000);
+                    setIsExporting(false);
                     return;
                 }
-                if (new Date(startDate) >= new Date(endDate)) {
-                    alert('Start date must be before end date');
+
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                if (start >= end) {
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 z-50 bg-white border border-[#456C2D] text-[#456C2D] px-6 py-4 rounded-lg shadow-lg max-w-md';
+                    toast.innerHTML = `
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-[#456C2D] mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-4a1 1 0 00-.894.553l-3 6A1 1 0 007 14h6a1 1 0 00.894-1.447l-3-6A1 1 0 0010 6zm0 8a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <p class="font-semibold">Invalid date range</p>
+                                <p class="text-sm mt-1">Start date must be before end date.</p>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5000);
+                    setIsExporting(false);
+                    return;
+                }
+
+                const now = new Date();
+                if (start > now || end > now) {
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 z-50 bg-white border border-[#456C2D] text-[#456C2D] px-6 py-4 rounded-lg shadow-lg max-w-md';
+                    toast.innerHTML = `
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-[#456C2D] mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-4a1 1 0 00-.894.553l-3 6A1 1 0 007 14h6a1 1 0 00.894-1.447l-3-6A1 1 0 0010 6zm0 8a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <p class="font-semibold">Future date not allowed</p>
+                                <p class="text-sm mt-1">There is no available data for future dates. Please select a past date range.</p>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 5000);
+                    setIsExporting(false);
                     return;
                 }
             }
@@ -72,28 +123,25 @@ const UnifiedExportModal = ({
             onClose();
         } catch (error) {
             console.error('Export failed:', error);
-            // Create styled error message that matches the theme
+            // Create themed toast (Maize Watch green)
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg max-w-md';
-            errorDiv.innerHTML = `
-                <div class="flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 z-50 bg-white border border-[#456C2D] text-[#456C2D] px-6 py-4 rounded-lg shadow-lg max-w-md';
+            toast.innerHTML = `
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 mr-2 text-[#456C2D] mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-4a1 1 0 00-.894.553l-3 6A1 1 0 007 14h6a1 1 0 00.894-1.447l-3-6A1 1 0 0010 6zm0 8a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
                     </svg>
                     <div>
-                        <p class="font-semibold">Export Failed</p>
+                        <p class="font-semibold">Export failed</p>
                         <p class="text-sm mt-1">${errorMessage}. Please try again.</p>
                     </div>
-                </div>
-            `;
-            document.body.appendChild(errorDiv);
-            
+                </div>`;
+            document.body.appendChild(toast);
+
             // Auto-remove after 5 seconds
             setTimeout(() => {
-                if (errorDiv.parentNode) {
-                    errorDiv.parentNode.removeChild(errorDiv);
-                }
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
             }, 5000);
         } finally {
             setIsExporting(false);
@@ -190,6 +238,14 @@ const UnifiedExportModal = ({
                 {/* Time Frame (for predefined) */}
                 {exportType === 'predefined' && (
                     <div className="mb-6">
+                         {/* Current Chart Info */}
+                        <div className="mb-6 p-3 bg-white/50 rounded-lg">
+                            <p className="text-xs text-[#456C2D] font-medium mb-1">Current Chart Info:</p>
+                            <p className="text-xs text-[#1E441E]">View: {currentOverview.charAt(0).toUpperCase() + currentOverview.slice(1)}</p>
+                            <p className="text-xs text-[#1E441E]">Type: {chartType.charAt(0).toUpperCase() + chartType.slice(1)}</p>
+                            <p className="text-xs text-[#1E441E]">Data Points: {chartData.length}</p>
+                            {dateRange && <p className="text-xs text-[#1E441E]">Period: {dateRange}</p>}
+                        </div>
                         {/*  <label className="text-sm font-medium text-[#1E441E] mb-3 block">
                             Time Period
                         </label>
@@ -285,14 +341,7 @@ const UnifiedExportModal = ({
                     </div>
                 )}
 
-                {/* Current Chart Info */}
-                <div className="mb-6 p-3 bg-white/50 rounded-lg">
-                    <p className="text-xs text-[#456C2D] font-medium mb-1">Current Chart Info:</p>
-                    <p className="text-xs text-[#1E441E]">View: {currentOverview.charAt(0).toUpperCase() + currentOverview.slice(1)}</p>
-                    <p className="text-xs text-[#1E441E]">Type: {chartType.charAt(0).toUpperCase() + chartType.slice(1)}</p>
-                    <p className="text-xs text-[#1E441E]">Data Points: {chartData.length}</p>
-                    {dateRange && <p className="text-xs text-[#1E441E]">Period: {dateRange}</p>}
-                </div>
+      
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 justify-end">
