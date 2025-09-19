@@ -38,6 +38,42 @@ const CHART_CONFIGS = {
   }
 };
 
+// Load an image from public path and return a data URL for embedding in PDF
+const loadImageAsDataUrl = async (path: string): Promise<string> => {
+  try {
+    const res = await fetch(path, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('Failed to load image:', path, e);
+    throw e;
+  }
+};
+
+// Try multiple public paths to find the logo and return a data URL
+const loadLogoDataUrl = async (): Promise<string | null> => {
+  const candidates = [
+    '/maizewatch.png',
+    '/web-admin/public/maizewatch.png',
+    'maizewatch.png'
+  ];
+  for (const path of candidates) {
+    try {
+      const dataUrl = await loadImageAsDataUrl(path);
+      if (dataUrl && dataUrl.startsWith('data:image')) return dataUrl;
+    } catch (_) {
+      // continue trying other paths
+    }
+  }
+  return null;
+};
+
 // Data point interface
 interface ChartDataPoint {
   [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
@@ -116,7 +152,7 @@ const generateFilename = (chartType: string, format: string, overview: string, d
     period = `${dateRange.from}_to_${dateRange.to}`;
   }
   
-  return `MaizeWatch_${shortName}_${period}_${timestamp}.${format}`;
+  return `MaizeWatch_${shortName}_${timestamp}.${format}`;
 };
 
 // Helper function to format date for display
@@ -336,21 +372,27 @@ const exportToPdf = async (
     
     let yCursor = margin;
     
-    // Add Maize Watch logo
-    try {
-      const logoWidth = 50;
-      const logoX = margin;
-      pdf.addImage("/maizewatch.png", "PNG", logoX, yCursor, logoWidth, 12);
-      yCursor += 20;
-    } catch (error) {
-      console.warn("Could not add logo to PDF:", error);
-      yCursor += 15;
+    // Add Maize Watch logo (try multiple public paths)
+    {
+      const dataUrl = await loadLogoDataUrl();
+      if (dataUrl) {
+        const logoWidth = 40; // mm
+        const logoHeight = 12; // tuned height
+        const logoX = (pageWidth - logoWidth) / 2;
+        pdf.addImage(dataUrl, 'PNG', logoX, yCursor, logoWidth, logoHeight, undefined, 'FAST');
+        // Extra space between logo and title
+        yCursor += logoHeight + 10;
+      } else {
+        console.warn('maizewatch.png not found in public paths');
+        yCursor += 8;
+      }
     }
     
     // Add report header
     pdf.setFontSize(20);
-    pdf.setTextColor(37, 99, 235);
-    pdf.text(title, pageWidth / 2, yCursor, { align: "center" });
+    // Maize Watch green #456C2D
+    pdf.setTextColor(69, 108, 45);
+    pdf.text(config.title, pageWidth / 2, yCursor, { align: "center" });
     yCursor += 10;
     
     // Add report metadata
@@ -358,9 +400,23 @@ const exportToPdf = async (
     pdf.setTextColor(75, 85, 99);
     
     // Date range information
-    let dateRangeText = `${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)} Report`;
-    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
-      dateRangeText += ` - ${options.dateRange.from} to ${options.dateRange.to}`;
+    let dateRangeText = `Report`;
+    
+    if (options.customDateRange) {
+      const start = new Date(options.customDateRange.startDate).toLocaleDateString();
+      const end = new Date(options.customDateRange.endDate).toLocaleDateString();
+      dateRangeText += ` - Custom Range: ${start} to ${end}`;
+    } else if (options.exportType === 'predefined' && options.dateRange && options.dateRange.from && options.dateRange.to) {
+      const start = new Date(options.dateRange.from).toLocaleDateString();
+      const end = new Date(options.dateRange.to).toLocaleDateString();
+      dateRangeText += ` - ${start} to ${end}`;
+    } else if (options.timeFrame) {
+      const range = calculatePredefinedRange(options.timeFrame);
+      dateRangeText += ` - Last ${options.timeFrame} (${range.start.toLocaleDateString()} to ${range.end.toLocaleDateString()})`;
+    } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      const start = new Date(options.dateRange.from).toLocaleDateString();
+      const end = new Date(options.dateRange.to).toLocaleDateString();
+      dateRangeText += ` - ${start} to ${end}`;
     }
     
     pdf.text(dateRangeText, pageWidth / 2, yCursor, { align: "center" });
@@ -623,12 +679,55 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'SUMMARY ANALYTICS' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Report Details' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Chart Type: ${config.title}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Period: ${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Year: ${new Date().getFullYear()}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Generated: ${formatDateForDisplay(new Date())}` }
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'REPORT DETAILS:' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sensor Type: ${config.fieldName}` },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Format: CSV` }
     ];
+
+    // Add export-specific range information
+    if (options.exportType === 'custom' && options.customDateRange) {
+      const start = new Date(options.customDateRange.startDate);
+      const end = new Date(options.customDateRange.endDate);
+      summaryRows.push(
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Custom Date Range` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Range Duration: ${Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))} days` }
+      );
+    } else if (options.exportType === 'predefined') {
+      // Prefer chart's current dateRange if provided to match UI "Current Chart Info"
+      if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+        const start = new Date(options.dateRange.from);
+        const end = new Date(options.dateRange.to);
+        summaryRows.push(
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Predefined Range` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` }
+        );
+      } else if (options.timeFrame) {
+        const range = calculatePredefinedRange(options.timeFrame);
+        summaryRows.push(
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Predefined Range` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Time Frame: Last ${options.timeFrame}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${range.start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${range.end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` }
+        );
+      }
+    } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      summaryRows.push(
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Chart Default Range` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Date Range: ${options.dateRange.from} to ${options.dateRange.to}` }
+      );
+    }
+
+    // Add generation info
+    summaryRows.push(
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'GENERATION INFO:' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Generated: ${formatDateForDisplay(new Date())}` },
+     
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' }
+    );
     
     // Add date range if available
     if (options.dateRange && options.dateRange.from && options.dateRange.to) {
@@ -650,6 +749,8 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 
       // Remove threshold/status sections per request
     }
+
+    
     
     // Combine data and summary
     const csvData = [...dataRows, ...summaryRows];
