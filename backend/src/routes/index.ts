@@ -43,6 +43,7 @@ router.use('/sensors', sensorRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/historical-data', historicalDataRouter); // ✅ add this
 
+
 // Farm-specific sensor routes
 router.use('/farms/:farmId/sensors', (req, res, next) => {
   req.params.farmId = req.params.farmId;

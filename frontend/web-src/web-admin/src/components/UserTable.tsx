@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pencil, Trash2, Loader2, ArrowUpDown, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Shield, Crown, Users } from 'lucide-react';
 import { User as UserType } from '../api/services/authService';
 import jsPDF from 'jspdf';
@@ -10,6 +10,7 @@ interface UserTableProps {
   loading: boolean;
   onEdit: (user: UserType) => void;
   onDelete: (user: UserType) => void;
+  onTotalUsersChange?: (totalUsers: number) => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -17,12 +18,19 @@ type SortField = 'fullName' | 'address' | 'contactNumber' | 'username' | 'role' 
 
 type RoleFilter = 'all' | 'user' | 'farmer' | 'admin' | 'super_admin';
 
-const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete }) => {
+const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete, onTotalUsersChange }) => {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const usersPerPage = 20;
+  
+  // Notify parent component about total users count
+  useEffect(() => {
+    if (onTotalUsersChange) {
+      onTotalUsersChange(users.length);
+    }
+  }, [users, onTotalUsersChange]);
   
   // Filtering by role
   const filteredUsers = roleFilter === 'all'

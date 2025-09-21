@@ -5,6 +5,9 @@ import User from '../models/User';
 import Sensor from '../models/Sensor';
 import SensorReading from '../models/SensorReading';
 
+
+
+
 interface FarmCreationData {
   userId: string;
   fieldName: string;
@@ -314,6 +317,18 @@ class FarmService {
   }
 
   /**
+   * Get total farms only
+   */
+  async getTotalFarms(): Promise<number> {
+    try {
+      return await Farm.countDocuments();
+    } catch (error) {
+      logger.error("Error counting farms:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get farm statistics
    */
   async getFarmStatistics(): Promise<any> {
@@ -479,6 +494,8 @@ class FarmService {
     }
   }
 
+
+
   private calculateEstimatedYield(farm: IFarm): any {
     // Simplified yield calculation based on growth stage and planting date
     const daysFromPlanting = Math.floor(
@@ -550,6 +567,7 @@ class FarmService {
     
     return recommendations;
   }
+  
 }
 
 export default new FarmService();
