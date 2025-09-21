@@ -177,7 +177,7 @@ const LiveDataWidget: React.FC = () => {
             {active.icon}
           </div>
           <h2 className="font-semibold text-[#1E441E]" style={{ fontSize: 'var(--text-xl)' }}>
-            Live Data Widget
+            Sensor Data
           </h2>
         </div>
         <button
