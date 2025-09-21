@@ -489,6 +489,24 @@ const TemperatureDashboard = () => {
     );
   };
 
+  // Small legend for threshold guideline colors
+  const ThresholdLegend = () => (
+    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#22C55E' }} />
+        <span>Min</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#F59E0B' }} />
+        <span>Max</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#EF4444' }} />
+        <span>Critical</span>
+      </div>
+    </div>
+  );
+
   const renderChart = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
     
@@ -563,9 +581,9 @@ const TemperatureDashboard = () => {
     }
 
     const thresholdLines = [
-      <ReferenceLine key="min" y={TEMPERATURE_THRESHOLDS.min} stroke="#22C55E" strokeDasharray="3 3" label={{ value: `Min ${TEMPERATURE_THRESHOLDS.min}°C`, position: 'right', fill: '#22C55E' }} />,
-      <ReferenceLine key="max" y={TEMPERATURE_THRESHOLDS.max} stroke="#F59E0B" strokeDasharray="3 3" label={{ value: `Max ${TEMPERATURE_THRESHOLDS.max}°C`, position: 'right', fill: '#F59E0B' }} />,
-      <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="#EF4444" strokeDasharray="3 3" label={{ value: `Critical ${TEMPERATURE_THRESHOLDS.critical}°C`, position: 'right', fill: '#EF4444' }} />,
+      <ReferenceLine key="min" y={TEMPERATURE_THRESHOLDS.min} stroke="#22C55E" strokeDasharray="3 3" />,
+      <ReferenceLine key="max" y={TEMPERATURE_THRESHOLDS.max} stroke="#F59E0B" strokeDasharray="3 3" />,
+      <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="#EF4444" strokeDasharray="3 3" />,
     ];
     // Responsive chart margins and settings similar to SoilMoistureChart
     const chartMargins = {
@@ -577,7 +595,7 @@ const TemperatureDashboard = () => {
 
     if (viewType === 'line') {
       return (
-        <div className="h-[300px] sm:h-[400px] lg:h-[500px] w-full">
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] w-full p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={displayData} margin={chartMargins}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -601,11 +619,17 @@ const TemperatureDashboard = () => {
                 tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend
+                verticalAlign="top"
+                align="left"
+                layout="horizontal"
+                height={36}
+                wrapperStyle={{ width: '100%', fontSize: window.innerWidth < 640 ? 12 : 14 }}
+              />
               <Line
                 type="monotoneX"
                 dataKey="value"
-                name="Temperature (°C)"
+                name="Temp"
                 stroke={TEMPERATURE_COLORS.primary}
                 strokeWidth={2}
                 dot={{ fill: '#fff', strokeWidth: 2, r: window.innerWidth < 640 ? 3 : 4 }}
@@ -617,13 +641,14 @@ const TemperatureDashboard = () => {
               {thresholdLines}
             </LineChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
 
     if (viewType === 'bar') {
       return (
-        <div className="h-[300px] sm:h-[400px] lg:h-[450px] w-full">
+        <div className="h-[300px] sm:h-[400px] lg:h-[450px] w-full p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -642,179 +667,182 @@ const TemperatureDashboard = () => {
                 width={60}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
+              <Legend
+                verticalAlign="top"
+                align="left"
+                layout="horizontal"
+                wrapperStyle={{ width: '100%', fontSize: window.innerWidth < 640 ? 12 : 14 }}
+              />
               <Bar
                 dataKey="value"
-                name="Temperature (°C)"
+                name="Temp"
                 fill={TEMPERATURE_COLORS.primary}
                 radius={[4, 4, 0, 0]}
               />
               {thresholdLines}
             </BarChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
-
     return null;
   };
-
+  
   return (
-    <div className="w-full max-w-7xl mx-auto overflow-x-hidden">
-      <Card className="w-full">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
-                  <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Temperature Dashboard</h1>
-                  <p className="text-sm text-gray-500 truncate">{dateRange}</p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviousPeriod}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPeriod}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    Next
-                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-                  </Button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="flex items-center justify-center text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  Export
+    <Card className="w-full mx-auto max-w-7xl">
+      <CardHeader className="px-4 sm:px-6">
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+              <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Temperature Dashboard</h1>
+              <p className="text-sm text-gray-500 truncate">{dateRange}</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPeriod}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+              >
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPeriod}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+              >
+                Next
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="flex items-center justify-center text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </div>
+      </CardHeader>
+      
+      <CardContent className="px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-4 gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className="relative">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-[180px] justify-between">
+                  <div className="flex items-center">
+                    {periodOptions.find(option => option.value === overview)?.icon || <Calendar className="h-4 w-4 mr-2" />}
+                    <span className="hidden sm:inline">
+                      {periodOptions.find(option => option.value === overview)?.label || "Select period"}
+                    </span>
+                    <span className="sm:hidden">
+                      {overview ? overview.charAt(0).toUpperCase() + overview.slice(1) : "Period"}
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-4 gap-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-              <div className="relative">
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px] justify-between">
-                      <div className="flex items-center">
-                        {periodOptions.find(option => option.value === overview)?.icon || <Calendar className="h-4 w-4 mr-2" />}
-                        <span className="hidden sm:inline">
-                          {periodOptions.find(option => option.value === overview)?.label || "Select period"}
-                        </span>
-                        <span className="sm:hidden">
-                          {overview ? overview.charAt(0).toUpperCase() + overview.slice(1) : "Period"}
-                        </span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    sideOffset={5}
-                    className="z-50 min-w-[180px]"
-                    avoidCollisions={true}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={5}
+                className="z-50 min-w-[180px]"
+                avoidCollisions={true}
+              >
+                {periodOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => handleOverviewChange(option.value as 'daily' | 'weekly' | 'monthly')}
                   >
-                    {periodOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => handleOverviewChange(option.value as 'daily' | 'weekly' | 'monthly')}
-                      >
-                        <div className="flex items-center">
-                          {option.icon}
-                          <span className="ml-2">{option.label}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-              <div className="relative">
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px] justify-between">
-                      <div className="flex items-center">
-                        {viewTypeOptions.find(option => option.value === viewType)?.icon || <LineChart className="h-4 w-4 mr-2" />}
-                        <span className="hidden sm:inline">
-                          {viewTypeOptions.find(option => option.value === viewType)?.label || "Select view"}
-                        </span>
-                        <span className="sm:hidden">
-                          {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
-                        </span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    sideOffset={5}
-                    className="z-50 min-w-[180px]"
-                    avoidCollisions={true}
+          <div className="relative">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-[180px] justify-between">
+                  <div className="flex items-center">
+                    {viewTypeOptions.find(option => option.value === viewType)?.icon || <LineChart className="h-4 w-4 mr-2" />}
+                    <span className="hidden sm:inline">
+                      {viewTypeOptions.find(option => option.value === viewType)?.label || "Select view"}
+                    </span>
+                    <span className="sm:hidden">
+                      {viewType === 'line' ? 'Line' : viewType === 'bar' ? 'Bar' : 'Table'}
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={5}
+                className="z-50 min-w-[180px]"
+                avoidCollisions={true}
+              >
+                {viewTypeOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setViewType(option.value as ViewType)}
                   >
-                    {viewTypeOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => setViewType(option.value as ViewType)}
-                      >
-                        <div className="flex items-center">
-                          {option.icon}
-                          <span className="ml-2">{option.label}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            <div className="flex justify-center sm:justify-end">
-              <RefreshIndicator
-                isRefreshing={isRefreshing}
-                lastRefreshTime={lastRefreshTime}
-                autoRefreshEnabled={autoRefreshEnabled}
-                onToggleAutoRefresh={toggleAutoRefresh}
-              />
-            </div>
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
 
-          <div ref={chartRef} className="mb-4">
-            {renderChart()}
-          </div>
-          
-          {renderSummary()}
-        </CardContent>
-        
-        <UnifiedExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          currentOverview={overview}
-          chartData={chartData}
-          chartRef={chartRef}
-          chartType="temperature"
-          dateRange={dateRange}
-        />
-      </Card>
-    </div>
+        <div className="flex justify-center sm:justify-end">
+          <RefreshIndicator
+            isRefreshing={isRefreshing}
+            lastRefreshTime={lastRefreshTime}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onToggleAutoRefresh={toggleAutoRefresh}
+          />
+        </div>
+      </div>
+
+      <div ref={chartRef} className="mb-4">
+        {renderChart()}
+      </div>
+      
+      {renderSummary()}
+      </CardContent>
+      
+      <UnifiedExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        currentOverview={overview}
+        chartData={chartData}
+        chartRef={chartRef}
+        chartType="temperature"
+        dateRange={dateRange}
+      />
+    </Card>
   );
 };
 
