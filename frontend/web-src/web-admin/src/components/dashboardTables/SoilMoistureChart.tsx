@@ -540,6 +540,24 @@ const SoilMoistureDashboard = () => {
     );
   };
 
+  // Small legend for threshold guideline colors
+  const ThresholdLegend = () => (
+    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'green' }} />
+        <span>Min</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'blue' }} />
+        <span>Max</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'red' }} />
+        <span>Critical</span>
+      </div>
+    </div>
+  );
+
   // Update the renderChart function to ensure value is always a number and be responsive
   const renderChart = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
@@ -595,9 +613,9 @@ const SoilMoistureDashboard = () => {
     }
 
     const thresholdLines = [
-      <ReferenceLine key="min" y={SOIL_MOISTURE_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" label={{ value: 'Min', position: 'right', fill: 'green' }} />,
-      <ReferenceLine key="max" y={SOIL_MOISTURE_THRESHOLDS.max} stroke="blue" strokeDasharray="3 3" label={{ value: 'Max', position: 'right', fill: 'blue' }} />,
-      <ReferenceLine key="critical" y={SOIL_MOISTURE_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
+      <ReferenceLine key="min" y={SOIL_MOISTURE_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" />,
+      <ReferenceLine key="max" y={SOIL_MOISTURE_THRESHOLDS.max} stroke="blue" strokeDasharray="3 3" />,
+      <ReferenceLine key="critical" y={SOIL_MOISTURE_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" />,
     ];
 
     // Customize X-axis labels based on view type
@@ -668,6 +686,7 @@ const SoilMoistureDashboard = () => {
               {thresholdLines}
             </LineChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
@@ -712,6 +731,7 @@ const SoilMoistureDashboard = () => {
               {thresholdLines}
             </BarChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
