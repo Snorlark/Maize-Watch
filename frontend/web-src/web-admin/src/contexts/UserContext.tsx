@@ -8,6 +8,7 @@ import authService from '../api/services/authService';
 interface UserContextType {
   users: User[];
   farmers: User[]; // Farmers filtered from users
+  totalUsersCount: number; // Total count of users
   loading: boolean;
   error: string | null;
   errorType: 'network' | 'backend' | 'auth' | 'general' | null;
@@ -33,6 +34,7 @@ interface UserProviderProps {
 export function UserProvider({ children }: UserProviderProps) {
   const { user, isAuthenticated } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'network' | 'backend' | 'auth' | 'general' | null>(null);
@@ -49,6 +51,11 @@ export function UserProvider({ children }: UserProviderProps) {
 
   // Derive farmers from users whenever users change
   const farmers = users.filter(user => user.role === 'user' || user.role === 'farmer');
+  
+  // Update total users count whenever users array changes
+  useEffect(() => {
+    setTotalUsersCount(users.length);
+  }, [users]);
 
   // Fetch users only when explicitly called 
   // or when component is mounted with valid admin user
@@ -205,6 +212,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const contextValue: UserContextType = {
     users,
     farmers,
+    totalUsersCount,
     loading,
     error,
     errorType,

@@ -44,6 +44,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
+      <UserProvider>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Index />} />
@@ -100,6 +101,7 @@ const App: React.FC = () => {
           <Route path="*" element={<AdminNotFound />} />
         </Route>
       </Routes>
+      </UserProvider>
     </AuthProvider>
   );
 };

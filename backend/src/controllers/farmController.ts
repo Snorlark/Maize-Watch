@@ -4,6 +4,8 @@ import farmService from '../services/farmService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
+import Farm from '../models/Farm';
+
 
 /**
  * @desc    Create a new farm
@@ -151,6 +153,25 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
     data: { farm }
   });
 });
+
+/**
+ * @desc    Get total number of farms
+ * @route   GET /api/farms/count
+ * @access  Private
+ */
+// export const getTotalFarms = catchAsync(async (req: Request, res: Response) => {
+//   const total = await farmService.getTotalFarms(); // create this in service
+//   res.status(HTTP_STATUS.OK).json({ total });
+// });
+export const getTotalFarms = async (req: Request, res: Response) => {
+  try {
+    const total = await Farm.countDocuments();
+    res.json({ total });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching total farms" });
+  }
+};
+
 
 /**
  * @desc    Delete farm
