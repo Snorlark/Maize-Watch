@@ -183,6 +183,6 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
 
 if __name__ == "__main__":
     import sys
-    farmer_id = sys.argv[1] if len(sys.argv) > 1 else "FARMER001"
+    farmer_id = sys.argv[1] if len(sys.argv) > 1 else "68c6d5d29563ef4e7fce1735"  # Use actual user ID
     field_id = sys.argv[2] if len(sys.argv) > 2 else None
     results = run_complete_system(farmer_id, field_id)

@@ -45,17 +45,26 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   void _loadData() {
-    // Load user farms
-    final authState = context.read<AuthenticationBloc>().state;
-    if (authState.status == AuthenticationStatus.authenticated &&
-        authState.user != null) {
-      final user = authState.user;
-      if (user != null) {
-        context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+    // Only load data if not already loaded
+    final farmState = context.read<FarmBloc>().state;
+    final monitoringState = context.read<MonitoringBloc>().state;
+    
+    // Load user farms only if not already loaded
+    if (farmState is! FarmsLoaded) {
+      final authState = context.read<AuthenticationBloc>().state;
+      if (authState.status == AuthenticationStatus.authenticated &&
+          authState.user != null) {
+        final user = authState.user;
+        if (user != null) {
+          context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+        }
       }
     }
-    // Load latest sensor readings
-    context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+    
+    // Load latest sensor readings only if not already loaded
+    if (monitoringState.latestReadings.isEmpty && !monitoringState.isLoading) {
+      context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+    }
   }
 
   @override
@@ -395,8 +404,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     final task = tasks[index];
                     return Padding(
                       padding: EdgeInsets.only(
-                        right: index < tasks.length - 1 ? kAppSmallGap : 0,
-                        left: kAppSmallGap,
+                        right: index < tasks.length - 1 ? kAppSmallGap : 0,                        
                       ),
                       child: _buildTaskCard(
                         time: task['time'],
@@ -497,7 +505,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   Widget _buildFarmFieldsSection() {
     return Container(
       margin: EdgeInsets.only(top: kAppSmallPadding),
-      padding: EdgeInsets.all(kAppMediumPadding),
+      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(

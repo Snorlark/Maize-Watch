@@ -28,9 +28,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(filter) => "Walang nakitang reseta para sa \"${filter}\"";
 
-  static String m3(count) =>
-      "Pamahalaan ang iyong mga reseta (${count} kabuuan)";
-
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "about": MessageLookupByLibrary.simpleMessage("Tungkol"),
@@ -515,7 +512,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Kailan ka nagtanim?",
     ),
     "poor": MessageLookupByLibrary.simpleMessage("Mahina"),
-    "prescriptions_subtitle": m3,
+    "prescriptions_subtitle": MessageLookupByLibrary.simpleMessage(
+      "Pamahalaan ang iyong mga reseta",
+    ),
     "prescriptions_title": MessageLookupByLibrary.simpleMessage("Mga Reseta"),
     "privacy_info_intro": MessageLookupByLibrary.simpleMessage(
       "Sa Maize Watch, kami ay nakatuon sa pagprotekta sa pagkapribado ng aming mga gumagamit, lalo na ang mga magsasaka ng mais na nagtitiwala sa amin ng kanilang mahalagang datos sa agrikultura. Ang Impormasyon sa Pagkapribado na ito ay nagbabalangkas kung paano namin kinokolekta, ginagamit, at pinoprotektahan ang iyong impormasyon kapag ginamit mo ang aming platform.",

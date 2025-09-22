@@ -42,6 +42,49 @@ class ThingSpeakService {
   }
 
   /**
+   * Fetches the latest data entry from a specific ThingSpeak channel
+   */
+  async fetchLatestDataFromThingSpeakChannel(channelId: string) {
+    try {
+      logger.info(`Fetching latest data from ThingSpeak channel ${channelId}...`);
+      
+      const response = await axios.get(`${this.baseUrl}/channels/${channelId}/feeds.json`, {
+        params: {
+          api_key: this.readApiKey,
+          results: 1
+        },
+        timeout: 10000
+      });
+
+      if (response.data && response.data.feeds && response.data.feeds.length > 0) {
+        const latestFeed = response.data.feeds[0];
+        
+        // Parse all values with fallbacks for missing data
+        const temperature = this.parseFieldValue(latestFeed.field1);
+        const humidity = this.parseFieldValue(latestFeed.field2);
+        const rawSoilMoisture = this.parseFieldValue(latestFeed.field3);
+        const soil_moisture = this.convertSoilMoistureToPercentage(rawSoilMoisture);
+        const soil_ph = this.parseFieldValue(latestFeed.field4);
+        const light_intensity = this.parseFieldValue(latestFeed.field5);
+        
+        return {
+          timestamp: new Date(latestFeed.created_at),
+          temperature,
+          humidity,
+          soilMoisture: soil_moisture,
+          soilPh: soil_ph,
+          lightIntensity: light_intensity
+        };
+      }
+      
+      return null;
+    } catch (error: any) {
+      logger.error(`Error fetching data from ThingSpeak channel ${channelId}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Fetches the latest data entry from ThingSpeak using feeds.json (private channel)
    */
   async fetchLatestDataFromThingSpeak() {
@@ -287,8 +330,20 @@ class ThingSpeakService {
   /**
    * Gets the latest sensor data from MongoDB
    */
-  async getLatestData() {
+  async getLatestData(channelId?: string) {
     try {
+      // If a specific channel ID is provided, try to get data from that channel
+      if (channelId) {
+        try {
+          const channelData = await this.fetchLatestDataFromThingSpeakChannel(channelId);
+          if (channelData) {
+            return channelData;
+          }
+        } catch (error) {
+          logger.warn(`Failed to fetch data from channel ${channelId}:`, error);
+        }
+      }
+      
       // Try to sync latest data, but ignore failures
       try {
         await this.syncLatestDataFromThingSpeak();
@@ -318,8 +373,20 @@ class ThingSpeakService {
   /**
    * Gets historical data for a specified time range
    */
-  async getHistoricalData(minutes = 60, startDate = null, endDate = null) {
+  async getHistoricalData(minutes = 60, channelId?: string, startDate = null, endDate = null) {
     try {
+      // If a specific channel ID is provided, try to get data from that channel
+      if (channelId) {
+        try {
+          const channelData = await this.fetchHistoricalDataFromThingSpeakChannel(channelId, minutes, startDate, endDate);
+          if (channelData && channelData.length > 0) {
+            return channelData;
+          }
+        } catch (error) {
+          logger.warn(`Failed to fetch historical data from channel ${channelId}:`, error);
+        }
+      }
+      
       // Try to sync or backfill if needed, but ignore failures
       try {
         const count = await SensorData.estimatedDocumentCount();
@@ -365,6 +432,60 @@ class ThingSpeakService {
       }));
     } catch (error: any) {
       logger.error('Error fetching historical data:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches historical data from a specific ThingSpeak channel
+   */
+  async fetchHistoricalDataFromThingSpeakChannel(channelId: string, minutes = 60, startDate = null, endDate = null) {
+    try {
+      logger.info(`Fetching historical data from ThingSpeak channel ${channelId}...`);
+      
+      let params: any = {
+        api_key: this.readApiKey,
+        results: 8000 // Maximum results per request
+      };
+      
+      if (startDate && endDate) {
+        params.start = new Date(startDate).toISOString();
+        params.end = new Date(endDate).toISOString();
+      } else {
+        const validMinutes = isNaN(minutes) || minutes <= 0 ? 60 : minutes;
+        const startTime = new Date(Date.now() - validMinutes * 60 * 1000);
+        params.start = startTime.toISOString();
+      }
+      
+      const response = await axios.get(`${this.baseUrl}/channels/${channelId}/feeds.json`, {
+        params,
+        timeout: 15000
+      });
+
+      if (response.data && response.data.feeds && response.data.feeds.length > 0) {
+        return response.data.feeds.map((feed: any) => {
+          // Parse all values with fallbacks for missing data
+          const temperature = this.parseFieldValue(feed.field1);
+          const humidity = this.parseFieldValue(feed.field2);
+          const rawSoilMoisture = this.parseFieldValue(feed.field3);
+          const soil_moisture = this.convertSoilMoistureToPercentage(rawSoilMoisture);
+          const soil_ph = this.parseFieldValue(feed.field4);
+          const light_intensity = this.parseFieldValue(feed.field5);
+          
+          return {
+            timestamp: new Date(feed.created_at),
+            temperature,
+            humidity,
+            soilMoisture: soil_moisture,
+            soilPh: soil_ph,
+            lightIntensity: light_intensity
+          };
+        });
+      }
+      
+      return [];
+    } catch (error: any) {
+      logger.error(`Error fetching historical data from ThingSpeak channel ${channelId}:`, error.message);
       throw error;
     }
   }

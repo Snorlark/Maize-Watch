@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:convert';
 import '../../../../core/error/failures.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/services/session_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
@@ -14,6 +15,7 @@ class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationState> {
   final LoginUser loginUseCase;
   final RegisterUser registerUseCase;
+  final SessionService _sessionService = SessionService();
 
   AuthenticationBloc({
     required this.loginUseCase,
@@ -23,6 +25,7 @@ class AuthenticationBloc
     on<RegisterEvent>(_onRegister);
     on<LogoutEvent>(_onLogout);
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
+    on<InitializeSessionEvent>(_onInitializeSession);
   }
 
   Future<void> _onLogin(
@@ -52,34 +55,36 @@ class AuthenticationBloc
       (user) async {
         print("🔐 AuthBloc: Login successful for ${user.username}");
         try {
-          // Store user session data
-          await SecureStorage.storeUserData(
-            jsonEncode({
-              'id': user.id,
-              'username': user.username,
-              'fullName': user.fullName,
-              'contactNumber': user.contactNumber,
-              'address': user.address,
-              'role': user.role,
-            }),
-          );
-
-          print(
-            "🔐 AuthBloc: Session data stored, emitting authenticated state",
-          );
-          emit(
-            state.copyWith(
-              status: AuthenticationStatus.authenticated,
-              user: user,
-            ),
-          );
-          print("🔐 AuthBloc: Authenticated state emitted successfully");
+          // Get tokens from secure storage (they were stored by the data source)
+          print("🔐 AuthBloc: Retrieving tokens from storage...");
+          final accessToken = await SecureStorage.getToken();
+          final refreshToken = await SecureStorage.getRefreshToken();
+          
+          print("🔐 AuthBloc: Retrieved tokens - accessToken: ${accessToken != null ? "exists" : "null"}, refreshToken: ${refreshToken != null ? "exists" : "null"}");
+          
+          if (accessToken != null && refreshToken != null) {
+            print("🔐 AuthBloc: Tokens found, starting session...");
+            // Start session with tokens
+            await _sessionService.startSession(accessToken, refreshToken, user);
+            
+            print("🔐 AuthBloc: Session started, emitting authenticated state");
+            emit(
+              state.copyWith(
+                status: AuthenticationStatus.authenticated,
+                user: user,
+              ),
+            );
+            print("🔐 AuthBloc: Authenticated state emitted successfully");
+          } else {
+            print("🚨 AuthBloc: Tokens not found after successful login - this indicates a storage issue");
+            throw Exception("Tokens not found after successful login - accessToken: ${accessToken != null}, refreshToken: ${refreshToken != null}");
+          }
         } catch (e) {
-          print("🚨 AuthBloc: Error storing session data: $e");
+          print("🚨 AuthBloc: Error starting session: $e");
           emit(
             state.copyWith(
               status: AuthenticationStatus.failure,
-              message: "Failed to store session data: $e",
+              message: "Failed to start session: $e",
             ),
           );
         }
@@ -130,9 +135,9 @@ class AuthenticationBloc
   ) async {
     print("🔐 AuthBloc: Starting logout process");
 
-    // Clear stored session data
-    await SecureStorage.clearUserSession();
-    print("🔐 AuthBloc: Session data cleared");
+    // Clear session using SessionService
+    await _sessionService.logout();
+    print("🔐 AuthBloc: Session cleared");
 
     // Emit unauthenticated state to trigger navigation
     emit(
@@ -152,52 +157,84 @@ class AuthenticationBloc
     print("🔐 AuthBloc: Checking authentication status");
 
     try {
-      final isLoggedIn = await SecureStorage.isLoggedIn();
+      // Initialize session service
+      await _sessionService.initialize();
+      
+      print("🔐 AuthBloc: Session service initialized. isSessionActive: ${_sessionService.isSessionActive}");
+      
+      // Check if we have tokens stored
       final hasToken = await SecureStorage.getToken();
-      final userData = await SecureStorage.getUserData();
+      final hasRefreshToken = await SecureStorage.getRefreshToken();
+      final isLoggedIn = await SecureStorage.isLoggedIn();
+      
+      print("🔐 AuthBloc: Token check - hasToken: ${hasToken != null}, hasRefreshToken: ${hasRefreshToken != null}, isLoggedIn: $isLoggedIn");
+      
+      if (hasToken != null && isLoggedIn) {
+        // We have tokens, check if session is valid
+        final isValid = await _sessionService.isSessionValid();
+        print("🔐 AuthBloc: Session validity check result: $isValid");
+        
+        if (isValid) {
+          // Get user data from secure storage
+          final userData = await SecureStorage.getUserData();
+          print("🔐 AuthBloc: User data from storage: ${userData != null ? "Found" : "Not found"}");
+          
+          if (userData != null) {
+            try {
+              final userJson = jsonDecode(userData);
+              final user = User(
+                id: userJson['id'],
+                username: userJson['username'],
+                fullName: userJson['fullName'],
+                contactNumber: userJson['contactNumber'],
+                address: userJson['address'],
+                role: userJson['role'],
+              );
 
-      print(
-        "🔐 AuthBloc: isLoggedIn=$isLoggedIn, hasToken=${hasToken != null}, userData=${userData != null}",
-      );
-
-      if (isLoggedIn && hasToken != null && userData != null) {
-        // Parse user data and emit authenticated state
-        final userJson = jsonDecode(userData);
-        final user = User(
-          id: userJson['id'],
-          username: userJson['username'],
-          fullName: userJson['fullName'],
-          contactNumber: userJson['contactNumber'],
-          address: userJson['address'],
-          role: userJson['role'],
-        );
-
-        emit(
-          state.copyWith(
-            status: AuthenticationStatus.authenticated,
-            user: user,
-          ),
-        );
-        print(
-          "🔐 AuthBloc: User is authenticated, emitted authenticated state",
-        );
+              emit(
+                state.copyWith(
+                  status: AuthenticationStatus.authenticated,
+                  user: user,
+                ),
+              );
+              print("🔐 AuthBloc: User is authenticated, emitted authenticated state");
+              return;
+            } catch (e) {
+              print("🚨 AuthBloc: Error parsing user data: $e");
+            }
+          } else {
+            print("🔐 AuthBloc: No user data found in storage");
+          }
+        } else {
+          print("🔐 AuthBloc: Session is not valid, attempting token refresh");
+          // Try to refresh the token
+          final refreshSuccess = await _sessionService.refreshAccessToken();
+          if (refreshSuccess) {
+            print("🔐 AuthBloc: Token refreshed successfully, retrying authentication");
+            // Retry the authentication check
+            return await _onCheckAuthStatus(event, emit);
+          } else {
+            print("🔐 AuthBloc: Token refresh failed");
+          }
+        }
       } else {
-        // Clear any stale data and emit unauthenticated state
-        await SecureStorage.clearUserSession();
-        emit(
-          state.copyWith(
-            status: AuthenticationStatus.unauthenticated,
-            user: null,
-          ),
-        );
-        print(
-          "🔐 AuthBloc: User is not authenticated, emitted unauthenticated state",
-        );
+        print("🔐 AuthBloc: No tokens found or not logged in");
       }
+
+      // Session invalid or no user data
+      print("🔐 AuthBloc: Clearing session and emitting unauthenticated state");
+      await _sessionService.clearSession();
+      emit(
+        state.copyWith(
+          status: AuthenticationStatus.unauthenticated,
+          user: null,
+        ),
+      );
+      print("🔐 AuthBloc: User is not authenticated, emitted unauthenticated state");
     } catch (e) {
       print("🚨 AuthBloc: Error checking auth status: $e");
       // Clear data on error and emit unauthenticated state
-      await SecureStorage.clearUserSession();
+      await _sessionService.clearSession();
       emit(
         state.copyWith(
           status: AuthenticationStatus.unauthenticated,
@@ -205,6 +242,14 @@ class AuthenticationBloc
         ),
       );
     }
+  }
+
+  Future<void> _onInitializeSession(
+    InitializeSessionEvent event,
+    Emitter<AuthenticationState> emit,
+  ) async {
+    print("🔐 AuthBloc: Initializing session");
+    await _sessionService.initialize();
   }
 
   String _mapFailureToString(Failure failure) {

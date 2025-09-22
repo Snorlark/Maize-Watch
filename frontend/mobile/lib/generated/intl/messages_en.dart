@@ -27,8 +27,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(filter) => "No prescriptions found for \"${filter}\"";
 
-  static String m3(count) => "Manage your prescriptions (${count} total)";
-
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "about": MessageLookupByLibrary.simpleMessage("About"),
@@ -501,7 +499,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "When did you plant?",
     ),
     "poor": MessageLookupByLibrary.simpleMessage("Poor"),
-    "prescriptions_subtitle": m3,
+    "prescriptions_subtitle": MessageLookupByLibrary.simpleMessage(
+      "Manage your prescriptions",
+    ),
     "prescriptions_title": MessageLookupByLibrary.simpleMessage(
       "Prescriptions",
     ),

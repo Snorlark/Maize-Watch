@@ -20,13 +20,14 @@ class DescriptiveAnalytics:
             self.weather_collection = None
             self.recommendation_collection = None
 
-    def analyze_daily_performance(self, farmer_id: str, use_today: bool = False) -> Optional[Dict[str, Any]]:
+    def analyze_daily_performance(self, farmer_id: str, use_today: bool = False, field_id: str = None) -> Optional[Dict[str, Any]]:
         """
-        Analyze daily performance data.
+        Analyze daily performance data from MongoDB sensor readings.
         
         Args:
             farmer_id: The ID of the farmer to analyze
             use_today: If True, analyze today's data. Otherwise, analyze yesterday's data.
+            field_id: Optional field ID to filter data
             
         Returns:
             Dictionary with analysis results or None if analysis fails
@@ -37,87 +38,113 @@ class DescriptiveAnalytics:
             start_of_day = datetime(target_date.year, target_date.month, target_date.day)
             end_of_day = start_of_day + timedelta(days=1)
 
-            # ✅ Explicitly check for None instead of truthiness
-            if self.stress_collection is None:
-                logger.error("Stress collection not initialized")
-                return None
-            if self.growth_collection is None:
-                logger.error("Growth collection not initialized")
-                return None
-            if self.weather_collection is None:
-                logger.error("Weather collection not initialized")
-                return None
-
             logger.info(f"Starting descriptive analysis for {farmer_id} on {start_of_day}")
 
-            # Fetch data safely
-            stress_data = list(
-                self.stress_collection.find(
-                    {"farmer_id": farmer_id, "date": {"$gte": start_of_day, "$lt": end_of_day}}
-                )
-            )
-            growth_data = list(
-                self.growth_collection.find(
-                    {"farmer_id": farmer_id}
-                ).sort("created_at", -1).limit(1)
-            )
-            weather_data = list(
-                self.weather_collection.find(
-                    {"date": {"$gte": start_of_day, "$lt": end_of_day}}
-                )
-            )
+            # Get sensor readings from MongoDB instead of stress assessments
+            sensor_readings_collection = db_manager.get_collection("sensor_readings")
+            farms_collection = db_manager.get_collection("farms")
+            
+            # First, get the farm for this farmer
+            from bson import ObjectId
+            try:
+                # Convert farmer_id to ObjectId if it's a string
+                if isinstance(farmer_id, str):
+                    farmer_object_id = ObjectId(farmer_id)
+                else:
+                    farmer_object_id = farmer_id
+                    
+                farm = farms_collection.find_one({"userId": farmer_object_id})
+                if not farm:
+                    logger.error(f"No farm found for farmer {farmer_id}")
+                    return None
+            except Exception as e:
+                logger.error(f"Invalid farmer ID format: {farmer_id}, error: {e}")
+                return None
+            
+            farm_id = str(farm["_id"])
+            logger.info(f"Found farm {farm_id} for farmer {farmer_id}")
 
-            if not stress_data:
-                logger.warning(f"No stress data found for {farmer_id} on {start_of_day}")
-                # Check for the most recent data available
-                most_recent = list(self.stress_collection.find(
-                    {"farmer_id": farmer_id},
-                    sort=[("date", -1)],
+            # Build query for sensor readings - look for data from the last 7 days
+            query = {
+                "farm": ObjectId(farm_id),  # Convert farm_id to ObjectId
+                "timestamp": {"$gte": start_of_day - timedelta(days=7), "$lt": end_of_day}
+            }
+            
+            # Add field filter if provided
+            if field_id:
+                query["field_id"] = field_id
+
+            # Fetch sensor readings
+            sensor_data = list(sensor_readings_collection.find(query).sort("timestamp", -1))
+            
+            if not sensor_data:
+                logger.warning(f"No sensor data found for farm {farm_id} on {start_of_day}")
+                
+                # Try to get the most recent data
+                recent_query = {"farm": ObjectId(farm_id)}  # Convert farm_id to ObjectId
+                if field_id:
+                    recent_query["field_id"] = field_id
+                    
+                most_recent = list(sensor_readings_collection.find(
+                    recent_query,
+                    sort=[("timestamp", -1)],
                     limit=1
                 ))
                 
                 if most_recent:
-                    last_date = most_recent[0]['date'].strftime('%Y-%m-%d')
-                    logger.warning(f"Most recent data for {farmer_id} is from {last_date} ({(yesterday - most_recent[0]['date']).days} days ago)")
+                    last_date = most_recent[0]['timestamp'].strftime('%Y-%m-%d')
+                    days_ago = (datetime.now() - most_recent[0]['timestamp']).days
+                    logger.warning(f"Most recent data for farm {farm_id} is from {last_date} ({days_ago} days ago)")
                 else:
-                    logger.warning(f"No historical stress data found for {farmer_id}")
+                    logger.warning(f"No historical sensor data found for farm {farm_id}")
                 
-                # Safely get growth stage from growth_data
+                # Get growth stage from farm fields
                 growth_stage = "Unknown"
-                if growth_data and isinstance(growth_data, list) and len(growth_data) > 0:
-                    growth_stage = growth_data[0].get("stage", 
-                                                    growth_data[0].get("growth_stage", 
-                                                                    "Unknown"))
+                if farm.get("fields") and len(farm["fields"]) > 0:
+                    # Use the first field's growth stage or the specified field
+                    if field_id:
+                        field = next((f for f in farm["fields"] if f.get("fieldName") == field_id), None)
+                        if field:
+                            growth_stage = field.get("growthStage", "Unknown")
+                    else:
+                        growth_stage = farm["fields"][0].get("growthStage", "Unknown")
                 
                 # Return a minimal response with available data
                 return {
-                    "farmer_id": farmer_id,  # Added for consistency
+                    "farmer_id": farmer_id,
+                    "farm_id": farm_id,
+                    "field_id": field_id,
                     "date": start_of_day.strftime("%Y-%m-%d"),
                     "growth_stage": growth_stage,
                     "overall_stress": "unknown",
                     "stress_analysis": {},
-                    "weather_summary": self._summarize_weather(weather_data) if weather_data else {},
+                    "weather_summary": {},
                     "status": "no_recent_data",
-                    "message": f"No stress data available for {start_of_day.strftime('%Y-%m-%d')}"
+                    "message": f"No sensor data available for {start_of_day.strftime('%Y-%m-%d')}"
                 }
 
-            # Perform analysis (simplified example)
-            overall_stress = self._calculate_overall_stress(stress_data)
+            # Process sensor data to calculate stress analysis
+            overall_stress = self._calculate_overall_stress_from_sensor_data(sensor_data)
             
-            # Safely get growth stage from growth_data
+            # Get growth stage from farm fields
             growth_stage = "Unknown"
-            if growth_data and isinstance(growth_data, list) and len(growth_data) > 0:
-                growth_stage = growth_data[0].get("stage", 
-                                               growth_data[0].get("growth_stage", 
-                                                               "Unknown"))
+            if farm.get("fields") and len(farm["fields"]) > 0:
+                if field_id:
+                    field = next((f for f in farm["fields"] if f.get("fieldName") == field_id), None)
+                    if field:
+                        growth_stage = field.get("growthStage", "Unknown")
+                else:
+                    growth_stage = farm["fields"][0].get("growthStage", "Unknown")
 
             results = {
-                "farmer_id": farmer_id,  # Added for compatibility with predictive analytics
+                "farmer_id": farmer_id,
+                "farm_id": farm_id,
+                "field_id": field_id,
                 "date": start_of_day.strftime("%Y-%m-%d"),
                 "growth_stage": growth_stage,
                 "overall_stress": overall_stress,
-                "stress_analysis": self._analyze_stress_factors(stress_data),
-                "weather_summary": self._summarize_weather(weather_data)
+                "stress_analysis": self._analyze_stress_factors_from_sensor_data(sensor_data),
+                "weather_summary": self._summarize_sensor_data(sensor_data)
             }
 
             return results
@@ -125,6 +152,80 @@ class DescriptiveAnalytics:
         except Exception as e:
             logger.error(f"XX Descriptive analysis failed: {e}")
             return None
+
+    def _calculate_overall_stress_from_sensor_data(self, sensor_data: list) -> str:
+        """
+        Calculate overall stress level based on sensor data.
+        
+        Args:
+            sensor_data: List of sensor reading records
+            
+        Returns:
+            String indicating overall stress level: 'low', 'medium', 'high', or 'unknown'
+        """
+        if not sensor_data:
+            return "unknown"
+            
+        # Calculate averages from sensor data
+        temps = []
+        humidities = []
+        soil_moistures = []
+        soil_phs = []
+        
+        for reading in sensor_data:
+            if 'data' in reading:
+                data = reading['data']
+                if 'temperature' in data and data['temperature'] is not None:
+                    temps.append(data['temperature'])
+                if 'humidity' in data and data['humidity'] is not None:
+                    humidities.append(data['humidity'])
+                if 'soilMoisture' in data and data['soilMoisture'] is not None:
+                    soil_moistures.append(data['soilMoisture'])
+                if 'soilPh' in data and data['soilPh'] is not None:
+                    soil_phs.append(data['soilPh'])
+        
+        if not any([temps, humidities, soil_moistures, soil_phs]):
+            return "unknown"
+        
+        # Calculate stress score
+        stress_score = 0
+        total_factors = 0
+        
+        if temps:
+            avg_temp = sum(temps) / len(temps)
+            if avg_temp > 30 or avg_temp < 20:
+                stress_score += 1
+            total_factors += 1
+            
+        if humidities:
+            avg_humidity = sum(humidities) / len(humidities)
+            if avg_humidity < 40 or avg_humidity > 80:
+                stress_score += 1
+            total_factors += 1
+            
+        if soil_moistures:
+            avg_soil_moisture = sum(soil_moistures) / len(soil_moistures)
+            if avg_soil_moisture < 30 or avg_soil_moisture > 70:
+                stress_score += 1
+            total_factors += 1
+            
+        if soil_phs:
+            avg_soil_ph = sum(soil_phs) / len(soil_phs)
+            if avg_soil_ph < 6.0 or avg_soil_ph > 7.5:
+                stress_score += 1
+            total_factors += 1
+        
+        if total_factors == 0:
+            return "unknown"
+            
+        stress_ratio = stress_score / total_factors
+        
+        if stress_ratio > 0.7:
+            return "high"
+        elif stress_ratio > 0.3:
+            return "medium"
+        else:
+            return "low"
 
     def _calculate_overall_stress(self, stress_data: list) -> str:
         """
@@ -329,6 +430,206 @@ class DescriptiveAnalytics:
         if rainfall:
             summary['total_rainfall'] = round(sum(rainfall), 1)
             summary['rain_events'] = len([r for r in rainfall if r > 0])
+        
+        return summary
+
+    def _analyze_stress_factors_from_sensor_data(self, sensor_data: list) -> Dict[str, Any]:
+        """
+        Generate stress analysis for each factor from sensor data.
+        
+        Args:
+            sensor_data: List of sensor reading records
+            
+        Returns:
+            Dictionary with analysis for each stress factor
+        """
+        if not sensor_data:
+            return {}
+        
+        # Calculate averages from sensor data
+        temps = []
+        humidities = []
+        soil_moistures = []
+        soil_phs = []
+        light_intensities = []
+        
+        for reading in sensor_data:
+            if 'data' in reading:
+                data = reading['data']
+                if 'temperature' in data and data['temperature'] is not None:
+                    temps.append(data['temperature'])
+                if 'humidity' in data and data['humidity'] is not None:
+                    humidities.append(data['humidity'])
+                if 'soilMoisture' in data and data['soilMoisture'] is not None:
+                    soil_moistures.append(data['soilMoisture'])
+                if 'soilPh' in data and data['soilPh'] is not None:
+                    soil_phs.append(data['soilPh'])
+                if 'lightIntensity' in data and data['lightIntensity'] is not None:
+                    light_intensities.append(data['lightIntensity'])
+        
+        analysis = {}
+        
+        # Temperature analysis
+        if temps:
+            avg_temp = sum(temps) / len(temps)
+            status = "OK"
+            stress_level = "low"
+            
+            if avg_temp < 20:
+                status = "LOW"
+                stress_level = "high" if avg_temp < 15 else "medium"
+            elif avg_temp > 30:
+                status = "HIGH"
+                stress_level = "high" if avg_temp > 35 else "medium"
+            
+            analysis["Temperature"] = {
+                "status": status,
+                "stress_level": stress_level,
+                "actual_value": round(avg_temp, 2),
+                "optimal_range": [20, 30],
+                "recommendation": self._get_recommendation("temperature", avg_temp, status, stress_level)
+            }
+        
+        # Humidity analysis
+        if humidities:
+            avg_humidity = sum(humidities) / len(humidities)
+            status = "OK"
+            stress_level = "low"
+            
+            if avg_humidity < 40:
+                status = "LOW"
+                stress_level = "high" if avg_humidity < 30 else "medium"
+            elif avg_humidity > 80:
+                status = "HIGH"
+                stress_level = "high" if avg_humidity > 85 else "medium"
+            
+            analysis["Humidity"] = {
+                "status": status,
+                "stress_level": stress_level,
+                "actual_value": round(avg_humidity, 2),
+                "optimal_range": [40, 80],
+                "recommendation": self._get_recommendation("humidity", avg_humidity, status, stress_level)
+            }
+        
+        # Soil Moisture analysis
+        if soil_moistures:
+            avg_soil_moisture = sum(soil_moistures) / len(soil_moistures)
+            status = "OK"
+            stress_level = "low"
+            
+            if avg_soil_moisture < 30:
+                status = "LOW"
+                stress_level = "high" if avg_soil_moisture < 20 else "medium"
+            elif avg_soil_moisture > 70:
+                status = "HIGH"
+                stress_level = "high" if avg_soil_moisture > 80 else "medium"
+            
+            analysis["Soil Moisture"] = {
+                "status": status,
+                "stress_level": stress_level,
+                "actual_value": round(avg_soil_moisture, 2),
+                "optimal_range": [30, 70],
+                "recommendation": self._get_recommendation("soil_moisture", avg_soil_moisture, status, stress_level)
+            }
+        
+        # Soil pH analysis
+        if soil_phs:
+            avg_soil_ph = sum(soil_phs) / len(soil_phs)
+            status = "OK"
+            stress_level = "low"
+            
+            if avg_soil_ph < 6.0:
+                status = "LOW"
+                stress_level = "high" if avg_soil_ph < 5.5 else "medium"
+            elif avg_soil_ph > 7.5:
+                status = "HIGH"
+                stress_level = "high" if avg_soil_ph > 8.0 else "medium"
+            
+            analysis["Soil pH"] = {
+                "status": status,
+                "stress_level": stress_level,
+                "actual_value": round(avg_soil_ph, 2),
+                "optimal_range": [6.0, 7.5],
+                "recommendation": self._get_recommendation("soil_ph", avg_soil_ph, status, stress_level)
+            }
+        
+        # Light Intensity analysis
+        if light_intensities:
+            avg_light = sum(light_intensities) / len(light_intensities)
+            status = "OK"
+            stress_level = "low"
+            
+            if avg_light < 200:
+                status = "LOW"
+                stress_level = "high"
+            elif avg_light > 1200:
+                status = "HIGH"
+                stress_level = "high"
+            
+            analysis["Light Intensity"] = {
+                "status": status,
+                "stress_level": stress_level,
+                "actual_value": round(avg_light, 2),
+                "optimal_range": [400, 800],
+                "recommendation": self._get_recommendation("light_intensity", avg_light, status, stress_level)
+            }
+        
+        return analysis
+
+    def _summarize_sensor_data(self, sensor_data: list) -> Dict[str, Any]:
+        """Summarize sensor data for the day."""
+        if not sensor_data:
+            return {}
+        
+        # Extract relevant data points
+        temps = []
+        humidities = []
+        soil_moistures = []
+        soil_phs = []
+        light_intensities = []
+        
+        for reading in sensor_data:
+            if 'data' in reading:
+                data = reading['data']
+                if 'temperature' in data and data['temperature'] is not None:
+                    temps.append(data['temperature'])
+                if 'humidity' in data and data['humidity'] is not None:
+                    humidities.append(data['humidity'])
+                if 'soilMoisture' in data and data['soilMoisture'] is not None:
+                    soil_moistures.append(data['soilMoisture'])
+                if 'soilPh' in data and data['soilPh'] is not None:
+                    soil_phs.append(data['soilPh'])
+                if 'lightIntensity' in data and data['lightIntensity'] is not None:
+                    light_intensities.append(data['lightIntensity'])
+        
+        # Calculate statistics
+        summary = {}
+        if temps:
+            summary['avg_temp'] = round(sum(temps) / len(temps), 1)
+            summary['min_temp'] = min(temps)
+            summary['max_temp'] = max(temps)
+            
+        if humidities:
+            summary['avg_humidity'] = round(sum(humidities) / len(humidities), 1)
+            summary['min_humidity'] = min(humidities)
+            summary['max_humidity'] = max(humidities)
+            
+        if soil_moistures:
+            summary['avg_soil_moisture'] = round(sum(soil_moistures) / len(soil_moistures), 1)
+            summary['min_soil_moisture'] = min(soil_moistures)
+            summary['max_soil_moisture'] = max(soil_moistures)
+            
+        if soil_phs:
+            summary['avg_soil_ph'] = round(sum(soil_phs) / len(soil_phs), 1)
+            summary['min_soil_ph'] = min(soil_phs)
+            summary['max_soil_ph'] = max(soil_phs)
+            
+        if light_intensities:
+            summary['avg_light_intensity'] = round(sum(light_intensities) / len(light_intensities), 1)
+            summary['min_light_intensity'] = min(light_intensities)
+            summary['max_light_intensity'] = max(light_intensities)
+        
+        summary['data_points'] = len(sensor_data)
         
         return summary
 

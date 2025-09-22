@@ -1,17 +1,17 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/error/failures.dart';
-import '../../../../core/services/secure_storage_service.dart';
+import '../../../../core/storage/secure_storage.dart';
 
 /// Use case to check if user is authenticated (has valid tokens)
 class CheckAuthStatusUseCase {
-  final SecureStorageService secureStorage;
-
-  CheckAuthStatusUseCase({required this.secureStorage});
+  CheckAuthStatusUseCase();
 
   Future<Either<Failure, bool>> call() async {
     try {
-      final hasTokens = await secureStorage.hasValidTokens();
+      final hasToken = await SecureStorage.getToken();
+      final isLoggedIn = await SecureStorage.isLoggedIn();
+      final hasTokens = hasToken != null && isLoggedIn;
       return Right(hasTokens);
     } catch (e) {
       return Left(CacheFailure('Failed to check auth status: ${e.toString()}'));
@@ -20,11 +20,11 @@ class CheckAuthStatusUseCase {
 
   /// Get stored access token
   Future<String?> getAccessToken() async {
-    return await secureStorage.getAccessToken();
+    return await SecureStorage.getToken();
   }
 
   /// Get stored refresh token
   Future<String?> getRefreshToken() async {
-    return await secureStorage.getRefreshToken();
+    return await SecureStorage.getRefreshToken();
   }
 }

@@ -20,6 +20,7 @@ interface ISensor {
 
 // Interface for field
 interface IField {
+  _id?: mongoose.Types.ObjectId;
   fieldName: string;
   plantingDate: Date;
   growthStage: 'VE' | 'V3' | 'V8' | 'VT' | 'R1' | 'R6';
@@ -66,6 +67,10 @@ const farmSchema = new Schema<IFarm>(
     },
     fields: [
       {
+        _id: {
+          type: Schema.Types.ObjectId,
+          default: () => new mongoose.Types.ObjectId()
+        },
         fieldName: {
           type: String,
           required: true

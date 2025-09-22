@@ -16,22 +16,32 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     final String details = taskData['details'] ?? 'No details available';
     final String category = taskData['category'] ?? 'general';
     final String time = taskData['time'] ?? 'Now';
-    final Color color = taskData['color'] ?? MAIZE_PRIMARY;
     final bool isActive = taskData['isActive'] ?? false;
+    final String fieldName = taskData['fieldName'] ?? 'Main Field';
+    final String soilType = taskData['soilType'] ?? 'Loam';
+    final String growthStage = taskData['growthStage'] ?? 'V8';
+    final String urgency = taskData['urgency'] ?? 'MEDIUM';
+    final String timeline = taskData['timeline'] ?? 'This week';
+
+    // Get severity-based theming
+    final severityTheme = _getSeverityTheme(urgency);
+    final urgencyColor = _getUrgencyColor(urgency);
+    final categoryColor = _getCategoryColor(category);
 
     return Scaffold(
-      backgroundColor: MAIZE_PRIMARY_LIGHT,
+      backgroundColor: severityTheme['background'],
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: MAIZE_PRIMARY),
+          icon: Icon(Icons.arrow_back, color: severityTheme['text']),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Farm Prescription',
           style: TextStyle(
-            color: MAIZE_PRIMARY,
+            color: severityTheme['text'],
             fontWeight: FontWeight.bold,
             fontSize: 20.sp,
           ),
@@ -42,28 +52,33 @@ class DetailedPrescriptionScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
-            _buildHeaderCard(title, status, time, color, isActive),
+            // Header Card with severity theming
+            _buildHeaderCard(title, status, time, urgencyColor, isActive, fieldName, soilType, growthStage, urgency, timeline, severityTheme),
             
             SizedBox(height: kAppMediumPadding),
             
             // Category Card
-            _buildCategoryCard(category),
+            _buildCategoryCard(category, categoryColor, severityTheme),
             
             SizedBox(height: kAppMediumPadding),
             
             // Details Card
-            _buildDetailsCard(details),
+            _buildDetailsCard(details, severityTheme),
             
             SizedBox(height: kAppMediumPadding),
             
             // Action Steps Card
-            _buildActionStepsCard(details, category),
+            _buildActionStepsCard(details, category, severityTheme),
+            
+            SizedBox(height: kAppMediumPadding),
+            
+            // Materials Card
+            _buildMaterialsCard(category, categoryColor, severityTheme),
             
             SizedBox(height: kAppMediumPadding),
             
             // Tips Card
-            _buildTipsCard(category),
+            _buildTipsCard(category, severityTheme),
             
             SizedBox(height: kAppLargePadding),
             
@@ -75,20 +90,20 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderCard(String title, String status, String time, Color color, bool isActive) {
+  Widget _buildHeaderCard(String title, String status, String time, Color urgencyColor, bool isActive, String fieldName, String soilType, String growthStage, String urgency, String timeline, Map<String, Color> severityTheme) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
+          colors: [urgencyColor, urgencyColor.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
+            color: urgencyColor.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -156,21 +171,64 @@ class DetailedPrescriptionScreen extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: kAppSmallGap),
+          Row(
+            children: [
+              Icon(Icons.location_on, color: Colors.white.withOpacity(0.9), size: 16.sp),
+              SizedBox(width: 4.w),
+              Text(
+                'Field: $fieldName',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          Row(
+            children: [
+              Icon(Icons.eco, color: Colors.white.withOpacity(0.9), size: 16.sp),
+              SizedBox(width: 4.w),
+              Text(
+                'Soil: $soilType | Stage: $growthStage',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          Row(
+            children: [
+              Icon(Icons.priority_high, color: Colors.white.withOpacity(0.9), size: 16.sp),
+              SizedBox(width: 4.w),
+              Text(
+                'Priority: $urgency | Timeline: $timeline',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14.sp,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCard(String category) {
+  Widget _buildCategoryCard(String category, Color categoryColor, Map<String, Color> severityTheme) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: severityTheme['card'],
         borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: categoryColor.withOpacity(0.3), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: categoryColor.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -183,14 +241,14 @@ class DetailedPrescriptionScreen extends StatelessWidget {
             children: [
               Icon(
                 _getCategoryIcon(category),
-                color: MAIZE_PRIMARY,
+                color: categoryColor,
                 size: 20.sp,
               ),
               SizedBox(width: kAppSmallGap),
               Text(
                 'Category',
                 style: TextStyle(
-                  color: MAIZE_PRIMARY,
+                  color: categoryColor,
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
@@ -201,7 +259,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
           Text(
             _formatCategoryName(category),
             style: TextStyle(
-              color: Colors.grey[700],
+              color: severityTheme['text'],
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
             ),
@@ -211,16 +269,17 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailsCard(String details) {
+  Widget _buildDetailsCard(String details, Map<String, Color> severityTheme) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: severityTheme['card'],
         borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: severityTheme['accent']!.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -233,14 +292,14 @@ class DetailedPrescriptionScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.info_outline,
-                color: MAIZE_PRIMARY,
+                color: severityTheme['accent'],
                 size: 20.sp,
               ),
               SizedBox(width: kAppSmallGap),
               Text(
                 'What to Do',
                 style: TextStyle(
-                  color: MAIZE_PRIMARY,
+                  color: severityTheme['accent'],
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
@@ -251,7 +310,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
           Text(
             details.isNotEmpty ? details : 'Follow the recommended actions for this task.',
             style: TextStyle(
-              color: Colors.grey[700],
+              color: severityTheme['text'],
               fontSize: 16.sp,
               height: 1.5,
             ),
@@ -261,18 +320,19 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionStepsCard(String details, String category) {
+  Widget _buildActionStepsCard(String details, String category, Map<String, Color> severityTheme) {
     final List<String> steps = _getActionSteps(details, category);
     
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: severityTheme['card'],
         borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: severityTheme['accent']!.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -285,14 +345,14 @@ class DetailedPrescriptionScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.checklist,
-                color: MAIZE_PRIMARY,
+                color: severityTheme['accent'],
                 size: 20.sp,
               ),
               SizedBox(width: kAppSmallGap),
               Text(
                 'Step-by-Step Guide',
                 style: TextStyle(
-                  color: MAIZE_PRIMARY,
+                  color: severityTheme['accent'],
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
@@ -312,7 +372,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
                     width: 24.w,
                     height: 24.h,
                     decoration: BoxDecoration(
-                      color: MAIZE_PRIMARY,
+                      color: severityTheme['accent'],
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -331,7 +391,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
                     child: Text(
                       step,
                       style: TextStyle(
-                        color: Colors.grey[700],
+                        color: severityTheme['text'],
                         fontSize: 14.sp,
                         height: 1.4,
                       ),
@@ -346,16 +406,83 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTipsCard(String category) {
+  Widget _buildMaterialsCard(String category, Color categoryColor, Map<String, Color> severityTheme) {
+    final List<String> materialsList = _getMaterialsForCategory(category);
+    
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(kAppMediumPadding),
+      decoration: BoxDecoration(
+        color: severityTheme['card'],
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: categoryColor.withOpacity(0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: categoryColor.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.inventory,
+                color: categoryColor,
+                size: 20.sp,
+              ),
+              SizedBox(width: kAppSmallGap),
+              Text(
+                'Required Materials',
+                style: TextStyle(
+                  color: categoryColor,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: kAppMediumGap),
+          ...materialsList.map((material) => Padding(
+            padding: EdgeInsets.only(bottom: kAppSmallGap),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 16.sp,
+                ),
+                SizedBox(width: kAppSmallGap),
+                Expanded(
+                  child: Text(
+                    material,
+                    style: TextStyle(
+                      color: severityTheme['text'],
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipsCard(String category, Map<String, Color> severityTheme) {
     final List<String> tips = _getTipsForCategory(category);
     
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
-        color: Colors.amber[50],
+        color: severityTheme['card'],
         borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: Colors.amber[200]!),
+        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,14 +491,14 @@ class DetailedPrescriptionScreen extends StatelessWidget {
             children: [
               Icon(
                 Icons.lightbulb_outline,
-                color: Colors.amber[700],
+                color: severityTheme['accent'],
                 size: 20.sp,
               ),
               SizedBox(width: kAppSmallGap),
               Text(
                 'Helpful Tips',
                 style: TextStyle(
-                  color: Colors.amber[700],
+                  color: severityTheme['accent'],
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                 ),
@@ -387,7 +514,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
                 Text(
                   '• ',
                   style: TextStyle(
-                    color: Colors.amber[700],
+                    color: severityTheme['accent'],
                     fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
                   ),
@@ -396,7 +523,7 @@ class DetailedPrescriptionScreen extends StatelessWidget {
                   child: Text(
                     tip,
                     style: TextStyle(
-                      color: Colors.amber[800],
+                      color: severityTheme['text'],
                       fontSize: 14.sp,
                     ),
                   ),
@@ -558,6 +685,47 @@ class DetailedPrescriptionScreen extends StatelessWidget {
     }
   }
 
+  List<String> _getMaterialsForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'temperature_control':
+        return [
+          'Thermal blankets',
+          'Temperature monitoring device',
+          'Protective covers',
+        ];
+      case 'humidity_control':
+        return [
+          'Humidity meter',
+          'Ventilation equipment',
+          'Dehumidifier if needed',
+        ];
+      case 'lighting':
+        return [
+          'LED grow lights',
+          'Light timer',
+          'Light meter',
+        ];
+      case 'water_management':
+        return [
+          'Watering system',
+          'Soil moisture meter',
+          'Mulch materials',
+        ];
+      case 'fertilization':
+        return [
+          'NPK fertilizer',
+          'Fertilizer spreader',
+          'Measuring tools',
+        ];
+      default:
+        return [
+          'Basic farm tools',
+          'Safety equipment',
+          'Monitoring devices',
+        ];
+    }
+  }
+
   List<String> _getTipsForCategory(String category) {
     switch (category) {
       case 'temperature_control':
@@ -596,6 +764,83 @@ class DetailedPrescriptionScreen extends StatelessWidget {
           'Keep records of actions taken',
           'Consult experts when in doubt',
         ];
+    }
+  }
+
+  // Severity-based theming methods
+  Map<String, Color> _getSeverityTheme(String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'URGENT':
+        return {
+          'background': Colors.red[50]!,
+          'text': Colors.red[800]!,
+          'accent': Colors.red[600]!,
+          'card': Colors.red[100]!,
+        };
+      case 'HIGH':
+        return {
+          'background': Colors.orange[50]!,
+          'text': Colors.orange[800]!,
+          'accent': Colors.orange[600]!,
+          'card': Colors.orange[100]!,
+        };
+      case 'MEDIUM':
+        return {
+          'background': MAIZE_PRIMARY_LIGHT,
+          'text': MAIZE_ACCENT,
+          'accent': MAIZE_PRIMARY,
+          'card': Colors.blue[100]!,
+        };
+      case 'LOW':
+        return {
+          'background': Colors.green[50]!,
+          'text': Colors.green[800]!,
+          'accent': Colors.green[600]!,
+          'card': Colors.green[100]!,
+        };
+      default:
+        return {
+          'background': MAIZE_PRIMARY_LIGHT,
+          'text': MAIZE_ACCENT,
+          'accent': MAIZE_PRIMARY,
+          'card': Colors.grey[100]!,
+        };
+    }
+  }
+
+  Color _getUrgencyColor(String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'URGENT':
+        return Colors.red[600]!;
+      case 'HIGH':
+        return Colors.orange[600]!;
+      case 'MEDIUM':
+        return MAIZE_PRIMARY;
+      case 'LOW':
+        return Colors.green[600]!;
+      default:
+        return Colors.grey[600]!;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'irrigation':
+        return Colors.blue[600]!;
+      case 'fertilization':
+        return Colors.green[600]!;
+      case 'weather':
+        return Colors.cyan[600]!;
+      case 'monitoring':
+        return Colors.purple[600]!;
+      case 'humidity_control':
+        return Colors.teal[600]!;
+      case 'temperature_control':
+        return Colors.red[400]!;
+      case 'general':
+        return MAIZE_ACCENT;
+      default:
+        return Colors.orange[600]!;
     }
   }
 }

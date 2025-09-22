@@ -12,9 +12,12 @@ import 'core/presentation/home/home_screen.dart';
 import 'features/prescriptions/presentation/screens/detailed_prescription_screen.dart';
 
 import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'features/settings/presentation/bloc/settings_state.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
 import 'generated/l10n.dart';
 import 'core/theme/app_theme.dart';
+import 'debug_session.dart';
+import 'test_secure_storage.dart';
 
 class MaizeWatchApp extends StatelessWidget {
   const MaizeWatchApp({super.key});
@@ -33,7 +36,9 @@ class MaizeWatchApp extends StatelessWidget {
               theme: AppTheme.lightTheme,
               debugShowCheckedModeBanner: false,
               // Internationalization
-              locale: settingsState.locale,
+              locale: settingsState is SettingsLoaded ? 
+                (settingsState.settings.language == 'tl' ? const Locale('tl', 'PH') : const Locale('en', 'US')) : 
+                const Locale('en', 'US'),
               localizationsDelegates: const [
                 S.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -52,6 +57,8 @@ class MaizeWatchApp extends StatelessWidget {
                     (context) => FarmRegistrationScreen(userData: {}),
                 '/detailed-prescription':
                     (context) => const DetailedPrescriptionScreen(),
+                '/debug-session': (context) => const DebugSessionScreen(),
+                '/test-storage': (context) => const TestSecureStorageScreen(),
               },
               onGenerateRoute: (settings) {
                 if (settings.name == '/farm-registration') {

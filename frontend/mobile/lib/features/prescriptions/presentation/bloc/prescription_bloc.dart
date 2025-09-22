@@ -53,14 +53,31 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     emit(state.copyWith(isLoading: true));
 
     _prescriptionSubscription?.cancel();
-    _prescriptionSubscription = getPrescriptions(NoParams()).asStream().listen((
-      failureOrPrescriptions,
-    ) {
+    
+    try {
+      final failureOrPrescriptions = await getPrescriptions(NoParams());
+      
       failureOrPrescriptions.fold(
-        (failure) => add(_mapFailureToEvent(failure)),
-        (prescriptions) => add(_prescriptionsUpdated(prescriptions)),
+        (failure) {
+          emit(state.copyWith(
+            isLoading: false,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (prescriptions) {
+          emit(state.copyWith(
+            prescriptions: prescriptions,
+            isLoading: false,
+            errorMessage: null,
+          ));
+        },
       );
-    });
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load prescriptions: $e',
+      ));
+    }
   }
 
   void _onUpdatePrescriptionStatus(
@@ -150,13 +167,6 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     }
   }
 
-  PrescriptionEvent _prescriptionsUpdated(List<Prescription> prescriptions) {
-    return _PrescriptionsUpdated(prescriptions);
-  }
-
-  PrescriptionEvent _mapFailureToEvent(Failure failure) {
-    return _PrescriptionsError(_mapFailureToMessage(failure));
-  }
 
   String _mapFailureToMessage(Failure failure) {
     switch (failure.runtimeType) {
@@ -173,28 +183,10 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     }
   }
 
+
   @override
   Future<void> close() {
     _prescriptionSubscription?.cancel();
     return super.close();
   }
-}
-
-// Private events for internal use
-class _PrescriptionsUpdated extends PrescriptionEvent {
-  final List<Prescription> prescriptions;
-
-  const _PrescriptionsUpdated(this.prescriptions);
-
-  @override
-  List<Object> get props => [prescriptions];
-}
-
-class _PrescriptionsError extends PrescriptionEvent {
-  final String message;
-
-  const _PrescriptionsError(this.message);
-
-  @override
-  List<Object> get props => [message];
 }

@@ -12,7 +12,7 @@ import '../../../../core/theme/colors.dart';
 import '../bloc/monitoring_bloc.dart';
 import '../bloc/analytics_bloc.dart';
 import '../../domain/entities/analytics_entities.dart';
-import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/cache_service.dart';
 
 class FarmDetailWidget extends StatefulWidget {
   final Farm farm;
@@ -38,7 +38,6 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTabIndex = 0;
-  late final AnalyticsBloc _analyticsBloc;
 
   // Analytics data
   CropConditionModel? _cropCondition;
@@ -51,7 +50,6 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   @override
   void initState() {
     super.initState();
-    _analyticsBloc = sl<AnalyticsBloc>();
     _tabController = TabController(length: 3, vsync: this); // Changed to 3 tabs
     _tabController.addListener(() {
       setState(() {
@@ -76,28 +74,48 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     }
   }
 
-  void _loadAnalyticsData() {
+  void _loadAnalyticsData() async {
     if (widget.farm.id == null) return;
 
-    _analyticsBloc.add(LoadAnalyticsData(
-      farmId: widget.farm.id!,
-      fieldId: widget.selectedField?.fieldName,
-    ));
+    // Check cache first
+    final isCacheValid = await CacheService.isCacheValid();
+    if (isCacheValid) {
+      final cachedAnalytics = await CacheService.getCachedAnalytics();
+      final cachedCropCondition = await CacheService.getCachedCropCondition();
+      final cachedPrescriptions = await CacheService.getCachedPrescriptions();
+      
+      if (cachedAnalytics != null) {
+        setState(() {
+          _cropCondition = cachedCropCondition;
+          _currentMetrics = cachedAnalytics.currentMetrics;
+          _weeklyData = cachedAnalytics.weeklyData;
+          _growthStageAnalysis = cachedAnalytics.growthStageAnalysis;
+          _isLoadingAnalytics = false;
+          _analyticsError = null;
+        });
+        return; // Don't reload from server if cache is valid
+      }
+    }
+
+    // Only load fresh data from server if not already loading or loaded
+    if (!_isLoadingAnalytics && _currentMetrics == null) {
+      context.read<AnalyticsBloc>().add(LoadAnalyticsData(
+        farmId: widget.farm.id!,
+        fieldId: widget.selectedField?.fieldName,
+      ));
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _analyticsBloc.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _analyticsBloc,
-      child: BlocListener<AnalyticsBloc, AnalyticsState>(
-        listener: (context, state) {
+    return BlocListener<AnalyticsBloc, AnalyticsState>(
+        listener: (context, state) async {
           if (state is AnalyticsLoaded) {
             setState(() {
               _cropCondition = state.cropCondition;
@@ -107,6 +125,31 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
               _isLoadingAnalytics = false;
               _analyticsError = null;
             });
+
+            // Cache the loaded data
+            if (state.cropCondition != null) {
+              await CacheService.cacheCropCondition(state.cropCondition!);
+            }
+            
+            final analyticsData = AnalyticsData(
+              cropCondition: state.cropCondition,
+              currentMetrics: state.currentMetrics,
+              weeklyData: state.weeklyData,
+              growthStageAnalysis: state.growthStageAnalysis,
+              prescriptions: [], // Will be loaded separately
+            );
+            await CacheService.cacheAnalytics(analyticsData);
+
+            // Cache growth stage if available
+            if (widget.farm.id != null && widget.selectedField?.fieldName != null) {
+              final growthStage = widget.selectedField?.growthStage ?? 
+                  (widget.farm.fields.isNotEmpty ? widget.farm.fields.first.growthStage : 'Unknown');
+              await CacheService.cacheGrowthStage(
+                widget.farm.id!, 
+                widget.selectedField!.fieldName, 
+                growthStage
+              );
+            }
           } else if (state is AnalyticsError) {
             setState(() {
               _isLoadingAnalytics = false;
@@ -186,8 +229,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
               ),
             ],
           ),
-        ),
-      ),
+        )
     );
   }
 

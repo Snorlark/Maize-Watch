@@ -14,6 +14,7 @@ import {
   verify2FA,
   disable2FA,
   getProfile,
+  validateSession,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -53,5 +54,6 @@ router.post('/disable-2fa', authenticate, validate2FAToken, disable2FA);
 
 // User profile
 router.get('/me', authenticate, getProfile);
+router.get('/validate-session', authenticate, validateSession);
 
 export default router;
