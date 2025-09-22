@@ -14,7 +14,7 @@ class AppConfig {
       case Environment.development:
         return 'http://10.125.93.206:8080';
       case Environment.staging:
-        return 'https://staging-api.maizewatch.com';
+        return 'https://maize-watch.onrender.com';
       case Environment.production:
         return 'https://api.maizewatch.com';
     }
