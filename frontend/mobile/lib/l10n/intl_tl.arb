@@ -269,15 +269,7 @@
   "contactUs": "Makipag-ugnayan sa amin sa:",
   "translate": "Isalin",
   "prescriptions_title": "Mga Reseta",
-  "prescriptions_subtitle": "Pamahalaan ang iyong mga reseta ({count} kabuuan)",
-  "@prescriptions_subtitle": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "5"
-      }
-    }
-  },
+  "prescriptions_subtitle": "Pamahalaan ang iyong mga reseta",
   "filter_view_all": "Tingnan Lahat",
   "filter_done": "Tapos Na",
   "filter_not_done": "Hindi Pa Tapos",
@@ -422,5 +414,12 @@
   "region_calabarzon": "CALABARZON (Rehiyon IV-A)",
   "province_cavite": "Cavite",
   "municipality_amadeo": "Amadeo",
-  "enter_barangay": "Maglagay ng Barangay"
+  "enter_barangay": "Maglagay ng Barangay",
+  "maize_watch": "Maize Watch",
+  "maize_watch_description": "Ang Maize Watch ay isang aplikasyon sa pagsubaybay ng pananim na idinisenyo upang matulungan ang mga magsasaka na subaybayan ang paglaki ng mais at makilala ang mga problema nang mabilis.",
+  "version_1_0_0": "bersyon 1.0.0",
+  "contact_us_at": "Makipag-ugnayan sa amin sa:",
+  "edit_functionality_coming_soon": "Ang pag-edit ng functionality ay darating na",
+  "name": "Pangalan",
+  "contact_no": "Numero ng Kontakto"
 }

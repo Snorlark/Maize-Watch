@@ -2179,13 +2179,13 @@ class S {
     );
   }
 
-  /// `Manage your prescriptions ({count} total)`
-  String prescriptions_subtitle(int count) {
+  /// `Manage your prescriptions`
+  String get prescriptions_subtitle {
     return Intl.message(
-      'Manage your prescriptions ($count total)',
+      'Manage your prescriptions',
       name: 'prescriptions_subtitle',
       desc: '',
-      args: [count],
+      args: [],
     );
   }
 

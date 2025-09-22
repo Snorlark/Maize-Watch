@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/features/live_monitoring/presentation/screens/live_monitoring_screen.dart';
-import 'package:mobile/features/settings/presentation/screens/settings_screen.dart';
+import 'package:mobile/features/settings/presentation/screens/account_screen.dart';
 import 'package:icons_flutter/icons_flutter.dart';
 
 import 'package:mobile/generated/l10n.dart';
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               children: <Widget>[
                 PrescriptionScreen(),
                 const LiveMonitoringScreen(),
-                const SettingsScreen(),
+                const AccountScreen(),
               ],
               onPageChanged: (page) {
                 setState(() {
@@ -125,8 +125,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: SafeArea(
               child: CurvedNavigationBar(
                 index: _currentIndex,
-                backgroundColor:
-                    (_currentIndex == 1) ? Colors.white : MAIZE_BOTTOM_OVERLAY,
+                backgroundColor: Colors.white,
                 color: MAIZE_PRIMARY,
                 height: 60.h,
                 items: <Widget>[

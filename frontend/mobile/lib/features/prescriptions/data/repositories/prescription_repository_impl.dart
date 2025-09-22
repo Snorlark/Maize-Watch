@@ -71,24 +71,7 @@ class PrescriptionRepositoryImpl implements PrescriptionRepository {
         final index = prescriptions.indexWhere((p) => p.id == dataMap!['id']);
         if (index != -1) {
           final updatedModel = PrescriptionModel.fromJson(dataMap);
-          final statusString = (updatedModel.statusString ?? '').toLowerCase();
-          final status = PrescriptionStatus.values.firstWhere(
-            (e) => e.toString().split('.').last.toLowerCase() == statusString,
-            orElse: () => PrescriptionStatus.medium,
-          );
-
-          final updated = Prescription(
-            id: updatedModel.id,
-            parameter: updatedModel.parameter,
-            value: updatedModel.value,
-            recommendation: updatedModel.recommendation,
-            status: status,
-            timestamp: DateTime.parse(updatedModel.createdAt),
-            isCompleted: updatedModel.isCompleted,
-            fieldId: updatedModel.fieldId,
-            growthStage: updatedModel.growthStage,
-            impactScore: updatedModel.impactScore,
-          );
+          final updated = updatedModel.toEntity();
 
           await localDataSource.cachePrescription(updated);
           final updatedList = await localDataSource.getCachedPrescriptions();

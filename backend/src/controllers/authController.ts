@@ -457,3 +457,29 @@ export const getProfile = catchAsync(async (req: Request, res: Response) => {
     data: { user }
   });
 });
+
+/**
+ * @desc    Validate session and get user info
+ * @route   GET /api/auth/validate-session
+ * @access  Private
+ */
+export const validateSession = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const token = (req as any).token;
+
+  logger.info('Session validated', { 
+    userId: user._id, 
+    username: user.username,
+    tokenExpiry: new Date((req as any).decoded.exp * 1000)
+  });
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Session is valid',
+    data: { 
+      user: user.toJSON(),
+      tokenExpiry: new Date((req as any).decoded.exp * 1000).toISOString(),
+      sessionActive: true
+    }
+  });
+});

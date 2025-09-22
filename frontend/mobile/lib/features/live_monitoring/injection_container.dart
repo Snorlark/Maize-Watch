@@ -25,7 +25,7 @@ Future<void> initAnalyticsFeature() async {
   );
 
   // BLoC
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => AnalyticsBloc(
       repository: sl<AnalyticsRepository>(),
     ),

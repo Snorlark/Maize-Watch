@@ -40,7 +40,8 @@ class _SplashScreenState extends State<SplashScreen>
         _statusMessage = 'Checking authentication...';
       });
 
-      // Trigger authentication check through BLoC
+      // Initialize session first, then check authentication
+      context.read<AuthenticationBloc>().add(InitializeSessionEvent());
       context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
     });
 

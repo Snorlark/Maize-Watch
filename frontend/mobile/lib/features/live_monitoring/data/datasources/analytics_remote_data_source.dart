@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/storage/secure_storage.dart';
-import '../models/analytics_model.dart';
+import '../models/analytics_model.dart' as data_models;
 
 abstract class AnalyticsRemoteDataSource {
-  Future<CropConditionModel> getCropCondition(String farmId, {String? fieldId});
+  Future<data_models.CropConditionModel> getCropCondition(String farmId, {String? fieldId});
   Future<Map<String, dynamic>> getCurrentMetrics(
     String farmId, {
     String? fieldId,
@@ -13,7 +13,7 @@ abstract class AnalyticsRemoteDataSource {
     String farmId, {
     String? fieldId,
   });
-  Future<GrowthStageAnalysisModel> getGrowthStageAnalysis(
+  Future<data_models.GrowthStageAnalysisModel> getGrowthStageAnalysis(
     String farmId, {
     String? fieldId,
   });
@@ -40,7 +40,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
   }
 
   @override
-  Future<CropConditionModel> getCropCondition(
+  Future<data_models.CropConditionModel> getCropCondition(
     String farmId, {
     String? fieldId,
   }) async {
@@ -53,7 +53,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
       );
 
       if (response.data['success'] == true) {
-        return CropConditionModel.fromJson(response.data['data']);
+        return data_models.CropConditionModel.fromJson(response.data['data']);
       } else {
         throw ServerException(
           response.data['message'] ?? 'Failed to get crop condition',
@@ -133,7 +133,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
   }
 
   @override
-  Future<GrowthStageAnalysisModel> getGrowthStageAnalysis(
+  Future<data_models.GrowthStageAnalysisModel> getGrowthStageAnalysis(
     String farmId, {
     String? fieldId,
   }) async {
@@ -146,7 +146,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
       );
 
       if (response.data['success'] == true) {
-        return GrowthStageAnalysisModel.fromJson(response.data['data']);
+        return data_models.GrowthStageAnalysisModel.fromJson(response.data['data']);
       } else {
         throw ServerException(
           response.data['message'] ?? 'Failed to get growth stage analysis',

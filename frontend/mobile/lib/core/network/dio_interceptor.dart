@@ -1,17 +1,26 @@
 import 'package:dio/dio.dart';
 import '../storage/secure_storage.dart';
+import '../services/session_service.dart';
 
 /// Dio interceptor for handling authentication tokens automatically
 /// Follows clean architecture principles for network layer
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor();
+  final SessionService _sessionService = SessionService();
 
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Add access token to headers if available
+    // Skip token addition for auth endpoints
+    if (options.path.contains('/auth/login') || 
+        options.path.contains('/auth/register') ||
+        options.path.contains('/auth/refresh')) {
+      handler.next(options);
+      return;
+    }
+
+    // Get access token directly from SecureStorage
     final accessToken = await SecureStorage.getToken();
     if (accessToken != null && accessToken.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $accessToken';
@@ -22,7 +31,7 @@ class AuthInterceptor extends Interceptor {
       options.headers['Content-Type'] = 'application/json';
     }
 
-    super.onRequest(options, handler);
+    handler.next(options);
   }
 
   @override
@@ -30,37 +39,28 @@ class AuthInterceptor extends Interceptor {
     // Handle 401 unauthorized errors by attempting token refresh
     if (err.response?.statusCode == 401) {
       try {
-        final refreshToken = await SecureStorage.getRefreshToken();
-        if (refreshToken != null) {
-          // Attempt to refresh token
-          final dio = Dio();
-          final response = await dio.post(
-            '${err.requestOptions.baseUrl}/api/auth/refresh',
-            data: {'refreshToken': refreshToken},
-          );
-
-          if (response.statusCode == 200 && response.data['success'] == true) {
-            final newAccessToken = response.data['token'];
-            await SecureStorage.storeTokens(newAccessToken, refreshToken);
-
-            // Retry the original request with new token
-            final retryOptions = err.requestOptions;
-            retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-
-            final retryResponse = await dio.fetch(retryOptions);
-            return handler.resolve(retryResponse);
+        // Use SessionService to refresh token
+        final refreshSuccess = await _sessionService.refreshAccessToken();
+        
+        if (refreshSuccess) {
+          // Retry the original request with new token
+          final token = await SecureStorage.getToken();
+          if (token != null) {
+            err.requestOptions.headers['Authorization'] = 'Bearer $token';
+            
+            // Retry the request
+            final dio = Dio();
+            final response = await dio.fetch(err.requestOptions);
+            return handler.resolve(response);
           }
         }
-
-        // If refresh fails, clear tokens and let the error through
-        await SecureStorage.clearUserSession();
       } catch (e) {
-        // If refresh fails, clear tokens
-        await SecureStorage.clearUserSession();
+        // Refresh failed, clear session
+        await _sessionService.clearSession();
       }
     }
 
-    super.onError(err, handler);
+    handler.next(err);
   }
 }
 

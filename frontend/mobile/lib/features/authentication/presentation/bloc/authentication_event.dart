@@ -48,3 +48,5 @@ final class RegisterEvent extends AuthenticationEvent {
 final class LogoutEvent extends AuthenticationEvent {}
 
 final class CheckAuthStatusEvent extends AuthenticationEvent {}
+
+final class InitializeSessionEvent extends AuthenticationEvent {}

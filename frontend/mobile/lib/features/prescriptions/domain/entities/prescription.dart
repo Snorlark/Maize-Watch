@@ -13,6 +13,19 @@ class Prescription extends Equatable {
   final String fieldId;
   final String growthStage;
   final double impactScore;
+  
+  // Additional fields for detailed view
+  final String? title;
+  final String? category;
+  final String? priority;
+  final DateTime? dueDate;
+  final String? estimatedDuration;
+  final List<String>? materials;
+  final List<String>? instructions;
+  final String? urgency;
+  final String? timeline;
+  final String? fieldName;
+  final String? soilType;
 
   const Prescription({
     required this.id,
@@ -25,6 +38,17 @@ class Prescription extends Equatable {
     required this.fieldId,
     required this.growthStage,
     this.impactScore = 0.0,
+    this.title,
+    this.category,
+    this.priority,
+    this.dueDate,
+    this.estimatedDuration,
+    this.materials,
+    this.instructions,
+    this.urgency,
+    this.timeline,
+    this.fieldName,
+    this.soilType,
   });
 
   @override
@@ -39,6 +63,17 @@ class Prescription extends Equatable {
         fieldId,
         growthStage,
         impactScore,
+        title,
+        category,
+        priority,
+        dueDate,
+        estimatedDuration,
+        materials,
+        instructions,
+        urgency,
+        timeline,
+        fieldName,
+        soilType,
       ];
 
   Prescription copyWith({
@@ -52,6 +87,17 @@ class Prescription extends Equatable {
     String? fieldId,
     String? growthStage,
     double? impactScore,
+    String? title,
+    String? category,
+    String? priority,
+    DateTime? dueDate,
+    String? estimatedDuration,
+    List<String>? materials,
+    List<String>? instructions,
+    String? urgency,
+    String? timeline,
+    String? fieldName,
+    String? soilType,
   }) {
     return Prescription(
       id: id ?? this.id,
@@ -64,6 +110,17 @@ class Prescription extends Equatable {
       fieldId: fieldId ?? this.fieldId,
       growthStage: growthStage ?? this.growthStage,
       impactScore: impactScore ?? this.impactScore,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      estimatedDuration: estimatedDuration ?? this.estimatedDuration,
+      materials: materials ?? this.materials,
+      instructions: instructions ?? this.instructions,
+      urgency: urgency ?? this.urgency,
+      timeline: timeline ?? this.timeline,
+      fieldName: fieldName ?? this.fieldName,
+      soilType: soilType ?? this.soilType,
     );
   }
 }

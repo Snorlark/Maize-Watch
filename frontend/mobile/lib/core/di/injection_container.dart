@@ -15,6 +15,8 @@ import '../../features/live_monitoring/domain/repositories/weather_repository.da
 import '../../features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
 import '../../features/farm/domain/usecases/get_farm_analytics.dart';
 import '../storage/secure_storage.dart';
+import '../services/socket_service.dart';
+import '../services/session_service.dart';
 import '../network/network_info.dart';
 import '../network/dio_interceptor.dart';
 import '../../features/authentication/data/datasources/authentication_remote_data_source.dart';
@@ -24,6 +26,8 @@ import '../../features/authentication/presentation/bloc/authentication_bloc.dart
 import '../config/environment.dart';
 import '../../features/farm/injection_container.dart' as farm_di;
 import '../../features/live_monitoring/injection_container.dart' as analytics_di;
+import '../../features/prescriptions/injection_container.dart' as prescription_di;
+import '../../features/settings/injection_container.dart' as settings_di;
 
 final sl = GetIt.instance;
 
@@ -57,6 +61,12 @@ Future<void> init() async {
   
   // Initialize analytics feature dependencies
   await analytics_di.initAnalyticsFeature();
+  
+  // Initialize prescription feature dependencies
+  await prescription_di.initPrescriptionFeature();
+  
+  // Initialize settings feature dependencies
+  await settings_di.initSettings();
 
   sl.registerLazySingleton<MonitoringRemoteDataSource>(
     () => MonitoringRemoteDataSourceImpl(dio: sl<Dio>()),
@@ -72,6 +82,8 @@ Future<void> init() async {
 
   // Core services
   sl.registerLazySingleton<SecureStorage>(() => SecureStorage());
+  sl.registerLazySingleton<SocketService>(() => SocketService.instance);
+  sl.registerLazySingleton<SessionService>(() => SessionService());
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
 
   // Repositories

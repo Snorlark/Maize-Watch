@@ -321,7 +321,31 @@ class SensorService {
    */
   async getLatestReadingsByFarm(farmId: string): Promise<ISensorReading[]> {
     try {
-      // Prefer IoT DB if configured via MONGO_IOT_URI
+      // Use the new sensor_readings collection
+      const SensorReading = require('../models/SensorReading').default;
+      const readings = await SensorReading.find({ farm: farmId })
+        .sort({ timestamp: -1 })
+        .limit(10);
+      
+      if (readings && readings.length > 0) {
+        return readings.map((reading: any) => ({
+          sensor: reading.sensor,
+          farm: reading.farm,
+          timestamp: reading.timestamp,
+          data: {
+            temperature: reading.data.temperature,
+            humidity: reading.data.humidity,
+            soilMoisture: reading.data.soilMoisture,
+            lightIntensity: reading.data.lightIntensity,
+            pH: reading.data.pH,
+          },
+          metadata: reading.metadata || { source: 'sensor', quality: 'good', processed: false },
+          createdAt: reading.timestamp,
+          updatedAt: reading.timestamp,
+        })) as any;
+      }
+
+      // Fallback to IoT DB if configured via MONGO_IOT_URI
       const IotModel = await getIotSensorReadingModel();
       if (IotModel) {
         const docs = await IotModel.find({}).sort({ timestamp: -1 }).limit(4);
@@ -349,9 +373,9 @@ class SensorService {
         return cached;
       }
 
-      const readings = await SensorReading.getLatestByFarm(farmId);
-      await CacheService.cacheFarmSensors(farmId, readings);
-      return readings;
+      const sensorReadings = await SensorReading.getLatestByFarm(farmId);
+      await CacheService.cacheFarmSensors(farmId, sensorReadings);
+      return sensorReadings;
     } catch (error) {
       logger.error('Error getting latest readings by farm:', error);
       throw error instanceof AppError ? error : new AppError('Failed to get latest readings', 500);

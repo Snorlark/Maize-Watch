@@ -24,13 +24,16 @@
   },
   "database": {
     "mongodb_uri": "env:MONGODB_URI",
-    "database_name": "corn_monitoring",
+    "database_name": "maizewatch",
     "collections": {
       "historical_weather": "historical_weather",
       "growth_stages": "growth_stages", 
       "daily_recommendations": "daily_recommendations",
       "stress_assessments": "stress_assessments",
-      "system_config": "system_config"
+      "system_config": "system_config",
+      "sensor_readings": "sensor_readings",
+      "farms": "farms",
+      "users": "users"
     }
   },
   "thingspeak": {

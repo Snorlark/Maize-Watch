@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:mobile/core/error/exceptions.dart';
-import 'package:mobile/core/services/secure_storage_service.dart';
+import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:mobile/features/prescriptions/data/models/prescription_model.dart';
 import 'package:mobile/features/prescriptions/domain/entities/prescription.dart';
 
@@ -15,15 +15,14 @@ abstract class PrescriptionLocalDataSource {
 }
 
 class PrescriptionLocalDataSourceImpl implements PrescriptionLocalDataSource {
-  final SecureStorageService secureStorage;
   final String _prescriptionsKey = 'cached_prescriptions';
 
-  PrescriptionLocalDataSourceImpl({required this.secureStorage});
+  PrescriptionLocalDataSourceImpl();
 
   @override
   Future<List<Prescription>> getCachedPrescriptions() async {
     try {
-      final jsonString = await secureStorage.getUserData(_prescriptionsKey);
+      final jsonString = await SecureStorage.read(key: _prescriptionsKey);
       if (jsonString == null || jsonString.isEmpty) {
         return [];
       }
@@ -43,9 +42,9 @@ class PrescriptionLocalDataSourceImpl implements PrescriptionLocalDataSource {
             })
             .whereType<Prescription>()
             .toList();
-      } on FormatException catch (e) {
+      } on FormatException {
         // If JSON is corrupted, clear the cache and return empty list
-        await secureStorage.clearUserData(_prescriptionsKey);
+        await SecureStorage.write(key: _prescriptionsKey, value: '');
         return [];
       }
     } catch (e) {
@@ -59,9 +58,9 @@ class PrescriptionLocalDataSourceImpl implements PrescriptionLocalDataSource {
       final jsonList = prescriptions
           .map((p) => PrescriptionModel.fromEntity(p).toJson())
           .toList();
-      await secureStorage.storeUserData(
-        _prescriptionsKey,
-        json.encode(jsonList),
+      await SecureStorage.write(
+        key: _prescriptionsKey,
+        value: json.encode(jsonList),
       );
     } catch (e) {
       throw CacheException('Failed to cache prescriptions: ${e.toString()}');
@@ -102,7 +101,7 @@ class PrescriptionLocalDataSourceImpl implements PrescriptionLocalDataSource {
   @override
   Future<void> deleteAllCachedPrescriptions() async {
     try {
-      await secureStorage.clearUserData(_prescriptionsKey);
+      await SecureStorage.write(key: _prescriptionsKey, value: '');
     } catch (e) {
       throw CacheException('Failed to delete all cached prescriptions: ${e.toString()}');
     }

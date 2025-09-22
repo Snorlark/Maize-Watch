@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 
 import '../../features/settings/presentation/bloc/settings_bloc.dart';
+import '../../features/settings/presentation/bloc/settings_event.dart';
+import '../../features/settings/presentation/bloc/settings_state.dart';
 import 'package:mobile/generated/l10n.dart';
 import '../theme/colors.dart';
 
@@ -28,10 +30,10 @@ class LanguageToggle extends StatelessWidget {
           underline: SizedBox.shrink(),
           dropdownColor: dropdownBackgroundColor,
           icon: Icon(Icons.arrow_drop_down, color: color_toggle),
-          value: context.watch<SettingsBloc>().state.locale,
+          value: _getCurrentLocale(context.watch<SettingsBloc>().state),
           onChanged: (Locale? newLocale) {
             if (newLocale != null) {
-              context.read<SettingsBloc>().add(ChangeLanguage(newLocale));
+              context.read<SettingsBloc>().add(UpdateLanguage(newLocale.languageCode));
             }
           },
           items:
@@ -47,5 +49,18 @@ class LanguageToggle extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Locale _getCurrentLocale(SettingsState state) {
+    if (state is SettingsLoaded) {
+      final language = state.settings.language;
+      // Find matching locale from supported locales
+      final matchingLocale = S.delegate.supportedLocales.firstWhere(
+        (locale) => locale.languageCode == language,
+        orElse: () => S.delegate.supportedLocales.first,
+      );
+      return matchingLocale;
+    }
+    return S.delegate.supportedLocales.first;
   }
 }

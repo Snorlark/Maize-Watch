@@ -275,15 +275,7 @@
   "session_expired": "Your session has expired. Please log in again.",
   "cancel": "Cancel",
   "prescriptions_title": "Prescriptions",
-  "prescriptions_subtitle": "Manage your prescriptions ({count} total)",
-  "@prescriptions_subtitle": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "5"
-      }
-    }
-  },
+  "prescriptions_subtitle": "Manage your prescriptions",
   "filter_view_all": "View All",
   "filter_done": "Done",
   "filter_not_done": "Not Yet Done",

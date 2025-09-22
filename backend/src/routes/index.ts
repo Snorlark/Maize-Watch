@@ -5,6 +5,8 @@ import farmRoutes from './farmRoutes';
 import fieldRoutes from './fieldRoutes';
 import sensorRoutes from './sensorRoutes';
 import analyticsRoutes from './analyticsRoutes';
+import prescriptionRoutes from './prescriptionRoutes';
+import settingsRoutes from './settingsRoutes';
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../utils/constants';
 
@@ -27,6 +29,8 @@ router.use('/farms', farmRoutes);
 router.use('/fields', fieldRoutes);
 router.use('/sensors', sensorRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/prescriptions', prescriptionRoutes);
+router.use('/settings', settingsRoutes);
 
 // Farm-specific sensor routes
 router.use('/farms/:farmId/sensors', (req, res, next) => {

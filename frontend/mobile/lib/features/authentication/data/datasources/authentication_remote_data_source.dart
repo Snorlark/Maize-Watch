@@ -53,12 +53,27 @@ class AuthenticationRemoteDataSourceImpl
 
         if (data != null && data['accessToken'] != null) {
           print("🔐 Frontend: Storing tokens...");
-          await SecureStorage.storeTokens(data['accessToken'], data['refreshToken']);
-          print("🔐 Frontend: Tokens stored, creating user model...");
+          print("🔐 Frontend: Access token preview: ${data['accessToken'].toString().substring(0, 20)}...");
+          print("🔐 Frontend: Refresh token preview: ${data['refreshToken']?.toString().substring(0, 20)}...");
           
-          final userModel = UserModel.fromJson(data['user']);
-          print("🔐 Frontend: User model created: ${userModel.username}");
-          return userModel;
+          try {
+            await SecureStorage.storeTokens(data['accessToken'], data['refreshToken']);
+            print("🔐 Frontend: Tokens stored successfully");
+            
+            // Verify tokens were stored
+            final storedToken = await SecureStorage.getToken();
+            final storedRefreshToken = await SecureStorage.getRefreshToken();
+            print("🔐 Frontend: Verification - stored access token: ${storedToken != null ? "exists" : "null"}");
+            print("🔐 Frontend: Verification - stored refresh token: ${storedRefreshToken != null ? "exists" : "null"}");
+            
+            print("🔐 Frontend: Creating user model...");
+            final userModel = UserModel.fromJson(data['user']);
+            print("🔐 Frontend: User model created: ${userModel.username}");
+            return userModel;
+          } catch (e) {
+            print("🚨 Frontend: Error storing tokens: $e");
+            throw ServerException("Failed to store authentication tokens: $e");
+          }
         } else {
           print("🚨 Frontend: No valid token in response data");
           throw ServerException(
