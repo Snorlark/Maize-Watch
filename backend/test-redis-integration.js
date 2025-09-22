@@ -1,3 +1,6 @@
+// Load environment variables first
+require('dotenv').config({ path: '.env' });
+
 const { redisUtils } = require('./dist/config/redis');
 const CacheService = require('./dist/services/cacheService').default;
 
@@ -97,8 +100,7 @@ async function testRedisIntegration() {
   }
 }
 
-// Load environment variables
-require('dotenv').config({ path: '.env' });
+// Environment already loaded at the top
 
 // Run tests
 testRedisIntegration().catch(console.error);
