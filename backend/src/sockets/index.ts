@@ -28,14 +28,18 @@ export const initializeSocket = (server: HTTPServer) => {
   });
 
   // Setup Redis adapter for scaling across multiple instances
-  try {
-    const pubClient = redis.duplicate();
-    const subClient = redis.duplicate();
-    io.adapter(createAdapter(pubClient, subClient));
-    logger.info('Socket.IO Redis adapter configured successfully');
-  } catch (error) {
-    logger.warn('Failed to configure Redis adapter for Socket.IO:', error);
-    logger.info('Socket.IO will run in single-instance mode');
+  if (redis) {
+    try {
+      const pubClient = redis.duplicate();
+      const subClient = redis.duplicate();
+      io.adapter(createAdapter(pubClient, subClient));
+      logger.info('Socket.IO Redis adapter configured successfully');
+    } catch (error) {
+      logger.warn('Failed to configure Redis adapter for Socket.IO:', error);
+      logger.info('Socket.IO will run in single-instance mode');
+    }
+  } else {
+    logger.info('Redis not available - Socket.IO running in single-instance mode');
   }
 
   // Authentication middleware for socket connections
