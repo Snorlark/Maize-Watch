@@ -2,7 +2,7 @@
   "name": "maize-watch-backend",
   "version": "1.0.0",
   "description": "Backend API for Maize-Watch IoT Agriculture Monitoring System",
-  "main": "dist/src/server.ts",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
