@@ -1,16 +1,13 @@
-import 'package:mobile/core/error/failures.dart';
-import 'package:mobile/core/usecases/usecase.dart';
-import 'package:mobile/features/settings/domain/entities/settings_entity.dart';
-import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
+import '../repositories/sensor_status_repository.dart';
 
-class GetSensorStatus implements UseCase<SensorStatusEntity, NoParams> {
-  final SettingsRepository repository;
+class GetSensorStatus {
+  final SensorStatusRepository repository;
 
   GetSensorStatus(this.repository);
 
-  @override
-  Future<Either<Failure, SensorStatusEntity>> call(NoParams params) async {
+  Future<Either<Failure, Map<String, dynamic>>> call() async {
     return await repository.getSensorStatus();
   }
 }

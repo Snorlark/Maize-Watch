@@ -11,6 +11,7 @@ import 'core/widgets/connectivity_indicator.dart';
 // Features
 import 'features/farm/presentation/bloc/farm_bloc.dart';
 import 'features/settings/presentation/bloc/settings_bloc.dart';
+import 'features/settings/presentation/bloc/sensor_status_bloc.dart';
 import 'features/authentication/presentation/bloc/authentication_bloc.dart';
 
 import 'app.dart';
@@ -26,6 +27,7 @@ void main() async {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => di.sl<SettingsBloc>()),
+          BlocProvider(create: (_) => di.sl<SensorStatusBloc>()),
           BlocProvider(create: (_) => di.sl<AuthenticationBloc>()),
           BlocProvider(create: (_) => di.sl<FarmBloc>()),
           BlocProvider<MonitoringBloc>(create: (_) => di.sl<MonitoringBloc>()),

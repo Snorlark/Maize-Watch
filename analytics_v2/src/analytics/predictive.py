@@ -53,7 +53,8 @@ class PredictiveAnalytics:
             # Step 4: Predict growth stage progression
             growth_timeline = self._predict_growth_progression(
                 descriptive_results['growth_stage'], 
-                descriptive_results['overall_stress']
+                descriptive_results['overall_stress'],
+                descriptive_results.get('daysSincePlanting', 0)
             )
             
             # Step 5: Determine forecast period (adaptive)
@@ -306,7 +307,7 @@ class PredictiveAnalytics:
         else:
             return "low"
     
-    def _predict_growth_progression(self, current_stage: str, overall_stress: str) -> Dict:
+    def _predict_growth_progression(self, current_stage: str, overall_stress: str, days_since_planting: int = 0) -> Dict:
         """Predict growth stage progression timeline"""
         try:
             # Simple growth stage duration (in days)
@@ -336,21 +337,106 @@ class PredictiveAnalytics:
             # Find next stage
             try:
                 current_index = stage_sequence.index(current_stage)
-                next_stage = stage_sequence[current_index + 1] if current_index < len(stage_sequence) - 1 else "Harvest Complete"
+                next_stage = stage_sequence[current_index + 1] if current_index < len(stage_sequence) - 1 else "R6"
             except ValueError:
-                next_stage = "Unknown"
+                # If current stage is not in sequence, try to find closest match
+                if current_stage.startswith('V'):
+                    next_stage = "VT"  # Next major stage after vegetative
+                elif current_stage.startswith('R'):
+                    next_stage = "R6"  # Final stage
+                else:
+                    next_stage = "V2"  # Default to early vegetative
+            
+            # Create detailed timeline for next 30 days
+            timeline = self._create_detailed_timeline(current_stage, days_since_planting, stress_multiplier)
             
             return {
                 "current_stage": current_stage,
                 "next_stage": next_stage,
                 "estimated_days_to_next": adjusted_duration,
                 "stress_delay_days": round((stress_multiplier - 1.0) * current_duration),
-                "progression_status": "delayed" if stress_multiplier > 1.1 else "normal"
+                "progression_status": "delayed" if stress_multiplier > 1.1 else "normal",
+                "days_since_planting": days_since_planting,
+                "timeline": timeline
             }
             
         except Exception as e:
             logger.error(f"Failed to predict growth progression: {e}")
             return {}
+    
+    def _create_detailed_timeline(self, current_stage: str, days_since_planting: int, stress_multiplier: float) -> Dict:
+        """Create detailed growth timeline for the next 30 days"""
+        try:
+            timeline = {
+                "next_7_days": [],
+                "next_14_days": [],
+                "next_30_days": []
+            }
+            
+            # Growth stage sequence with typical durations
+            stage_sequence = ["VE", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "VT", "R1", "R2", "R3", "R4", "R5", "R6"]
+            stage_durations = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]  # 7 days each stage
+            
+            # Find current stage index
+            try:
+                current_index = stage_sequence.index(current_stage)
+            except ValueError:
+                current_index = 0
+            
+            # Calculate cumulative days for each stage
+            cumulative_days = 0
+            for i, duration in enumerate(stage_durations):
+                cumulative_days += duration
+                if i >= current_index:
+                    stage = stage_sequence[i]
+                    adjusted_duration = round(duration * stress_multiplier)
+                    
+                    # Add to appropriate timeline
+                    if cumulative_days <= 7:
+                        timeline["next_7_days"].append({
+                            "stage": stage,
+                            "estimated_days": adjusted_duration,
+                            "description": self._get_stage_description(stage)
+                        })
+                    elif cumulative_days <= 14:
+                        timeline["next_14_days"].append({
+                            "stage": stage,
+                            "estimated_days": adjusted_duration,
+                            "description": self._get_stage_description(stage)
+                        })
+                    elif cumulative_days <= 30:
+                        timeline["next_30_days"].append({
+                            "stage": stage,
+                            "estimated_days": adjusted_duration,
+                            "description": self._get_stage_description(stage)
+                        })
+            
+            return timeline
+            
+        except Exception as e:
+            logger.error(f"Failed to create detailed timeline: {e}")
+            return {"next_7_days": [], "next_14_days": [], "next_30_days": []}
+    
+    def _get_stage_description(self, stage: str) -> str:
+        """Get human-readable description for growth stage"""
+        descriptions = {
+            "VE": "Emergence - Seedling breaks through soil",
+            "V2": "Two-leaf stage - First true leaves visible",
+            "V3": "Three-leaf stage - Rapid vegetative growth",
+            "V4": "Four-leaf stage - Root system developing",
+            "V5": "Five-leaf stage - Strong vegetative growth",
+            "V6": "Six-leaf stage - Pre-tassel development",
+            "V7": "Seven-leaf stage - Tassel initiation",
+            "V8": "Eight-leaf stage - Tassel development",
+            "VT": "Tasseling - Pollen production begins",
+            "R1": "Silking - Pollination occurs",
+            "R2": "Blister - Kernel development begins",
+            "R3": "Milk - Kernel filling stage",
+            "R4": "Dough - Kernel hardening",
+            "R5": "Dent - Kernel denting begins",
+            "R6": "Maturity - Ready for harvest"
+        }
+        return descriptions.get(stage, f"Growth stage {stage}")
     
     def _determine_forecast_period(self, weather_forecast: Dict) -> int:
         """Determine forecast period based on weather volatility"""

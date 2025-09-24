@@ -50,3 +50,20 @@ final class LogoutEvent extends AuthenticationEvent {}
 final class CheckAuthStatusEvent extends AuthenticationEvent {}
 
 final class InitializeSessionEvent extends AuthenticationEvent {}
+
+final class UpdateProfileEvent extends AuthenticationEvent {
+  const UpdateProfileEvent({
+    required this.userId,
+    required this.fullName,
+    required this.contactNumber,
+    required this.address,
+  });
+
+  final String userId;
+  final String fullName;
+  final String contactNumber;
+  final Map<String, dynamic> address;
+
+  @override
+  List<Object> get props => [userId, fullName, contactNumber, address];
+}

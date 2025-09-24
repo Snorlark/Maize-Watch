@@ -12,25 +12,60 @@ class UserModel extends User {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id:
-          json['_id'] as String? ??
-          json['id'] as String, // Handle both _id and id
-      username: json['username'] as String,
-      fullName: json['fullName'] as String,
-      contactNumber: json['contactNumber'] as String,
-      address: _parseAddress(
-        json['address'],
-      ), // Handle both string and object address
-      role: json['role'] as String,
-      password:
-          json['password']
-              as String?, // Password is often not returned from backend for security
-    );
+    print('🔍 UserModel.fromJson called with: $json');
+    
+    try {
+      print('🔍 Parsing id: ${json['_id']} (type: ${json['_id'].runtimeType})');
+      final id = json['_id'] as String? ?? json['id'] as String;
+      print('🔍 Parsed id: $id');
+      
+      print('🔍 Parsing username: ${json['username']} (type: ${json['username'].runtimeType})');
+      final username = json['username'] as String? ?? '';
+      print('🔍 Parsed username: $username');
+      
+      print('🔍 Parsing fullName: ${json['fullName']} (type: ${json['fullName'].runtimeType})');
+      final fullName = json['fullName'] as String? ?? '';
+      print('🔍 Parsed fullName: $fullName');
+      
+      print('🔍 Parsing contactNumber: ${json['contactNumber']} (type: ${json['contactNumber'].runtimeType})');
+      final contactNumber = json['contactNumber'] as String? ?? '';
+      print('🔍 Parsed contactNumber: $contactNumber');
+      
+      print('🔍 Parsing address: ${json['address']} (type: ${json['address']?.runtimeType})');
+      final address = _parseAddress(json['address']);
+      print('🔍 Parsed address: $address');
+      
+      print('🔍 Parsing role: ${json['role']} (type: ${json['role'].runtimeType})');
+      final role = json['role'] as String? ?? 'user';
+      print('🔍 Parsed role: $role');
+      
+      print('🔍 Parsing password: ${json['password']} (type: ${json['password']?.runtimeType})');
+      final password = json['password'] as String?;
+      print('🔍 Parsed password: $password');
+      
+      print('🔍 Creating UserModel...');
+      final userModel = UserModel(
+        id: id,
+        username: username,
+        fullName: fullName,
+        contactNumber: contactNumber,
+        address: address,
+        role: role,
+        password: password,
+      );
+      print('🔍 UserModel created successfully: ${userModel.username}');
+      return userModel;
+    } catch (e, stackTrace) {
+      print('🚨 Error in UserModel.fromJson: $e');
+      print('🚨 Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   static Map<String, dynamic> _parseAddress(dynamic address) {
-    if (address is Map<String, dynamic>) {
+    if (address == null) {
+      return {'region': '', 'province': '', 'municipality': '', 'barangay': ''};
+    } else if (address is Map<String, dynamic>) {
       return address;
     } else if (address is String) {
       // Convert legacy string address to structured format

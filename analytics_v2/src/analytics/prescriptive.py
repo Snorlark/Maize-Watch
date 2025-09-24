@@ -77,6 +77,8 @@ class PrescriptiveAnalytics:
                 "forecast_period": predictive_results['forecast_period_days'],
                 "overall_risk": predictive_results['risk_assessment']['overall_risk_level'],
                 "field_info": field_data,
+                "growth_stage": field_data.get('growth_stage', descriptive_results.get('growth_stage', 'VE')),
+                "days_since_planting": descriptive_results.get('daysSincePlanting', 0),
                 "created_timestamp": datetime.utcnow()
             }
             

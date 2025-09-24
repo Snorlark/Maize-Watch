@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/usecases/usecase.dart';
+import 'package:mobile/features/settings/domain/entities/settings_entity.dart';
 import 'package:mobile/features/settings/domain/usecases/get_settings.dart';
 import 'package:mobile/features/settings/domain/usecases/get_sensor_status.dart';
 import 'package:mobile/features/settings/domain/usecases/update_settings.dart' as update_usecases;
@@ -55,25 +56,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           emit(SettingsError('Failed to load settings: ${failure.toString()}'));
         },
         (settings) async {
-          print("🔧 SettingsBloc: Settings loaded successfully, loading sensor status...");
-          // Try to load sensor status, but don't block settings loading if it fails
-          try {
-            final sensorResult = await getSensorStatus(NoParams());
-            await sensorResult.fold(
-              (failure) async {
-                print("🔧 SettingsBloc: Sensor status failed, emitting settings without sensor status");
-                emit(SettingsLoaded(settings: settings));
-              },
-              (sensorStatus) async {
-                print("🔧 SettingsBloc: Both settings and sensor status loaded successfully");
-                emit(SettingsLoaded(settings: settings, sensorStatus: sensorStatus));
-              },
-            );
-          } catch (e) {
-            print("🔧 SettingsBloc: Sensor status exception, emitting settings without sensor status: $e");
-            // If sensor status fails, just load settings without it
-            emit(SettingsLoaded(settings: settings));
-          }
+          print("🔧 SettingsBloc: Settings loaded successfully - emitting immediately");
+          // Load settings immediately without waiting for sensor status
+          emit(SettingsLoaded(settings: settings));
         },
       );
     } catch (e) {
@@ -88,30 +73,29 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     if (state is SettingsLoaded) {
       final currentState = state as SettingsLoaded;
-      emit(SettingsUpdating(
-        settings: currentState.settings,
+      
+      // Update immediately for instant response
+      final updatedSettings = currentState.settings.copyWith(
+        notificationsEnabled: event.enabled,
+        vibrationOnly: event.vibrationOnly,
+      );
+      
+      emit(SettingsUpdated(
+        settings: updatedSettings,
         sensorStatus: currentState.sensorStatus,
+        message: 'Notification settings updated',
       ));
 
-      final result = await updateNotificationSettings(update_usecases.NotificationSettingsParams(
+      // Update backend in background (non-blocking)
+      updateNotificationSettings(update_usecases.NotificationSettingsParams(
         enabled: event.enabled,
         vibrationOnly: event.vibrationOnly,
-      ));
-
-      result.fold(
-        (failure) => emit(SettingsError('Failed to update notification settings')),
-        (_) {
-          final updatedSettings = currentState.settings.copyWith(
-            notificationsEnabled: event.enabled,
-            vibrationOnly: event.vibrationOnly,
-          );
-          emit(SettingsUpdated(
-            settings: updatedSettings,
-            sensorStatus: currentState.sensorStatus,
-            message: 'Notification settings updated',
-          ));
-        },
-      );
+      )).then((result) {
+        result.fold(
+          (failure) => print("🔧 SettingsBloc: Background notification update failed: $failure"),
+          (_) => print("🔧 SettingsBloc: Background notification update successful"),
+        );
+      });
     }
   }
 
@@ -245,13 +229,23 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     if (state is SettingsLoaded) {
       final currentState = state as SettingsLoaded;
       
-      final result = await getSensorStatus(NoParams());
+      final result = await getSensorStatus();
       result.fold(
         (failure) => emit(SettingsError('Failed to load sensor status')),
-        (sensorStatus) => emit(SettingsLoaded(
-          settings: currentState.settings,
-          sensorStatus: sensorStatus,
-        )),
+        (sensorStatusMap) {
+          // Convert Map<String, dynamic> to SensorStatusEntity
+          final sensorStatus = SensorStatusEntity(
+            ldrSensor: sensorStatusMap['ldr'] ?? false,
+            phLevelSensor: sensorStatusMap['ph'] ?? false,
+            tempAndHumidSensor: sensorStatusMap['dht'] ?? false,
+            soilLevelSensor: sensorStatusMap['soil'] ?? false,
+          );
+          
+          emit(SettingsLoaded(
+            settings: currentState.settings,
+            sensorStatus: sensorStatus,
+          ));
+        },
       );
     }
   }

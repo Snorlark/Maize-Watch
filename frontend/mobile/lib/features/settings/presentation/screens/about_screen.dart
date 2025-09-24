@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
-import 'package:mobile/generated/l10n.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -15,30 +14,34 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: MAIZE_PRIMARY_LIGHT,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
-            _buildHeader(context),
-            SizedBox(height: kAppLargePadding),
+            // Header section with background
+            _buildHeaderSection(),
             
-            // Main Content
+            // Main content area
             Expanded(
-              child: SingleChildScrollView(
+              child: Container(
+                margin: EdgeInsets.only(top: kAppSmallPadding),
+                padding: EdgeInsets.only(
+                  left: kAppMediumPadding, 
+                  right: kAppMediumPadding, 
+                  top: kAppMediumPadding, 
+                  bottom: kAppLargePadding,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
                 child: Column(
                   children: [
-                    // App Info Card
-                    _buildAppInfoCard(),
-                    SizedBox(height: kAppLargePadding),
-                    
-                    // Contact Section
-                    _buildContactSection(),
-                    SizedBox(height: kAppLargePadding),
-                    
-                    // Social Media Links
-                    _buildSocialMediaLinks(),
-                    SizedBox(height: kAppLargePadding),
+                    _buildAboutSection(),
                   ],
                 ),
               ),
@@ -49,190 +52,392 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(kAppMediumPadding),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Icon(
-              Icons.arrow_back,
-              color: MAIZE_ACCENT,
-              size: 24.sp,
-            ),
-          ),
-          SizedBox(width: kAppSmallGap),
-          Text(
-            S.of(context).about,
-            style: TextStyle(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.bold,
-              color: MAIZE_ACCENT,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            width: 40.w,
-            height: 40.h,
-            decoration: BoxDecoration(
-           
-              shape: BoxShape.circle,
-            ),
-            child: Image.asset(
-              'assets/images/corn-logo.png',
-              width: 40.w,
-              height: 40.h,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppInfoCard() {
+  Widget _buildHeaderSection() {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-      padding: EdgeInsets.all(kAppLargePadding),
+      height: 180.h,
+      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20.r),
+          bottomRight: Radius.circular(20.r),
+        ),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/farmer.png'),
+          fit: BoxFit.cover,
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // App Title
-          Text(
-            'Maize Watch',
-            style: TextStyle(
-              fontSize: 24.sp,
-              fontWeight: FontWeight.bold,
-              color: MAIZE_ACCENT,
-            ),
-          ),
-          SizedBox(height: kAppMediumPadding),
+          // Status bar spacing
+          SizedBox(height: 40.h),
           
-          // App Description
-          Text(
-            'Maize Watch is a crop monitoring application designed to help farmers keep track of maize growth and identify issues quickly.',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.black87,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: kAppLargePadding),
-          
-          // Version
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'version 1.0.0',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+          // Back button and title
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'About',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                  ),
+                  SizedBox(height: kAppSmallGap),
+                  Text(
+                    'Learn more about Maize Watch',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ),                  
+                ],
               ),
-            ),
+              Spacer(),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContactSection() {
-    return Column(
+  Widget _buildAboutSection() {
+    return Expanded(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // App Info Section
+            _buildSectionCard(
+              title: 'App Information',
+              children: [
+                _buildAppInfoItem(),
+              ],
+            ),
+            SizedBox(height: kAppMediumPadding),
+
+            // Features Section
+            _buildSectionCard(
+              title: 'Key Features',
+              children: [
+                _buildFeatureItem(
+                  'Real-time Sensor Monitoring',
+                  'Track temperature, humidity, soil moisture, and light levels',
+                  Icons.sensors,
+                ),
+                SizedBox(height: kAppMediumPadding),
+                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                SizedBox(height: kAppMediumPadding),
+                _buildFeatureItem(
+                  'Weather Integration',
+                  'Get weather forecasts and alerts for your farm',
+                  Icons.wb_sunny,
+                ),
+                SizedBox(height: kAppMediumPadding),
+                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                SizedBox(height: kAppMediumPadding),
+                _buildFeatureItem(
+                  'Smart Analytics',
+                  'AI-powered insights and recommendations',
+                  Icons.analytics,
+                ),
+                SizedBox(height: kAppMediumPadding),
+                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                SizedBox(height: kAppMediumPadding),
+                _buildFeatureItem(
+                  'Multi-language Support',
+                  'Available in English and Filipino',
+                  Icons.language,
+                ),
+              ],
+            ),
+            SizedBox(height: kAppMediumPadding),
+
+            // Contact Section
+            _buildSectionCard(
+              title: 'Contact & Support',
+              children: [
+                _buildContactItem(
+                  'Email Support',
+                  'maizewatch@gmail.com',
+                  Icons.email,
+                  () => _showComingSoon('Email'),
+                ),
+                SizedBox(height: kAppMediumPadding),
+                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                SizedBox(height: kAppMediumPadding),
+                _buildContactItem(
+                  'Phone Support',
+                  '+63 912 345 6789',
+                  Icons.phone,
+                  () => _showComingSoon('Phone'),
+                ),
+                SizedBox(height: kAppMediumPadding),
+                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                SizedBox(height: kAppMediumPadding),
+                _buildContactItem(
+                  'Website',
+                  'www.maizewatch.com',
+                  Icons.web,
+                  () => _showComingSoon('Website'),
+                ),
+              ],
+            ),
+            SizedBox(height: kAppMediumPadding),
+
+            // Social Media Section
+            _buildSectionCard(
+              title: 'Follow Us',
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildSocialIcon(
+                      icon: Icons.camera_alt,
+                      label: 'Instagram',
+                      onTap: () => _showComingSoon('Instagram'),
+                    ),
+                    _buildSocialIcon(
+                      icon: Icons.code,
+                      label: 'GitHub',
+                      onTap: () => _showComingSoon('GitHub'),
+                    ),
+                    _buildSocialIcon(
+                      icon: Icons.business,
+                      label: 'LinkedIn',
+                      onTap: () => _showComingSoon('LinkedIn'),
+                    ),
+                    _buildSocialIcon(
+                      icon: Icons.alternate_email,
+                      label: 'Twitter',
+                      onTap: () => _showComingSoon('Twitter'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(kAppMediumPadding),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: kAppSmallPadding),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppInfoItem() {
+    return Row(
       children: [
-        Text(
-          'Contact us at:',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
+        Container(
+          width: 60.w,
+          height: 60.w,
+          decoration: BoxDecoration(
+            color: MAIZE_ACCENT.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Icon(
+            Icons.agriculture,
             color: MAIZE_ACCENT,
+            size: 30.sp,
           ),
         ),
-        SizedBox(height: kAppMediumPadding),
+        SizedBox(width: kAppMediumPadding),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Maize Watch',
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                'version 1.0.0',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: kAppSmallPadding),
+              Text(
+                'Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSocialMediaLinks() {
+  Widget _buildFeatureItem(String title, String description, IconData icon) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildSocialIcon(
-          icon: Icons.camera_alt,
-          onTap: () {
-            // TODO: Implement Instagram link
-            _showComingSoon();
-          },
+        Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: MAIZE_ACCENT.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Icon(
+            icon,
+            color: MAIZE_ACCENT,
+            size: 24.sp,
+          ),
         ),
-        SizedBox(width: kAppMediumPadding),
-        _buildSocialIcon(
-          icon: Icons.code,
-          onTap: () {
-            // TODO: Implement GitHub link
-            _showComingSoon();
-          },
-        ),
-        SizedBox(width: kAppMediumPadding),
-        _buildSocialIcon(
-          icon: Icons.business,
-          onTap: () {
-            // TODO: Implement LinkedIn link
-            _showComingSoon();
-          },
-        ),
-        SizedBox(width: kAppMediumPadding),
-        _buildSocialIcon(
-          icon: Icons.alternate_email,
-          onTap: () {
-            // TODO: Implement X (Twitter) link
-            _showComingSoon();
-          },
+        SizedBox(width: kAppMediumGap),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 5.h),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContactItem(String title, String value, IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: MAIZE_ACCENT.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Icon(
+                  icon,
+                  color: MAIZE_ACCENT,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: kAppMediumGap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      value,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.north_east,
+                color: MAIZE_ACCENT,
+                size: 24.sp,
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildSocialIcon({
     required IconData icon,
+    required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 50.w,
-        height: 50.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(25.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+        child: Column(
+          children: [
+            Container(
+              width: 50.w,
+              height: 50.h,
+              decoration: BoxDecoration(
+                color: MAIZE_ACCENT.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: MAIZE_ACCENT,
+                size: 24.sp,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: MAIZE_ACCENT,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
-        ),
-        child: Icon(
-          icon,
-          color: MAIZE_ACCENT,
-          size: 24.sp,
         ),
       ),
     );
   }
 
-  void _showComingSoon() {
-    // This would be called from the social media icons
-    // For now, we'll just show a snackbar
+  void _showComingSoon(String platform) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$platform integration coming soon!'),
+        backgroundColor: MAIZE_ACCENT,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+      ),
+    );
   }
 }

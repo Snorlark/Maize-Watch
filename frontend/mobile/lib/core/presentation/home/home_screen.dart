@@ -125,24 +125,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: SafeArea(
               child: CurvedNavigationBar(
                 index: _currentIndex,
-                backgroundColor: Colors.white,
+                backgroundColor: MAIZE_PRIMARY_LIGHT,
                 color: MAIZE_PRIMARY,
                 height: 60.h,
                 items: <Widget>[
                   Icon(
                     Icons.checklist,
-                    color: MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(35),
+                    color: _currentIndex == 0 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                    size: ScreenUtil().setSp(32),
                   ),
                   Icon(
                     FlutterIcons.corn_mco,
-                    color: MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(35),
+                    color: _currentIndex == 1 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                    size: ScreenUtil().setSp(32),
                   ),
                   Icon(
                     Icons.person,
-                    color: MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(35),
+                    color: _currentIndex == 2 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                    size: ScreenUtil().setSp(32),
                   ),
                 ],
                 onTap: _onTappedBar,

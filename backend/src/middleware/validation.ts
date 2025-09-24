@@ -172,6 +172,21 @@ export const validateUserUpdate: ValidationChain[] = [
     .optional()
     .matches(VALIDATION_RULES.PHONE.PATTERN)
     .withMessage('Please provide a valid Philippine mobile number'),
+  
+  // Address validation for updates - simplified
+  body('address')
+    .optional()
+    .custom((value, { req }) => {
+      if (value && typeof value === 'object') {
+        const hasRequiredFields = value.region && 
+                                 value.province && 
+                                 value.municipality && 
+                                 value.barangay;
+        return hasRequiredFields;
+      }
+      return true; // Allow undefined/null for optional updates
+    })
+    .withMessage('Address must include region, province, municipality, and barangay'),
 ];
 
 // Simple Farm validation rules for new embedded structure
@@ -324,11 +339,24 @@ export const validateSensorReading: ValidationChain[] = [
     .withMessage('Signal strength must be between -120 and 0 dBm'),
 ];
 
-// Parameter validation
-export const validateObjectId = (paramName: string): ValidationChain => 
-  param(paramName)
-    .isMongoId()
-    .withMessage(`${paramName} must be a valid MongoDB ObjectId`);
+// Parameter validation - Fixed version
+export const validateObjectId = (paramName: string = 'id') => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const id = req.params[paramName];
+    
+    // Simple ObjectId validation regex
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+    
+    if (!id || !objectIdRegex.test(id)) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: `${paramName} must be a valid MongoDB ObjectId`
+      });
+    }
+    
+    next();
+  };
+};
 
 export const validatePagination: ValidationChain[] = [
   query('page')

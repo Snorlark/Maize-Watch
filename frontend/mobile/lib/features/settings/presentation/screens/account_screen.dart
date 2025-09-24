@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
-import 'package:mobile/core/theme/colors.dart';
+import 'package:mobile/core/widgets/custom_dialog.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:mobile/features/settings/presentation/screens/profile_screen.dart';
 import 'package:mobile/features/settings/presentation/screens/settings_screen.dart';
+import 'package:mobile/features/settings/presentation/screens/sensor_status_screen.dart';
 import 'package:mobile/features/settings/presentation/screens/about_screen.dart';
-import 'package:mobile/generated/l10n.dart';
+import 'package:mobile/core/theme/colors.dart';
+import 'package:mobile/features/settings/presentation/widgets/language_settings_widget.dart';
+import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -19,271 +23,421 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MAIZE_PRIMARY_LIGHT,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
-            _buildHeader(),
-            SizedBox(height: kAppLargePadding),
+            // Header section with background
+            _buildHeaderSection(),
             
-            // User Information Card
-            _buildUserInfoCard(),
-            SizedBox(height: kAppLargePadding),
-            
-            // Settings and About Cards
-            _buildNavigationCards(),
-            SizedBox(height: kAppLargePadding),
-            
-            // Logout Button
-            _buildLogoutButton(),
+            // Main content area
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.only(top: kAppSmallPadding),
+                padding: EdgeInsets.only(
+                  left: kAppMediumPadding, 
+                  right: kAppMediumPadding, 
+                  top: kAppMediumPadding, 
+                  bottom: kAppLargePadding,
+                ),
+                decoration: BoxDecoration(
+                  color: MAIZE_PRIMARY_LIGHT,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildSettingsSection(),
+                  ],
+                ),
+                
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: EdgeInsets.all(kAppMediumPadding),
-      child: Row(
+  Widget _buildHeaderSection() {
+    return Container(
+      height: 180.h,
+      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(20.r),
+          bottomRight: Radius.circular(20.r),
+        ),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/farmer.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child:  Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
+              // Status bar spacing
+              SizedBox(height: 40.h),
+              
+              // Back button and title
+              Row(
+              children: [Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                S.of(context).account,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: MAIZE_ACCENT,
-                ),
-              ),
-              verticalSpace(2.h),
+                    'Menu',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                  ),
+                  SizedBox(height: kAppSmallGap),
               Text(
-                S.of(context).about_user,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: MAIZE_ACCENT,
-                ),
-              ),
+                'Manage your account settings',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+              ),                  
+                ],
+              ),  Spacer(),]),
+              
+            
+
+             
             ],
-          ),        
-        ],
+          
+        
       ),
     );
   }
 
-  Widget _buildUserInfoCard() {
-    return BlocBuilder<AuthenticationBloc, AuthenticationState>(
+  
+
+  Widget _buildSettingsSection() {
+    return Expanded(
+      child: SingleChildScrollView(
+        child: BlocBuilder<AuthenticationBloc, AuthenticationState>(
       builder: (context, state) {
-        if (state.status == AuthenticationStatus.authenticated && state.user != null) {
-          final user = state.user!;
-          return Container(
-            margin: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-            padding: EdgeInsets.all(kAppLargePadding),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
+            final user = state.user;
+          return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      user.username,
-                      style: TextStyle(
-                        fontSize: 20.sp,
-                        fontWeight: FontWeight.bold,
-                        color: MAIZE_ACCENT,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        // TODO: Implement edit user functionality
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Edit functionality coming soon'),
-                            backgroundColor: MAIZE_ACCENT,
-                          ),
+                // Profile Section
+                _buildSectionCard(
+                  title: 'Profile',
+            children: [
+                    _buildMenuItem(
+                      title: user?.fullName ?? '',
+                      subtitle: 'Manage your personal informations',
+                      icon: Icons.person,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
                         );
-                      },
-                      child: Icon(
-                        Icons.edit,
-                        color: Colors.grey,
-                        size: 20.sp,
-                      ),
+                      },                      
                     ),
                   ],
                 ),
                 SizedBox(height: kAppMediumPadding),
-                _buildUserInfoRow('Name', user.fullName),
-                SizedBox(height: kAppSmallPadding),
-                _buildUserInfoRow('Contact No.', user.contactNumber),
-                SizedBox(height: kAppSmallPadding),
-                _buildUserInfoRow('Address', _formatAddress(user.address)),
-              ],
-            ),
-          );
-        }
-        
-        // Loading state
-        return Container(
-          margin: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-          padding: EdgeInsets.all(kAppLargePadding),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+
+                _buildSectionCard(
+                  title: 'Settings',
+                  children: [
+                    _buildMenuItem(
+                      title: 'Sensor Status',
+                      subtitle: 'Monitor the condition of your sensors',
+                      icon: Icons.sensors,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SensorStatusScreen()),
+                        );
+                      },
+                      
+                    ),
+
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                    SizedBox(height: kAppMediumPadding),
+
+
+                    _buildOptionItem(
+                      title: 'Language',
+                      currentValue: 'English',
+                      icon: Icons.language,
+                      onTap: () {
+                        _showOptionDialog('Language Settings', LanguageSettingsWidget(
+                          currentLanguage: 'English',
+                          onLanguageChanged: (language) {
+                            // Handle language change
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Language changed to $language'),
+                                backgroundColor: MAIZE_ACCENT,
+                              ),
+                            );
+                          },
+                        ));
+                      },
+                      
+                    ),
+
+                                        SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                    SizedBox(height: kAppMediumPadding),
+
+                    _buildOptionItem(
+                      title: 'Notifications',
+                      currentValue: 'On',
+                      icon: Icons.notifications,
+                      onTap: () {
+                        _showOptionDialog('Notification Settings', NotificationSettingsWidget(
+                          isNotificationsEnabled: true,
+                          isVibrationOnly: false,
+                          onNotificationToggled: (enabled) {
+                            // Handle notification toggle
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Notifications ${enabled ? 'enabled' : 'disabled'}'),
+                                backgroundColor: MAIZE_ACCENT,
+                              ),
+                            );
+                          },
+                          onVibrationOnlyToggled: (vibrationOnly) {
+                            // Handle vibration only toggle
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Vibration only ${vibrationOnly ? 'enabled' : 'disabled'}'),
+                                backgroundColor: MAIZE_ACCENT,
+                              ),
+                            );
+                          },
+                        ));
+                      },
+                      
               ),
             ],
           ),
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: MAIZE_ACCENT,
-            ),
-          ),
-        );
-      },
-    );
-  }
+                SizedBox(height: kAppMediumPadding),
+                // SupportSection
+                _buildSectionCard(
+                  title: 'Support',
+                  children: [
+                    _buildMenuItem(
+                      title: 'About',
+                      subtitle: 'Know more about Maize Watch\'s objective and socials',
+                      icon: Icons.info_outline,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AboutScreen()),
+                        );
+                      },
+                      
+                    ),
 
-  Widget _buildUserInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100.w,
-          child: Text(
-            '$label :',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                    SizedBox(height: kAppMediumPadding),
 
-  Widget _buildNavigationCards() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-      child: Column(
-        children: [
-          _buildNavigationCard(
-            title: S.of(context).settings,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
+                    _buildMenuItem(
+                      title: 'Help',
+                      subtitle: 'Learn how to use the Maize Watch app',
+                      icon: Icons.help_outline,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        );
+                      },
+                      
+                    ),
+                  ],
                 ),
-              );
-            },
+                verticalSpace(kAppLargeGap),
+                
+                // Logout Section
+                _buildLogoutSection(),
+
+                
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(kAppMediumPadding),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.white, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           SizedBox(height: kAppSmallPadding),
-          _buildNavigationCard(
-            title: S.of(context).about,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
-              );
-            },
-          ),
+          ...children,
         ],
       ),
     );
   }
 
-  Widget _buildNavigationCard({
+  Widget _buildMenuItem({
     required String title,
-    required VoidCallback onTap,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,    
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(kAppMediumPadding),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w500,
-                color: MAIZE_ACCENT,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+        child: Container(
+           padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: MAIZE_ACCENT.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Icon(
+                  icon,
+                      color: MAIZE_ACCENT,
+                  size: 24.sp,
+                    ),
+                  ),
+              SizedBox(width: kAppMediumGap),
+                  Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
+                  ),
+                ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey,
-              size: 16.sp,
-            ),
-          ],
+               Icon(
+                Icons.north_east,
+                color: MAIZE_ACCENT,
+                size: 22.sp,
+              )
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLogoutButton() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            _showLogoutDialog();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: MAIZE_ACCENT,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(vertical: kAppMediumPadding),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
+  Widget _buildOptionItem({
+    required String title,
+    required String currentValue,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+      onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+      child: Container(
+          padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.w),
+              decoration: BoxDecoration(
+                color: MAIZE_ACCENT.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Icon(
+                  icon,
+                color: MAIZE_ACCENT,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: kAppMediumGap),
+            Expanded(
+                child: Padding(padding: EdgeInsets.only(right: kAppSmallPadding),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Spacer(),
+                    Text(
+                      currentValue,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8), fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            elevation: 2,
+            Icon(
+                Icons.chevron_right,
+                color: MAIZE_ACCENT,
+                size: 24.sp,
+              )
+            ],
           ),
-          child: Text(
-            S.of(context).logout,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutSection() {
+    return Center(
+      child: IntrinsicWidth(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.red[400],
+            borderRadius: BorderRadius.circular(30.r),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+              _showLogoutDialog();
+            },
+              borderRadius: BorderRadius.circular(30.r),
+              splashColor: Colors.red[200],
+              highlightColor: Colors.red[200],
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: kAppLargePadding*2, vertical: kAppMediumPadding),
+                child: Text(
+                  'Log out',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white, 
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -292,45 +446,53 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(S.of(context).logout_title),
-        content: Text(S.of(context).logout_message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.read<AuthenticationBloc>().add(LogoutEvent());
-            },
-            child: Text(S.of(context).logout),
-          ),
-        ],
-      ),
-    );
+    customOptionDialog(context, title: 'Log out', content: 'Are you sure you want to log out?', onYes: () {
+      context.read<AuthenticationBloc>().add(LogoutEvent());
+    });
   }
 
-  String _formatAddress(Map<String, dynamic> address) {
-    // Format address from the structured data
-    final parts = <String>[];
-    
-    if (address['barangay']?.isNotEmpty == true) {
-      parts.add(address['barangay']);
-    }
-    if (address['municipality']?.isNotEmpty == true) {
-      parts.add(address['municipality']);
-    }
-    if (address['province']?.isNotEmpty == true) {
-      parts.add(address['province']);
-    }
-    if (address['region']?.isNotEmpty == true) {
-      parts.add(address['region']);
-    }
-    
-    return parts.isNotEmpty ? parts.join(', ') : 'No address provided';
+  void _showOptionDialog(String title, Widget content) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: 600.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(kAppMediumPadding),
+                decoration: BoxDecoration(
+                  color: MAIZE_ACCENT,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(child: content),
+            ],
+          ),
+        ),
+          ),
+    );
   }
 }

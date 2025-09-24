@@ -127,4 +127,20 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       );
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> getCompleteAnalytics(
+    String farmId, {
+    String? fieldId,
+  }) async {
+    try {
+      return await remoteDataSource.getCompleteAnalytics(farmId, fieldId: fieldId);
+    } on ServerException catch (e) {
+      throw ServerFailure(e.message);
+    } on UnauthorizedException catch (e) {
+      throw UnauthorizedFailure(e.message);
+    } catch (e) {
+      throw ServerFailure('Failed to get complete analytics: ${e.toString()}');
+    }
+  }
 }

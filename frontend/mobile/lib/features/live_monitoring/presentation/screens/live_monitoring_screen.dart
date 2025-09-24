@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/features/live_monitoring/domain/usecases/get_localized_greeting.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../farm/presentation/bloc/farm_bloc.dart';
 import '../../../farm/domain/entities/farm.dart';
 import '../bloc/monitoring_bloc.dart';
@@ -25,6 +26,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   Field? _selectedField;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final NotificationService _notificationService = NotificationService();
+  Set<String> _notifiedPrescriptions = {};
 
   @override
   void initState() {
@@ -38,6 +41,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
+    // Initialize notification service
+    _notificationService.initialize();
 
     // Load initial data
     _loadData();
@@ -91,7 +97,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        backgroundColor: MAIZE_PRIMARY_LIGHT,
+        backgroundColor: Colors.white,
         body: _selectedFarm != null ? _buildFarmDetailView() : _buildHomeView(),
       ),
     );
@@ -507,7 +513,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       margin: EdgeInsets.only(top: kAppSmallPadding),
       padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MAIZE_PRIMARY_LIGHT,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20.r),
           topRight: Radius.circular(20.r),
@@ -629,9 +635,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         margin: EdgeInsets.only(bottom: 16.h),
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: Colors.white.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
+          border: Border.all(color: Colors.white, width: 1),
         ),
         child: Row(
           children: [
@@ -837,6 +843,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         print('🔍 Has Prescriptive: ${analyticsData['prescriptive'] != null}');
         print('🔍 Has Descriptive: ${analyticsData['descriptive'] != null}');
         print('🔍 Has Predictive: ${analyticsData['predictive'] != null}');
+        
+        // Debug prescriptive data
+        if (analyticsData['prescriptive'] != null) {
+          final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+          print('🔍 Prescriptive Keys: ${prescriptive.keys.toList()}');
+          print('🔍 Prescriptive Data: $prescriptive');
+        }
       }
 
       List<dynamic> recommendations = [];
@@ -853,14 +866,28 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       }
 
       if (recommendations.isNotEmpty) {
+        // Show notifications for new high-priority prescriptions
+        _showPrescriptionNotifications(recommendations);
+        
         // Convert analytics recommendations to task cards
         for (int i = 0; i < recommendations.length && i < 4; i++) {
           final rec = recommendations[i] as Map<String, dynamic>;
+          print('🔍 Processing recommendation $i: $rec');
+          
           final urgency = rec['urgency'] as String? ?? 'LOW';
           final timeline = rec['timeline'] as String? ?? '1 day';
           final action = rec['action'] as String? ?? 'Check farm';
           final details = rec['details'] as String? ?? '';
           final category = rec['category'] as String? ?? 'general';
+          
+          // Extract field-specific information
+          final fieldName = rec['field_name'] as String? ?? 'Unknown Field';
+          final soilType = rec['soil_type'] as String? ?? 'Unknown';
+          final growthStage = rec['growth_stage'] as String? ?? 'Unknown';
+          final fieldId = rec['field_id'] as String?;
+          final parameter = rec['parameter'] as String? ?? 'general';
+          
+          print('🔍 Extracted field data - Name: $fieldName, Soil: $soilType, Stage: $growthStage');
 
           // Format the title to show the actual action with better readability
           String formattedTitle = _formatRecommendationTitle(action, category);
@@ -882,6 +909,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             'isActive': urgency == 'HIGH' || urgency == 'URGENT',
             'details': details, // Store full details for potential expansion
             'category': category,
+            'fieldName': fieldName, // ✅ Add field-specific data
+            'soilType': soilType, // ✅ Add field-specific data
+            'growthStage': growthStage, // ✅ Add field-specific data
+            'fieldId': fieldId, // ✅ Add field-specific data
+            'parameter': parameter, // ✅ Add parameter info
+            'urgency': urgency, // ✅ Add urgency for detailed view
           });
         }
       } else if (monitoringState.isLoading) {
@@ -1405,5 +1438,32 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   String _getFieldDeviceCount(Field field) {
     final deviceCount = field.sensors.length;
     return '$deviceCount Device${deviceCount != 1 ? 's' : ''}';
+  }
+
+  void _showPrescriptionNotifications(List<dynamic> recommendations) {
+    for (final rec in recommendations) {
+      final recMap = rec as Map<String, dynamic>;
+      final action = recMap['action'] as String? ?? 'Farm Task';
+      final urgency = recMap['urgency'] as String? ?? 'LOW';
+      final details = recMap['details'] as String? ?? '';
+      final category = recMap['category'] as String? ?? 'general';
+      
+      // Create unique ID for this prescription
+      final prescriptionId = '${action}_${urgency}_${category}';
+      
+      // Only notify for high/urgent priority prescriptions that haven't been notified yet
+      if ((urgency.toUpperCase() == 'HIGH' || urgency.toUpperCase() == 'URGENT') && 
+          !_notifiedPrescriptions.contains(prescriptionId)) {
+        
+        _notificationService.showPrescriptionAlertNotification(
+          title: action,
+          message: details.isNotEmpty ? details : 'High priority farm task requires attention',
+          priority: urgency,
+        );
+        
+        // Mark as notified
+        _notifiedPrescriptions.add(prescriptionId);
+      }
+    }
   }
 }

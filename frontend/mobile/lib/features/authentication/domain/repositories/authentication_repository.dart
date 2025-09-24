@@ -12,4 +12,10 @@ abstract class AuthenticationRepository {
     Map<String, dynamic> address,
     String role,
   );
+  Future<Either<Failure, User>> updateProfile(
+    String userId,
+    String fullName,
+    String contactNumber,
+    Map<String, dynamic> address,
+  );
 }

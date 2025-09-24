@@ -20,6 +20,7 @@ class LanguageSettingsWidget extends StatefulWidget {
 class _LanguageSettingsWidgetState extends State<LanguageSettingsWidget> {
   final List<Map<String, String>> languages = [
     {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
+    {'code': 'tl', 'name': 'Filipino', 'flag': '🇵🇭'},
   ];
 
   @override

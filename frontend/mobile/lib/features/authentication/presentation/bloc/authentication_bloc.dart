@@ -7,6 +7,7 @@ import '../../../../core/services/session_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
+import '../../domain/usecases/update_profile.dart';
 
 part 'authentication_event.dart';
 part 'authentication_state.dart';
@@ -15,17 +16,20 @@ class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationState> {
   final LoginUser loginUseCase;
   final RegisterUser registerUseCase;
+  final UpdateProfile updateProfileUseCase;
   final SessionService _sessionService = SessionService();
 
   AuthenticationBloc({
     required this.loginUseCase,
     required this.registerUseCase,
+    required this.updateProfileUseCase,
   }) : super(const AuthenticationState()) {
     on<LoginEvent>(_onLogin);
     on<RegisterEvent>(_onRegister);
     on<LogoutEvent>(_onLogout);
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<InitializeSessionEvent>(_onInitializeSession);
+    on<UpdateProfileEvent>(_onUpdateProfile);
   }
 
   Future<void> _onLogin(
@@ -250,6 +254,71 @@ class AuthenticationBloc
   ) async {
     print("🔐 AuthBloc: Initializing session");
     await _sessionService.initialize();
+  }
+
+  Future<void> _onUpdateProfile(
+    UpdateProfileEvent event,
+    Emitter<AuthenticationState> emit,
+  ) async {
+    print("🔐 AuthBloc: Starting profile update for user: ${event.userId}");
+    print("🔐 AuthBloc: Update data - fullName: ${event.fullName}, contactNumber: ${event.contactNumber}");
+    print("🔐 AuthBloc: Address data: ${event.address} (type: ${event.address.runtimeType})");
+    
+    emit(state.copyWith(status: AuthenticationStatus.loading));
+
+    try {
+      final result = await updateProfileUseCase(
+        userId: event.userId,
+        fullName: event.fullName,
+        contactNumber: event.contactNumber,
+        address: event.address,
+      );
+
+      print("🔐 AuthBloc: updateProfileUseCase completed");
+      print("🔐 AuthBloc: Result type: ${result.runtimeType}");
+      
+      result.fold(
+        (failure) {
+          print("🚨 AuthBloc: Profile update failed: ${failure.toString()}");
+          emit(
+            state.copyWith(
+              status: AuthenticationStatus.failure,
+              message: _mapFailureToString(failure),
+            ),
+          );
+        },
+        (updatedUser) {
+          print("🔐 AuthBloc: Success callback called");
+          print("🔐 AuthBloc: UpdatedUser type: ${updatedUser.runtimeType}");
+          print("🔐 AuthBloc: Profile updated successfully for user: ${updatedUser.username}");
+          print("🔐 AuthBloc: Updated user address: ${updatedUser.address} (type: ${updatedUser.address.runtimeType})");
+          
+          try {
+            print("🔐 AuthBloc: About to emit updated state...");
+            emit(
+              state.copyWith(
+                status: AuthenticationStatus.authenticated,
+                user: updatedUser,
+                message: "Profile updated successfully",
+              ),
+            );
+            print("🔐 AuthBloc: State emitted successfully");
+          } catch (e, stackTrace) {
+            print("🚨 AuthBloc: Error emitting state: $e");
+            print("🚨 AuthBloc: Stack trace: $stackTrace");
+            rethrow;
+          }
+        },
+      );
+    } catch (e) {
+      print("🚨 AuthBloc: Exception during profile update: $e");
+      emit(
+        state.copyWith(
+          status: AuthenticationStatus.failure,
+          message: "Profile update failed: $e",
+        ),
+      );
+    }
   }
 
   String _mapFailureToString(Failure failure) {

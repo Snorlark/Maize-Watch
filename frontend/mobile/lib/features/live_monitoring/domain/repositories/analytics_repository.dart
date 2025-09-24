@@ -5,4 +5,5 @@ abstract class AnalyticsRepository {
   Future<MetricsModel> getCurrentMetrics(String farmId, {String? fieldId});
   Future<WeeklyDataModel> getWeeklyHistoricalData(String farmId, {String? fieldId});
   Future<GrowthStageAnalysisModel> getGrowthStageAnalysis(String farmId, {String? fieldId});
+  Future<Map<String, dynamic>> getCompleteAnalytics(String farmId, {String? fieldId});
 }

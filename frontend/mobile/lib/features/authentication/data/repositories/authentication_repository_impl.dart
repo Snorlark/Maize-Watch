@@ -52,4 +52,29 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
       return Left(ServerFailure('Unexpected error: $e'));
     }
   }
+
+  @override
+  Future<Either<Failure, User>> updateProfile(
+    String userId,
+    String fullName,
+    String contactNumber,
+    Map<String, dynamic> address,
+  ) async {
+    try {
+      final userData = {
+        "fullName": fullName,
+        "contactNumber": contactNumber,
+        "address": address,
+      };
+
+      print("📤 Update profile payload: $userData");
+
+      final user = await remoteDataSource.updateProfile(userId, userData);
+      return Right(user);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Unexpected error: $e'));
+    }
+  }
 }
