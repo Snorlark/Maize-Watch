@@ -102,6 +102,9 @@ interface ExportOptions {
   format: 'pdf' | 'csv' | 'svg';
   chartType: 'temperature' | 'humidity' | 'soilMoisture' | 'soilPh' | 'lightIntensity';
   currentOverview: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  exportType?: 'predefined' | 'custom';
+  timeFrame?: 'day' | 'week' | 'month' | 'year';
+  customDateRange?: { startDate: string; endDate: string };
   dateRange?: DateRange;
   includeChartImage?: boolean;
   includeTabularData?: boolean;
@@ -137,19 +140,24 @@ const getStatus = (value: number, thresholds: { min: number; max: number; critic
 };
 
 // Helper function to generate standardized filename
-const generateFilename = (chartType: string, format: string, overview: string, dateRange?: DateRange, customRange?: { startDate: Date; endDate: Date }) => {
+const generateFilename = (chartType: string, format: string, options: ExportOptions) => {
   const config = CHART_CONFIGS[chartType as keyof typeof CHART_CONFIGS];
   const shortName = config.shortName;
   const now = new Date();
   const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
   
-  let period = overview;
-  if (customRange) {
-    const start = customRange.startDate.toISOString().split('T')[0];
-    const end = customRange.endDate.toISOString().split('T')[0];
+  let period: string = options.currentOverview;
+  
+  if (options.customDateRange) {
+    const start = new Date(options.customDateRange.startDate).toISOString().split('T')[0];
+    const end = new Date(options.customDateRange.endDate).toISOString().split('T')[0];
     period = `${start}_to_${end}`;
-  } else if (dateRange && dateRange.from && dateRange.to) {
-    period = `${dateRange.from}_to_${dateRange.to}`;
+  } else if (options.timeFrame) {
+    period = options.timeFrame;
+  } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+    const start = new Date(options.dateRange.from).toISOString().split('T')[0];
+    const end = new Date(options.dateRange.to).toISOString().split('T')[0];
+    period = `${start}_to_${end}`;
   }
   
   return `MaizeWatch_${shortName}_${timestamp}.${format}`;
@@ -462,7 +470,7 @@ const exportToPdf = async (
     // Calculate statistics
     const stats = calculateStatistics(chartData);
     
-    // Add statistics section with proper spacing
+    // Add statistics section
     if (stats) {
       // Check if we need a new page for statistics
       if (yCursor + 60 > pageHeight - 50) {
@@ -478,7 +486,6 @@ const exportToPdf = async (
       pdf.setFontSize(11);
       pdf.setTextColor(75, 85, 99);
       
-      // Statistics in a more compact layout
       const statY = yCursor;
       pdf.text(`Average: ${stats.average.toFixed(2)} ${config.unit}`, margin, statY);
       pdf.text(`Minimum: ${stats.min.toFixed(2)} ${config.unit}`, margin + 70, statY);
@@ -486,7 +493,9 @@ const exportToPdf = async (
       yCursor += 8;
       
       pdf.text(`Total Records: ${stats.count}`, margin, yCursor);
-      pdf.text(`Sum: ${stats.total.toFixed(2)} ${config.unit}`, margin + 70, yCursor);
+      if (stats.count > 0) {
+        pdf.text(`Sum: ${stats.total.toFixed(2)} ${config.unit}`, margin + 70, yCursor);
+      }
       yCursor += 20;
     }
     
@@ -525,9 +534,9 @@ const exportToPdf = async (
         xPos += columnWidths[index];
       });
       
-      // Draw table rows (limit to first 25 rows for better fit)
+      // Draw table rows (limit to first 30 rows for better fit)
       let yPos = startY + rowHeight;
-      const dataToShow = chartData.slice(0, 25);
+      const dataToShow = chartData.slice(0, 30);
       
       dataToShow.forEach((dataPoint, index) => {
         // Check if we need a new page
@@ -557,9 +566,9 @@ const exportToPdf = async (
         xPos = margin;
         pdf.setFontSize(9);
         
-        // X-axis value
-        const xValue = dataPoint[xKey] || dataPoint.timestamp || '';
-        pdf.text(String(xValue), xPos + 2, yPos + 5.5);
+        // Period value
+        const periodValue = dataPoint[xKey] || dataPoint.day || dataPoint.week || dataPoint.month || 'N/A';
+        pdf.text(String(periodValue), xPos + 2, yPos + 5.5);
         xPos += columnWidths[0];
         
         // Value
@@ -571,14 +580,14 @@ const exportToPdf = async (
       });
       
       // Add note if data was truncated
-      if (chartData.length > 25) {
+      if (chartData.length > 30) {
         if (yPos + 10 > pageHeight - 30) {
           pdf.addPage();
           yPos = margin;
         }
         pdf.setFontSize(8);
         pdf.setTextColor(107, 114, 128);
-        pdf.text(`Note: Showing first 25 of ${chartData.length} records. Full data available in CSV export.`, margin, yPos + 5);
+        pdf.text(`Note: Showing first 30 of ${chartData.length} records. Full data available in CSV export.`, margin, yPos + 5);
       }
     }
     
@@ -589,7 +598,7 @@ const exportToPdf = async (
     pdf.text("Maize Watch - Smart Agriculture Monitoring System", pageWidth / 2, footerY, { align: "center" });
     
     // Save the PDF with standardized filename
-    const filename = generateFilename(options.chartType, 'pdf', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'pdf', options);
     pdf.save(filename);
   } catch (error) {
     console.error("Error exporting to PDF:", error);
@@ -612,7 +621,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
     
     // Create download link with standardized filename
     const link = document.createElement("a");
-    const filename = generateFilename(options.chartType, 'svg', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'svg', options);
     link.download = filename;
     link.href = dataUrl;
     link.click();
@@ -623,7 +632,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
 };
 
 /**
- * Export to CSV with professional formatting
+ * Export to CSV with professional formatting and restored statistics
  */
 const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
   try {
@@ -633,6 +642,9 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
+    
+    // Calculate statistics first
+    const stats = calculateStatistics(chartData);
     
     // Create the main data rows
     const dataRows = chartData.map(item => {
@@ -664,20 +676,19 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
       const value = item.value;
       const valueText = value !== null ? value.toFixed(2) : 'N/A';
       const csvRow: Record<string, string> = {
-        [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: xValue,
+        [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: String(periodValue),
         [`${config.fieldName} (${config.unit})`]: valueText
       };
       // Removed Data Points column as requested
       return csvRow;
     });
-    
-    // Calculate statistics
-    const stats = calculateStatistics(chartData);
-    
-    // Create summary analytics section
+
+    // Create comprehensive summary section
     const summaryRows = [
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'SUMMARY ANALYTICS' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'MAIZE WATCH EXPORT SUMMARY' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'REPORT DETAILS:' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sensor Type: ${config.fieldName}` },
@@ -729,22 +740,25 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' }
     );
     
-    // Add date range if available
-    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
-      summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Date Range: ${options.dateRange.from} to ${options.dateRange.to}` });
-    }
-    
-    summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' });
-    
-    // Add statistics if available
+    // Add comprehensive statistics if available
     if (stats) {
       summaryRows.push(
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Statistics' },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Records: ${stats.count}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Average ${config.fieldName}: ${stats.average.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Minimum ${config.fieldName}: ${stats.min.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Maximum ${config.fieldName}: ${stats.max.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sum ${config.fieldName}: ${stats.total.toFixed(2)} ${config.unit}` }
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'STATISTICAL ANALYSIS' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'DATA OVERVIEW:' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Data Records: ${chartData.length}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Valid Measurements: ${stats.count}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Missing/Invalid: ${chartData.length - stats.count}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Data Completeness: ${((stats.count / chartData.length) * 100).toFixed(1)}%` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'MEASUREMENT STATISTICS:' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Average ${config.fieldName}: ${stats.average.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Minimum ${config.fieldName}: ${stats.min.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Maximum ${config.fieldName}: ${stats.max.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Sum: ${stats.total.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Range (Max - Min): ${(stats.max - stats.min).toFixed(3)} ${config.unit}` }
       );
 
       // Remove threshold/status sections per request
@@ -768,7 +782,7 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const filename = generateFilename(options.chartType, 'csv', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'csv', options);
     link.download = filename;
     link.href = url;
     link.click();
@@ -793,6 +807,9 @@ const exportChartData = async (
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
   try {
+    console.log('Export Options:', options);
+    console.log('Original Chart Data:', chartData);
+    
     const config = CHART_CONFIGS[options.chartType];
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
@@ -818,7 +835,7 @@ const exportChartData = async (
 
     switch (format) {
       case 'pdf':
-        await exportToPdf(chartData, xKey, config.title, options, chartRef);
+        await exportToPdf(processedData, xKey, config.title, options, chartRef);
         break;
       case 'svg':
         if (chartRef?.current) {
@@ -828,7 +845,7 @@ const exportChartData = async (
         }
         break;
       case 'csv':
-        exportToCsv(chartData, options);
+        exportToCsv(processedData, options);
         break;
       default:
         throw new Error(`Unsupported format: ${format}`);

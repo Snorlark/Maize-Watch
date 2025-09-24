@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, User, Activity, Clock, MapPin, Smartphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Activity } from 'lucide-react';
 import Footer from '../components/Footer';
+import ActivityLogTable from '../components/ActivityLogTable';
 import apiClient from '../api/client';
 import authService from '../api/services/authService';
 
@@ -8,7 +9,8 @@ interface ActivityLog {
   _id: string;
   userId: {
     _id: string;
-    name: string;
+    username: string;
+    fullName: string;
     email: string;
   };
   userEmail: string;
@@ -45,7 +47,6 @@ const ActivityLogPage: React.FC = () => {
     endDate: '',
     search: ''
   });
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     fetchLogs(1);
@@ -74,8 +75,11 @@ const ActivityLogPage: React.FC = () => {
 
       const response = await apiClient.get('/api/activity-logs', { params });
       
-      setLogs(response.data.logs || []);
-      setTotalPages(response.data.totalPages || 1);
+      // The backend wraps the response in a success/data structure
+      const responseData = response.data.data || response.data;
+      
+      setLogs(responseData.logs || []);
+      setTotalPages(responseData.pagination?.totalPages || 1);
       setCurrentPage(page);
     } catch (error: any) {
       console.error('Failed to fetch activity logs:', error);
@@ -107,50 +111,8 @@ const ActivityLogPage: React.FC = () => {
     });
   };
 
-  const getActionColor = (action: string) => {
-    const colors = {
-      login: 'bg-green-100 text-green-800',
-      logout: 'bg-gray-100 text-gray-600',
-      create: 'bg-blue-100 text-blue-800',
-      update: 'bg-yellow-100 text-yellow-800',
-      delete: 'bg-red-100 text-red-800',
-      view: 'bg-purple-100 text-purple-800'
-    };
-    
-    for (const [key, color] of Object.entries(colors)) {
-      if (action.toLowerCase().includes(key)) return color;
-    }
-    return 'bg-gray-100 text-gray-600';
-  };
-
-  const getRoleColor = (role: string) => {
-    const colors = {
-      super_admin: 'bg-red-100 text-red-800',
-      admin: 'bg-orange-100 text-orange-800',
-      user: 'bg-blue-100 text-blue-800'
-    };
-    return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-600';
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getBrowserFromUserAgent = (userAgent: string) => {
-    if (userAgent.includes('Chrome')) return 'Chrome';
-    if (userAgent.includes('Firefox')) return 'Firefox';
-    if (userAgent.includes('Safari')) return 'Safari';
-    if (userAgent.includes('Edge')) return 'Edge';
-    return 'Unknown';
-  };
-
-  const getOSFromUserAgent = (userAgent: string) => {
-    if (userAgent.includes('Windows')) return 'Windows';
-    if (userAgent.includes('Mac')) return 'macOS';
-    if (userAgent.includes('Linux')) return 'Linux';
-    if (userAgent.includes('Android')) return 'Android';
-    if (userAgent.includes('iOS')) return 'iOS';
-    return 'Unknown';
+  const handlePageChange = (page: number) => {
+    fetchLogs(page);
   };
 
   return (
@@ -169,24 +131,15 @@ const ActivityLogPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
             <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
-              Activity Log
-            </h1>
+            Activity Log
+          </h1>
           <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             Monitor all admin and user activities across the system
           </p>
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
               Admin Access
             </span>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
-              style={{ fontSize: 'var(--text-sm)' }}
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-              {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
           </div>
         </div>
 
@@ -207,231 +160,97 @@ const ActivityLogPage: React.FC = () => {
         )}
 
         {/* Filters */}
-        {showFilters && (
-          <div className="bg-white rounded-lg shadow-sm border border-[#B8D4A8] p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              <div>
-                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Search</label>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search users, actions..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
-                    style={{ fontSize: 'var(--text-sm)' }}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Action</label>
-                <select
-                  value={filters.action}
-                  onChange={(e) => handleFilterChange('action', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
-                  style={{ fontSize: 'var(--text-sm)' }}
-                >
-                  <option value="">All Actions</option>
-                  <option value="login">Login</option>
-                  <option value="create">Create</option>
-                  <option value="update">Update</option>
-                  <option value="delete">Delete</option>
-                  <option value="view">View</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Resource</label>
-                <select
-                  value={filters.resource}
-                  onChange={(e) => handleFilterChange('resource', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
-                  style={{ fontSize: 'var(--text-sm)' }}
-                >
-                  <option value="">All Resources</option>
-                  <option value="user">User</option>
-                  <option value="post">Post</option>
-                  <option value="settings">Settings</option>
-                  <option value="auth">Authentication</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Start Date</label>
+        <div className="bg-white rounded-lg shadow-sm border border-[#B8D4A8] p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div>
+              <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Search</label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                 <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
-                  style={{ fontSize: 'var(--text-sm)' }}
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>End Date</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                  type="text"
+                  placeholder="Search users, actions..."
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
                   style={{ fontSize: 'var(--text-sm)' }}
                 />
               </div>
             </div>
             
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 text-[#4A7C59] hover:text-[#356B2C] transition-colors"
+            <div>
+              <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Action</label>
+              <select
+                value={filters.action}
+                onChange={(e) => handleFilterChange('action', e.target.value)}
+                className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
                 style={{ fontSize: 'var(--text-sm)' }}
               >
-                Clear Filters
-              </button>
+                <option value="">All Actions</option>
+                <option value="login">Login</option>
+                <option value="create">Create</option>
+                <option value="update">Update</option>
+                <option value="delete">Delete</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Resource</label>
+              <select
+                value={filters.resource}
+                onChange={(e) => handleFilterChange('resource', e.target.value)}
+                className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                style={{ fontSize: 'var(--text-sm)' }}
+              >
+                <option value="">All Resources</option>
+                <option value="user">User</option>
+                <option value="post">Post</option>
+                <option value="settings">Settings</option>
+                <option value="auth">Authentication</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Start Date</label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                style={{ fontSize: 'var(--text-sm)' }}
+              />
+            </div>
+
+            <div>
+              <label className="block font-medium text-[#356B2C] mb-2" style={{ fontSize: 'var(--text-sm)' }}>End Date</label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full px-3 py-2 border border-[#B8D4A8] rounded-lg focus:ring-2 focus:ring-[#356B2C] focus:border-transparent"
+                style={{ fontSize: 'var(--text-sm)' }}
+              />
             </div>
           </div>
-        )}
-
-        {/* Activity Log Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#B8D4A8] overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#356B2C]"></div>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[#F5F9F1] border-b border-[#B8D4A8]">
-                    <tr>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        User
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        Role
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        Action
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        Resource
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        Timestamp
-                      </th>
-                      <th className="px-6 py-3 text-left font-medium text-[#356B2C] uppercase tracking-wider" style={{ fontSize: 'var(--text-xs)' }}>
-                        Details
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-[#E8F2E0]">
-                    {logs.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-[#4A7C59]" style={{ fontSize: 'var(--text-base)' }}>
-                          {error ? 'Failed to load activity logs' : 'No activity logs found'}
-                        </td>
-                      </tr>
-                    ) : (
-                      logs.map((log) => (
-                        <tr key={log._id} className="hover:bg-[#F9FBF7]">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8">
-                                <div className="h-8 w-8 rounded-full bg-[#B8D4A8] flex items-center justify-center">
-                                  <User className="w-4 h-4 text-[#356B2C]" />
-                                </div>
-                              </div>
-                              <div className="ml-3">
-                                <div className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
-                                  {log.userId?.name || 'Unknown User'}
-                                </div>
-                                <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
-                                  {log.userEmail}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${getRoleColor(log.userRole)}`} style={{ fontSize: 'var(--text-xs)' }}>
-                              {log.userRole}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${getActionColor(log.action)}`} style={{ fontSize: 'var(--text-xs)' }}>
-                              {log.action}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>{log.resource}</div>
-                            {log.resourceId && (
-                              <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>ID: {log.resourceId}</div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
-                              <Clock className="w-4 h-4 mr-1 text-[#4A7C59]" />
-                              {formatDate(log.timestamp)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
-                                <MapPin className="w-3 h-3 mr-1" />
-                                {log.ipAddress}
-                              </div>
-                              <div className="flex items-center text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
-                                <Smartphone className="w-3 h-3 mr-1" />
-                                {getBrowserFromUserAgent(log.userAgent)} on {getOSFromUserAgent(log.userAgent)}
-                              </div>
-                              {log.details && Object.keys(log.details).length > 0 && (
-                                <details style={{ fontSize: 'var(--text-xs)' }}>
-                                  <summary className="cursor-pointer text-[#356B2C] hover:text-[#2D5A24]">
-                                    View Details
-                                  </summary>
-                                  <pre className="mt-1 p-2 bg-[#F5F9F1] rounded overflow-x-auto text-[#356B2C]" style={{ fontSize: 'var(--text-xs)' }}>
-                                    {JSON.stringify(log.details, null, 2)}
-                                  </pre>
-                                </details>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-[#F5F9F1] px-6 py-3 border-t border-[#B8D4A8] flex items-center justify-between">
-                  <div className="text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => fetchLogs(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
-                      style={{ fontSize: 'var(--text-sm)' }}
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => fetchLogs(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 border border-[#B8D4A8] rounded hover:bg-[#E8F2E0] disabled:opacity-50 disabled:cursor-not-allowed text-[#356B2C]"
-                      style={{ fontSize: 'var(--text-sm)' }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-[#4A7C59] hover:text-[#356B2C] transition-colors"
+              style={{ fontSize: 'var(--text-sm)' }}
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
+
+        {/* Activity Log Table Component */}
+        <ActivityLogTable
+          logs={logs}
+          loading={loading}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       </main>
 
       <Footer />
