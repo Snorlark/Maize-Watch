@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../../../../core/config/environment.dart';
@@ -9,6 +10,7 @@ import '../model/user_model.dart';
 abstract class AuthenticationRemoteDataSource {
   Future<UserModel> login(String username, String password);
   Future<UserModel> register(Map<String, dynamic> userData);
+  Future<UserModel> updateProfile(String userId, Map<String, dynamic> userData);
   Future<String?> refreshToken();
 }
 
@@ -175,6 +177,73 @@ class AuthenticationRemoteDataSourceImpl
     } catch (e) {
       print("🚨 General exception in register: ${e.toString()}");
       throw ServerException("Registration failed: $e");
+    }
+  }
+
+  // ---------------- UPDATE PROFILE ----------------
+  @override
+  Future<UserModel> updateProfile(String userId, Map<String, dynamic> userData) async {
+    try {
+      print("🔐 Frontend: Attempting to update profile for user: $userId");
+      print("🔐 Frontend: Sending request to: $baseUrl/api/users/$userId");
+      
+      // Get the access token
+      final accessToken = await SecureStorage.getToken();
+      if (accessToken == null) {
+        throw ServerException("No access token available");
+      }
+
+      print("🔐 Frontend: Access token length: ${accessToken.length}");
+      print("🔐 Frontend: Access token preview: ${accessToken.substring(0, 20)}...");
+      print("📤 Update profile payload: $userData");
+      
+      final response = await client
+          .put(
+            '$baseUrl/api/users/$userId',
+            data: userData,
+            options: Options(
+              contentType: Headers.jsonContentType,
+              headers: {
+                'Authorization': 'Bearer $accessToken',
+              },
+            ),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      print("🔐 Frontend: Response status: ${response.statusCode}");
+      print("🔐 Frontend: Response data: ${response.data}");
+
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        final data = response.data['data'];
+        print("🔐 Frontend: Profile update data structure: $data");
+
+        if (data != null && data['user'] != null) {
+          print("🔐 Frontend: Creating updated user model...");
+          final userModel = UserModel.fromJson(data['user']);
+          print("🔐 Frontend: Updated user model created: ${userModel.username}");
+          
+          // Update stored user data
+          await SecureStorage.storeUserData(jsonEncode(data['user']));
+          
+          return userModel;
+        } else {
+          print("🚨 Frontend: No valid user data in response");
+          throw ServerException("Profile update failed: No valid user data received");
+        }
+      } else {
+        print("🚨 Frontend: Profile update failed - Status: ${response.statusCode}, Success: ${response.data['success']}");
+        throw ServerException(
+          response.data['message'] ?? "Profile update failed",
+        );
+      }
+    } on DioException catch (e) {
+      print("🚨 Frontend: DioException during profile update: ${e.toString()}");
+      print("🚨 Frontend: Response data: ${e.response?.data}");
+      print("🚨 Frontend: Status code: ${e.response?.statusCode}");
+      throw _mapDioError(e, "Profile update failed");
+    } catch (e) {
+      print("🚨 Frontend: General exception during profile update: ${e.toString()}");
+      throw ServerException("Profile update failed: $e");
     }
   }
 

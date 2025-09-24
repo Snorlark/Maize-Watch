@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { HTTP_STATUS, USER_ROLES, RESPONSE_MESSAGES } from '../utils/constants';
 import { logger } from '../utils/logger';
+import { AppError } from './errorHandler';
 
 // Extend Request interface to include user
 declare global {
@@ -57,7 +58,13 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 
     // Verify token
-    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    } catch (error: any) {
+      logger.error('JWT verification failed', { error: error.message });
+      throw new AppError('Authentication error: ' + error.message, HTTP_STATUS.UNAUTHORIZED);
+    }
 
     // Find user in database
     const user = await User.findById(decoded.id).select('-password -refreshTokens');

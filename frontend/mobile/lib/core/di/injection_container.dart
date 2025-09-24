@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 
 import '../../features/authentication/domain/usecases/login_user.dart';
 import '../../features/authentication/domain/usecases/register_user.dart';
+import '../../features/authentication/domain/usecases/update_profile.dart';
 import '../../features/live_monitoring/data/datasources/monitoring_remote_datasource.dart';
 import '../../features/live_monitoring/data/repositories/monitoring_repository_impl.dart';
 import '../../features/live_monitoring/domain/repositories/monitoring_repository.dart';
@@ -50,10 +51,15 @@ Future<void> init() async {
   // Use cases
   sl.registerLazySingleton(() => LoginUser(sl()));
   sl.registerLazySingleton(() => RegisterUser(sl()));
+  sl.registerLazySingleton(() => UpdateProfile(sl()));
 
   // BLoCs
   sl.registerFactory(
-    () => AuthenticationBloc(loginUseCase: sl(), registerUseCase: sl()),
+    () => AuthenticationBloc(
+      loginUseCase: sl(), 
+      registerUseCase: sl(),
+      updateProfileUseCase: sl(),
+    ),
   );
 
   // Initialize farm feature dependencies

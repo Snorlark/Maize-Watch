@@ -26,7 +26,7 @@ class CornRegistrationAppBar extends StatelessWidget
       leading:
           showBackButton
               ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                icon: const Icon(Icons.arrow_back, color: MAIZE_ACCENT),
                 onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
               )
               : null,

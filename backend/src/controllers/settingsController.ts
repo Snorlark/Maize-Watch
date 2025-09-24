@@ -3,6 +3,16 @@ import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../utils/constants';
 import { logger } from '../utils/logger';
 
+// Function to check if sensors are in sleep mode (8pm-3am PH time)
+function checkSensorSleepMode(now: Date): boolean {
+  // Convert to Philippines time (UTC+8)
+  const phTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+  const hour = phTime.getUTCHours();
+  
+  // Sleep mode is active from 8pm (20:00) to 3am (03:00) PH time
+  return hour >= 20 || hour < 3;
+}
+
 // Mock settings data - in production this would come from database
 const defaultSettings = {
   notificationsEnabled: true,
@@ -138,17 +148,73 @@ export const getSensorStatus = catchAsync(async (req: Request, res: Response) =>
 
   logger.info(`Getting sensor status for user: ${currentUser.id}`);
 
-  // In production, fetch real sensor status from database
-  // For now, return mock data
-  const sensorStatus = {
-    ldr: Math.random() > 0.5,
-    ph: Math.random() > 0.5,
-    dht: Math.random() > 0.5,
-    soil: Math.random() > 0.5,
-  };
+  try {
+    // Import ThingSpeak service
+    const thingSpeakService = (await import('../services/thingspeakService')).default;
+    
+    // Get latest data from ThingSpeak
+    const latestData = await thingSpeakService.fetchLatestDataFromThingSpeakChannel(process.env.THINGSPEAK_CHANNEL_ID!);
+    
+    // Define 30 minutes in milliseconds
+    const THIRTY_MINUTES = 30 * 60 * 1000;
+    const now = new Date();
+    
+    // Check if sensors are in sleep mode (8pm-3am PH time)
+    const isSleepMode = checkSensorSleepMode(now);
+    
+    // Check if data is recent (within 30 minutes)
+    const isDataRecent = latestData && (now.getTime() - latestData.timestamp.getTime()) < THIRTY_MINUTES;
+    
+    // Determine sensor status based on data availability, recency, and sleep mode
+    const sensorStatus = {
+      // Temperature - field1
+      temperature: !isSleepMode && isDataRecent && latestData && 
+                  latestData.temperature !== null,
+      
+      // Humidity - field2
+      humidity: !isSleepMode && isDataRecent && latestData && 
+                latestData.humidity !== null,
+      
+      // Soil Moisture - field3
+      soilMoisture: !isSleepMode && isDataRecent && latestData && 
+                    latestData.soilMoisture !== null,
+      
+      // Soil pH - field4
+      soilPh: !isSleepMode && isDataRecent && latestData && 
+              latestData.soilPh !== null,
+      
+      // Light Intensity - field5
+      lightIntensity: !isSleepMode && isDataRecent && latestData && 
+                      latestData.lightIntensity !== null,
+      
+      // Sleep mode indicator
+      sleepMode: isSleepMode,
+    };
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    data: sensorStatus,
-  });
+    logger.info(`Sensor status determined: ${JSON.stringify(sensorStatus)}`);
+    logger.info(`Data recent: ${isDataRecent}, Latest data timestamp: ${latestData?.timestamp}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: sensorStatus,
+    });
+  } catch (error) {
+    logger.error('Error fetching sensor status from ThingSpeak:', error);
+    
+    // Return all sensors as inactive if ThingSpeak is unavailable
+    const isSleepMode = checkSensorSleepMode(new Date());
+    const sensorStatus = {
+      temperature: false,
+      humidity: false,
+      soilMoisture: false,
+      soilPh: false,
+      lightIntensity: false,
+      sleepMode: isSleepMode,
+    };
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: sensorStatus,
+    });
+  }
 });

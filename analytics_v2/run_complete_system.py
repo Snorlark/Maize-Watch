@@ -96,17 +96,26 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
     temp_forecast = weather.get('temperature_forecast', {})
     if temp_forecast and 'min_temp' in temp_forecast and 'max_temp' in temp_forecast:
         print(f"Temperature: {temp_forecast['min_temp']}-{temp_forecast['max_temp']}°C")
+    elif 'current' in weather and 'temperature' in weather['current']:
+        current_temp = weather['current']['temperature']
+        print(f"Temperature: {current_temp}°C (current)")
     else:
         print("Temperature: Data not available")
     
     # Safely get humidity forecast
     humidity = weather.get('humidity_forecast', 'N/A')
+    if humidity == 'N/A' and 'current' in weather and 'humidity' in weather['current']:
+        humidity = weather['current']['humidity']
     print(f"Humidity: {humidity}%")
     
     # Safely get rain probability
     rain_prob = weather.get('rainfall_probability', {})
     if rain_prob and 'light_rain_probability' in rain_prob:
         print(f"Rain Probability: {rain_prob['light_rain_probability']}%")
+    elif 'forecast' in weather and weather['forecast']:
+        first_forecast = weather['forecast'][0]
+        rain_prob = first_forecast.get('rainfall_probability', 0)
+        print(f"Rain Probability: {rain_prob}%")
     else:
         print("Rain Probability: Data not available")
     

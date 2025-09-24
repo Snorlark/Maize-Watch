@@ -22,14 +22,13 @@ class User extends Equatable {
   });
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
     id,
     username,
     fullName,
     contactNumber,
     address,
     role,
-
-    if (password != null) password!, // Include password only if it's not null
+    password, // Include password (can be null)
   ];
 }

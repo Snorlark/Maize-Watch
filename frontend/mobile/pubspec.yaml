@@ -22,8 +22,10 @@ dependencies:
   flutter_map: ^8.2.1
   flutter_screenutil: ^5.9.3
   flutter_secure_storage: ^9.2.2
+  flutter_local_notifications: ^17.2.2
   get_it: ^7.6.4
   google_fonts: ^6.3.0
+  http: ^1.1.0
   icons_flutter: ^0.0.5
   intl: any
   latlong2: ^0.9.1

@@ -195,9 +195,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
           verticalSpace(5.h),
           Text(
             l10n.prescriptions_subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white),
           ),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: kAppLargeGap),
           
           // Task summary cards
           _buildTaskSummaryCards(theme, prescriptionCount),
@@ -380,9 +380,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         'urgency': recMap['urgency'] ?? 'MEDIUM',
         'timeline': recMap['timeline'] ?? 'Today',
         'parameter': recMap['parameter'] ?? 'general',
-        'fieldName': 'Main Field', // Will be updated with real field data
-        'soilType': 'Loam', // Will be updated with real soil data
-        'growthStage': 'V8', // Will be updated with real growth stage
+        'fieldName': recMap['field_name'] ?? 'Unknown Field', // ✅ Use real field data
+        'soilType': recMap['soil_type'] ?? 'Unknown', // ✅ Use real soil data
+        'growthStage': recMap['growth_stage'] ?? 'Unknown', // ✅ Use real growth stage
+        'fieldId': recMap['field_id'], // ✅ Include field ID
         'priority': _mapUrgencyToPriority(recMap['urgency'] ?? 'MEDIUM'),
         'status': 'pending',
         'dueDate': _calculateDueDate(recMap['timeline'] ?? 'Today'),

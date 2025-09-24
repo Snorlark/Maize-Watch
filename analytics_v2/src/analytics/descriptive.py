@@ -136,6 +136,9 @@ class DescriptiveAnalytics:
                 else:
                     growth_stage = farm["fields"][0].get("growthStage", "Unknown")
 
+            # Calculate days since planting for this field
+            days_since_planting = self._calculate_days_since_planting(farm, field_id)
+            
             results = {
                 "farmer_id": farmer_id,
                 "farm_id": farm_id,
@@ -144,7 +147,8 @@ class DescriptiveAnalytics:
                 "growth_stage": growth_stage,
                 "overall_stress": overall_stress,
                 "stress_analysis": self._analyze_stress_factors_from_sensor_data(sensor_data),
-                "weather_summary": self._summarize_sensor_data(sensor_data)
+                "weather_summary": self._summarize_sensor_data(sensor_data),
+                "daysSincePlanting": days_since_planting
             }
 
             return results
@@ -632,6 +636,58 @@ class DescriptiveAnalytics:
         summary['data_points'] = len(sensor_data)
         
         return summary
+
+    def _calculate_days_since_planting(self, farm: dict, field_id: str = None) -> int:
+        """Calculate days since planting for a specific field"""
+        try:
+            if not farm or 'fields' not in farm:
+                return 0
+            
+            # Find the specific field
+            target_field = None
+            if field_id:
+                for field in farm['fields']:
+                    if str(field.get('_id', '')) == field_id:
+                        target_field = field
+                        break
+            else:
+                target_field = farm['fields'][0] if farm['fields'] else None
+            
+            if not target_field:
+                return 0
+            
+            # Get planting date from field data
+            planting_date = target_field.get('plantingDate')
+            if planting_date:
+                if isinstance(planting_date, str):
+                    planting_date = datetime.strptime(planting_date, '%Y-%m-%d')
+                days_since = (datetime.now() - planting_date).days
+                return max(0, days_since)
+            
+            # Fallback: estimate based on growth stage
+            growth_stage = target_field.get('growthStage', 'VE')
+            stage_days = {
+                'VE': 7,
+                'V2': 14,
+                'V3': 21,
+                'V4': 28,
+                'V5': 35,
+                'V6': 42,
+                'V7': 49,
+                'V8': 56,
+                'VT': 63,
+                'R1': 70,
+                'R2': 77,
+                'R3': 84,
+                'R4': 91,
+                'R5': 98,
+                'R6': 105
+            }
+            return stage_days.get(growth_stage, 30)
+            
+        except Exception as e:
+            logger.warning(f"Could not calculate days since planting: {e}")
+            return 30  # Default fallback
 
 
 # Global instance

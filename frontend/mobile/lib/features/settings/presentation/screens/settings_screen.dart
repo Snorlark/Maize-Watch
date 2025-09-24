@@ -6,12 +6,9 @@ import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:mobile/features/settings/presentation/bloc/settings_event.dart';
 import 'package:mobile/features/settings/presentation/bloc/settings_state.dart';
-import 'package:mobile/features/settings/presentation/widgets/sensor_status_widget.dart';
-import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/widgets/language_settings_widget.dart';
-import 'package:mobile/features/settings/presentation/widgets/help_section_widget.dart';
-import 'package:mobile/features/settings/presentation/widgets/faq_section_widget.dart';
-import 'package:mobile/features/settings/domain/entities/settings_entity.dart';
+import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
+import 'package:mobile/features/settings/presentation/screens/sensor_status_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -24,211 +21,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    print("🔧 SettingsScreen: initState - Loading settings...");
-    // Load settings immediately
     context.read<SettingsBloc>().add(const LoadSettings());
   }
 
   @override
   Widget build(BuildContext context) {
-    print("🔧 SettingsScreen: build method called");
     return Scaffold(
-      backgroundColor: MAIZE_PRIMARY_LIGHT,
       extendBodyBehindAppBar: true,
-      body: BlocConsumer<SettingsBloc, SettingsState>(
-        listener: (context, state) {
-          if (state is SettingsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          } else if (state is SettingsUpdated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is SettingsLoading) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: MAIZE_ACCENT),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Loading settings...',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: MAIZE_ACCENT,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (state is SettingsError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64.sp,
-                    color: Colors.red,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    state.message,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      color: Colors.red,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 16.h),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<SettingsBloc>().add(const RefreshSettings());
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Get settings data
-          SettingsEntity? settings;
-          SensorStatusEntity? sensorStatus;
-          
-          if (state is SettingsLoaded) {
-            settings = state.settings;
-            sensorStatus = state.sensorStatus;
-          } else if (state is SettingsUpdating) {
-            settings = state.settings;
-            sensorStatus = state.sensorStatus;
-          } else if (state is SettingsUpdated) {
-            settings = state.settings;
-            sensorStatus = state.sensorStatus;
-          }
-
-          return Column(
-            children: [
-              // Header section with background
-              _buildHeaderSection(context),
-              
-              // Main content area
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.only(top: kAppSmallPadding),
-                  padding: EdgeInsets.only(
-                    left: kAppMediumPadding, 
-                    right: kAppMediumPadding, 
-                    top: kAppMediumPadding, 
-                    bottom: kAppLargePadding,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20.r),
-                      topRight: Radius.circular(20.r),
-                    ),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        // Sensor Status
-                        SensorStatusWidget(
-                          ldrSensor: sensorStatus?.ldrSensor ?? false,
-                          phLevelSensor: sensorStatus?.phLevelSensor ?? false,
-                          tempAndHumidSensor: sensorStatus?.tempAndHumidSensor ?? false,
-                          soilLevelSensor: sensorStatus?.soilLevelSensor ?? false,
-                        ),
-                        SizedBox(height: kAppMediumPadding),
-
-                        // Notification Settings
-                        NotificationSettingsWidget(
-                          isNotificationsEnabled: settings?.notificationsEnabled ?? true,
-                          isVibrationOnly: settings?.vibrationOnly ?? false,
-                          onNotificationToggled: (value) {
-                            context.read<SettingsBloc>().add(
-                              UpdateNotificationSettings(
-                                enabled: value,
-                                vibrationOnly: settings?.vibrationOnly ?? false,
-                              ),
-                            );
-                          },
-                          onVibrationOnlyToggled: (value) {
-                            context.read<SettingsBloc>().add(
-                              UpdateNotificationSettings(
-                                enabled: settings?.notificationsEnabled ?? true,
-                                vibrationOnly: value,
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: kAppMediumPadding),
-
-                        // Language Settings
-                        LanguageSettingsWidget(
-                          currentLanguage: settings?.language ?? 'en',
-                          onLanguageChanged: (language) {
-                            context.read<SettingsBloc>().add(UpdateLanguage(language));
-                          },
-                        ),
-                        SizedBox(height: kAppMediumPadding),
-
-                        // Help Section
-                        HelpSectionWidget(
-                          isExpanded: false,
-                          onToggle: () {
-                            // Implementation for help section
-                          },
-                        ),
-                        SizedBox(height: kAppSmallPadding),
-
-                        // FAQ Section
-                        FAQSectionWidget(
-                          isExpanded: false,
-                          onToggle: () {
-                            // Implementation for FAQ section
-                          },
-                        ),
-                      ],
-                    ),
+      backgroundColor: MAIZE_PRIMARY_LIGHT,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header section with background
+            _buildHeaderSection(),
+            
+            // Main content area
+            Expanded(
+              child: Container(
+                margin: EdgeInsets.only(top: kAppSmallPadding),
+                padding: EdgeInsets.only(
+                  left: kAppMediumPadding, 
+                  right: kAppMediumPadding, 
+                  top: kAppMediumPadding, 
+                  bottom: kAppLargePadding,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
                   ),
                 ),
+                child: Column(
+                  children: [
+                    _buildSettingsSection(),
+                  ],
+                ),
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context) {
+  Widget _buildHeaderSection() {
     return Container(
-      height: 200.h,
-      padding: EdgeInsets.all(kAppMediumPadding),
+      height: 180.h,
+      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(20.r),
           bottomRight: Radius.circular(20.r),
         ),
         image: const DecorationImage(
-          image: AssetImage('assets/images/background.png'),
+          image: AssetImage('assets/images/farmer.png'),
           fit: BoxFit.cover,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Status bar spacing
           SizedBox(height: 40.h),
@@ -236,60 +89,412 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Back button and title
           Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12.r),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Settings',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
-                  child: Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 24.sp,
-                  ),
-                ),
+                  SizedBox(height: kAppSmallGap),
+                  Text(
+                    'Manage your app preferences',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                  ),                  
+                ],
               ),
-              SizedBox(width: kAppSmallGap),
-              Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Spacer(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsSection() {
+    return Expanded(
+      child: SingleChildScrollView(
+        child: BlocBuilder<SettingsBloc, SettingsState>(
+          builder: (context, state) {
+            if (state is SettingsLoading) {
+              return Center(
+                child: CircularProgressIndicator(
+                  color: MAIZE_ACCENT,
                 ),
-              ),
-              const Spacer(),
+              );
+            }
+
+            if (state is SettingsError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 64.sp,
+                      color: Colors.red,
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      state.message,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: Colors.red,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 16.h),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<SettingsBloc>().add(const RefreshSettings());
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Device Settings Section
+                _buildSectionCard(
+                  title: 'Device Settings',
+                  children: [
+                    _buildMenuItem(
+                      title: 'Sensor Status',
+                      subtitle: 'Monitor the condition of your sensors',
+                      icon: Icons.sensors,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SensorStatusScreen()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: kAppMediumPadding),
+
+                // App Settings Section
+                _buildSectionCard(
+                  title: 'App Settings',
+                  children: [
+                    _buildOptionItem(
+                      title: 'Language',
+                      currentValue: 'English',
+                      icon: Icons.language,
+                      onTap: () {
+                        _showOptionDialog('Language Settings', LanguageSettingsWidget(
+                          currentLanguage: 'English',
+                          onLanguageChanged: (language) {
+                            // Handle language change
+                          },
+                        ));
+                      },
+                    ),
+
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                    SizedBox(height: kAppMediumPadding),
+
+                    _buildOptionItem(
+                      title: 'Notifications',
+                      currentValue: 'On',
+                      icon: Icons.notifications,
+                      onTap: () {
+                        _showOptionDialog('Notification Settings', NotificationSettingsWidget(
+                          isNotificationsEnabled: true,
+                          isVibrationOnly: false,
+                          onNotificationToggled: (enabled) {
+                            // Handle notification toggle
+                          },
+                          onVibrationOnlyToggled: (vibrationOnly) {
+                            // Handle vibration only toggle
+                          },
+                        ));
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: kAppMediumPadding),
+
+                // Support Section
+                _buildSectionCard(
+                  title: 'Support',
+                  children: [
+                    _buildMenuItem(
+                      title: 'Help & FAQ',
+                      subtitle: 'Get help and find answers to common questions',
+                      icon: Icons.help_outline,
+                      onTap: () {
+                        _showHelpDialog();
+                      },
+                    ),
+
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                    SizedBox(height: kAppMediumPadding),
+
+                    _buildMenuItem(
+                      title: 'Contact Support',
+                      subtitle: 'Get in touch with our support team',
+                      icon: Icons.support_agent,
+                      onTap: () {
+                        _showContactDialog();
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(kAppMediumPadding),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: kAppSmallPadding),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,    
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
+          child: Row(
+            children: [
               Container(
-                width: 50.w,
-                height: 50.h,
+                padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
+                  color: MAIZE_ACCENT.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Icon(
-                  Icons.settings,
-                  color: Colors.white,
-                  size: 28.sp,
+                  icon,
+                  color: MAIZE_ACCENT,
+                  size: 24.sp,
                 ),
+              ),
+              SizedBox(width: kAppMediumGap),
+              Expanded(              
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5.h),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
+                    ),
+                  ],
+                ),
+              ),
+               Icon(
+                Icons.north_east,
+                color: MAIZE_ACCENT,
+                size: 24.sp,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionItem({
+    required String title,
+    required String currentValue,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: MAIZE_ACCENT.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Icon(
+                  icon,
+                  color: MAIZE_ACCENT,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: kAppMediumGap),
+              Expanded(              
+                child: Padding(padding: EdgeInsets.only(right: kAppSmallPadding),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Spacer(),
+                    Text(
+                      currentValue,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8), fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                  ),
+                ),
+              ),
+               Icon(
+                Icons.chevron_right,
+                color: MAIZE_ACCENT,
+                size: 24.sp,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showOptionDialog(String title, Widget content) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: 600.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(kAppMediumPadding),
+                decoration: BoxDecoration(
+                  color: MAIZE_ACCENT,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20.r),
+                    topRight: Radius.circular(20.r),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(child: content),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        child: Container(
+          padding: EdgeInsets.all(kAppMediumPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Help & FAQ',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: kAppMediumPadding),
+              Text('Help content coming soon!'),
+              SizedBox(height: kAppMediumPadding),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
               ),
             ],
           ),
-          
-          Spacer(),
-          
-          // Settings summary
-          Text(
-            'Manage your app preferences and device settings',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.white.withOpacity(0.9),
-            ),
+        ),
+      ),
+    );
+  }
+
+  void _showContactDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        child: Container(
+          padding: EdgeInsets.all(kAppMediumPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Contact Support',
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: kAppMediumPadding),
+              Text('Contact information coming soon!'),
+              SizedBox(height: kAppMediumPadding),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Close'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

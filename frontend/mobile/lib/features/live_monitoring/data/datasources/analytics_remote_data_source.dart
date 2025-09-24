@@ -17,6 +17,10 @@ abstract class AnalyticsRemoteDataSource {
     String farmId, {
     String? fieldId,
   });
+  Future<Map<String, dynamic>> getCompleteAnalytics(
+    String farmId, {
+    String? fieldId,
+  });
 }
 
 class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
@@ -160,6 +164,37 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
     } catch (e) {
       if (e is ServerException || e is UnauthorizedException) rethrow;
       throw ServerException('Failed to get growth stage analysis');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCompleteAnalytics(
+    String farmId, {
+    String? fieldId,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await dio.get(
+        '/api/analytics/farms/$farmId/complete',
+        queryParameters: fieldId != null ? {'fieldId': fieldId} : null,
+        options: Options(headers: headers),
+      );
+
+      if (response.data['success'] == true) {
+        return response.data['data'] as Map<String, dynamic>;
+      } else {
+        throw ServerException(
+          response.data['message'] ?? 'Failed to get complete analytics',
+        );
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw UnauthorizedException('Session expired');
+      }
+      throw ServerException(e.message ?? 'Network error');
+    } catch (e) {
+      if (e is ServerException || e is UnauthorizedException) rethrow;
+      throw ServerException('Failed to get complete analytics');
     }
   }
 }
