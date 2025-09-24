@@ -9,14 +9,28 @@ interface User {
   role: string;
 }
 
-// // Extend Express Request interface to include user property
-// declare global {
-//   namespace Express {
-//     interface Request {
-//       user?: User;
-//     }
-//   }
-// }
+// In-memory store to track recent view activities per user session
+// Format: Map<string, Set<string>> where key is userId and value is set of resource identifiers
+const recentViewLogs = new Map<string, Map<string, number>>();
+
+// Time window in milliseconds to prevent duplicate view logs (5 minutes)
+const VIEW_LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+
+// Cleanup interval to remove old entries (runs every 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, resourceMap] of recentViewLogs.entries()) {
+    for (const [resourceKey, timestamp] of resourceMap.entries()) {
+      if (now - timestamp > VIEW_LOG_COOLDOWN) {
+        resourceMap.delete(resourceKey);
+      }
+    }
+    // Remove user entry if no resources are being tracked
+    if (resourceMap.size === 0) {
+      recentViewLogs.delete(userId);
+    }
+  }
+}, 10 * 60 * 1000); // 10 minutes
 
 // Define the log data structure
 interface LogData {
@@ -71,6 +85,34 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction): void =
   next();
 };
 
+// Helper function to check if a view action should be logged
+const shouldLogViewAction = (userId: string, action: Action, resource: Resource, resourceId?: string): boolean => {
+  // Only apply cooldown logic for VIEW actions
+  if (action !== Action.VIEW) {
+    return true;
+  }
+
+  const now = Date.now();
+  const resourceKey = `${resource}:${resourceId || 'general'}`;
+  
+  // Get user's resource map or create new one
+  let userResourceMap = recentViewLogs.get(userId);
+  if (!userResourceMap) {
+    userResourceMap = new Map<string, number>();
+    recentViewLogs.set(userId, userResourceMap);
+  }
+
+  // Check if this resource was recently viewed
+  const lastLogTime = userResourceMap.get(resourceKey);
+  if (lastLogTime && (now - lastLogTime) < VIEW_LOG_COOLDOWN) {
+    return false; // Skip logging - too recent
+  }
+
+  // Update the timestamp for this resource
+  userResourceMap.set(resourceKey, now);
+  return true; // Log this view action
+};
+
 // Activity logging middleware factory
 export const logActivity = (action: Action, resource: Resource) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -94,6 +136,23 @@ export const logActivity = (action: Action, resource: Resource) => {
               return;
             }
 
+            // Get the user ID as string
+            let userId: string;
+            if (user._id) {
+              userId = user._id.toString();
+            } else if (user.id) {
+              userId = user.id.toString();
+            } else {
+              console.warn('No user ID found for activity logging');
+              return;
+            }
+
+            // Check if this view action should be logged (prevents spam)
+            const resourceId = req.params.id || undefined;
+            if (!shouldLogViewAction(userId, action, resource, resourceId)) {
+              return; // Skip logging this view action
+            }
+
             // Get IP address with better type safety and fallback
             const getClientIP = (): string => {
               return req.ip || 
@@ -106,25 +165,14 @@ export const logActivity = (action: Action, resource: Resource) => {
             const ipAddress = getClientIP();
             const userAgent = req.headers['user-agent'] || 'Unknown';
 
-            // Get the user ID as string or ObjectId
-            let userId: string;
-            if (user._id) {
-              userId = user._id.toString();
-            } else if (user.id) {
-              userId = user.id.toString();
-            } else {
-              console.warn('No user ID found for activity logging');
-              return;
-            }
-
             // Create log entry using the exact CreateLogData interface
             const logData: CreateLogData = {
-              userId: userId, // Now definitely a string
+              userId: userId,
               userEmail: user.email || 'unknown@email.com',
-              userRole: user.role as UserRole, // Cast to enum type
+              userRole: user.role as UserRole,
               action,
               resource,
-              resourceId: req.params.id || null,
+              resourceId: resourceId,
               details: {
                 method: req.method,
                 path: req.path,
@@ -132,7 +180,7 @@ export const logActivity = (action: Action, resource: Resource) => {
                 body: req.method !== 'GET' ? req.body : undefined,
                 statusCode: res.statusCode
               },
-              ipAddress, // Now guaranteed to be a string
+              ipAddress,
               userAgent,
               timestamp: new Date()
             };
@@ -146,10 +194,49 @@ export const logActivity = (action: Action, resource: Resource) => {
       }
 
       const result = originalEnd.apply(this, arguments as any);
-
       return result;
     };
 
     next();
   };
+};
+
+// Alternative: More granular control - log only on specific conditions
+export const logActivityConditional = (
+  action: Action, 
+  resource: Resource, 
+  options: {
+    skipDuplicates?: boolean;
+    cooldownMinutes?: number;
+    logOnlyUnique?: boolean;
+  } = {}
+) => {
+  const { 
+    skipDuplicates = true, 
+    cooldownMinutes = 5,
+    logOnlyUnique = false 
+  } = options;
+
+  return logActivity(action, resource);
+};
+
+// Utility function to clear view logs for a specific user (useful for logout)
+export const clearUserViewLogs = (userId: string): void => {
+  recentViewLogs.delete(userId);
+};
+
+// Utility function to get current view log stats (for debugging)
+export const getViewLogStats = () => {
+  const stats = {
+    totalUsers: recentViewLogs.size,
+    totalResources: 0,
+    userBreakdown: {} as Record<string, number>
+  };
+
+  for (const [userId, resourceMap] of recentViewLogs.entries()) {
+    stats.totalResources += resourceMap.size;
+    stats.userBreakdown[userId] = resourceMap.size;
+  }
+
+  return stats;
 };

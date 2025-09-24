@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { isAuthenticated, isAdmin } from '../middleware/activityLog.middleware';
+import { isAuthenticated, isAdmin, clearUserViewLogs, getViewLogStats } from '../middleware/activityLog.middleware';
 import ActivityLogService from '../services/activityLog.service';
 import { UserRole, Action, Resource } from '../models/activityLog.model';
 
@@ -16,6 +16,7 @@ interface LogsQueryParams {
   startDate?: string;
   endDate?: string;
   search?: string;
+  consolidated?: string; // New option for consolidated view logs
 }
 
 interface StatsQueryParams {
@@ -36,6 +37,7 @@ router.get('/', isAuthenticated, isAdmin, async (req: LogsRequest, res: Response
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+    const consolidated = req.query.consolidated === 'true';
     
     // Validate pagination parameters
     if (page < 1) {
@@ -65,7 +67,13 @@ router.get('/', isAuthenticated, isAdmin, async (req: LogsRequest, res: Response
       }).filter(([_, value]) => value !== undefined)
     );
 
-    const result = await ActivityLogService.getLogs(filters, page, limit);
+    // Use consolidated view logs if requested and action is VIEW
+    let result;
+    if (consolidated && (!filters.action || filters.action === Action.VIEW)) {
+      result = await ActivityLogService.getConsolidatedViewLogs(filters, page, limit);
+    } else {
+      result = await ActivityLogService.getLogs(filters, page, limit);
+    }
     
     res.json({
       success: true,
@@ -115,6 +123,7 @@ router.get('/my-activity', isAuthenticated, async (req: Request, res: Response) 
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+    const consolidated = req.query.consolidated === 'true';
     
     if (!req.user) {
       return res.status(401).json({
@@ -128,7 +137,13 @@ router.get('/my-activity', isAuthenticated, async (req: Request, res: Response) 
       userId: (req.user._id || req.user.id).toString()
     };
 
-    const result = await ActivityLogService.getLogs(filters, page, limit);
+    // Use consolidated view logs if requested
+    let result;
+    if (consolidated) {
+      result = await ActivityLogService.getConsolidatedViewLogs(filters, page, limit);
+    } else {
+      result = await ActivityLogService.getLogs(filters, page, limit);
+    }
     
     res.json({
       success: true,
@@ -139,6 +154,89 @@ router.get('/my-activity', isAuthenticated, async (req: Request, res: Response) 
     res.status(500).json({
       success: false,
       message: 'Error fetching your activity logs',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Clear view logs for current user (useful for testing or manual reset)
+router.post('/clear-view-cache', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userId = (req.user._id || req.user.id).toString();
+    clearUserViewLogs(userId);
+    
+    res.json({
+      success: true,
+      message: 'View cache cleared for current user'
+    });
+  } catch (error) {
+    console.error('Error clearing view cache:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error clearing view cache',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get current view log statistics (admin only - for debugging/monitoring)
+router.get('/view-cache-stats', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+  try {
+    const stats = getViewLogStats();
+    
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        description: 'Current in-memory view log cache statistics',
+        cooldownMinutes: 5
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching view cache stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching view cache statistics',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Cleanup old logs (admin only - for maintenance)
+router.delete('/cleanup', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+  try {
+    const daysToKeep = parseInt(req.query.days as string) || 90;
+    
+    // Validate days parameter
+    if (daysToKeep < 1 || daysToKeep > 365) {
+      return res.status(400).json({
+        success: false,
+        message: 'Days to keep must be between 1 and 365'
+      });
+    }
+
+    const deletedCount = await ActivityLogService.cleanupOldLogs(daysToKeep);
+    
+    res.json({
+      success: true,
+      message: `Cleanup completed. Deleted ${deletedCount} old activity logs.`,
+      data: {
+        deletedCount,
+        daysKept: daysToKeep
+      }
+    });
+  } catch (error) {
+    console.error('Error cleaning up logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error cleaning up old logs',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
