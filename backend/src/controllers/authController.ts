@@ -4,6 +4,8 @@ import authService from '../services/authService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS } from '../utils/constants';
+import ActivityLogService from '../services/activityLog.service';
+import { Action, Resource, UserRole } from '../models/activityLog.model';
 
 /**
  * @desc    Register a new user
@@ -68,6 +70,28 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     username: result.user.username,
     email: result.user.email
   });
+
+  // Activity Log: Registration
+  try {
+    await ActivityLogService.createLog({
+      userId: result.user._id,
+      userEmail: result.user.email,
+      userRole: (result.user.role as UserRole) || 'user',
+      action: Action.CREATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.CREATED
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log registration activity', { error: e instanceof Error ? e.message : String(e) });
+  }
 
   res.status(HTTP_STATUS.CREATED).json({
     success: true,
@@ -139,6 +163,28 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    // Activity Log: Login
+    try {
+      await ActivityLogService.createLog({
+        userId: result.user._id,
+        userEmail: result.user.email,
+        userRole: (result.user.role as UserRole) || 'user',
+        action: Action.LOGIN,
+        resource: Resource.AUTH,
+        resourceId: null,
+        details: {
+          method: req.method,
+          path: req.path,
+          statusCode: HTTP_STATUS.OK
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date()
+      });
+    } catch (e) {
+      logger.warn('Failed to log login activity', { error: e instanceof Error ? e.message : String(e) });
+    }
+
     res.status(HTTP_STATUS.OK).json({
       success: true,
       message: result.message,
@@ -197,6 +243,30 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
 
   logger.info('User logged out', { userId });
 
+  // Activity Log: Logout
+  try {
+    if (userId) {
+      await ActivityLogService.createLog({
+        userId,
+        userEmail: (req as any).user?.email || 'unknown@email.com',
+        userRole: ((req as any).user?.role as UserRole) || 'user',
+        action: Action.LOGOUT,
+        resource: Resource.AUTH,
+        resourceId: null,
+        details: {
+          method: req.method,
+          path: req.path,
+          statusCode: HTTP_STATUS.OK
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date()
+      });
+    }
+  } catch (e) {
+    logger.warn('Failed to log logout activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Logged out successfully'
@@ -217,6 +287,29 @@ export const logoutAll = catchAsync(async (req: Request, res: Response) => {
   res.clearCookie('refreshToken');
 
   logger.info('User logged out from all devices', { userId });
+
+  // Activity Log: Logout all
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.LOGOUT,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK,
+        scope: 'all-devices'
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log logout-all activity', { error: e instanceof Error ? e.message : String(e) });
+  }
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -248,6 +341,28 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
 
   logger.info('Password reset requested', { email });
 
+  // Activity Log: Forgot password
+  try {
+    await ActivityLogService.createLog({
+      userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
+      userEmail: email,
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log forgot-password activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Password reset instructions sent to your email'
@@ -277,6 +392,28 @@ export const resetPassword = catchAsync(async (req: Request, res: Response) => {
   await authService.resetPassword(token, newPassword);
 
   logger.info('Password reset completed');
+
+  // Activity Log: Reset password
+  try {
+    await ActivityLogService.createLog({
+      userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log reset-password activity', { error: e instanceof Error ? e.message : String(e) });
+  }
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -309,6 +446,28 @@ export const changePassword = catchAsync(async (req: Request, res: Response) => 
 
   logger.info('Password changed successfully', { userId });
 
+  // Activity Log: Change password
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log change-password activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Password changed successfully'
@@ -331,6 +490,28 @@ export const verifyEmail = catchAsync(async (req: Request, res: Response) => {
 
   logger.info('Email verified successfully');
 
+  // Activity Log: Verify email
+  try {
+    await ActivityLogService.createLog({
+      userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log verify-email activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Email verified successfully'
@@ -349,6 +530,28 @@ export const resendVerification = catchAsync(async (req: Request, res: Response)
 
   logger.info('Email verification resent', { userId });
 
+  // Activity Log: Resend verification
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log resend-verification activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Verification email sent successfully'
@@ -366,6 +569,28 @@ export const setup2FA = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.setup2FA(userId);
 
   logger.info('2FA setup initiated', { userId });
+
+  // Activity Log: Setup 2FA
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log setup-2fa activity', { error: e instanceof Error ? e.message : String(e) });
+  }
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -402,6 +627,28 @@ export const verify2FA = catchAsync(async (req: Request, res: Response) => {
 
   logger.info('2FA verified and enabled', { userId });
 
+  // Activity Log: Verify 2FA
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log verify-2fa activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Two-factor authentication enabled successfully'
@@ -433,6 +680,28 @@ export const disable2FA = catchAsync(async (req: Request, res: Response) => {
 
   logger.info('2FA disabled', { userId });
 
+  // Activity Log: Disable 2FA
+  try {
+    await ActivityLogService.createLog({
+      userId,
+      userEmail: (req as any).user?.email || 'unknown@email.com',
+      userRole: ((req as any).user?.role as UserRole) || 'user',
+      action: Action.UPDATE,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log disable-2fa activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Two-factor authentication disabled successfully'
@@ -451,4 +720,26 @@ export const getProfile = catchAsync(async (req: Request, res: Response) => {
     success: true,
     data: { user }
   });
+
+  // Activity Log: View profile
+  try {
+    await ActivityLogService.createLog({
+      userId: user?._id || user?.id,
+      userEmail: user?.email || 'unknown@email.com',
+      userRole: (user?.role as UserRole) || 'user',
+      action: Action.VIEW,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log view-profile activity', { error: e instanceof Error ? e.message : String(e) });
+  }
 });
