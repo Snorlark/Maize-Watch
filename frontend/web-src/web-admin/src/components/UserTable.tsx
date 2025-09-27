@@ -43,15 +43,18 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
     
     let valueA: string;
     let valueB: string;
-    
     switch (sortField) {
       case 'fullName':
         valueA = (a.fullName || '').toLowerCase();
         valueB = (b.fullName || '').toLowerCase();
         break;
       case 'address':
-        valueA = (a.address || '').toLowerCase();
-        valueB = (b.address || '').toLowerCase();
+        valueA = typeof a.address === 'object' && a.address ? 
+          `${a.address.barangay}, ${a.address.municipality}, ${a.address.province}, ${a.address.region}`.toLowerCase() : 
+          (a.address || '').toString().toLowerCase();
+        valueB = typeof b.address === 'object' && b.address ? 
+          `${b.address.barangay}, ${b.address.municipality}, ${b.address.province}, ${b.address.region}`.toLowerCase() : 
+          (b.address || '').toString().toLowerCase();
         break;
       case 'contactNumber':
         valueA = (a.contactNumber || '').toLowerCase();
@@ -224,7 +227,9 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
           const tableRows = sortedUsers.map((user, index) => [
             (startIndex + index + 1).toString(),
           user.fullName,
-          user.address,
+          typeof user.address === 'object' && user.address ? 
+            `${user.address.barangay}, ${user.address.municipality}, ${user.address.province}, ${user.address.region}` : 
+            user.address || 'N/A',
           user.contactNumber,
             user.username,
             user.role
@@ -354,7 +359,12 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
                   {startIndex + index + 1}
                 </td>
                 <td className="px-6 py-4">{user.fullName}</td>
-                <td className="px-6 py-4">{user.address}</td>
+                <td className="px-6 py-4">
+                  {typeof user.address === 'object' && user.address ? 
+                    `${user.address.barangay}, ${user.address.municipality}, ${user.address.province}, ${user.address.region}` : 
+                    user.address || 'N/A'
+                  }
+                </td>
                 <td className="px-6 py-4">{user.contactNumber}</td>
                 <td className="px-6 py-4">{user.username}</td>
                 <td className="px-6 py-4">

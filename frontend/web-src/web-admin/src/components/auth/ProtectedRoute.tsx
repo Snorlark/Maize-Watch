@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAdmin = false,
   requireSuperAdmin = false,
-  redirectPath = '/login'
+  redirectPath = '/admin-portal-xyz123/login'
 }) => {
   const { user, isAuthenticated, loading } = useAuth();
 

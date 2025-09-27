@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import apiClient from '../../api/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Thermometer, Droplets, Sun, TestTube, Clock, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -69,7 +70,7 @@ const TwentyFourHourOverview: React.FC = () => {
     setError(null);
     try {
       // Attempt to fetch a 24h history from backend
-      const resp = await axios.get<Last24hApi>('https://maize-watch.onrender.com/api/sensors/last24h');
+      const resp = await apiClient.get<Last24hApi>('/api/sensors/last24h');
       if (resp.data?.success && Array.isArray(resp.data.data)) {
         const data = resp.data.data
           .filter(p => p && p.timestamp)

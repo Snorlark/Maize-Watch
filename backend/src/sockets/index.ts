@@ -27,12 +27,16 @@ export const initializeSocket = (server: HTTPServer) => {
     transports: ['websocket', 'polling']
   });
 
-  // Setup Redis adapter for scaling across multiple instances
+  // Setup Redis adapter for scaling across multiple instances (optional)
   try {
-    const pubClient = redis.duplicate();
-    const subClient = redis.duplicate();
-    io.adapter(createAdapter(pubClient, subClient));
-    logger.info('Socket.IO Redis adapter configured successfully');
+    if (redis) {
+      const pubClient = redis.duplicate();
+      const subClient = redis.duplicate();
+      io.adapter(createAdapter(pubClient, subClient));
+      logger.info('Socket.IO Redis adapter configured successfully');
+    } else {
+      logger.info('Redis not available - Socket.IO running in single-instance mode');
+    }
   } catch (error) {
     logger.warn('Failed to configure Redis adapter for Socket.IO:', error);
     logger.info('Socket.IO will run in single-instance mode');

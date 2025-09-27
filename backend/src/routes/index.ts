@@ -5,6 +5,7 @@ import farmRoutes from './farmRoutes';
 import sensorRoutes from './sensorRoutes';
 import analyticsRoutes from './analyticsRoutes';
 import historicalDataRouter from './historical_data.routes';  // ✅ import here
+import activityLogRoutes from './activityLog.route';  // ✅ import activity logs
 import { AppError } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../utils/constants';
 
@@ -42,6 +43,7 @@ router.use('/farms', farmRoutes);
 router.use('/sensors', sensorRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/historical-data', historicalDataRouter); // ✅ add this
+router.use('/activity-logs', activityLogRoutes); // ✅ add activity logs
 
 
 // Farm-specific sensor routes

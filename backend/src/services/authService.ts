@@ -681,6 +681,39 @@ class AuthService {
       throw error;
     }
   }
+
+  /**
+   * Update user profile
+   */
+  async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<any> {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
+
+      // Remove sensitive fields that shouldn't be updated via this method
+      const { password, role, isActive, twoFactorSecret, twoFactorEnabled, ...safeUpdateData } = updateData as any;
+
+      // Update user fields
+      Object.assign(user, safeUpdateData);
+      await user.save();
+
+      logger.info(`Profile updated for user: ${user.username}`, {
+        userId: user._id,
+        updatedFields: Object.keys(safeUpdateData)
+      });
+
+      // Return user without sensitive fields
+      const userObject = user.toObject();
+      const { password: _, twoFactorSecret: __, ...safeUser } = userObject;
+
+      return safeUser;
+    } catch (error) {
+      logger.error("Profile update error:", error);
+      throw error;
+    }
+  }
 }
 
 export default new AuthService();

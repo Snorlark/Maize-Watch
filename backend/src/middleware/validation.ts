@@ -39,9 +39,7 @@ export const validateUserRegistration: ValidationChain[] = [
   
   body('password')
     .isLength({ min: VALIDATION_RULES.PASSWORD.MIN_LENGTH })
-    .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`)
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`),
   
   body('fullName')
     .isLength({ min: 2, max: 100 })
@@ -70,8 +68,9 @@ export const validateUserRegistration: ValidationChain[] = [
   // Validate address fields when address is an object
   body('address.region')
     .if(body('address').isObject())
-    .isIn(PHILIPPINE_REGIONS)
-    .withMessage('Please select a valid region'),
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Region is required')
+    .trim(),
     
   body('address.province')
     .if(body('address').isObject())
