@@ -58,8 +58,12 @@ export const getFarms = catchAsync(async (req: Request, res: Response) => {
 
   let ownerId = currentUser.id;
 
-  // Admins can view all farms or filter by owner
-  if (currentUser.role === USER_ROLES.ADMIN || currentUser.role === USER_ROLES.SUPER_ADMIN) {
+  // Super admins automatically get access to all farms
+  if (currentUser.role === USER_ROLES.SUPER_ADMIN) {
+    ownerId = undefined; // Get all farms for super_admin
+  } 
+  // Regular admins can view all farms with query parameter or filter by owner
+  else if (currentUser.role === USER_ROLES.ADMIN) {
     if (req.query.owner) {
       ownerId = req.query.owner as string;
     } else if (req.query.all === 'true') {

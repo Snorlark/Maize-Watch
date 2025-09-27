@@ -14,6 +14,7 @@ import {
   verify2FA,
   disable2FA,
   getProfile,
+  updateProfile,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -23,6 +24,7 @@ import {
   validatePasswordReset,
   validatePasswordChange,
   validate2FAToken,
+  validateUserUpdate,
   handleValidationErrors
 } from '../middleware/validation';
 
@@ -53,5 +55,6 @@ router.post('/disable-2fa', authenticate, validate2FAToken, disable2FA);
 
 // User profile
 router.get('/me', authenticate, getProfile);
+router.put('/me', authenticate, validateUserUpdate, updateProfile);
 
 export default router;

@@ -8,21 +8,31 @@ export interface RegisterPayload {
   contactNumber: string;
   address: string;
 }
-
 export interface LoginPayload {
-  username: string;
+  username?: string;
+  email?: string;
   password: string;
+  deviceType?: string;
 }
 
 export interface User {
   _id?: string;
   userId?: string;
   username: string;
+  email?: string;
   fullName?: string;
   contactNumber?: string;
-  address?: string;
+  address?: {
+    region: string;
+    province: string;
+    municipality: string;
+    barangay: string;
+  } | string; // Support both old string format and new object format
+  region?: string; // Keep for backward compatibility
+  province?: string; // Keep for backward compatibility
+  municipality?: string; // Keep for backward compatibility
+  barangay?: string; // Keep for backward compatibility
   role: string;
-  email?: string;
   isActive?: boolean;
   createdAt?: string;
   lastLogin?: string;
@@ -104,17 +114,64 @@ const authService = {
   },
 
   // Login user (API version)
-  login: async (credentials: LoginPayload): Promise<AuthResponse> => {
+  login: async (usernameOrEmail: string, password: string): Promise<AuthResponse> => {
     try {
+      // Determine if input is email or username
+      const isEmail = usernameOrEmail.includes('@');
+      
+      const credentials = {
+        email: isEmail ? usernameOrEmail : '',
+        username: isEmail ? '' : usernameOrEmail,
+        password,
+        deviceType: 'web'
+      };
+      
+      console.log('🔐 Login attempt with credentials:', {
+        ...credentials,
+        password: '[REDACTED]'
+      });
+      
       const response = await apiClient.post('/api/auth/login', credentials);
+      
+      console.log('🔍 Login response debug:', {
+        success: response.data.success,
+        hasData: !!response.data.data,
+        hasToken: !!response.data.data?.token,
+        dataKeys: response.data.data ? Object.keys(response.data.data) : [],
+        fullResponse: response.data
+      });
 
-      if (response.data.success && response.data.data?.token) {
-        const token = response.data.data.token;
+      // Backend returns accessToken, not token
+      const token = response.data.data?.accessToken || response.data.data?.token;
+      
+      console.log('🔍 Token extraction debug:', {
+        hasAccessToken: !!response.data.data?.accessToken,
+        hasToken: !!response.data.data?.token,
+        extractedToken: token ? `${token.substring(0, 30)}...` : 'none',
+        tokenType: typeof token,
+        tokenLength: token ? token.length : 0
+      });
+      
+      if (response.data.success && token) {
         
         // Validate token format before storing
-        if (isValidJWTFormat(token)) {
+        const isValidFormat = isValidJWTFormat(token);
+        console.log('🔍 JWT validation debug:', {
+          isValidFormat,
+          tokenParts: token.split('.').length,
+          tokenPreview: token.substring(0, 50) + '...'
+        });
+        
+        if (isValidFormat) {
           localStorage.setItem(TOKEN_KEY, token);
           localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+          
+          console.log('✅ Token stored successfully:', {
+            tokenKey: TOKEN_KEY,
+            tokenStored: !!localStorage.getItem(TOKEN_KEY),
+            userStored: !!localStorage.getItem(USER_KEY),
+            tokenPreview: token.substring(0, 20) + '...'
+          });
         } else {
           console.error('Received invalid JWT token format from server');
           return {

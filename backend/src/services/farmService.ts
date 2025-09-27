@@ -111,9 +111,23 @@ class FarmService {
 
   /**
    * Get farms by owner (legacy method for backward compatibility)
+   * If ownerId is undefined, returns all farms (for super_admin)
    */
-  async getFarmsByOwner(ownerId: string): Promise<IFarm[]> {
-    return this.getFarmsByUserId(ownerId);
+  async getFarmsByOwner(ownerId?: string): Promise<IFarm[]> {
+    try {
+      if (ownerId === undefined) {
+        // Return all farms for super_admin
+        const farms = await Farm.find({});
+        logger.info(`Fetching all farms for super_admin: ${farms.length} farms found`);
+        return farms;
+      } else {
+        // Return farms for specific user
+        return this.getFarmsByUserId(ownerId);
+      }
+    } catch (error) {
+      logger.error('Error fetching farms by owner:', error);
+      throw error;
+    }
   }
 
   /**

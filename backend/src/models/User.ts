@@ -7,7 +7,7 @@ import crypto from "crypto";
 interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   username: string;
-  email: string;
+  email?: string;
   password: string;
   fullName: string;
   contactNumber: string;
@@ -16,7 +16,7 @@ interface IUser extends Document {
     province: string;
     municipality: string;
     barangay: string;
-  };
+  } | string; // Support both object and string formats for backward compatibility
   role: "user" | "admin" | "super_admin";
   isActive: boolean;
   lastLogin?: Date;
@@ -79,8 +79,9 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: false, // Made optional for backward compatibility
       unique: true,
+      sparse: true, // Allow multiple null values
       lowercase: true,
       trim: true,
       match: [
@@ -109,50 +110,22 @@ const userSchema = new mongoose.Schema(
       ],
     },
     address: {
-      region: {
-        type: String,
-        required: [true, "Region is required"],
-        enum: {
-          values: [
-            "National Capital Region (NCR)",
-            "Cordillera Administrative Region (CAR)",
-            "Ilocos Region (Region I)",
-            "Cagayan Valley (Region II)",
-            "Central Luzon (Region III)",
-            "CALABARZON (Region IV-A)",
-            "MIMAROPA Region (Region IV-B)",
-            "Bicol Region (Region V)",
-            "Western Visayas (Region VI)",
-            "Central Visayas (Region VII)",
-            "Eastern Visayas (Region VIII)",
-            "Zamboanga Peninsula (Region IX)",
-            "Northern Mindanao (Region X)",
-            "Davao Region (Region XI)",
-            "SOCCSKSARGEN (Region XII)",
-            "Caraga (Region XIII)",
-            "Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)",
-          ],
-          message: "Please select a valid region",
+      type: mongoose.Schema.Types.Mixed, // Allow both string and object
+      required: true,
+      validate: {
+        validator: function(value: any) {
+          // Accept string format for backward compatibility
+          if (typeof value === 'string') {
+            return value.length > 0;
+          }
+          // Accept object format with required fields
+          if (typeof value === 'object' && value !== null) {
+            return value.region && value.province && value.municipality && value.barangay;
+          }
+          return false;
         },
-      },
-      province: {
-        type: String,
-        required: [true, "Province is required"],
-        trim: true,
-        maxlength: [50, "Province name cannot exceed 50 characters"],
-      },
-      municipality: {
-        type: String,
-        required: [true, "Municipality is required"],
-        trim: true,
-        maxlength: [50, "Municipality name cannot exceed 50 characters"],
-      },
-      barangay: {
-        type: String,
-        required: [true, "Barangay is required"],
-        trim: true,
-        maxlength: [50, "Barangay name cannot exceed 50 characters"],
-      },
+        message: 'Address must be a non-empty string or an object with region, province, municipality, and barangay'
+      }
     },
     role: {
       type: String,

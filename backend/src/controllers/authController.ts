@@ -743,3 +743,61 @@ export const getProfile = catchAsync(async (req: Request, res: Response) => {
     logger.warn('Failed to log view-profile activity', { error: e instanceof Error ? e.message : String(e) });
   }
 });
+
+/**
+ * @desc    Update current user profile
+ * @route   PUT /api/auth/me
+ * @access  Private
+ */
+export const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map((err: any) => ({
+        field: err.param,
+        message: err.msg
+      }))
+    });
+  }
+
+  const currentUser = (req as any).user;
+  const updateData = req.body;
+
+  try {
+    const updatedUser = await authService.updateUserProfile(currentUser.id, updateData);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
+
+    // Activity Log: Update profile
+    try {
+      await ActivityLogService.createLog({
+        userId: currentUser?._id || currentUser?.id,
+        userEmail: currentUser?.email || 'unknown@email.com',
+        userRole: (currentUser?.role as UserRole) || 'user',
+        action: Action.UPDATE,
+        resource: Resource.AUTH,
+        resourceId: currentUser?.id,
+        details: {
+          method: req.method,
+          path: req.path,
+          statusCode: HTTP_STATUS.OK,
+          updatedFields: Object.keys(updateData).filter(key => updateData[key] !== currentUser[key])
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date()
+      });
+    } catch (e) {
+      logger.warn('Failed to log update-profile activity', { error: e instanceof Error ? e.message : String(e) });
+    }
+  } catch (error: any) {
+    logger.error('Profile update failed:', error);
+    throw new AppError(error.message || 'Failed to update profile', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});

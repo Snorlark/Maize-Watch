@@ -1,11 +1,10 @@
 import express, { Request, Response } from 'express';
-import { isAuthenticated, isAdmin, clearUserViewLogs, getViewLogStats } from '../middleware/activityLog.middleware';
+import { authenticate } from '../middleware/auth';
+import { isAdmin, clearUserViewLogs, getViewLogStats } from '../middleware/activityLog.middleware';
 import ActivityLogService from '../services/activityLog.service';
 import { UserRole, Action, Resource } from '../models/activityLog.model';
 
 const router = express.Router();
-
-// Define query parameter interfaces
 interface LogsQueryParams {
   page?: string;
   limit?: string;
@@ -33,7 +32,7 @@ interface StatsRequest extends Omit<Request, 'query'> {
 }
 
 // Get activity logs with filters and pagination
-router.get('/', isAuthenticated, isAdmin, async (req: LogsRequest, res: Response) => {
+router.get('/', authenticate, isAdmin, async (req: LogsRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -90,7 +89,7 @@ router.get('/', isAuthenticated, isAdmin, async (req: LogsRequest, res: Response
 });
 
 // Get activity statistics
-router.get('/stats', isAuthenticated, isAdmin, async (req: StatsRequest, res: Response) => {
+router.get('/stats', authenticate, isAdmin, async (req: StatsRequest, res: Response) => {
   try {
     const days = parseInt(req.query.days as string) || 30;
     
@@ -119,7 +118,7 @@ router.get('/stats', isAuthenticated, isAdmin, async (req: StatsRequest, res: Re
 });
 
 // Get logs for current user (non-admin endpoint)
-router.get('/my-activity', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/my-activity', authenticate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -160,7 +159,7 @@ router.get('/my-activity', isAuthenticated, async (req: Request, res: Response) 
 });
 
 // Clear view logs for current user (useful for testing or manual reset)
-router.post('/clear-view-cache', isAuthenticated, async (req: Request, res: Response) => {
+router.post('/clear-view-cache', authenticate, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -187,7 +186,7 @@ router.post('/clear-view-cache', isAuthenticated, async (req: Request, res: Resp
 });
 
 // Get current view log statistics (admin only - for debugging/monitoring)
-router.get('/view-cache-stats', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.get('/view-cache-stats', authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const stats = getViewLogStats();
     
@@ -210,7 +209,7 @@ router.get('/view-cache-stats', isAuthenticated, isAdmin, async (req: Request, r
 });
 
 // Cleanup old logs (admin only - for maintenance)
-router.delete('/cleanup', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.delete('/cleanup', authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const daysToKeep = parseInt(req.query.days as string) || 90;
     

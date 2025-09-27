@@ -4,6 +4,8 @@ import User from '../models/User';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
+import ActivityLogService from '../services/activityLog.service';
+import { Action, Resource, UserRole } from '../models/activityLog.model';
 
 /**
  * @desc    Get all users (Admin only)
@@ -20,6 +22,12 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
   const query: any = {};
 
+  // Filter by status (optional)
+  if (status) {
+    query.isActive = status === 'active';
+  }
+  // No default filtering since we're using hard deletes now
+
   // Build search query
   if (search) {
     query.$or = [
@@ -31,10 +39,6 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
 
   if (role && Object.values(USER_ROLES).includes(role as any)) {
     query.role = role;
-  }
-
-  if (status) {
-    query.isActive = status === 'active';
   }
 
   const [users, total] = await Promise.all([
@@ -88,6 +92,108 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
 });
 
 /**
+ * @desc    Create new user (Admin only)
+ * @route   POST /api/users
+ * @access  Private/Admin
+ */
+export const createUser = catchAsync(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map((err: any) => ({
+        field: err.param,
+        message: err.msg
+      }))
+    });
+  }
+
+  const currentUser = (req as any).user;
+  
+  // Extract only the fields we need for user creation
+  const {
+    username,
+    email,
+    password,
+    fullName,
+    contactNumber,
+    address,
+    role
+  } = req.body;
+
+  const userData = {
+    username,
+    email,
+    password,
+    fullName,
+    contactNumber,
+    address,
+    role: role || 'user',
+    isActive: true // Set default values
+  };
+
+  logger.info(`Create user request started by admin: ${currentUser.username}`, { userData: { ...userData, password: '[HIDDEN]' } });
+
+  // Check if username already exists
+  const existingUser = await User.findOne({ username: userData.username });
+  if (existingUser) {
+    throw new AppError('Username already exists', HTTP_STATUS.CONFLICT);
+  }
+
+  // Check if email already exists (if provided)
+  if (userData.email) {
+    const existingEmail = await User.findOne({ email: userData.email });
+    if (existingEmail) {
+      throw new AppError('Email already exists', HTTP_STATUS.CONFLICT);
+    }
+  }
+
+  // Create new user
+  const user = new User(userData);
+  await user.save();
+
+  logger.info('User created successfully', {
+    userId: user._id,
+    username: user.username,
+    createdBy: currentUser.id
+  });
+
+  // Activity Log: User Creation
+  try {
+    await ActivityLogService.createLog({
+      userId: currentUser.id,
+      userEmail: currentUser.email || 'unknown@email.com',
+      userRole: (currentUser.role as UserRole) || 'admin',
+      action: Action.CREATE,
+      resource: Resource.USER,
+      resourceId: user._id,
+      details: {
+        action: 'User Created',
+        targetUser: user.username,
+        targetEmail: user.email || 'no email',
+        targetRole: user.role
+      },
+      ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    logger.error('Failed to log user creation activity:', error);
+  }
+
+  // Return user without sensitive fields
+  const userResponse = await User.findById(user._id)
+    .select('-password -refreshTokens -passwordResetToken -emailVerificationToken -twoFactorSecret');
+
+  res.status(HTTP_STATUS.CREATED).json({
+    success: true,
+    message: 'User created successfully',
+    data: { user: userResponse }
+  });
+});
+
+/**
  * @desc    Update user profile
  * @route   PUT /api/users/:id
  * @access  Private (Own profile or Admin)
@@ -109,14 +215,11 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
   const currentUser = (req as any).user;
   const updateData = req.body;
 
+  logger.info(`Update user request started for user ID: ${id}`, { updateData });
+
   // Check if user is updating their own profile or is admin
   if (currentUser.id !== id && currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
-  }
-
-  // Prevent non-admins from updating role
-  if (updateData.role && currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
-    delete updateData.role;
   }
 
   // Prevent non-super-admins from updating to admin or super_admin
@@ -142,6 +245,29 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     updatedFields: Object.keys(updateData)
   });
 
+  // Activity Log: User Update
+  try {
+    await ActivityLogService.createLog({
+      userId: currentUser.id,
+      userEmail: currentUser.email || 'unknown@email.com',
+      userRole: (currentUser.role as UserRole) || 'admin',
+      action: Action.UPDATE,
+      resource: Resource.USER,
+      resourceId: user._id,
+      details: {
+        action: 'User Updated',
+        targetUser: user.username,
+        targetEmail: user.email || 'no email',
+        updatedFields: Object.keys(updateData)
+      },
+      ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    logger.error('Failed to log user update activity:', error);
+  }
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'User profile updated successfully',
@@ -150,7 +276,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 /**
- * @desc    Delete user (Soft delete)
+ * @desc    Delete user (Hard delete - permanently removes from database)
  * @route   DELETE /api/users/:id
  * @access  Private/Admin
  */
@@ -158,11 +284,14 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const currentUser = (req as any).user;
 
+  logger.info(`Delete user request started for user ID: ${id}`);
+
   // Prevent users from deleting themselves
   if (currentUser.id === id) {
     throw new AppError('Cannot delete your own account', HTTP_STATUS.BAD_REQUEST);
   }
 
+  logger.info(`Finding user by ID: ${id}`);
   const user = await User.findById(id);
   if (!user) {
     throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
@@ -178,9 +307,35 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Cannot delete super admin user', HTTP_STATUS.FORBIDDEN);
   }
 
-  // Soft delete
-  user.isActive = false;
-  await user.save();
+  // Hard delete - permanently remove from database
+  logger.info(`Performing hard delete for user: ${user.username}`);
+  
+  // Activity Log: User Deletion (log before deletion)
+  try {
+    await ActivityLogService.createLog({
+      userId: currentUser.id,
+      userEmail: currentUser.email || 'unknown@email.com',
+      userRole: (currentUser.role as UserRole) || 'admin',
+      action: Action.DELETE,
+      resource: Resource.USER,
+      resourceId: user._id,
+      details: {
+        action: 'User Deleted',
+        targetUser: user.username,
+        targetEmail: user.email || 'no email',
+        targetRole: user.role,
+        deletionType: 'PERMANENT'
+      },
+      ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    logger.error('Failed to log user deletion activity:', error);
+  }
+
+  await User.findByIdAndDelete(id);
+  logger.info(`User permanently deleted from database: ${user.username}`);
 
   logger.info('User deleted', {
     userId: user._id,
@@ -378,8 +533,6 @@ export const updateUserPreferences = catchAsync(async (req: Request, res: Respon
 export const getUserActivity = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const currentUser = (req as any).user;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
 
   // Check if user is accessing their own activity or is admin
   if (currentUser.id !== id && currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
@@ -391,7 +544,6 @@ export const getUserActivity = catchAsync(async (req: Request, res: Response) =>
     throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
   }
 
-  // This would typically come from a separate activity/audit log collection
   // For now, return basic user information
   const activity = {
     lastLogin: user.lastLogin,

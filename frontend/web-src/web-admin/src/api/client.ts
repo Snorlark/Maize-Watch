@@ -3,38 +3,34 @@ import axios, { AxiosError } from 'axios';
 import authService from '../api/services/authService';
 import type { User } from '../api/services/authService';
 
-// Alternative: If you can't import from authService, define a compatible interface
-// export interface User {
-//   _id?: string;
-//   username: string;
-//   password?: string;
-//   fullName?: string; // Make optional to match authService
-//   contactNumber?: string; // Consider making optional if needed
-//   address?: string; // Consider making optional if needed
-//   role: string;
-//   createdAt?: string;
-//   __v?: number;
-// }
+// Environment configuration
+const isDevelopment = import.meta.env.DEV;
+const API_BASE_URL = isDevelopment ? 'http://localhost:8080' : 'https://maize-watch.onrender.com';
 
-// Base URL configuration
-const isDevelopment = import.meta.env?.MODE === 'development';
-const apiBaseUrl = isDevelopment ? 'https://maize-watch.onrender.com' : 'https://maize-watch.onrender.com';
-console.log('API Base URL being used:', apiBaseUrl);
+console.log('Development mode:', isDevelopment);
+console.log('API Base URL:', API_BASE_URL);
 
-// Create the Axios instance
+// Create axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: apiBaseUrl,
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds timeout (increased for slow backend)
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
   withCredentials: false,
 });
-
 // Add auth token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
-    const token = authService.getToken();
+    // Get token directly from localStorage to avoid circular imports
+    const token = localStorage.getItem('token');
+    console.log('🔍 Request interceptor debug:', {
+      url: config.url,
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+      headers: config.headers
+    });
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -51,9 +47,17 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Handle CORS errors
-    if (error.message === 'Network Error') {
+    // Reduce console noise for timeout errors
+    if (error.code === 'ECONNABORTED') {
+      // Only log timeout errors in development
+      if (isDevelopment) {
+        console.warn('Request timeout:', error.config?.url);
+      }
+    } else if (error.message === 'Network Error') {
       console.error('CORS or network error detected:', error);
+    } else {
+      // Log other errors normally
+      console.error('API Error:', error);
     }
     
     // Handle authentication errors
@@ -74,10 +78,10 @@ export const userService = {
   // Login user - now uses authService for consistency
   login: async (credentials: { username: string; password: string }): Promise<{ token: string; user: User }> => {
     try {
-      console.log('Making login request to:', `${apiBaseUrl}/auth/login`);
+      console.log('Making login request to:', `${API_BASE_URL}/auth/login`);
       
       // Use authService for login to maintain consistency
-      const result = await authService.login(credentials);
+      const result = await authService.login(credentials.username, credentials.password);
       
       if (result.success && result.data) {
         return {
@@ -94,7 +98,7 @@ export const userService = {
   },
   
   // Get all users with field selection
-  getUsers: async (): Promise<User[]> => {
+  getUsers: async (retryCount = 0): Promise<User[]> => {
     try {
       // Check authentication first
       if (!authService.isAuthenticated()) {
@@ -103,23 +107,36 @@ export const userService = {
       
       const response = await apiClient.get('/api/users', {
         params: {
-          fields: 'username,fullName,contactNumber,address,role'
-        }
+          limit: 1000, // Get all users, increase limit to avoid pagination issues
+          page: 1
+        },
+        timeout: 10000 // Shorter timeout for user list requests
       });
       
-      return response.data;
+      // Backend returns: { success: true, data: { users: [...], pagination: {...} } }
+      if (response.data?.success && response.data?.data?.users) {
+        return response.data.data.users;
+      } else {
+        console.warn('Unexpected response format:', response.data);
+        return response.data?.users || response.data || [];
+      }
     } 
     catch (error: any) {
-      console.error('Error in getUsers:', error);
+      // Retry logic for timeout errors
+      if (error.code === 'ECONNABORTED' && retryCount < 2) {
+        console.log(`Retrying getUsers request (attempt ${retryCount + 1}/3)...`);
+        return userService.getUsers(retryCount + 1);
+      }
       
-      if (error.code === 'ECONNABORTED') {
-        console.error('Connection timeout. Is your backend server running at', apiBaseUrl, '?');
+      // Reduce console noise - only log if it's not a timeout
+      if (error.code !== 'ECONNABORTED') {
+        console.error('Error in getUsers:', error);
       }
       
       throw error;
     }
   },
-
+  
   // Get a single user by ID
   getUserById: async (id: string): Promise<User> => {
     try {
@@ -127,13 +144,15 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.get(`/api/users/${id}`, {
-        params: {
-          fields: 'username,fullName,contactNumber,address,role'
-        }
-      });
-      return response.data;
-    } catch (error) {
+      const response = await apiClient.get(`/api/users/${id}`);
+      
+      // Handle backend response format
+      if (response.data?.success && response.data?.data?.user) {
+        return response.data.data.user;
+      } else {
+        return response.data?.user || response.data;
+      }
+    } catch (error: any) {
       console.error(`Error getting user ${id}:`, error);
       throw error;
     }
@@ -147,8 +166,14 @@ export const userService = {
       }
       
       const response = await apiClient.post('/api/users', userData);
-      return response.data;
-    } catch (error) {
+      
+      // Handle backend response format
+      if (response.data?.success && response.data?.data?.user) {
+        return response.data.data.user;
+      } else {
+        return response.data?.user || response.data;
+      }
+    } catch (error: any) {
       console.error('Error creating user:', error);
       throw error;
     }
@@ -162,8 +187,14 @@ export const userService = {
       }
       
       const response = await apiClient.put(`/api/users/${id}`, userData);
-      return response.data;
-    } catch (error) {
+      
+      // Handle backend response format
+      if (response.data?.success && response.data?.data?.user) {
+        return response.data.data.user;
+      } else {
+        return response.data?.user || response.data;
+      }
+    } catch (error: any) {
       console.error(`Error updating user ${id}:`, error);
       throw error;
     }
@@ -184,7 +215,7 @@ export const userService = {
       }
       
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting user profile:', error);
       throw error;
     }
@@ -197,13 +228,8 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      // Get current user to get username
-      const currentUser = authService.getCurrentUser();
-      if (!currentUser?.username) {
-        throw new Error('User information not found');
-      }
-      
-      const response = await apiClient.put(`/api/auth/user/${currentUser.username}`, userData);
+      // Use the auth profile update endpoint
+      const response = await apiClient.put('/api/auth/me', userData);
       
       // Update stored user data
       if (response.data?.data) {
@@ -229,7 +255,7 @@ export const userService = {
       }
       
       await apiClient.delete(`/api/users/${id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error deleting user ${id}:`, error);
       throw error;
     }

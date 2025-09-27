@@ -81,7 +81,7 @@ export default function AccountManagement() {
       setIsFormModalOpen(false);
       await fetchUsers(); // Refresh user list
     } catch (err) {
-      console.error('Error submitting form:', err);
+      console.error('Error in form submission:', err);
     } finally {
       setActionLoading(false);
     }
@@ -90,23 +90,52 @@ export default function AccountManagement() {
   // Handle user deletion
   const handleDeleteConfirm = async () => {
     if (!currentEditUser?._id) return;
+
+    console.log(' Attempting to delete user:', {
+      userId: currentEditUser._id,
+      username: currentEditUser.username,
+      currentUserRole: currentUser?.role,
+      hasAdminAccess
+    });
     
     setActionLoading(true);
     try {
       await deleteUserById(currentEditUser._id);
+      console.log('✅ User deleted successfully');
       setIsDeleteModalOpen(false);
       await fetchUsers(); // Refresh user list
-    } catch (err) {
-      console.error('Error deleting user:', err);
+    } catch (err: any) {
+      console.error(' Error deleting user:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+        code: err.code
+      });
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Failed to delete user';
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out - Backend server is slow or unresponsive. Please try again or contact admin.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'User not found or already deleted.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Insufficient permissions to delete this user.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else {
+        errorMessage = `${errorMessage}: ${err.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
-
-  // Handle error modal retry
   const handleErrorRetry = () => {
-    clearError();
-    fetchUsers();
+    if (hasAdminAccess) {
+      fetchUsers();
+    }
   };
 
   // Only redirect after we've confirmed the auth status

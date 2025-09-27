@@ -139,7 +139,7 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-bold text-[#1E441E] mb-2" style={{ fontSize: 'var(--text-xl)' }}>
-            Welcome Admin, {getAdminDisplayName()}
+            Welcome, Admin {getAdminDisplayName()}
           </h1>
           <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             System overview and monitoring dashboard - {currentTime.toLocaleString()}

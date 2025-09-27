@@ -11,7 +11,7 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,22 +21,22 @@ const LoginForm: React.FC = () => {
     setLoading(true);
     setError('');
 
-    if (!username || !password) {
-      setError('Username and password are required');
+    if (!usernameOrEmail || !password) {
+      setError('Username/Email and password are required');
       setLoading(false);
       return;
     }
 
     try {
       // Use the login function from AuthContext correctly
-      const success = await login(username, password);
+      const success = await login(usernameOrEmail, password);
       
       if (success) {
         console.log('Login successful, attempting to navigate to dashboard');
         navigate(`/${ADMIN_PATH}/dashboard`);
         console.log('Navigation function called');
       } else {
-        setError('Invalid username or password');
+        setError('Invalid username/email or password');
       }
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -65,16 +65,16 @@ const LoginForm: React.FC = () => {
             
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="username">Username</label>
+                <label htmlFor="usernameOrEmail">Username or Email</label>
                 <input
                   type="text"
-                  id="username"
-                  name="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="usernameOrEmail"
+                  name="usernameOrEmail"
+                  value={usernameOrEmail}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
                   required
                   className="w-full px-4 py-2 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  placeholder="Enter your username"
+                  placeholder="Enter your username or email"
                 />
               </div>
               

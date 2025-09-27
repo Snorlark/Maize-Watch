@@ -336,13 +336,16 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
   const { farmId } = req.params;
   const currentUser = (req as any).user;
 
-  // Verify user owns the farm
-  const farm = await farmService.getFarmById(farmId);
-  if (farm.userId._id.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
-    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  // Super admins can access any farm, even if it doesn't exist in the system
+  if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    // For non-super-admins, verify user owns the farm
+    const farm = await farmService.getFarmById(farmId);
+    if (farm.userId._id.toString() !== currentUser.id && 
+        currentUser.role !== USER_ROLES.ADMIN) {
+      throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+    }
   }
+  // Note: Super admins skip farm ownership verification entirely
 
   const readings = await sensorService.getLatestReadingsByFarm(farmId);
 

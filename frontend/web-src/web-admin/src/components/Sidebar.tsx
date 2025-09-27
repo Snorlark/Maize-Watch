@@ -146,7 +146,7 @@ const Sidebar: React.FC = () => {
       // Clear sidebar states on logout
       globalSidebarState.mobile = false;
       globalSidebarState.desktopCollapsed = false;
-      navigate('/login');
+      navigate('/admin-portal-xyz123/login');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

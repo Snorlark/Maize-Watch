@@ -152,7 +152,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         activityEvents.forEach(event => {
-          window.removeEventListener(event, resetTimer);
         });
       };
     }
@@ -160,7 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      const response = await authService.login({ username, password });
+      const response = await authService.login(username, password);
       if (response.success && response.data?.user) {
         setUser(response.data.user);
         startInactivityTimer();
