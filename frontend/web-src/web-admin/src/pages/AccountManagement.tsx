@@ -188,7 +188,7 @@ export default function AccountManagement() {
   // Farm Management Functions
   // Filter farms based on search term
   const filteredFarms = farms.filter(farm => 
-    (farm.farmName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (farm.farmName || farm.fieldName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (farm.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (getUserDisplayName(farm.userId) || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -202,8 +202,8 @@ export default function AccountManagement() {
     
     switch (sortField) {
       case 'farmName':
-        valueA = (a.farmName || '').toLowerCase();
-        valueB = (b.farmName || '').toLowerCase();
+        valueA = (a.farmName || a.fieldName || '').toLowerCase();
+        valueB = (b.farmName || b.fieldName || '').toLowerCase();
         break;
       case 'location':
         valueA = (a.location || '').toLowerCase();
@@ -516,7 +516,7 @@ export default function AccountManagement() {
                       sortedFarms.map((farm) => (
                         <tr key={farm._id} className="border-b border-[#E6F0D3] hover:bg-[#F5F9E8] transition-colors">
                           <td className="px-6 py-4">
-                            <div className="font-medium text-[#1E441E]">{farm.farmName || 'Unnamed Farm'}</div>
+                            <div className="font-medium text-[#1E441E]">{farm.farmName || farm.fieldName || 'Unnamed Farm'}</div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 text-[#456C2D]">
@@ -610,7 +610,7 @@ export default function AccountManagement() {
         {/* Farm Modals */}
         {showReassignModal && selectedFarm && (
           <FarmReassignmentModal
-            farm={selectedFarm}
+            farm={selectedFarm as any}
             users={users}
             currentUserId={selectedFarm.userId}
             isOpen={showReassignModal}
@@ -625,7 +625,7 @@ export default function AccountManagement() {
 
         {showDetailsModal && selectedFarm && (
           <FarmDetailsModal
-            farm={selectedFarm}
+            farm={selectedFarm as any}
             assignedUser={userMap.get(selectedFarm.userId)}
             isOpen={showDetailsModal}
             onClose={() => {

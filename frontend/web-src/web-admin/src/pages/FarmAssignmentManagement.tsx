@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, MapPin, Calendar, Sprout, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { CurrentFarm, farmService } from '../api/services/farmService';
+import { CurrentFarm, Farm, farmService } from "../api/services/farmService";
 import authService from '../api/services/authService';
 import { useUserContext } from '../contexts/UserContext';
 import FarmReassignmentModal from '../components/FarmReassignmentModal';
@@ -59,7 +59,7 @@ export default function FarmAssignmentManagement() {
 
   // Filter farms based on search term
   const filteredFarms = farms.filter(farm => 
-    (farm.farmName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (farm.farmName || farm.fieldName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (farm.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (getUserDisplayName(farm.userId) || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -73,8 +73,8 @@ export default function FarmAssignmentManagement() {
     
     switch (sortField) {
       case 'farmName':
-        valueA = (a.farmName || '').toLowerCase();
-        valueB = (b.farmName || '').toLowerCase();
+        valueA = (a.farmName || a.fieldName || '').toLowerCase();
+        valueB = (b.farmName || b.fieldName || '').toLowerCase();
         break;
       case 'location':
         valueA = (a.location || '').toLowerCase();
@@ -133,13 +133,13 @@ export default function FarmAssignmentManagement() {
   };
 
   // Handle farm reassignment
-  const handleReassign = (farm: Farm) => {
+  const handleReassign = (farm: CurrentFarm) => {
     setSelectedFarm(farm);
     setShowReassignModal(true);
   };
 
   // Handle view details
-  const handleViewDetails = (farm: Farm) => {
+  const handleViewDetails = (farm: CurrentFarm) => {
     setSelectedFarm(farm);
     setShowDetailsModal(true);
   };
@@ -410,7 +410,7 @@ export default function FarmAssignmentManagement() {
                   sortedFarms.map((farm) => (
                     <tr key={farm._id} className="border-b border-[#E6F0D3] hover:bg-[#F5F9E8] transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-[#1E441E]">{farm.farmName || 'Unnamed Farm'}</div>
+                        <div className="font-medium text-[#1E441E]">{farm.farmName || farm.fieldName || 'Unnamed Farm'}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-[#456C2D]">
@@ -467,7 +467,7 @@ export default function FarmAssignmentManagement() {
         {/* Modals */}
         {showReassignModal && selectedFarm && (
           <FarmReassignmentModal
-            farm={selectedFarm}
+            farm={selectedFarm as Farm}
             users={users}
             currentUserId={selectedFarm.userId}
             isOpen={showReassignModal}
@@ -482,7 +482,7 @@ export default function FarmAssignmentManagement() {
 
         {showDetailsModal && selectedFarm && (
           <FarmDetailsModal
-            farm={selectedFarm}
+            farm={selectedFarm as Farm}
             assignedUser={userMap.get(selectedFarm.userId)}
             isOpen={showDetailsModal}
             onClose={() => {
