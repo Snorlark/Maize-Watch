@@ -15,6 +15,7 @@ import AdminNotFound from '../web-admin/src/pages/NotFound';
 // Admin Pages
 import Dashboard from '../web-admin/src/pages/Dashboard';
 import AccountManagement from '../web-admin/src/pages/AccountManagement';
+import FarmAssignmentManagement from '../web-admin/src/pages/FarmAssignmentManagement';
 import LiveData from '../web-admin/src/pages/LiveData';
 import DataHistory from '../web-admin/src/pages/DataHistory'; 
 import ActivityLogPage from '../web-admin/src/pages/ActivityLog'; 
@@ -88,6 +89,10 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
             <Route element={<AdminAuthenticatedLayout />}>
               <Route path="logs" element={<AdminLogs />} />
+              <Route 
+                path="farm-assignments" 
+                element={<FarmAssignmentManagement />} 
+              />
             </Route>
           </Route>
 

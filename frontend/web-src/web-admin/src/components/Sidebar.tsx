@@ -162,7 +162,7 @@ const Sidebar: React.FC = () => {
     ...(user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin' ? [
       { to: "/admin-portal-xyz123/accountmanagement", icon: Users, label: "Account Management" },
       { to: "/admin-portal-xyz123/activity-logs", icon: ScrollText, label: "Activity Log" }
-    ] : [])
+    ] : []),
   ];
 
   return (
