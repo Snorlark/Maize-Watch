@@ -172,7 +172,7 @@ const LoginForm: React.FC = () => {
               <form className="space-y-4" onSubmit={handlePasswordLogin}>
                 <div className="form-group">
                   <label htmlFor="usernameOrEmail" className="block text-sm font-medium mb-2">
-                    Username or Email
+                    Email
                   </label>
                   <input
                     type="text"
@@ -218,11 +218,11 @@ const LoginForm: React.FC = () => {
                 <button 
                   type="submit" 
                   disabled={loading} 
-                  className="w-full py-3 mt-6 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
+                  className="w-full py-3 mt-6 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 border-2 border-green-600 hover:border-green-700 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
                 >
                   {loading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2 Th"></div>
                       Verifying credentials...
                     </>
                   ) : (
@@ -273,14 +273,14 @@ const LoginForm: React.FC = () => {
                     <button 
                       type="button" 
                       onClick={backToPasswordStep}
-                      className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold text-white transition-colors duration-200"
+                      className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-700 rounded-lg font-semibold text-white transition-colors duration-200"
                     >
                       Back
                     </button>
                     <button 
                       type="submit" 
                       disabled={loading || otp.length !== 6} 
-                      className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
+                      className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 border-2 border-green-600 hover:border-green-700 disabled:border-green-500/50 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
                     >
                       {loading ? (
                         <>
