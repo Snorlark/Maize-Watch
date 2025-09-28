@@ -18,7 +18,7 @@ import {
   getTotalFarms   // 👈 make sure this is exported in farmController.ts
 } from '../controllers/farmController';
 
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, requireRegionalAdmin } from '../middleware/auth';
 import {
   validateFarmCreation,
   validateObjectId,
@@ -46,8 +46,8 @@ router.get('/stats', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getFar
 // Create farm
 router.post('/', validateFarmCreation, createSimpleFarm);
 
-// Get farms (with pagination)
-router.get('/', validatePagination, getFarms);
+// Get farms (with pagination) - Regional Admin and above
+router.get('/', requireRegionalAdmin, validatePagination, getFarms);
 
 // Get farm by ID
 router.get('/:id', validateObjectId, getFarmById);

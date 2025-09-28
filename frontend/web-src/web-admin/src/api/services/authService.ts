@@ -33,6 +33,7 @@ export interface User {
   municipality?: string; // Keep for backward compatibility
   barangay?: string; // Keep for backward compatibility
   role: string;
+  assignedRegion?: string; // For regional admins
   isActive?: boolean;
   createdAt?: string;
   lastLogin?: string;
@@ -277,14 +278,13 @@ const authService = {
         };
       }
     }
-
     return null;
   },
 
-  // Check if current user is an admin
+  // Check if current user is an admin (including regional admin)
   isAdmin: (): boolean => {
     const user = authService.getCurrentUser();
-    return user?.role === 'admin';
+    return user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin';
   },
   
   isSuperAdmin: (): boolean => {

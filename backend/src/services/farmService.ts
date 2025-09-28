@@ -112,18 +112,32 @@ class FarmService {
   /**
    * Get farms by owner (legacy method for backward compatibility)
    * If ownerId is undefined, returns all farms (for super_admin)
+   * If regionalFilter is provided, filters farms by location containing the region
    */
-  async getFarmsByOwner(ownerId?: string): Promise<IFarm[]> {
+  async getFarmsByOwner(ownerId?: string, regionalFilter?: string): Promise<IFarm[]> {
     try {
-      if (ownerId === undefined) {
-        // Return all farms for super_admin
-        const farms = await Farm.find({});
-        logger.info(`Fetching all farms for super_admin: ${farms.length} farms found`);
-        return farms;
-      } else {
-        // Return farms for specific user
-        return this.getFarmsByUserId(ownerId);
+      let query: any = {};
+      
+      if (ownerId !== undefined) {
+        query.userId = ownerId;
       }
+      
+      // Apply regional filter if provided
+      if (regionalFilter) {
+        query.location = { $regex: regionalFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+      }
+      
+      const farms = await Farm.find(query);
+      
+      if (ownerId === undefined && !regionalFilter) {
+        logger.info(`Fetching all farms for super_admin: ${farms.length} farms found`);
+      } else if (regionalFilter) {
+        logger.info(`Fetching farms for region ${regionalFilter}: ${farms.length} farms found`);
+      } else {
+        logger.info(`Fetching farms for user ${ownerId}: ${farms.length} farms found`);
+      }
+      
+      return farms;
     } catch (error) {
       logger.error('Error fetching farms by owner:', error);
       throw error;

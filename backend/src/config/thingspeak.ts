@@ -53,7 +53,7 @@ const getThingSpeakConfig = (): ThingSpeakConfig => {
     channelId,
     readApiKey,
     writeApiKey,
-    timeout: 10000,
+    timeout: 5000, // Reduced timeout to 5 seconds
   };
 };
 

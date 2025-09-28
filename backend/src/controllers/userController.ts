@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
 import ActivityLogService from '../services/activityLog.service';
 import { Action, Resource, UserRole } from '../models/activityLog.model';
+import { extractRegionFromAddress } from '../middleware/auth';
 
 /**
  * @desc    Get all users (Admin only)
@@ -18,6 +19,7 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
   const search = req.query.search as string;
   const role = req.query.role as string;
   const status = req.query.status as string;
+  const currentUser = (req as any).user;
 
   const skip = (page - 1) * limit;
   const query: any = {};
@@ -26,7 +28,6 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
   if (status) {
     query.isActive = status === 'active';
   }
-  // No default filtering since we're using hard deletes now
 
   // Build search query
   if (search) {
@@ -39,6 +40,37 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
 
   if (role && Object.values(USER_ROLES).includes(role as any)) {
     query.role = role;
+  }
+
+  // Apply regional filtering for regional admins
+  if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+    // Filter users by region - check both object and string address formats
+    query.$or = [
+      // Object format: address.region matches
+      { 'address.region': currentUser.assignedRegion },
+      // String format: address contains the region name
+      { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+    ];
+    
+    // If there was already a search query, combine it with regional filter
+    if (search) {
+      query.$and = [
+        {
+          $or: [
+            { 'address.region': currentUser.assignedRegion },
+            { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+          ]
+        },
+        {
+          $or: [
+            { username: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+            { fullName: { $regex: search, $options: 'i' } }
+          ]
+        }
+      ];
+      delete query.$or; // Remove the original $or since we're using $and now
+    }
   }
 
   const [users, total] = await Promise.all([
@@ -217,15 +249,20 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
 
   logger.info(`Update user request started for user ID: ${id}`, { updateData });
 
-  // Check if user is updating their own profile or is admin
-  if (currentUser.id !== id && currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+  // Check if user is updating their own profile or is regional admin and above
+  if (currentUser.id !== id && currentUser.role !== USER_ROLES.REGIONAL_ADMIN && currentUser.role !== USER_ROLES.ADMIN && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
   // Prevent non-super-admins from updating to admin or super_admin
+  // Regional admins can only assign user/farmer roles
   if (updateData.role && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     if (updateData.role === USER_ROLES.ADMIN || updateData.role === USER_ROLES.SUPER_ADMIN) {
       throw new AppError('Insufficient permissions to assign this role', HTTP_STATUS.FORBIDDEN);
+    }
+    // Regional admins cannot assign regional_admin role
+    if (updateData.role === USER_ROLES.REGIONAL_ADMIN && currentUser.role !== USER_ROLES.ADMIN) {
+      throw new AppError('Insufficient permissions to assign regional admin role', HTTP_STATUS.FORBIDDEN);
     }
   }
 

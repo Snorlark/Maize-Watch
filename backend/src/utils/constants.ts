@@ -18,6 +18,7 @@ export const HTTP_STATUS = {
 export const USER_ROLES = {
   USER: 'user',
   ADMIN: 'admin',
+  REGIONAL_ADMIN: 'regional_admin',
   SUPER_ADMIN: 'super_admin',
 } as const;
 

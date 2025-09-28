@@ -4,11 +4,14 @@ import User from '../models/User';
 import { HTTP_STATUS, USER_ROLES, RESPONSE_MESSAGES } from '../utils/constants';
 import { logger } from '../utils/logger';
 
-// Extend Request interface to include user
+// Extend Request interface to include user and regional filter
 declare global {
   namespace Express {
     interface Request {
       user?: any;
+      regionalFilter?: {
+        assignedRegion: string;
+      };
     }
   }
 }
@@ -132,6 +135,9 @@ export const authorize = (...roles: string[]) => {
 
 // Middleware to check if user is admin or super admin
 export const requireAdmin = authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN);
+
+// Middleware to check if user is regional admin or higher
+export const requireRegionalAdmin = authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN);
 
 // Middleware to check if user is super admin
 export const requireSuperAdmin = authorize(USER_ROLES.SUPER_ADMIN);
@@ -311,14 +317,98 @@ export const logUserActivity = (action: string) => {
   };
 };
 
+// Helper function to extract region from address
+export const extractRegionFromAddress = (address: any): string | null => {
+  if (typeof address === 'object' && address !== null && address.region) {
+    return address.region;
+  }
+  if (typeof address === 'string') {
+    // Try to extract region from string format
+    // Look for patterns like "CALABARZON (Region IV-A)" in the address string
+    const regionPatterns = [
+      'National Capital Region \\(NCR\\)',
+      'Cordillera Administrative Region \\(CAR\\)',
+      'Ilocos Region \\(Region I\\)',
+      'Cagayan Valley \\(Region II\\)',
+      'Central Luzon \\(Region III\\)',
+      'CALABARZON \\(Region IV-A\\)',
+      'MIMAROPA Region \\(Region IV-B\\)',
+      'Bicol Region \\(Region V\\)',
+      'Western Visayas \\(Region VI\\)',
+      'Central Visayas \\(Region VII\\)',
+      'Eastern Visayas \\(Region VIII\\)',
+      'Zamboanga Peninsula \\(Region IX\\)',
+      'Northern Mindanao \\(Region X\\)',
+      'Davao Region \\(Region XI\\)',
+      'SOCCSKSARGEN \\(Region XII\\)',
+      'Caraga \\(Region XIII\\)',
+      'Bangsamoro Autonomous Region in Muslim Mindanao \\(BARMM\\)'
+    ];
+    
+    for (const pattern of regionPatterns) {
+      const regex = new RegExp(pattern, 'i');
+      if (regex.test(address)) {
+        return pattern.replace(/\\\(/g, '(').replace(/\\\)/g, ')');
+      }
+    }
+  }
+  return null;
+};
+
+// Middleware to filter data based on regional admin access
+export const applyRegionalFilter = () => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: RESPONSE_MESSAGES.ERROR.UNAUTHORIZED,
+      });
+      return;
+    }
+
+    // Super admin can access everything
+    if (req.user.role === USER_ROLES.SUPER_ADMIN) {
+      next();
+      return;
+    }
+
+    // Regular admin can access everything (maintain current behavior)
+    if (req.user.role === USER_ROLES.ADMIN) {
+      next();
+      return;
+    }
+
+    // Regional admin can only access data from their assigned region
+    if (req.user.role === USER_ROLES.REGIONAL_ADMIN) {
+      if (!req.user.assignedRegion) {
+        res.status(HTTP_STATUS.FORBIDDEN).json({
+          success: false,
+          message: 'Regional admin must have an assigned region',
+        });
+        return;
+      }
+      
+      // Add regional filter to request for use in controllers
+      req.regionalFilter = {
+        assignedRegion: req.user.assignedRegion
+      };
+    }
+
+    next();
+  };
+};
+
 export default {
   authenticate,
   authorize,
   requireAdmin,
+  requireRegionalAdmin,
   requireSuperAdmin,
   authorizeOwnerOrAdmin,
   authorizeFarmAccess,
   optionalAuth,
   checkAccountStatus,
   logUserActivity,
+  applyRegionalFilter,
+  extractRegionFromAddress,
 };

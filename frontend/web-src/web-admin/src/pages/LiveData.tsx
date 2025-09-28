@@ -108,19 +108,31 @@ const LiveData: React.FC = () => {
         setLoading(true);
       }
       setError(null);
-
       try {
         // Always fetch from general endpoint regardless of selected farm
-        console.log('Fetching general sensor data (farms are placeholders)');
+        console.log('Fetching sensor data from MongoDB database');
         let response;
         
         try {
-          response = await apiClient.get('/api/sensors/latest');
+          // Try to get data from selected farm first
+          if (selectedFarm && selectedFarm._id) {
+            console.log('Fetching data for selected farm:', selectedFarm._id);
+            response = await apiClient.get(`/api/farms/${selectedFarm._id}/readings/latest`);
+          } else {
+            // Fallback to general latest readings endpoint
+            console.log('Fetching general latest sensor readings');
+            response = await apiClient.get('/api/sensors/latest-no-thingspeak');
+          }
         } catch (sensorErr: any) {
-          console.log('⚠️ Local sensor endpoint failed, trying production fallback');
-          response = await axios.get('https://maize-watch.onrender.com/api/sensors/latest');
+          console.log('⚠️ Primary endpoint failed, trying fallback');
+          try {
+            // Try the general endpoint as fallback
+            response = await apiClient.get('/api/sensors/latest-no-thingspeak');
+          } catch (fallbackErr: any) {
+            console.log('⚠️ All local endpoints failed, trying production');
+            response = await axios.get('https://maize-watch.onrender.com/api/sensors/latest');
+          }
         }
-
         console.log('Sensor API response:', response.data);
 
         if (response.data?.success && response.data?.data) {

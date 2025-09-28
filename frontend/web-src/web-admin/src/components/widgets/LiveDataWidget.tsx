@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../../api/client';
 import { Thermometer, Droplets, Sun, TestTube, Activity, ChevronLeft, ChevronRight, RefreshCw, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,7 +93,8 @@ const LiveDataWidget: React.FC = () => {
 
   const fetchLatest = async () => {
     try {
-      const resp = await axios.get<LatestApiData>('https://maize-watch.onrender.com/api/sensors/latest');
+      // Try MongoDB endpoint for latest sensor data
+      const resp = await apiClient.get<LatestApiData>('/api/sensors/latest-no-thingspeak');
       if (!resp.data?.success || !resp.data.data) {
         throw new Error(resp.data?.message || 'Failed to fetch live data');
       }
@@ -110,7 +111,29 @@ const LiveDataWidget: React.FC = () => {
       setLastUpdated(raw.timestamp ?? null);
       setError(null);
     } catch (e: any) {
-      setError(e.message || 'Failed to fetch live data');
+      console.warn('MongoDB endpoint failed, trying fallback:', e.message);
+      
+      // Try test endpoint as fallback
+      try {
+        const fallbackResp = await apiClient.get('/api/sensors/test-simple');
+        if (fallbackResp.data?.success && fallbackResp.data.mockData) {
+          const mockData = fallbackResp.data.mockData;
+          const nextValues: Record<VariableKey, number> = {
+            temperature: mockData.temperature ?? 0,
+            humidity: mockData.humidity ?? 0,
+            soil_moisture: mockData.soilMoisture ?? 0,
+            soil_ph: mockData.soilPh ?? 0,
+            light_level: mockData.lightIntensity ?? 0,
+          };
+          setValues(nextValues);
+          setLastUpdated(fallbackResp.data.timestamp ?? null);
+          setError('Using test data (Database unavailable)');
+        } else {
+          throw new Error('Test endpoint also failed');
+        }
+      } catch (fallbackErr: any) {
+        setError('All endpoints failed: ' + (e.message || 'Failed to fetch live data'));
+      }
     } finally {
       setLoading(false);
     }
