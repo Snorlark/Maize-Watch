@@ -255,6 +255,51 @@ class EmailService {
     await this.sendEmail({ to: email, subject, html });
   }
 
+  async sendLoginOTP(
+    email: string, 
+    fullName: string, 
+    otp: string,
+    expiresInMinutes: number = 5
+  ): Promise<void> {
+    const subject = '🔐 Login Verification Code - Maize-Watch Admin';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #2c5530; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center;">
+          <h2 style="margin: 0;">🔐 Login Verification</h2>
+        </div>
+        <div style="padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+          <p>Hello ${fullName},</p>
+          <p>You are attempting to log in to your Maize-Watch Admin account. For security purposes, please use the verification code below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #f8f9fa; border: 2px dashed #4CAF50; padding: 20px; border-radius: 10px; display: inline-block;">
+              <h1 style="color: #2c5530; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                ${otp}
+              </h1>
+            </div>
+          </div>
+          
+          <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <p style="margin: 0;"><strong>⏰ Important:</strong> This code will expire in ${expiresInMinutes} minutes.</p>
+          </div>
+          
+          <p>If you didn't attempt to log in, please:</p>
+          <ul>
+            <li>Ignore this email</li>
+            <li>Change your password immediately if you suspect unauthorized access</li>
+            <li>Contact our support team if you have concerns</li>
+          </ul>
+          
+          <p>For your security, never share this code with anyone.</p>
+          <p><strong>The Maize-Watch Security Team</strong></p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to: email, subject, html });
+  }
+
   async sendCustomEmail(
     email: string, 
     subject: string, 

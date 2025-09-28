@@ -329,6 +329,96 @@ const authService = {
   // Clear invalid tokens (utility method)
   clearInvalidTokens: (): void => {
     cleanupInvalidTokens();
+  },
+
+  // Send OTP for email-based login (Web Admin)
+  sendLoginOTP: async (email: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Sending OTP to email:', email);
+      
+      const response = await apiClient.post('/api/auth/send-login-otp', { email });
+      
+      console.log('📧 OTP send response:', {
+        success: response.data.success,
+        message: response.data.message,
+        expiresIn: response.data.expiresIn
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to send OTP:', error);
+      if (error.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
+  },
+
+  // Verify OTP and complete login (Web Admin)
+  verifyLoginOTP: async (email: string, otp: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Verifying OTP for email:', email);
+      console.log('🔐 OTP being sent:', otp);
+      console.log('🔐 Request payload:', { email, otp });
+      
+      const response = await apiClient.post('/api/auth/verify-login-otp', { 
+        email, 
+        otp 
+      });
+      
+      console.log('🔍 OTP verification response:', {
+        success: response.data.success,
+        hasData: !!response.data.data,
+        hasToken: !!response.data.data?.accessToken,
+        message: response.data.message
+      });
+
+      // Handle successful OTP verification
+      if (response.data.success && response.data.data?.accessToken) {
+        const token = response.data.data.accessToken;
+        
+        // Validate token format before storing
+        const isValidFormat = isValidJWTFormat(token);
+        console.log('🔍 OTP JWT validation:', {
+          isValidFormat,
+          tokenParts: token.split('.').length,
+          tokenPreview: token.substring(0, 50) + '...'
+        });
+        
+        if (isValidFormat) {
+          localStorage.setItem(TOKEN_KEY, token);
+          localStorage.setItem(USER_KEY, JSON.stringify(response.data.data.user));
+          
+          console.log('✅ OTP login successful, token stored:', {
+            tokenKey: TOKEN_KEY,
+            tokenStored: !!localStorage.getItem(TOKEN_KEY),
+            userStored: !!localStorage.getItem(USER_KEY)
+          });
+        } else {
+          console.error('Received invalid JWT token format from OTP verification');
+          return {
+            success: false,
+            message: 'Invalid token received from server',
+          };
+        }
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ OTP verification failed:', error);
+      console.error('❌ Error response data:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      if (error.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
   }
 };
 

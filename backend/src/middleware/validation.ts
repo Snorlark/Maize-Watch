@@ -392,6 +392,24 @@ export const validate2FAToken: ValidationChain[] = [
     .withMessage('2FA token must be a 6-digit number'),
 ];
 
+// Email OTP validation
+export const validateEmailOTP: ValidationChain[] = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email address'),
+];
+
+export const validateOTPVerification: ValidationChain[] = [
+  body('email')
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Please provide a valid email address'),
+  body('otp')
+    .matches(/^\d{6}$/)
+    .withMessage('OTP must be a 6-digit number'),
+];
+
 // File upload validation
 export const validateFileUpload = (req: Request & { file?: Express.Multer.File; files?: Express.Multer.File[] }, res: Response, next: NextFunction): void => {
   if (!req.file && !req.files) {

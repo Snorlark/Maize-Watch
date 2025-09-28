@@ -1,25 +1,49 @@
 
 // LoginForm.tsx
-import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, Mail, Shield, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+
+type LoginStep = 'password' | 'otp';
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'admin-portal-xyz123';
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, verifyOTP } = useAuth();
 
+  // Form states
+  const [currentStep, setCurrentStep] = useState<LoginStep>('password');
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // OTP specific states
+  const [countdown, setCountdown] = useState<number>(300); // 5 minutes
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Countdown timer for OTP expiry
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (currentStep === 'otp' && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (currentStep === 'otp' && countdown === 0) {
+      setCurrentStep('password');
+      setError('Verification code expired. Please try logging in again.');
+    }
+    return () => clearTimeout(timer);
+  }, [countdown, currentStep]);
+
+  // Handle password login (Step 1)
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     if (!usernameOrEmail || !password) {
       setError('Username/Email and password are required');
@@ -28,22 +52,70 @@ const LoginForm: React.FC = () => {
     }
 
     try {
-      // Use the login function from AuthContext correctly
-      const success = await login(usernameOrEmail, password);
+      const result = await login(usernameOrEmail, password);
       
-      if (success) {
-        console.log('Login successful, attempting to navigate to dashboard');
-        navigate(`/${ADMIN_PATH}/dashboard`);
-        console.log('Navigation function called');
+      if (result.success) {
+        if (result.requiresOTP) {
+          // Admin user - proceed to OTP step
+          const emailFromResponse = (result as any).data?.email || result.email || '';
+          console.log('Setting email for OTP step:', emailFromResponse);
+          setEmail(emailFromResponse);
+          setCurrentStep('otp');
+          setCountdown(300); // 5 minutes
+          setSuccess(result.message || 'Verification code sent to your email');
+        } else {
+          // Regular user - complete login
+          console.log('Login successful, navigating to dashboard');
+          navigate(`/${ADMIN_PATH}/dashboard`);
+        }
       } else {
-        setError('Invalid username/email or password');
+        setError(result.message || 'Invalid username/email or password');
       }
     } catch (err: any) {
       console.error('Login failed:', err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle OTP verification (Step 2)
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    if (!otp || otp.length !== 6) {
+      setError('Please enter a valid 6-digit verification code');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const success = await verifyOTP(email, otp);
+      
+      if (success) {
+        console.log('OTP verification successful, navigating to dashboard');
+        navigate(`/${ADMIN_PATH}/dashboard`);
+      } else {
+        setError('Invalid verification code. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('OTP verification failed:', err);
+      setError('Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset to password step
+  const backToPasswordStep = () => {
+    setCurrentStep('password');
+    setOtp('');
+    setCountdown(0);
+    setError('');
+    setSuccess('');
   };
 
   return (
@@ -58,57 +130,171 @@ const LoginForm: React.FC = () => {
             />
           </div>
           <div className="login-form w-full max-w-xl bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 text-white shadow-lg">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">Login</h2>
-            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
-            </div>}
-            
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="usernameOrEmail">Username or Email</label>
-                <input
-                  type="text"
-                  id="usernameOrEmail"
-                  name="usernameOrEmail"
-                  value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  placeholder="Enter your username or email"
-                />
-              </div>
+            <div className="text-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                {currentStep === 'password' ? 'Admin Login' : 'Email Verification'}
+              </h2>
               
-              <div className="form-group relative">
-                <label htmlFor="password">Password</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 pr-10 rounded-md bg-transparent border border-white/40 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-9 text-white"
+              {/* Step Indicator */}
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                <div className={`flex items-center ${currentStep === 'password' ? 'text-green-400' : 'text-green-500'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'password' ? 'bg-green-500' : 'bg-green-600'}`}>
+                    <span className="text-white font-semibold">1</span>
+                  </div>
+                  <span className="ml-2 text-sm">Password</span>
+                </div>
+                <div className={`w-8 h-1 ${currentStep === 'otp' ? 'bg-green-500' : 'bg-white/30'}`}></div>
+                <div className={`flex items-center ${currentStep === 'otp' ? 'text-green-400' : 'text-white/50'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'otp' ? 'bg-green-500' : 'bg-white/30'}`}>
+                    <span className="text-white font-semibold">2</span>
+                  </div>
+                  <span className="ml-2 text-sm">Email OTP</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/20 border border-red-400 text-red-100 px-4 py-3 rounded-lg mb-4" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="bg-green-500/20 border border-green-400 text-green-100 px-4 py-3 rounded-lg mb-4" role="alert">
+                <span className="block sm:inline">{success}</span>
+              </div>
+            )}
+
+            {/* Step 1: Password Login */}
+            {currentStep === 'password' && (
+              <form className="space-y-4" onSubmit={handlePasswordLogin}>
+                <div className="form-group">
+                  <label htmlFor="usernameOrEmail" className="block text-sm font-medium mb-2">
+                    Username or Email
+                  </label>
+                  <input
+                    type="text"
+                    id="usernameOrEmail"
+                    name="usernameOrEmail"
+                    value={usernameOrEmail}
+                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent placeholder-white/60"
+                    placeholder="Enter your username or email"
+                  />
+                </div>
+                
+                <div className="form-group relative">
+                  <label htmlFor="password" className="block text-sm font-medium mb-2">
+                    Password
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 pr-12 rounded-lg bg-white/10 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent placeholder-white/60"
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-10 text-white/70 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                <div className="text-right">
+                  <button type="button" className="text-sm text-white/70 hover:text-white underline">
+                    Forgot Password?
+                  </button>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full py-3 mt-6 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Verifying credentials...
+                    </>
+                  ) : (
+                    'Continue'
+                  )}
                 </button>
+              </form>
+            )}
+
+            {/* Step 2: OTP Verification */}
+            {currentStep === 'otp' && (
+              <div className="space-y-4">
+                <div className="text-center mb-4">
+                  <div className="bg-blue-500/20 border border-blue-400 text-blue-100 px-4 py-3 rounded-lg text-sm">
+                    <Mail className="w-4 h-4 inline mr-2" />
+                    Verification code sent to: <strong>{email}</strong>
+                  </div>
+                </div>
+
+                <form onSubmit={handleVerifyOTP}>
+                  <div className="form-group">
+                    <label htmlFor="otp" className="block text-sm font-medium mb-2 text-center">
+                      <Shield className="w-4 h-4 inline mr-2" />
+                      Enter 6-Digit Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      id="otp"
+                      name="otp"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      maxLength={6}
+                      className="w-full px-4 py-4 rounded-lg bg-white/10 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent placeholder-white/60 text-center text-3xl font-mono tracking-widest"
+                      placeholder="000000"
+                      autoComplete="one-time-code"
+                    />
+                  </div>
+
+                  {countdown > 0 && (
+                    <div className="text-center text-sm text-white/70 mb-4">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      Code expires in: <span className="font-mono text-green-400">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span>
+                    </div>
+                  )}
+
+                  <div className="flex space-x-3 mt-6">
+                    <button 
+                      type="button" 
+                      onClick={backToPasswordStep}
+                      className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 rounded-lg font-semibold text-white transition-colors duration-200"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={loading || otp.length !== 6} 
+                      className="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 rounded-lg font-semibold text-white transition-colors duration-200 flex items-center justify-center"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Verifying...
+                        </>
+                      ) : (
+                        'Complete Login'
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div className="form-group relative">
-                <p className="float-right underline text-white">Forgot Password?</p>
-              </div>
-              <button 
-                type="submit" 
-                disabled={loading} 
-                className="w-full py-2 mt-4 bg-green-500 hover:bg-green-600 rounded-full font-semibold text-white bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250"
-              >
-                {loading ? 'Logging in...' : 'Login'}
-              </button>
-            </form>
+            )}
           </div>
         </div>
       </section>
