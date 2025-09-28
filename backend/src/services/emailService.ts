@@ -300,6 +300,60 @@ class EmailService {
     await this.sendEmail({ to: email, subject, html });
   }
 
+  async sendForgotPasswordOTP(
+    email: string, 
+    otp: string, 
+    fullName: string,
+    expiresInMinutes: number = 5
+  ): Promise<void> {
+    const subject = '🔐 Password Reset Verification Code - Maize-Watch';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #dc3545; color: white; padding: 20px; border-radius: 5px 5px 0 0; text-align: center;">
+          <h2 style="margin: 0;">🔐 Password Reset Request</h2>
+        </div>
+        <div style="padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+          <p>Hello ${fullName},</p>
+          <p>We received a request to reset your password for your Maize-Watch account. Please use the verification code below to proceed:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background-color: #f8f9fa; border: 2px dashed #dc3545; padding: 20px; border-radius: 10px; display: inline-block;">
+              <h1 style="color: #dc3545; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                ${otp}
+              </h1>
+            </div>
+          </div>
+          
+          <div style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
+            <p style="margin: 0;"><strong>⏰ Important:</strong> This code will expire in ${expiresInMinutes} minutes for security reasons.</p>
+          </div>
+          
+          <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <p style="margin: 0;"><strong>🔒 Security Notice:</strong></p>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+              <li>Never share this code with anyone</li>
+              <li>Our team will never ask for this code</li>
+              <li>If you didn't request this reset, please ignore this email</li>
+            </ul>
+          </div>
+          
+          <p>If you didn't request a password reset, please:</p>
+          <ul>
+            <li>Ignore this email - your password will remain unchanged</li>
+            <li>Consider changing your password if you suspect unauthorized access</li>
+            <li>Contact our support team if you have security concerns</li>
+          </ul>
+          
+          <p>After entering this code, you'll be able to create a new secure password for your account.</p>
+          <p><strong>The Maize-Watch Security Team</strong></p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to: email, subject, html });
+  }
+
   async sendCustomEmail(
     email: string, 
     subject: string, 

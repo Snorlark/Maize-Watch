@@ -419,6 +419,93 @@ const authService = {
         message: 'Network error. Please try again.',
       };
     }
+  },
+
+  // Send forgot password OTP
+  sendForgotPasswordOTP: async (email: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Sending forgot password OTP to email:', email);
+      
+      const response = await apiClient.post('/api/auth/send-forgot-password-otp', { 
+        email 
+      });
+      
+      console.log('🔍 Forgot password OTP response:', {
+        success: response.data.success,
+        message: response.data.message
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Send forgot password OTP failed:', error);
+      console.error('❌ Error response data:', error.response?.data);
+      if (error.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
+  },
+  
+  // Verify forgot password OTP
+  verifyForgotPasswordOTP: async (email: string, otp: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Verifying forgot password OTP for email:', email);
+      
+      const response = await apiClient.post('/api/auth/verify-forgot-password-otp', { 
+        email, 
+        otp 
+      });
+      
+      console.log('🔍 Forgot password OTP verification response:', {
+        success: response.data.success,
+        message: response.data.message
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Forgot password OTP verification failed:', error);
+      console.error('❌ Error response data:', error?.response?.data);
+      if (error?.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
+  },
+  
+  // Reset password with verified OTP
+  resetPassword: async (email: string, otp: string, newPassword: string): Promise<AuthResponse> => {
+    try {
+      console.log('🔐 Resetting password for email:', email);
+      
+      const response = await apiClient.post('/api/auth/reset-password', { 
+        email, 
+        otp,
+        newPassword 
+      });
+      
+      console.log('🔍 Password reset response:', {
+        success: response.data.success,
+        message: response.data.message
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Password reset failed:', error);
+      console.error('❌ Error response data:', error?.response?.data);
+      if (error?.response) {
+        return error.response.data;
+      }
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
   }
 };
 

@@ -4,6 +4,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export enum UserRole {
   USER = 'user',
   ADMIN = 'admin',
+  REGIONAL_ADMIN = 'regional_admin',
   SUPER_ADMIN = 'super_admin'
 }
 
@@ -13,7 +14,10 @@ export enum Action {
   CREATE = 'create',
   UPDATE = 'update',
   DELETE = 'delete',
-  VIEW = 'view'
+  VIEW = 'view',
+  FORGOT_PASSWORD_REQUESTED = 'forgot_password_requested',
+  PASSWORD_RESET_VERIFIED = 'password_reset_verified',
+  PASSWORD_RESET_COMPLETED = 'password_reset_completed'
 }
 
 export enum Resource {

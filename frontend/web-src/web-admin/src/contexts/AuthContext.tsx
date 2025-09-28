@@ -17,6 +17,9 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }>;
   verifyOTP: (email: string, otp: string) => Promise<boolean>;
+  sendForgotPasswordOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
+  verifyForgotPasswordOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   resetInactivityTimer: () => void;
   refreshUserData: () => void;
@@ -233,12 +236,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value = {
+  // Forgot password methods
+  const sendForgotPasswordOTP = async (email: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.sendForgotPasswordOTP(email);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Send forgot password OTP error:', error);
+      return { success: false, message: 'Failed to send OTP. Please try again.' };
+    }
+  };
+
+  const verifyForgotPasswordOTP = async (email: string, otp: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.verifyForgotPasswordOTP(email, otp);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Verify forgot password OTP error:', error);
+      return { success: false, message: 'Failed to verify OTP. Please try again.' };
+    }
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.resetPassword(email, otp, newPassword);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { success: false, message: 'Failed to reset password. Please try again.' };
+    }
+  };
+
+  const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     loading,
     login,
     verifyOTP,
+    sendForgotPasswordOTP,
+    verifyForgotPasswordOTP,
+    resetPassword,
     logout,
     resetInactivityTimer,
     refreshUserData

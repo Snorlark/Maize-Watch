@@ -111,10 +111,18 @@ const LiveData: React.FC = () => {
     setError(null);
       
     try {
-      console.log('[LiveData] Fetching latest sensor data using sensorService...');
+      console.log('[LiveData] Fetching live data from ThingSpeak...');
       
-      // Use the sensorService like TemperatureChart uses apiService
-      const result = await sensorService.getLatestSensorData(selectedFarm?._id);
+      // First try ThingSpeak live data endpoint
+      let result;
+      try {
+        result = await sensorService.getThingSpeakLiveData();
+        console.log('[LiveData] ThingSpeak result:', result);
+      } catch (thingSpeakError) {
+        console.warn('[LiveData] ThingSpeak failed, falling back to regular endpoint:', thingSpeakError);
+        // Fallback to regular sensor service
+        result = await sensorService.getLatestSensorData(selectedFarm?._id);
+      }
       
       console.log('[LiveData] Sensor service result:', result);
 

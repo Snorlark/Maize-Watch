@@ -93,10 +93,18 @@ const LiveDataWidget: React.FC = () => {
 
   const fetchLatest = async () => {
     try {
-      console.log('[LiveDataWidget] Fetching latest sensor data using sensorService...');
+      console.log('[LiveDataWidget] Fetching live data from ThingSpeak...');
       
-      // Use the same sensorService as LiveData.tsx (prioritizes test endpoint)
-      const result = await sensorService.getLatestSensorData();
+      // First try ThingSpeak live data endpoint
+      let result;
+      try {
+        result = await sensorService.getThingSpeakLiveData();
+        console.log('[LiveDataWidget] ThingSpeak result:', result);
+      } catch (thingSpeakError) {
+        console.warn('[LiveDataWidget] ThingSpeak failed, falling back to regular endpoint:', thingSpeakError);
+        // Fallback to regular sensor service
+        result = await sensorService.getLatestSensorData();
+      }
       
       console.log('[LiveDataWidget] Sensor service result:', result);
 

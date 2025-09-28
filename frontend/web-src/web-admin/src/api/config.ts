@@ -324,5 +324,75 @@ export const sensorService = {
         message: error.response?.data?.message || error.message
       };
     }
+  },
+
+  // NEW: ThingSpeak live data endpoint
+  async getThingSpeakLiveData() {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+
+      console.log('[sensorService] Fetching live data from ThingSpeak...');
+      
+      const response = await dashboardApiClient.get('/sensors/thingspeak/live');
+      
+      console.log('[sensorService] ThingSpeak live data response:', response.data);
+      
+      if (response.data?.success && response.data.data) {
+        return {
+          success: true,
+          data: response.data.data,
+          message: response.data.message || 'ThingSpeak live data retrieved successfully'
+        };
+      }
+      
+      throw new Error('Invalid response from ThingSpeak live endpoint');
+    } catch (error: any) {
+      console.error('[sensorService] Error fetching ThingSpeak live data:', error);
+      
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to fetch ThingSpeak live data',
+        message: error.response?.data?.message || error.message
+      };
+    }
+  },
+
+  // NEW: ThingSpeak historical data endpoint
+  async getThingSpeakHistoricalData(results: number = 20, hours: number = 24) {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+
+      console.log(`[sensorService] Fetching ${results} historical readings from ThingSpeak (last ${hours} hours)...`);
+      
+      const response = await dashboardApiClient.get('/sensors/thingspeak/historical', {
+        params: { results, hours }
+      });
+      
+      console.log('[sensorService] ThingSpeak historical data response:', response.data);
+      
+      if (response.data?.success) {
+        return {
+          success: true,
+          data: response.data.data || [],
+          count: response.data.count || 0,
+          message: response.data.message || 'ThingSpeak historical data retrieved successfully'
+        };
+      }
+      
+      throw new Error('Invalid response from ThingSpeak historical endpoint');
+    } catch (error: any) {
+      console.error('[sensorService] Error fetching ThingSpeak historical data:', error);
+      
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Failed to fetch ThingSpeak historical data',
+        message: error.response?.data?.message || error.message,
+        data: []
+      };
+    }
   }
 };
