@@ -17,7 +17,8 @@ interface IUser extends Document {
     municipality: string;
     barangay: string;
   } | string; // Support both object and string formats for backward compatibility
-  role: "user" | "admin" | "super_admin";
+  role: "user" | "admin" | "regional_admin" | "super_admin";
+  assignedRegion?: string; // For regional_admin users - the region they manage
   isActive: boolean;
   lastLogin?: Date;
   loginAttempts: number;
@@ -130,10 +131,45 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["user", "admin", "super_admin"],
-        message: "Role must be user, admin, or super_admin",
+        values: ["user", "admin", "regional_admin", "super_admin"],
+        message: "Role must be user, admin, regional_admin, or super_admin",
       },
       default: "user",
+    },
+    assignedRegion: {
+      type: String,
+      required: function(this: any) {
+        // Only require for new regional_admin users, not existing ones
+        return this.role === 'regional_admin' && this.isNew;
+      },
+      validate: {
+        validator: function(this: any, value: string) {
+          // Skip validation if not a regional_admin or if value is empty/undefined
+          if (this.role !== 'regional_admin' || !value) return true;
+          
+          const regions = [
+            'National Capital Region (NCR)',
+            'Cordillera Administrative Region (CAR)',
+            'Ilocos Region (Region I)',
+            'Cagayan Valley (Region II)',
+            'Central Luzon (Region III)',
+            'CALABARZON (Region IV-A)',
+            'MIMAROPA Region (Region IV-B)',
+            'Bicol Region (Region V)',
+            'Western Visayas (Region VI)',
+            'Central Visayas (Region VII)',
+            'Eastern Visayas (Region VIII)',
+            'Zamboanga Peninsula (Region IX)',
+            'Northern Mindanao (Region X)',
+            'Davao Region (Region XI)',
+            'SOCCSKSARGEN (Region XII)',
+            'Caraga (Region XIII)',
+            'Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)'
+          ];
+          return regions.includes(value);
+        },
+        message: 'Assigned region must be a valid Philippine region'
+      }
     },
     isActive: {
       type: Boolean,

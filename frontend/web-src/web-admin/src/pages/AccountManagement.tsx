@@ -35,8 +35,8 @@ export default function AccountManagement() {
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
 
-  // Check if user has admin or super_admin role
-  const hasAdminAccess = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  // Check if user has regional_admin, admin or super_admin role
+  const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
 
   // Fetch users on component mount and check authentication
   useEffect(() => {
@@ -166,7 +166,8 @@ export default function AccountManagement() {
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
-            {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
+            {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 
+             currentUser?.role === 'regional_admin' ? 'Regional Admin Access' : 'Admin Access'}
             </span>
           </div>
         </div>

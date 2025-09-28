@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
 import apiClient from '../../api/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 import { Thermometer, Droplets, Sun, TestTube, Clock, ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
@@ -85,7 +84,7 @@ const TwentyFourHourOverview: React.FC = () => {
     } catch (e) {
       // Fallback: build a tiny series based on the latest endpoint so the widget stays functional
       try {
-        const latest = await axios.get<LatestApiData>('https://maize-watch.onrender.com/api/sensors/latest');
+        const latest = await apiClient.get<LatestApiData>('/api/sensors/latest');
         if (latest.data?.success && latest.data.data) {
           const l = latest.data.data;
           const nowIso = l.timestamp;

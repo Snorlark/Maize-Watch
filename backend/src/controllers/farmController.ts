@@ -57,11 +57,20 @@ export const getFarms = catchAsync(async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10;
 
   let ownerId = currentUser.id;
+  let regionalFilter: string | undefined;
 
   // Super admins automatically get access to all farms
   if (currentUser.role === USER_ROLES.SUPER_ADMIN) {
     ownerId = undefined; // Get all farms for super_admin
   } 
+  // Regional admins can view farms from their assigned region
+  else if (currentUser.role === USER_ROLES.REGIONAL_ADMIN) {
+    if (!currentUser.assignedRegion) {
+      throw new AppError('Regional admin must have an assigned region', HTTP_STATUS.FORBIDDEN);
+    }
+    ownerId = undefined; // Get all farms, but filter by region
+    regionalFilter = currentUser.assignedRegion;
+  }
   // Regular admins can view all farms with query parameter or filter by owner
   else if (currentUser.role === USER_ROLES.ADMIN) {
     if (req.query.owner) {
@@ -71,7 +80,7 @@ export const getFarms = catchAsync(async (req: Request, res: Response) => {
     }
   }
 
-  const farms = await farmService.getFarmsByOwner(ownerId);
+  const farms = await farmService.getFarmsByOwner(ownerId, regionalFilter);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,

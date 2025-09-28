@@ -47,8 +47,8 @@ export function UserProvider({ children }: UserProviderProps) {
   // Compute isAdmin for backward compatibility (only admin role)
   const isAdmin = user?.role === 'admin';
 
-  // New property to check for both admin and super_admin access
-  const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin';
+  // New property to check for regional_admin, admin and super_admin access
+  const hasAdminAccess = user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin';
 
   // Derive farmers from users whenever users change
   const farmers = users.filter(user => user.role === 'user' || user.role === 'farmer');

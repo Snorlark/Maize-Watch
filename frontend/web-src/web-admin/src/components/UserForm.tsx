@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader2 } from 'lucide-react';
 import { User } from '../api/services/authService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserFormProps {
   mode: 'create' | 'edit';
@@ -34,6 +35,16 @@ const UserForm: React.FC<UserFormProps> = ({
   onCancel,
   isLoading
 }) => {
+  const { user: currentUser } = useAuth();
+  
+  // Set default region for regional admins
+  const getDefaultRegion = () => {
+    if (currentUser?.role === 'regional_admin' && currentUser?.assignedRegion) {
+      return currentUser.assignedRegion;
+    }
+    return '';
+  };
+
   const [formData, setFormData] = useState<FormData>({
     username: '',
     email: '',
@@ -41,7 +52,7 @@ const UserForm: React.FC<UserFormProps> = ({
     fullName: '',
     contactNumber: '',
     address: '',
-    region: '',
+    region: getDefaultRegion(),
     province: '',
     municipality: '',
     barangay: '',
@@ -49,6 +60,27 @@ const UserForm: React.FC<UserFormProps> = ({
     isActive: true,
     createdAt: new Date().toISOString(),
   });
+
+  // Reset form data when mode changes to create
+  useEffect(() => {
+    if (mode === 'create' && !initialData) {
+      setFormData({
+        username: '',
+        email: '',
+        password: '',
+        fullName: '',
+        contactNumber: '',
+        address: '',
+        region: getDefaultRegion(),
+        province: '',
+        municipality: '',
+        barangay: '',
+        role: 'user',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }, [mode, initialData, currentUser]);
 
   useEffect(() => {
     if (initialData && mode === 'edit') {
@@ -99,10 +131,10 @@ const UserForm: React.FC<UserFormProps> = ({
     const submitData = {
       ...otherData,
       address: {
-        region,
-        province,
-        municipality,
-        barangay
+        region: region || '',
+        province: province || '',
+        municipality: municipality || '',
+        barangay: barangay || ''
       }
     };
     
@@ -110,6 +142,9 @@ const UserForm: React.FC<UserFormProps> = ({
     if (mode === 'edit' && !submitData.password) {
       delete submitData.password;
     }
+    
+    // Debug logging
+    console.log('UserForm submitData:', JSON.stringify(submitData, null, 2));
     
     await onSubmit(submitData);
   };
@@ -157,13 +192,18 @@ const UserForm: React.FC<UserFormProps> = ({
             
             {mode === 'create' && (
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                  <span className="text-xs text-gray-500 ml-1">(Min 8 chars)</span>
+                </label>
                 <input
                   type="password"
                   name="password"
                   value={formData.password || ''}
                   onChange={handleInputChange}
                   required={mode === 'create'}
+                  minLength={8}
+                  placeholder="Enter password (min 8 characters)"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
                 />
               </div>
@@ -195,13 +235,18 @@ const UserForm: React.FC<UserFormProps> = ({
             </div>
            
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Number
+                <span className="text-xs text-gray-500 ml-1">(Format: 09xxxxxxxxx)</span>
+              </label>
               <input
                 type="text"
                 name="contactNumber"
                 value={formData.contactNumber || ''}
                 onChange={handleInputChange}
+                placeholder="09123456789"
                 required
+                pattern="^(09\d{9}|\+639\d{9})$"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
               />
             </div>
@@ -218,14 +263,22 @@ const UserForm: React.FC<UserFormProps> = ({
             </div>
 
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Region
+                {currentUser?.role === 'regional_admin' && (
+                  <span className="text-xs text-blue-600 ml-1">(Auto-assigned)</span>
+                )}
+              </label>
               <input
                 type="text"
                 name="region"
                 value={formData.region || ''}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                readOnly={currentUser?.role === 'regional_admin'}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 ${
+                  currentUser?.role === 'regional_admin' ? 'bg-gray-100 cursor-not-allowed' : ''
+                }`}
               />
             </div>
 
