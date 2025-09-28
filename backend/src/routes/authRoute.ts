@@ -17,6 +17,9 @@ import {
   updateProfile,
   sendLoginOTP,
   verifyLoginOTP,
+  sendForgotPasswordOTP,
+  verifyForgotPasswordOTP,
+  resetPasswordWithOTP,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -42,14 +45,18 @@ router.post('/login', authLimiter, ...validateUserLogin, handleValidationErrors,
 router.post('/send-login-otp', authLimiter, ...validateEmailOTP, handleValidationErrors, sendLoginOTP);
 router.post('/verify-login-otp', authLimiter, ...validateOTPVerification, handleValidationErrors, verifyLoginOTP);
 
+// Forgot Password OTP (Web Admin)
+router.post('/send-forgot-password-otp', passwordResetLimiter, ...validateEmailOTP, handleValidationErrors, sendForgotPasswordOTP);
+router.post('/verify-forgot-password-otp', passwordResetLimiter, ...validateOTPVerification, handleValidationErrors, verifyForgotPasswordOTP);
+router.post('/reset-password', passwordResetLimiter, resetPasswordWithOTP);
+
 // Token management
 router.post('/refresh', refreshToken);
 router.post('/logout', authenticate, logout);
 router.post('/logout-all', authenticate, logoutAll);
 
-// Password management
+// Password management (legacy)
 router.post('/forgot-password', passwordResetLimiter, validatePasswordReset, forgotPassword);
-router.post('/reset-password', validatePasswordReset, resetPassword);
 router.put('/change-password', authenticate, validatePasswordChange, changePassword);
 
 // Email verification

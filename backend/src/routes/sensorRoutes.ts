@@ -14,7 +14,9 @@ import {
   getSensorStats,
   getLatestReadingsByFarm,
   getLatestSensorReading,
-  getLast24HourReadings
+  getLast24HourReadings,
+  getThingSpeakLiveData,
+  getThingSpeakHistoricalData
 } from '../controllers/sensorController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -231,6 +233,10 @@ router.get('/latest-no-thingspeak', async (req, res) => {
 
 // Last 24 hours data for dashboard - now returns proper array format
 router.get('/last24h', getLast24HourReadings);
+
+// NEW: Direct ThingSpeak endpoints for LiveData components
+router.get('/thingspeak/live', getThingSpeakLiveData);
+router.get('/thingspeak/historical', getThingSpeakHistoricalData);
 
 // Test ThingSpeak connectivity (with auth)
 router.get('/test-thingspeak', async (req, res) => {

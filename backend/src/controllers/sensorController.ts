@@ -704,3 +704,130 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
     });
   }
 });
+
+/**
+ * @desc    Get live data directly from ThingSpeak
+ * @route   GET /api/sensors/thingspeak/live
+ * @access  Private
+ */
+export const getThingSpeakLiveData = catchAsync(async (req: Request, res: Response) => {
+  try {
+    logger.info('🔍 Fetching live data directly from ThingSpeak...');
+    
+    const thingSpeakService = getThingSpeakService();
+    const data = await thingSpeakService.readLatestData();
+    
+    if (!data) {
+      logger.warn('No data received from ThingSpeak');
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'No live data available from ThingSpeak',
+        data: null
+      });
+    }
+
+    // Transform ThingSpeak data to match your frontend expectations
+    const liveData = {
+      _id: 'thingspeak-live-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      temperature: data.field1 || null,
+      humidity: data.field2 || null,
+      soilMoisture: data.field3 || null,
+      lightIntensity: data.field5 || null, // SWAPPED: field5 for light intensity
+      soilPh: data.field4 || null,         // SWAPPED: field4 for soil pH
+      batteryLevel: data.field6 || null,
+      signalStrength: data.field7 || null,
+      source: 'thingspeak',
+      isLive: true
+    };
+
+    logger.info('✅ Successfully fetched ThingSpeak live data:', {
+      temperature: liveData.temperature,
+      humidity: liveData.humidity,
+      soilMoisture: liveData.soilMoisture,
+      timestamp: liveData.timestamp
+    });
+
+    res.json({
+      success: true,
+      data: liveData,
+      source: 'thingspeak',
+      message: 'Live data fetched successfully'
+    });
+
+  } catch (error: any) {
+    logger.error('❌ Error fetching ThingSpeak live data:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to fetch live data from ThingSpeak',
+      error: error.message,
+      data: null
+    });
+  }
+});
+
+/**
+ * @desc    Get historical data from ThingSpeak
+ * @route   GET /api/sensors/thingspeak/historical
+ * @access  Private
+ */
+export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: Response) => {
+  try {
+    const { results = 20, hours = 24 } = req.query;
+    
+    logger.info(`🔍 Fetching ${results} historical readings from ThingSpeak (last ${hours} hours)...`);
+    
+    const thingSpeakService = getThingSpeakService();
+    
+    // Calculate start time for historical data
+    const startTime = new Date();
+    startTime.setHours(startTime.getHours() - Number(hours));
+    
+    const historicalData = await thingSpeakService.readHistoricalData(
+      Number(results),
+      startTime.toISOString()
+    );
+    
+    if (!historicalData || historicalData.length === 0) {
+      logger.warn('No historical data received from ThingSpeak');
+      return res.json({
+        success: true,
+        data: [],
+        message: 'No historical data available',
+        source: 'thingspeak'
+      });
+    }
+
+    // Transform historical data
+    const transformedData = historicalData.map((reading, index) => ({
+      _id: `thingspeak-hist-${Date.now()}-${index}`,
+      timestamp: new Date(Date.now() - (index * 60000)).toISOString(), // Approximate timestamps
+      temperature: reading.field1 || null,
+      humidity: reading.field2 || null,
+      soilMoisture: reading.field3 || null,
+      lightIntensity: reading.field5 || null, // SWAPPED: field5 for light intensity
+      soilPh: reading.field4 || null,         // SWAPPED: field4 for soil pH
+      batteryLevel: reading.field6 || null,
+      signalStrength: reading.field7 || null
+    })).reverse(); // Reverse to get chronological order
+
+    logger.info(`✅ Successfully fetched ${transformedData.length} historical readings from ThingSpeak`);
+
+    res.json({
+      success: true,
+      data: transformedData,
+      count: transformedData.length,
+      source: 'thingspeak',
+      message: 'Historical data fetched successfully'
+    });
+
+  } catch (error: any) {
+    logger.error('❌ Error fetching ThingSpeak historical data:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to fetch historical data from ThingSpeak',
+      error: error.message,
+      data: []
+    });
+  }
+});

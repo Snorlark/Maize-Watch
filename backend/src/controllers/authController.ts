@@ -1129,6 +1129,7 @@ export const verifyLoginOTP = catchAsync(async (req: Request, res: Response) => 
           twoFactorEnabled: user.twoFactorEnabled
         },
         accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
         expiresIn: tokens.expiresIn
       }
     });
@@ -1137,4 +1138,182 @@ export const verifyLoginOTP = catchAsync(async (req: Request, res: Response) => 
     logger.error('OTP verification failed', { error: error instanceof Error ? error.message : String(error), email });
     throw error;
   }
+});
+
+/**
+ * @desc    Send forgot password OTP
+ * @route   POST /api/auth/send-forgot-password-otp
+ * @access  Public
+ */
+export const sendForgotPasswordOTP = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  logger.info('Forgot password OTP request received', { email });
+
+  // Check if user exists
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    logger.warn('Forgot password OTP requested for non-existent email', { email });
+    // Don't reveal if email exists or not for security
+    return res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'If an account with that email exists, we have sent a password reset code.'
+    });
+  }
+
+  // Generate and store OTP
+  const otp = await otpService.generateOTP(email, 'forgot-password');
+  
+  // Send OTP email
+  await emailService.sendForgotPasswordOTP(email, otp, user.fullName || user.username);
+
+  logger.info('Forgot password OTP sent successfully', { email });
+
+  // Log activity
+  try {
+    await ActivityLogService.createLog({
+      userId: user._id.toString(),
+      userEmail: user.email || email,
+      userRole: user.role as UserRole,
+      action: Action.FORGOT_PASSWORD_REQUESTED,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        action: 'Forgot Password OTP Sent',
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log forgot password activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Password reset code sent to your email',
+    expiresIn: '5 minutes'
+  });
+});
+
+/**
+ * @desc    Verify forgot password OTP
+ * @route   POST /api/auth/verify-forgot-password-otp
+ * @access  Public
+ */
+export const verifyForgotPasswordOTP = catchAsync(async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+
+  logger.info('Forgot password OTP verification attempt', { email, otp });
+
+  // Verify OTP
+  const isValid = await otpService.verifyOTP(email, otp, 'forgot-password');
+  
+  if (!isValid) {
+    logger.warn('Invalid forgot password OTP attempt', { email, otp });
+    throw new AppError('Invalid or expired verification code', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Check if user still exists
+  const user = await User.findOne({ email });
+  if (!user) {
+    logger.warn('Forgot password OTP verified but user no longer exists', { email });
+    throw new AppError('User account not found', HTTP_STATUS.NOT_FOUND);
+  }
+
+  logger.info('Forgot password OTP verified successfully', { email });
+
+  // Log activity
+  try {
+    await ActivityLogService.createLog({
+      userId: user._id.toString(),
+      userEmail: user.email || email,
+      userRole: user.role as UserRole,
+      action: Action.PASSWORD_RESET_VERIFIED,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        action: 'Forgot Password OTP Verified',
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log OTP verification activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Verification successful. You can now reset your password.'
+  });
+});
+
+/**
+ * @desc    Reset password with OTP
+ * @route   POST /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPasswordWithOTP = catchAsync(async (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+
+  logger.info('Password reset with OTP attempt', { email });
+
+  // Verify OTP one more time
+  const isValid = await otpService.verifyOTP(email, otp, 'forgot-password');
+  
+  if (!isValid) {
+    logger.warn('Invalid OTP for password reset', { email, otp });
+    throw new AppError('Invalid or expired verification code', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Find user
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    logger.warn('Password reset attempted for non-existent user', { email });
+    throw new AppError('User account not found', HTTP_STATUS.NOT_FOUND);
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  // Clear the OTP after successful password reset
+  await otpService.clearOTP(email, 'forgot-password');
+
+  logger.info('Password reset successful', { email });
+
+  // Log activity
+  try {
+    await ActivityLogService.createLog({
+      userId: user._id.toString(),
+      userEmail: user.email || email,
+      userRole: user.role as UserRole,
+      action: Action.PASSWORD_RESET_COMPLETED,
+      resource: Resource.AUTH,
+      resourceId: null,
+      details: {
+        action: 'Password Reset Completed',
+        method: req.method,
+        path: req.path,
+        statusCode: HTTP_STATUS.OK
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      timestamp: new Date()
+    });
+  } catch (e) {
+    logger.warn('Failed to log password reset activity', { error: e instanceof Error ? e.message : String(e) });
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Password reset successful. You can now login with your new password.'
+  });
 });

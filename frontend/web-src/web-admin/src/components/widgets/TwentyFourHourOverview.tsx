@@ -49,9 +49,35 @@ const TwentyFourHourOverview: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('[TwentyFourHourOverview] Fetching daily historical data...');
+      console.log('[TwentyFourHourOverview] Fetching 24-hour data from ThingSpeak...');
       
-      // Try to fetch daily historical data (last 7 days, then we'll simulate hourly data)
+      // First try ThingSpeak historical data (24 readings for last 24 hours)
+      try {
+        const result = await sensorService.getThingSpeakHistoricalData(24, 24);
+        console.log('[TwentyFourHourOverview] ThingSpeak historical result:', result);
+        
+        if (result.success && result.data && result.data.length > 0) {
+          // Transform ThingSpeak data to chart format
+          const chartData: HistoryPoint[] = result.data.map((reading: any) => ({
+            timestamp: reading.timestamp,
+            temperature: reading.temperature,
+            humidity: reading.humidity,
+            soilMoisture: reading.soilMoisture,
+            soilPh: reading.soilPh,
+            lightIntensity: reading.lightIntensity
+          }));
+          
+          setSeries(chartData);
+          setLastUpdated(new Date().toISOString());
+          setError(null);
+          console.log('[TwentyFourHourOverview] Successfully loaded ThingSpeak historical data:', chartData.length, 'points');
+          return;
+        }
+      } catch (thingSpeakError) {
+        console.warn('[TwentyFourHourOverview] ThingSpeak historical failed, falling back to daily data:', thingSpeakError);
+      }
+      
+      // Fallback to daily historical data simulation
       const result = await apiService.fetchHistoricalData('daily', 7);
       
       console.log('[TwentyFourHourOverview] Historical data result:', result);
@@ -265,7 +291,7 @@ const TwentyFourHourOverview: React.FC = () => {
 
       <div className="flex items-baseline gap-3 mb-2">
         <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>
-          {displayData.length ? `${displayData[displayData.length - 1].value}${active.unit}` : '--'}
+          {displayData.length ? `${displayData[displayData.length - 1].value.toFixed(1)}${active.unit}` : '--'}
         </div>
         <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>{active.label}</div>
       </div>
@@ -287,8 +313,8 @@ const TwentyFourHourOverview: React.FC = () => {
                 interval={0}
                 padding={{ left: 10, right: 10 }}
               />
-              <YAxis domain={active.domain as any} width={60} tickFormatter={(v) => `${v}${active.unit}`} />
-              <Tooltip formatter={(value: any) => [`${value}${active.unit}`, active.label]} labelFormatter={(label) => `Time: ${label}`} />
+              <YAxis domain={active.domain as any} width={60} tickFormatter={(v) => `${Number(v).toFixed(1)}${active.unit}`} />
+              <Tooltip formatter={(value: any) => [`${Number(value).toFixed(1)}${active.unit}`, active.label]} labelFormatter={(label) => `Time: ${label}`} />
               <Legend />
               <Line type="monotone" dataKey="value" name={active.label} stroke={active.color} strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 4 }} connectNulls />
               {/* Optional baseline lines per metric */}
