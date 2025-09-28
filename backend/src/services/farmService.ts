@@ -85,10 +85,24 @@ class FarmService {
    */
   async getFarmById(farmId: string): Promise<IFarm> {
     try {
+      logger.info(`Attempting to fetch farm by ID: ${farmId}`);
+      
+      // Validate ObjectId format to prevent crashes
+      if (!farmId || farmId.length !== 24) {
+        logger.warn(`Invalid farm ID format: ${farmId}`);
+        throw new AppError('Invalid farm ID format', 400);
+      }
+      
       const farm = await Farm.findById(farmId);
+      
+      logger.info(`Farm query completed. Found: ${farm ? 'Yes' : 'No'}`);
+      
       if (!farm) {
+        logger.warn(`Farm not found with ID: ${farmId}`);
         throw new AppError('Farm not found', 404);
       }
+      
+      logger.info(`Successfully fetched farm: ${farm._id}`);
       return farm;
     } catch (error) {
       logger.error('Error fetching farm:', error);

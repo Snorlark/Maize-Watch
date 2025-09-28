@@ -15,21 +15,56 @@ import {
   getFarmsByLocation,
   getFarmStats,
   getHarvestPredictions,
-  getTotalFarms   // 👈 make sure this is exported in farmController.ts
+  getTotalFarms
 } from '../controllers/farmController';
 
 import { authenticate, authorize, requireRegionalAdmin } from '../middleware/auth';
 import {
   validateFarmCreation,
+  validateSensorCreation,
+  validateSensorReading,
   validateObjectId,
   validatePagination,
-  validateDateRange
+  validateDateRange,
+  handleValidationErrors
 } from '../middleware/validation';
 import { USER_ROLES } from '../utils/constants';
 
 const router = Router();
 // Get total farm count
-router.get("/total", getTotalFarms);  // 👈 now properly wired
+router.get("/total", getTotalFarms);
+
+// Debug route - test specific farm without auth
+router.get("/debug/:id", async (req, res) => {
+  try {
+    console.log(`DEBUG: Testing farm ID ${req.params.id}`);
+    const Farm = require('../models/Farm').default;
+    const farm = await Farm.findById(req.params.id);
+    console.log(`DEBUG: Farm found: ${farm ? 'Yes' : 'No'}`);
+    if (farm) {
+      console.log(`DEBUG: Farm data:`, JSON.stringify(farm, null, 2));
+    }
+    res.json({ success: true, farm: farm });
+  } catch (error) {
+    console.log(`DEBUG: Error:`, error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Debug route - test with auth
+router.get("/debug-auth/:id", authenticate, async (req, res) => {
+  try {
+    console.log(`DEBUG-AUTH: Testing farm ID ${req.params.id}`);
+    console.log(`DEBUG-AUTH: User: ${(req as any).user._id}`);
+    const Farm = require('../models/Farm').default;
+    const farm = await Farm.findById(req.params.id);
+    console.log(`DEBUG-AUTH: Farm found: ${farm ? 'Yes' : 'No'}`);
+    res.json({ success: true, farm: farm, user: (req as any).user._id });
+  } catch (error) {
+    console.log(`DEBUG-AUTH: Error:`, error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
 
 // All routes require authentication
 router.use(authenticate);
@@ -50,16 +85,16 @@ router.post('/', validateFarmCreation, createSimpleFarm);
 router.get('/', requireRegionalAdmin, validatePagination, getFarms);
 
 // Get farm by ID
-router.get('/:id', validateObjectId, getFarmById);
+router.get('/:id', validateObjectId('id'), handleValidationErrors, getFarmById);
 
 // Update farm
-router.put('/:id', validateObjectId, updateFarm);
+router.put('/:id', validateObjectId('id'), handleValidationErrors, updateFarm);
 
 // Delete farm
-router.delete('/:id', validateObjectId, deleteFarm);
+router.delete('/:id', validateObjectId('id'), handleValidationErrors, deleteFarm);
 
 // Get farm analytics
-router.get('/:id/analytics', validateObjectId, validateDateRange, getFarmAnalytics);
+router.get('/:id/analytics', validateObjectId('id'), validateDateRange, getFarmAnalytics);
 
 // Update farm status
 router.patch('/:id/status', validateObjectId, updateFarmStatus);

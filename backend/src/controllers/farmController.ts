@@ -105,14 +105,28 @@ export const getFarmById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const currentUser = (req as any).user;
 
+  logger.info(`GET /api/farms/${id} - Request received from user: ${currentUser.id}, role: ${currentUser.role}`);
+
   const farm = await farmService.getFarmById(id);
+  
+  logger.info(`Farm owner: ${farm.userId}, requesting user: ${currentUser.id}`);
+  logger.info(`Farm data: ${JSON.stringify(farm, null, 2)}`);
 
   // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+  const farmUserId = farm.userId._id ? farm.userId._id.toString() : farm.userId.toString();
+  logger.info(`Access control check: farmUserId=${farmUserId}, currentUser.id=${currentUser.id}, currentUser.role=${currentUser.role}`);
+  
+  const isOwner = farmUserId === currentUser.id;
+  const isAdmin = currentUser.role === USER_ROLES.ADMIN || currentUser.role === USER_ROLES.SUPER_ADMIN;
+  
+  logger.info(`Access control: isOwner=${isOwner}, isAdmin=${isAdmin}`);
+  
+  if (!isOwner && !isAdmin) {
+    logger.warn(`Access denied: User ${currentUser.id} cannot access farm ${farm._id}`);
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
+  
+  logger.info(`Access granted: User ${currentUser.id} can access farm ${farm._id}`);
 
   res.status(HTTP_STATUS.OK).json({
     success: true,
@@ -146,7 +160,8 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
   const existingFarm = await farmService.getFarmById(id);
 
   // Check if user owns the farm or is admin
-  if (existingFarm.userId.toString() !== currentUser.id && 
+  const existingFarmUserId = existingFarm.userId._id ? existingFarm.userId._id.toString() : existingFarm.userId.toString();
+  if (existingFarmUserId !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
