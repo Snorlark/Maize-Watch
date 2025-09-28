@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Edit3, MapPin, Calendar, Sprout, Loader2 } from 'lucide-react';
-import { Farm, FarmAssignmentData, farmService } from '../api/services/farmService';
+import { CurrentFarm, FarmAssignmentData, farmService } from '../api/services/farmService';
 import { User } from '../api/services/authService';
 
 interface FarmManagementModalProps {
@@ -20,10 +20,10 @@ const FarmManagementModal: React.FC<FarmManagementModalProps> = ({
   onClose,
   onUpdate
 }) => {
-  const [farms, setFarms] = useState<Farm[]>([]);
+  const [farms, setFarms] = useState<CurrentFarm[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
+  const [editingFarm, setEditingFarm] = useState<CurrentFarm | null>(null);
   const [formData, setFormData] = useState<FarmFormData>({
     fieldName: '',
     location: '',
@@ -50,7 +50,7 @@ const FarmManagementModal: React.FC<FarmManagementModalProps> = ({
     setLoading(true);
     try {
       const userFarms = await farmService.getFarmsByUserId(user._id);
-      setFarms(userFarms);
+      setFarms(userFarms as CurrentFarm[]);
     } catch (error) {
       console.error('Error fetching farms:', error);
     } finally {
@@ -121,7 +121,7 @@ const FarmManagementModal: React.FC<FarmManagementModalProps> = ({
   };
 
   // Handle edit
-  const handleEdit = (farm: Farm) => {
+  const handleEdit = (farm: CurrentFarm) => {
     setEditingFarm(farm);
     setFormData({
       fieldName: farm.fieldName,

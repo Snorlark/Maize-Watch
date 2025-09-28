@@ -30,11 +30,13 @@ export interface Field {
 export interface LegacyFarm {
   _id: string;
   userId: string;
+  farmName?: string; // Add farmName as optional for compatibility
   fieldName: string;
   location: string;
   soilType: string;
   plantingDate: string;
   growthStage: string;
+  fields?: Field[]; // Add fields as optional for compatibility
   createdAt: string;
   updatedAt: string;
   __v?: number;
