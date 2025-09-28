@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
 import Footer from '../components/Footer'
 import { FaThermometerHalf, FaMountain } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
 import { BsSun } from 'react-icons/bs'
-import { Activity, Gauge, AlertTriangle, Clock, MapPin, ChevronDown } from 'lucide-react'
+import { Activity, Gauge, AlertTriangle, Clock, MapPin, ChevronDown, RefreshCw } from 'lucide-react'
+import { sensorService } from '../api/config'
 import apiClient from '../api/client'
 
 interface SensorData {
@@ -55,6 +55,7 @@ const LiveData: React.FC = () => {
     soil_ph: false,
     light_level: false
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch farms on component mount
   useEffect(() => {
@@ -98,113 +99,106 @@ const LiveData: React.FC = () => {
     fetchFarms();
   }, []);
 
-  // Fetch sensor data (always from general endpoint since farms are placeholders)
+  // Fetch sensor data function (extracted for reuse)
+  const fetchData = async (silent: boolean = false) => {
+    // Only show loading spinner on initial load, not on updates
+    if (!sensorData && !silent) {
+      setLoading(true);
+    }
+    if (!silent) {
+      setIsRefreshing(true);
+    }
+    setError(null);
+      
+    try {
+      console.log('[LiveData] Fetching latest sensor data using sensorService...');
+      
+      // Use the sensorService like TemperatureChart uses apiService
+      const result = await sensorService.getLatestSensorData(selectedFarm?._id);
+      
+      console.log('[LiveData] Sensor service result:', result);
+
+      if (result.success && result.data) {
+        const raw = result.data;
+        
+        // Update sensor status based on data availability
+        setSensorStatus({
+          temperature: raw.temperature !== null && raw.temperature !== undefined,
+          humidity: raw.humidity !== null && raw.humidity !== undefined,
+          soil_moisture: raw.soilMoisture !== null && raw.soilMoisture !== undefined,
+          soil_ph: raw.soilPh !== null && raw.soilPh !== undefined,
+          light_level: raw.lightIntensity !== null && raw.lightIntensity !== undefined
+        });
+
+        const transformedData: SensorData = {
+          _id: raw._id || 'sensor-reading',
+          field_id: selectedFarm?._id || 'general',
+          timestamp: raw.timestamp || new Date().toISOString(),
+          measurements: {
+            temperature: raw.temperature || 0,
+            humidity: raw.humidity || 0,
+            soil_moisture: raw.soilMoisture || 0,
+            soil_ph: raw.soilPh || 0,
+            light_level: raw.lightIntensity || 0,
+          },
+        };
+
+        setSensorData(transformedData);
+        setError(null);
+        console.log('[LiveData] Successfully updated sensor data:', transformedData);
+      } else {
+        throw new Error(result.error || 'Failed to fetch sensor data');
+      }
+    } catch (err: any) {
+      console.error('[LiveData] Error fetching sensor data:', err);
+      
+      // If we don't have any data yet, show mock data to prevent blank screen
+      if (!sensorData) {
+        console.log('[LiveData] Using mock data since no real data is available');
+        const mockData: SensorData = {
+          _id: 'mock-sensor-001',
+          field_id: selectedFarm?._id || 'mock-field',
+          timestamp: new Date().toISOString(),
+          measurements: {
+            temperature: 25.5,
+            humidity: 65,
+            soil_moisture: 45,
+            soil_ph: 6.8,
+            light_level: 750,
+          },
+        };
+        
+        setSensorData(mockData);
+        setSensorStatus({
+          temperature: true,
+          humidity: true,
+          soil_moisture: true,
+          soil_ph: true,
+          light_level: true
+        });
+      }
+      
+      setError('Unable to fetch live sensor data - showing demo data');
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch sensor data using the same pattern as TemperatureChart
   useEffect(() => {
     if (farmsLoading) return; // Wait for farms to load first
 
-    const fetchData = async () => {
-      // Only show loading spinner on initial load, not on updates
-      if (!sensorData) {
-        setLoading(true);
-      }
-      setError(null);
-      try {
-        // Always fetch from general endpoint regardless of selected farm
-        console.log('Fetching sensor data from MongoDB database');
-        let response;
-        
-        try {
-          // Try to get data from selected farm first
-          if (selectedFarm && selectedFarm._id) {
-            console.log('Fetching data for selected farm:', selectedFarm._id);
-            response = await apiClient.get(`/api/farms/${selectedFarm._id}/readings/latest`);
-          } else {
-            // Fallback to general latest readings endpoint
-            console.log('Fetching general latest sensor readings');
-            response = await apiClient.get('/api/sensors/latest-no-thingspeak');
-          }
-        } catch (sensorErr: any) {
-          console.log('⚠️ Primary endpoint failed, trying fallback');
-          try {
-            // Try the general endpoint as fallback
-            response = await apiClient.get('/api/sensors/latest-no-thingspeak');
-          } catch (fallbackErr: any) {
-            console.log('⚠️ All local endpoints failed, trying production');
-            response = await axios.get('https://maize-watch.onrender.com/api/sensors/latest');
-          }
-        }
-        console.log('Sensor API response:', response.data);
-
-        if (response.data?.success && response.data?.data) {
-          const raw = response.data.data;
-          
-          // Update sensor status based on data availability
-          setSensorStatus({
-            temperature: raw.temperature !== null && raw.temperature !== undefined,
-            humidity: raw.humidity !== null && raw.humidity !== undefined,
-            soil_moisture: raw.soilMoisture !== null && raw.soilMoisture !== undefined,
-            soil_ph: raw.soilPh !== null && raw.soilPh !== undefined,
-            light_level: raw.lightIntensity !== null && raw.lightIntensity !== undefined
-          });
-
-          const transformedData: SensorData = {
-            _id: raw._id || '',
-            field_id: selectedFarm?._id || '',
-            timestamp: raw.timestamp,
-            measurements: {
-              temperature: raw.temperature || 0,
-              humidity: raw.humidity || 0,
-              soil_moisture: raw.soilMoisture || 0,
-              soil_ph: raw.soilPh || 0,
-              light_level: raw.lightIntensity || 0,
-            },
-          };
-
-          setSensorData(transformedData);
-          setError(null);
-        } else {
-          setError('No sensor data received from API');
-        }
-      } catch (err: any) {
-        console.error('Error fetching sensor data:', err);
-        
-        // If we don't have any data yet, show mock data to prevent blank screen
-        if (!sensorData) {
-          console.log('🔄 Using mock data since no data is available');
-          const mockData: SensorData = {
-            _id: 'mock-sensor-001',
-            field_id: selectedFarm?._id || 'mock-field',
-            timestamp: new Date().toISOString(),
-            measurements: {
-              temperature: 25.5,
-              humidity: 65,
-              soil_moisture: 45,
-              soil_ph: 6.8,
-              light_level: 750,
-            },
-          };
-          
-          setSensorData(mockData);
-          setSensorStatus({
-            temperature: true,
-            humidity: true,
-            soil_moisture: true,
-            soil_ph: true,
-            light_level: true
-          });
-        }
-        
-        setError('Unable to fetch live sensor data - showing demo data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    // Increase interval to 30 seconds to reduce server load and prevent flickering
-    const interval = setInterval(fetchData, 30000);
+    // Refresh every 30 seconds like TemperatureChart
+    const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
-  }, [farmsLoading]); // Only depend on farmsLoading, not selectedFarm or farms
+  }, [farmsLoading, selectedFarm]); // Include selectedFarm in dependencies
+
+  // Manual refresh function
+  const handleRefresh = () => {
+    fetchData(false);
+  };
 
   // Safety check for measurements and provide default values
   const measurements = {
@@ -354,10 +348,23 @@ const LiveData: React.FC = () => {
       <main className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
-            <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
-            Live Sensor Data
-          </h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h1 className="font-bold text-[#1E441E] flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
+                <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
+                Live Sensor Data
+              </h1>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#356B2C] disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          
           <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
             Real-time monitoring of environmental conditions
           </p>
@@ -366,7 +373,7 @@ const LiveData: React.FC = () => {
           <div className="mt-4 p-4 bg-white rounded-lg border border-[#B8D4A8]">
             <label className="block text-sm font-medium text-[#456C2D] mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
-              Select Farm (Display Only - Showing General Sensor Data)
+              Select Farm
             </label>
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative">
@@ -381,13 +388,13 @@ const LiveData: React.FC = () => {
                   disabled={farms.length === 0}
                 >
                   {farms.length === 0 ? (
-                    <option value="">No farms available - Showing general sensor data</option>
+                    <option value="">No farms available</option>
                   ) : (
                     <>
                       <option value="">General Sensor Data (Default)</option>
                       {farms.map((farm) => (
                         <option key={farm._id} value={farm._id}>
-                          {farm.fieldName} - {farm.location} (Placeholder)
+                          {farm.fieldName} - {farm.location}
                         </option>
                       ))}
                     </>
@@ -422,6 +429,12 @@ const LiveData: React.FC = () => {
               <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#8B4513] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
                 <MapPin className="w-3 h-3 mr-1" />
                 {selectedFarm.fieldName}
+              </span>
+            )}
+            {error && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-orange-100 text-orange-800" style={{ fontSize: 'var(--text-sm)' }}>
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Demo Mode
               </span>
             )}
           </div>
