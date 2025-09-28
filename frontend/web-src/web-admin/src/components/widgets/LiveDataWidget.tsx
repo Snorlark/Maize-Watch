@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import apiClient from '../../api/client';
+import { sensorService } from '../../api/config';
 import { Thermometer, Droplets, Sun, TestTube, Activity, ChevronLeft, ChevronRight, RefreshCw, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,47 +93,53 @@ const LiveDataWidget: React.FC = () => {
 
   const fetchLatest = async () => {
     try {
-      // Try MongoDB endpoint for latest sensor data
-      const resp = await apiClient.get<LatestApiData>('/api/sensors/latest-no-thingspeak');
-      if (!resp.data?.success || !resp.data.data) {
-        throw new Error(resp.data?.message || 'Failed to fetch live data');
-      }
-      const raw = resp.data.data;
-      const nextValues: Record<VariableKey, number> = {
-        temperature: raw.temperature ?? 0,
-        humidity: raw.humidity ?? 0,
-        soil_moisture: raw.soilMoisture ?? 0,
-        soil_ph: raw.soilPh ?? 0,
-        light_level: raw.lightIntensity ?? 0,
-      };
-      setValues(nextValues);
-      // Use the timestamp returned by the API exactly as the "Last updated" value
-      setLastUpdated(raw.timestamp ?? null);
-      setError(null);
-    } catch (e: any) {
-      console.warn('MongoDB endpoint failed, trying fallback:', e.message);
+      console.log('[LiveDataWidget] Fetching latest sensor data using sensorService...');
       
-      // Try test endpoint as fallback
-      try {
-        const fallbackResp = await apiClient.get('/api/sensors/test-simple');
-        if (fallbackResp.data?.success && fallbackResp.data.mockData) {
-          const mockData = fallbackResp.data.mockData;
-          const nextValues: Record<VariableKey, number> = {
-            temperature: mockData.temperature ?? 0,
-            humidity: mockData.humidity ?? 0,
-            soil_moisture: mockData.soilMoisture ?? 0,
-            soil_ph: mockData.soilPh ?? 0,
-            light_level: mockData.lightIntensity ?? 0,
-          };
-          setValues(nextValues);
-          setLastUpdated(fallbackResp.data.timestamp ?? null);
-          setError('Using test data (Database unavailable)');
+      // Use the same sensorService as LiveData.tsx (prioritizes test endpoint)
+      const result = await sensorService.getLatestSensorData();
+      
+      console.log('[LiveDataWidget] Sensor service result:', result);
+
+      if (result.success && result.data) {
+        const raw = result.data;
+        
+        const nextValues: Record<VariableKey, number> = {
+          temperature: raw.temperature ?? 0,
+          humidity: raw.humidity ?? 0,
+          soil_moisture: raw.soilMoisture ?? 0,
+          soil_ph: raw.soilPh ?? 0,
+          light_level: raw.lightIntensity ?? 0,
+        };
+        
+        setValues(nextValues);
+        setLastUpdated(raw.timestamp ?? null);
+        
+        // Show a subtle indicator if using test data
+        if (result.message?.includes('test data') || result.message?.includes('Test')) {
+          setError('Using test data (Demo mode)');
         } else {
-          throw new Error('Test endpoint also failed');
+          setError(null);
         }
-      } catch (fallbackErr: any) {
-        setError('All endpoints failed: ' + (e.message || 'Failed to fetch live data'));
+        
+        console.log('[LiveDataWidget] Successfully updated sensor data:', nextValues);
+      } else {
+        throw new Error(result.error || 'Failed to fetch sensor data');
       }
+    } catch (e: any) {
+      console.error('[LiveDataWidget] Error fetching sensor data:', e);
+      
+      // Final fallback to mock data
+      const mockValues: Record<VariableKey, number> = {
+        temperature: 25.5,
+        humidity: 65,
+        soil_moisture: 45,
+        soil_ph: 6.8,
+        light_level: 750,
+      };
+      
+      setValues(mockValues);
+      setLastUpdated(new Date().toISOString());
+      setError('Using fallback data (All endpoints failed)');
     } finally {
       setLoading(false);
     }
@@ -141,7 +147,8 @@ const LiveDataWidget: React.FC = () => {
 
   useEffect(() => {
     fetchLatest();
-    const id = setInterval(fetchLatest, 3000);
+    // Use 30-second interval like LiveData.tsx for consistency
+    const id = setInterval(fetchLatest, 30000);
     return () => clearInterval(id);
   }, []);
 
