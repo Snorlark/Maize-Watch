@@ -15,7 +15,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }>;
+  verifyOTP: (email: string, otp: string) => Promise<boolean>;
   logout: () => void;
   resetInactivityTimer: () => void;
   refreshUserData: () => void;
@@ -157,9 +158,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user]);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }> => {
     try {
       const response = await authService.login(username, password);
+      
+      if (response.success) {
+        // Check if OTP is required
+        if ((response as any).requiresOTP) {
+          console.log('Login response with OTP required:', response);
+          return {
+            success: true,
+            requiresOTP: true,
+            data: (response as any).data, // Pass the entire data object
+            message: response.message
+          };
+        }
+        
+        // Complete login (no OTP required)
+        if (response.data?.user) {
+          setUser(response.data.user);
+          startInactivityTimer();
+          return { success: true };
+        }
+      }
+      
+      return { 
+        success: false, 
+        message: response.message || 'Login failed' 
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        message: 'Login failed. Please try again.' 
+      };
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
+    try {
+      const response = await authService.verifyLoginOTP(email, otp);
       if (response.success && response.data?.user) {
         setUser(response.data.user);
         startInactivityTimer();
@@ -167,7 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Verify OTP error:', error);
       return false;
     }
   };
@@ -200,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     loading,
     login,
+    verifyOTP,
     logout,
     resetInactivityTimer,
     refreshUserData

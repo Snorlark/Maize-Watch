@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import authService from '../services/authService';
+import otpService from '../services/otpService';
+import emailService from '../services/emailService';
+import User from '../models/User';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS } from '../utils/constants';
@@ -153,8 +156,80 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   try {
     logger.info('🔍 Calling authService.login', { loginIdentifier });
     const result = await authService.login(loginIdentifier, password, totpCode);
-    logger.info('✅ Login successful', { userId: result.user._id, username: result.user.username });
+    logger.info('✅ Password validation successful', { userId: result.user._id, username: result.user.username });
 
+    // Check if this is an admin user who needs email OTP verification
+    const isAdminUser = ['admin', 'regional_admin', 'super_admin'].includes(result.user.role);
+    
+    if (isAdminUser && deviceType === 'web' && !totpCode) {
+      // For admin users on web, require email OTP as second factor
+      logger.info('🔐 Admin user detected, sending OTP for 2FA', { 
+        userId: result.user._id, 
+        email: result.user.email 
+      });
+
+      try {
+        // Generate and send OTP
+        const emailForOTP = result.user.email || loginIdentifier;
+        logger.info('🔐 Generating OTP for sequential 2FA', { 
+          userEmail: result.user.email,
+          loginIdentifier,
+          emailForOTP,
+          userId: result.user._id 
+        });
+        
+        const otp = otpService.generateOTP(emailForOTP);
+        await emailService.sendLoginOTP(
+          emailForOTP, 
+          result.user.fullName || result.user.username, 
+          otp, 
+          5
+        );
+
+        // Activity Log: OTP Required
+        try {
+          await ActivityLogService.createLog({
+            userId: result.user._id,
+            userEmail: result.user.email || loginIdentifier,
+            userRole: (result.user.role as UserRole) || 'user',
+            action: Action.LOGIN,
+            resource: Resource.AUTH,
+            resourceId: null,
+            details: {
+              action: 'Password Verified - OTP Required',
+              method: req.method,
+              path: req.path,
+              statusCode: HTTP_STATUS.OK
+            },
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            timestamp: new Date()
+          });
+        } catch (e) {
+          logger.warn('Failed to log OTP requirement activity', { error: e instanceof Error ? e.message : String(e) });
+        }
+
+        // Return response indicating OTP is required
+        return res.status(HTTP_STATUS.OK).json({
+          success: true,
+          message: 'Password verified. Please check your email for the verification code.',
+          requiresOTP: true,
+          data: {
+            email: emailForOTP, // Use the same email that was used for OTP generation
+            expiresIn: 300 // 5 minutes
+          }
+        });
+
+      } catch (otpError) {
+        logger.error('Failed to send OTP after password verification', { 
+          error: otpError instanceof Error ? otpError.message : String(otpError),
+          userId: result.user._id 
+        });
+        throw new AppError('Authentication successful, but failed to send verification code. Please try again.', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+      }
+    }
+
+    // Complete login (for non-admin users or when OTP is provided)
     // Set refresh token as httpOnly cookie
     res.cookie('refreshToken', result.tokens.refreshToken, {
       httpOnly: true,
@@ -163,11 +238,11 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    // Activity Log: Login
+    // Activity Log: Complete Login
     try {
       await ActivityLogService.createLog({
         userId: result.user._id,
-        userEmail: result.user.email,
+        userEmail: result.user.email || loginIdentifier,
         userRole: (result.user.role as UserRole) || 'user',
         action: Action.LOGIN,
         resource: Resource.AUTH,
@@ -799,5 +874,267 @@ export const updateProfile = catchAsync(async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Profile update failed:', error);
     throw new AppError(error.message || 'Failed to update profile', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * @desc    Send OTP for email-based login (Web Admin)
+ * @route   POST /api/auth/send-login-otp
+ * @access  Public
+ */
+export const sendLoginOTP = catchAsync(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map(err => ({
+        field: 'path' in err ? err.path : 'unknown',
+        message: err.msg
+      }))
+    });
+  }
+
+  const { email } = req.body;
+
+  logger.info('OTP login request received', { email });
+
+  try {
+    // Check if user exists and has admin privileges
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      role: { $in: ['admin', 'regional_admin', 'super_admin'] },
+      isActive: true
+      // Note: Removed emailVerified requirement since user will prove email access via OTP
+    });
+
+    if (!user) {
+      // Don't reveal if user exists for security
+      logger.warn('OTP request for non-existent or unauthorized user', { email });
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'If an admin account exists with this email, a verification code has been sent.'
+      });
+    }
+
+    // Check if there's already a valid OTP
+    if (otpService.hasValidOTP(email)) {
+      const remainingTime = otpService.getRemainingTime(email);
+      return res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
+        success: false,
+        message: `Please wait ${Math.ceil(remainingTime / 60)} minutes before requesting a new code.`,
+        remainingTime
+      });
+    }
+
+    // Generate OTP
+    const otp = otpService.generateOTP(email);
+
+    // Send OTP email
+    await emailService.sendLoginOTP(email, user.fullName, otp, 5);
+
+    logger.info('Login OTP sent successfully', { 
+      email,
+      userId: user._id,
+      fullName: user.fullName
+    });
+
+    // Activity Log: OTP Request
+    try {
+      await ActivityLogService.createLog({
+        userId: user._id,
+        userEmail: user.email || email,
+        userRole: (user.role as UserRole) || 'user',
+        action: Action.LOGIN,
+        resource: Resource.AUTH,
+        resourceId: null,
+        details: {
+          action: 'OTP Login Request',
+          method: req.method,
+          path: req.path,
+          statusCode: HTTP_STATUS.OK
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date()
+      });
+    } catch (e) {
+      logger.warn('Failed to log OTP request activity', { error: e instanceof Error ? e.message : String(e) });
+    }
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Verification code sent to your email address.',
+      expiresIn: 300 // 5 minutes in seconds
+    });
+
+  } catch (error) {
+    logger.error('Failed to send login OTP', { error: error instanceof Error ? error.message : String(error), email });
+    throw new AppError('Failed to send verification code. Please try again.', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * @desc    Verify OTP and complete login (Web Admin)
+ * @route   POST /api/auth/verify-login-otp
+ * @access  Public
+ */
+export const verifyLoginOTP = catchAsync(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map(err => ({
+        field: 'path' in err ? err.path : 'unknown',
+        message: err.msg
+      }))
+    });
+  }
+
+  const { email, otp } = req.body;
+
+  logger.info('OTP verification attempt', { email, otp: otp.substring(0, 2) + '****' });
+
+  try {
+    // Check if OTP exists for this email
+    const hasValidOTP = otpService.hasValidOTP(email);
+    logger.info('OTP existence check', { email, hasValidOTP });
+
+    // Verify OTP
+    const otpResult = otpService.verifyOTP(email, otp);
+    logger.info('OTP verification result', { 
+      email, 
+      valid: otpResult.valid, 
+      message: otpResult.message,
+      attemptsLeft: otpResult.attemptsLeft 
+    });
+
+    if (!otpResult.valid) {
+      logger.warn('OTP verification failed', { 
+        email, 
+        message: otpResult.message,
+        attemptsLeft: otpResult.attemptsLeft 
+      });
+      
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        success: false,
+        message: otpResult.message,
+        attemptsLeft: otpResult.attemptsLeft
+      });
+    }
+
+    // Get user (we know they exist from the OTP generation)
+    const emailKey = email.toLowerCase();
+    
+    // First, let's see what user data exists
+    const userCheck = await User.findOne({ email: emailKey });
+    logger.info('User lookup during OTP verification', {
+      email: emailKey,
+      userExists: !!userCheck,
+      userRole: userCheck?.role,
+      isActive: userCheck?.isActive,
+      emailVerified: userCheck?.emailVerified
+    });
+    
+    const user = await User.findOne({ 
+      email: emailKey,
+      role: { $in: ['admin', 'regional_admin', 'super_admin'] },
+      isActive: true
+      // Note: Removed emailVerified requirement since user is proving email access via OTP
+    });
+
+    if (!user) {
+      logger.error('User not found during OTP verification with admin criteria', { 
+        email: emailKey,
+        foundUser: !!userCheck,
+        userRole: userCheck?.role,
+        isActive: userCheck?.isActive,
+        emailVerified: userCheck?.emailVerified
+      });
+      throw new AppError('Authentication failed', HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate tokens
+    const accessToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
+
+    // Add refresh token to user
+    user.refreshTokens.push({
+      token: refreshToken,
+      createdAt: new Date(),
+    });
+    await user.save();
+
+    const tokens = {
+      accessToken,
+      refreshToken,
+      expiresIn: process.env.JWT_EXPIRE || "1h"
+    };
+
+    logger.info('OTP login successful', { 
+      userId: user._id, 
+      username: user.username,
+      email: user.email
+    });
+
+    // Set refresh token as httpOnly cookie
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    // Activity Log: Successful OTP Login
+    try {
+      await ActivityLogService.createLog({
+        userId: user._id,
+        userEmail: user.email || email,
+        userRole: (user.role as UserRole) || 'user',
+        action: Action.LOGIN,
+        resource: Resource.AUTH,
+        resourceId: null,
+        details: {
+          action: 'OTP Login Success',
+          method: req.method,
+          path: req.path,
+          statusCode: HTTP_STATUS.OK
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date()
+      });
+    } catch (e) {
+      logger.warn('Failed to log OTP login activity', { error: e instanceof Error ? e.message : String(e) });
+    }
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          assignedRegion: user.assignedRegion,
+          lastLogin: user.lastLogin,
+          emailVerified: user.emailVerified,
+          twoFactorEnabled: user.twoFactorEnabled
+        },
+        accessToken: tokens.accessToken,
+        expiresIn: tokens.expiresIn
+      }
+    });
+
+  } catch (error) {
+    logger.error('OTP verification failed', { error: error instanceof Error ? error.message : String(error), email });
+    throw error;
   }
 });

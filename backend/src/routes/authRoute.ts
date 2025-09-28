@@ -2,9 +2,9 @@ import { Router } from 'express';
 import {
   register,
   login,
+  refreshToken,
   logout,
   logoutAll,
-  refreshToken,
   forgotPassword,
   resetPassword,
   changePassword,
@@ -15,6 +15,8 @@ import {
   disable2FA,
   getProfile,
   updateProfile,
+  sendLoginOTP,
+  verifyLoginOTP,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -25,6 +27,8 @@ import {
   validatePasswordChange,
   validate2FAToken,
   validateUserUpdate,
+  validateEmailOTP,
+  validateOTPVerification,
   handleValidationErrors
 } from '../middleware/validation';
 
@@ -33,6 +37,10 @@ const router = Router();
 // Registration and login routes
 router.post('/register', authLimiter, ...validateUserRegistration, handleValidationErrors, register);
 router.post('/login', authLimiter, ...validateUserLogin, handleValidationErrors, login);
+
+// Email OTP login (Web Admin)
+router.post('/send-login-otp', authLimiter, ...validateEmailOTP, handleValidationErrors, sendLoginOTP);
+router.post('/verify-login-otp', authLimiter, ...validateOTPVerification, handleValidationErrors, verifyLoginOTP);
 
 // Token management
 router.post('/refresh', refreshToken);
