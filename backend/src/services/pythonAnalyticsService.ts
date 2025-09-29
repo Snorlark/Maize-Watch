@@ -63,14 +63,14 @@ export class PythonAnalyticsService {
   /**
    * Run complete analytics system for a farm
    */
-  async runCompleteAnalytics(farmId: string, userId?: string): Promise<AnalyticsV2Results> {
+  async runCompleteAnalytics(farmId: string, userId?: string, fieldId?: string): Promise<AnalyticsV2Results> {
     try {
       const farm = await farmService.getFarmById(farmId);
       if (!farm) {
         throw new AppError('Farm not found', 404);
       }
 
-      const results = await this.runAnalyticsV2(farm, undefined, userId);
+      const results = await this.runAnalyticsV2(farm, fieldId, userId);
       return results;
 
     } catch (error) {
@@ -117,6 +117,12 @@ export class PythonAnalyticsService {
       const farmerId = userId || this.mapFarmToFarmerId(farm);
       const fieldInfo = fieldId ? ` for field ${fieldId}` : '';
       logger.info(`Starting analytics_v2 for farm ${farm._id} (farmer_id: ${farmerId})${fieldInfo}`);
+      
+      // Sync fresh data from ThingSpeak before running analytics
+      logger.info(`Syncing fresh data from ThingSpeak for farm ${farm._id}...`);
+      const { default: syncService } = await import('./syncService');
+      await syncService.syncFarmData(farm._id.toString());
+      logger.info(`ThingSpeak sync completed for farm ${farm._id}`);
       
       const args = fieldId ? [farmerId, fieldId] : [farmerId];
       const output = await this.executePythonScript('run_complete_system.py', args);
@@ -394,8 +400,41 @@ export class PythonAnalyticsService {
     try {
       // Look for JSON output in the Python script output
       const lines = output.split('\n');
-      let jsonLine = '';
+      let jsonStart = -1;
+      let jsonEnd = -1;
       
+      // Find JSON_OUTPUT_START and JSON_OUTPUT_END markers
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('JSON_OUTPUT_START')) {
+          jsonStart = i + 1;
+          logger.info('Found JSON_OUTPUT_START at line', i);
+        }
+        if (lines[i].includes('JSON_OUTPUT_END')) {
+          jsonEnd = i;
+          logger.info('Found JSON_OUTPUT_END at line', i);
+          break;
+        }
+      }
+      
+      logger.info('JSON markers - Start:', jsonStart, 'End:', jsonEnd);
+      
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        // Extract JSON between markers
+        const jsonLines = lines.slice(jsonStart, jsonEnd);
+        const jsonString = jsonLines.join('\n');
+        
+        try {
+          const parsed = JSON.parse(jsonString);
+          logger.info('Successfully parsed JSON from Python analytics with markers');
+          return parsed;
+        } catch (error) {
+          logger.error('Failed to parse JSON from markers:', error);
+          logger.error('JSON string:', jsonString);
+        }
+      }
+      
+      // Fallback: Look for JSON output in the Python script output
+      let jsonLine = '';
       for (const line of lines) {
         if (line.trim().startsWith('{') && line.includes('descriptive')) {
           jsonLine = line.trim();
@@ -555,7 +594,7 @@ export class PythonAnalyticsService {
           const match = line.match(/^\d+\.\s+(.+)/);
           if (match) {
             const recommendation = {
-              action: this.extractRecommendationTitle(match[1]),
+              action: match[1].trim(),
               details: match[1].trim(),
               urgency: this.mapSectionToUrgency(currentSection) as 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW',
               category: this.categorizeRecommendation(match[1]),

@@ -27,6 +27,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(filter) => "No prescriptions found for \"${filter}\"";
 
+  static String m3(error) => "Failed to update notification settings: ${error}";
+
+  static String m4(enabled) => "Notifications enabled: ${enabled}";
+
+  static String m5(sensorName) =>
+      "${sensorName} sensor has been offline for more than 30 minutes.";
+
+  static String m6(phoneNumber) => "Verification code sent to ${phoneNumber}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "about": MessageLookupByLibrary.simpleMessage("About"),
@@ -79,6 +88,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bright": MessageLookupByLibrary.simpleMessage("Bright"),
     "button_retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "check_farm": MessageLookupByLibrary.simpleMessage("Check Farm"),
+    "check_notification_status": MessageLookupByLibrary.simpleMessage(
+      "Check Notification Status",
+    ),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Confirm Password",
     ),
@@ -146,6 +159,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Days Since Planting",
     ),
     "days_to_next_stage": m0,
+    "debug_section": MessageLookupByLibrary.simpleMessage("Debug Section"),
     "declining": MessageLookupByLibrary.simpleMessage("Growth is declining"),
     "default_user": MessageLookupByLibrary.simpleMessage("farmer"),
     "description": MessageLookupByLibrary.simpleMessage(
@@ -170,6 +184,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "dim": MessageLookupByLibrary.simpleMessage("Dim"),
     "done": MessageLookupByLibrary.simpleMessage("Done"),
     "dry": MessageLookupByLibrary.simpleMessage("Dry"),
+    "edit_settings": MessageLookupByLibrary.simpleMessage("Edit Settings"),
     "empty_no_prescriptions": MessageLookupByLibrary.simpleMessage(
       "No prescriptions found",
     ),
@@ -239,6 +254,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "How often does the app update sensor data?",
     ),
     "faq_title": MessageLookupByLibrary.simpleMessage("FAQs"),
+    "farm_alerts": MessageLookupByLibrary.simpleMessage("Farm Alerts"),
+    "farm_alerts_description": MessageLookupByLibrary.simpleMessage(
+      "Weather warnings, irrigation alerts, and crop health updates",
+    ),
+    "farm_task": MessageLookupByLibrary.simpleMessage("Farm Task"),
+    "fertilization": MessageLookupByLibrary.simpleMessage("Fertilization"),
     "field_information": MessageLookupByLibrary.simpleMessage(
       "Field Information",
     ),
@@ -275,6 +296,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "fully_developed_corn": MessageLookupByLibrary.simpleMessage(
       "Fully developed corn",
     ),
+    "general": MessageLookupByLibrary.simpleMessage("General"),
     "good": MessageLookupByLibrary.simpleMessage("Good"),
     "greeting_afternoon": MessageLookupByLibrary.simpleMessage(
       "Good Afternoon",
@@ -310,6 +332,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tassels appearing at top",
     ),
     "growth_timeline": MessageLookupByLibrary.simpleMessage("Growth Timeline"),
+    "harvest": MessageLookupByLibrary.simpleMessage("Harvest"),
     "healthy_growth": MessageLookupByLibrary.simpleMessage(
       "Healthy growth rate",
     ),
@@ -340,6 +363,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "invalid_credentials": MessageLookupByLibrary.simpleMessage(
       "Invalid username or password",
     ),
+    "irrigation": MessageLookupByLibrary.simpleMessage("Irrigation"),
     "just_now": MessageLookupByLibrary.simpleMessage("just now"),
     "just_sprouting_from_soil": MessageLookupByLibrary.simpleMessage(
       "Just sprouting from soil",
@@ -412,6 +436,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "logout_title": MessageLookupByLibrary.simpleMessage("Logout Confirmation"),
     "low": MessageLookupByLibrary.simpleMessage("Low"),
     "low_light": MessageLookupByLibrary.simpleMessage("Low Light"),
+    "medium": MessageLookupByLibrary.simpleMessage("Medium"),
     "minutes_ago": MessageLookupByLibrary.simpleMessage("minutes ago"),
     "moist": MessageLookupByLibrary.simpleMessage("Moist"),
     "moisture_fairly_moist": MessageLookupByLibrary.simpleMessage(
@@ -434,6 +459,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "municipality_required": MessageLookupByLibrary.simpleMessage(
       "Municipality is required",
     ),
+    "network_error": MessageLookupByLibrary.simpleMessage(
+      "Network error. Please check your connection.",
+    ),
+    "new_password": MessageLookupByLibrary.simpleMessage("New Password"),
+    "new_password_required": MessageLookupByLibrary.simpleMessage(
+      "New password is required",
+    ),
     "next": MessageLookupByLibrary.simpleMessage("Next"),
     "next_button": MessageLookupByLibrary.simpleMessage("Next"),
     "no": MessageLookupByLibrary.simpleMessage("No"),
@@ -442,7 +474,21 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "no_data": MessageLookupByLibrary.simpleMessage("No Data"),
     "normal": MessageLookupByLibrary.simpleMessage("Normal"),
+    "notification_description": MessageLookupByLibrary.simpleMessage(
+      "Get alerts for farm updates, weather warnings, and sensor issues",
+    ),
+    "notification_settings": MessageLookupByLibrary.simpleMessage(
+      "Notification Settings",
+    ),
+    "notification_settings_failed": m3,
+    "notification_settings_updated": MessageLookupByLibrary.simpleMessage(
+      "Notification settings updated successfully!",
+    ),
+    "notification_types": MessageLookupByLibrary.simpleMessage(
+      "Notification Types",
+    ),
     "notifications": MessageLookupByLibrary.simpleMessage("Notifications"),
+    "notifications_enabled": m4,
     "off": MessageLookupByLibrary.simpleMessage("Off"),
     "ok": MessageLookupByLibrary.simpleMessage("OK"),
     "okay": MessageLookupByLibrary.simpleMessage("Okay"),
@@ -459,6 +505,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Temperature",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Password"),
+    "password_min_length": MessageLookupByLibrary.simpleMessage(
+      "Password must be at least 6 characters",
+    ),
     "password_needs_lowercase": MessageLookupByLibrary.simpleMessage(
       "Password must contain at least one lowercase letter",
     ),
@@ -474,6 +523,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "password_required": MessageLookupByLibrary.simpleMessage(
       "Password is required",
     ),
+    "password_reset_successful": MessageLookupByLibrary.simpleMessage(
+      "Password reset successfully!",
+    ),
     "password_too_common": MessageLookupByLibrary.simpleMessage(
       "This password is too common. Please choose a stronger password",
     ),
@@ -483,11 +535,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "password_too_short": MessageLookupByLibrary.simpleMessage(
       "Password must be at least 6 characters",
     ),
+    "passwords_do_not_match": MessageLookupByLibrary.simpleMessage(
+      "Passwords do not match",
+    ),
     "passwords_dont_match": MessageLookupByLibrary.simpleMessage(
       "Passwords do not match",
     ),
+    "pest_control": MessageLookupByLibrary.simpleMessage("Pest Control"),
     "phSensor": MessageLookupByLibrary.simpleMessage("pH Level Sensor"),
     "ph_sensor": MessageLookupByLibrary.simpleMessage("PH Level of Soil"),
+    "phone_number": MessageLookupByLibrary.simpleMessage("Phone Number"),
+    "phone_number_invalid": MessageLookupByLibrary.simpleMessage(
+      "Please enter a valid phone number",
+    ),
+    "phone_number_required": MessageLookupByLibrary.simpleMessage(
+      "Phone number is required",
+    ),
     "planting_date": MessageLookupByLibrary.simpleMessage("Planting Date"),
     "planting_date_required": MessageLookupByLibrary.simpleMessage(
       "Planting date is required",
@@ -499,6 +562,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "When did you plant?",
     ),
     "poor": MessageLookupByLibrary.simpleMessage("Poor"),
+    "prescription_alert": MessageLookupByLibrary.simpleMessage(
+      "Prescription Alert",
+    ),
+    "prescription_updates": MessageLookupByLibrary.simpleMessage(
+      "Prescription Updates",
+    ),
+    "prescription_updates_description": MessageLookupByLibrary.simpleMessage(
+      "New farm recommendations and treatment suggestions",
+    ),
     "prescriptions_subtitle": MessageLookupByLibrary.simpleMessage(
       "Manage your prescriptions",
     ),
@@ -620,9 +692,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "registration_timeout": MessageLookupByLibrary.simpleMessage(
       "The server is taking too long to respond. Your account may have been created. Please try logging in.",
     ),
+    "reset_password": MessageLookupByLibrary.simpleMessage("Reset Password"),
     "review_and_submit": MessageLookupByLibrary.simpleMessage(
       "Review and Submit",
     ),
+    "save": MessageLookupByLibrary.simpleMessage("Save"),
+    "saving": MessageLookupByLibrary.simpleMessage("Saving..."),
     "season_both": MessageLookupByLibrary.simpleMessage("Both Seasons"),
     "season_dry": MessageLookupByLibrary.simpleMessage(
       "Dry Season (December to May)",
@@ -643,6 +718,21 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select your province",
     ),
     "select_region": MessageLookupByLibrary.simpleMessage("Select your region"),
+    "send_verification_code": MessageLookupByLibrary.simpleMessage(
+      "Send Verification Code",
+    ),
+    "sensor_offline": MessageLookupByLibrary.simpleMessage("Sensor Offline"),
+    "sensor_offline_description": m5,
+    "sensor_sleep_description": MessageLookupByLibrary.simpleMessage(
+      "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
+    ),
+    "sensor_sleep_mode": MessageLookupByLibrary.simpleMessage(
+      "Sensors in Sleep Mode",
+    ),
+    "sensor_status": MessageLookupByLibrary.simpleMessage("Sensor Status"),
+    "sensor_status_description": MessageLookupByLibrary.simpleMessage(
+      "Alerts when sensors go offline or need maintenance",
+    ),
     "sensors": MessageLookupByLibrary.simpleMessage("Sensors"),
     "session_expired": MessageLookupByLibrary.simpleMessage(
       "Your session has expired. Please log in again.",
@@ -783,6 +873,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "translate": MessageLookupByLibrary.simpleMessage("Translate"),
     "try_again": MessageLookupByLibrary.simpleMessage("Try Again"),
+    "urgent": MessageLookupByLibrary.simpleMessage("Urgent"),
     "user_id_not_found": MessageLookupByLibrary.simpleMessage(
       "User ID not found",
     ),
@@ -843,6 +934,16 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "variety_yellow_dent": MessageLookupByLibrary.simpleMessage("Yellow Dent"),
     "ve_emergence": MessageLookupByLibrary.simpleMessage("Emergence (VE)"),
+    "verification_code": MessageLookupByLibrary.simpleMessage(
+      "Verification Code",
+    ),
+    "verification_code_invalid": MessageLookupByLibrary.simpleMessage(
+      "Please enter a valid 6-digit code",
+    ),
+    "verification_code_required": MessageLookupByLibrary.simpleMessage(
+      "Verification code is required",
+    ),
+    "verification_code_sent": m6,
     "versionInfo": MessageLookupByLibrary.simpleMessage("version 1.0.0"),
     "very_bright": MessageLookupByLibrary.simpleMessage("Very Bright"),
     "very_dry": MessageLookupByLibrary.simpleMessage("Very Dry"),
@@ -850,6 +951,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "vibrate": MessageLookupByLibrary.simpleMessage("Vibrate"),
     "vibrationOnly": MessageLookupByLibrary.simpleMessage("Vibration Only"),
     "vibration_only": MessageLookupByLibrary.simpleMessage("Vibration Only"),
+    "vibration_only_description": MessageLookupByLibrary.simpleMessage(
+      "Silent notifications with vibration only",
+    ),
     "view_details": MessageLookupByLibrary.simpleMessage("View Details"),
     "view_more_details": MessageLookupByLibrary.simpleMessage(
       "View more details",

@@ -13,6 +13,7 @@ export interface ISensorReadingModel extends Model<ISensorReading> {
 export interface ISensorReading extends Document {
   sensor: mongoose.Types.ObjectId;
   farm: mongoose.Types.ObjectId;
+  field_id?: string; // Add field_id for analytics compatibility
   timestamp: Date;
   data: {
     temperature?: number;
@@ -62,6 +63,11 @@ const sensorReadingSchema = new Schema<ISensorReading>(
       type: Schema.Types.ObjectId,
       ref: 'Farm',
       required: [true, 'Farm reference is required'],
+    },
+    field_id: {
+      type: String,
+      required: false, // Optional for backward compatibility
+      index: true, // Add index for analytics queries
     },
     timestamp: {
       type: Date,

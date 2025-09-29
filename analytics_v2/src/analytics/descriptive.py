@@ -20,6 +20,311 @@ class DescriptiveAnalytics:
             self.weather_collection = None
             self.recommendation_collection = None
 
+    def analyze_all_fields_performance(self, farmer_id: str, use_today: bool = False) -> Optional[Dict[str, Any]]:
+        """
+        Analyze daily performance data for ALL fields of a farmer.
+        
+        Args:
+            farmer_id: The ID of the farmer to analyze
+            use_today: If True, analyze today's data. Otherwise, analyze yesterday's data.
+            
+        Returns:
+            Dictionary with aggregated analysis results for all fields or None if analysis fails
+        """
+        try:
+            # Use today's date if use_today is True, otherwise use yesterday's date
+            target_date = datetime.now() if use_today else datetime.now() - timedelta(days=1)
+            start_of_day = datetime(target_date.year, target_date.month, target_date.day)
+            end_of_day = start_of_day + timedelta(days=1)
+
+            logger.info(f"Starting multi-field descriptive analysis for {farmer_id} on {start_of_day}")
+
+            # Get sensor readings from MongoDB
+            sensor_readings_collection = db_manager.get_collection("sensor_readings")
+            farms_collection = db_manager.get_collection("farms")
+            
+            # First, get the farm for this farmer
+            from bson import ObjectId
+            try:
+                if isinstance(farmer_id, str):
+                    farmer_object_id = ObjectId(farmer_id)
+                else:
+                    farmer_object_id = farmer_id
+                    
+                # First try to find farm by userId (normal case)
+                farm = farms_collection.find_one({"userId": farmer_object_id})
+                
+                # If not found, try to find farm by _id (when farmer_id is actually a farm_id)
+                if not farm:
+                    farm = farms_collection.find_one({"_id": farmer_object_id})
+                    if farm:
+                        logger.info(f"Found farm by ID: {farmer_id}")
+                    else:
+                        logger.error(f"No farm found for farmer/farm ID {farmer_id}")
+                        return None
+                else:
+                    logger.info(f"Found farm by userId: {farmer_id}")
+                    
+            except Exception as e:
+                logger.error(f"Invalid farmer ID format: {farmer_id}, error: {e}")
+                return None
+            
+            farm_id = str(farm["_id"])
+            logger.info(f"Found farm {farm_id} for farmer {farmer_id}")
+
+            # Get all fields for this farm
+            fields = farm.get("fields", [])
+            if not fields:
+                logger.warning(f"No fields found for farm {farm_id}")
+                return None
+
+            logger.info(f"Found {len(fields)} fields: {[f.get('fieldName', 'Unknown') for f in fields]}")
+
+            # Process each field individually
+            field_analyses = {}
+            all_recommendations = []
+            overall_stress_levels = []
+            
+            for field in fields:
+                field_name = field.get("fieldName", "Unknown")
+                logger.info(f"Processing field: {field_name}")
+                
+                # Analyze this specific field using actual sensor data from farms collection
+                field_analysis = self.analyze_field_with_actual_data(field, farmer_id, use_today)
+                
+                if field_analysis:
+                    field_analyses[field_name] = field_analysis
+                    
+                    # Collect stress levels for overall assessment
+                    if field_analysis.get('overall_stress'):
+                        overall_stress_levels.append(field_analysis['overall_stress'])
+                    
+                    # Collect recommendations
+                    if field_analysis.get('recommendations'):
+                        for rec in field_analysis['recommendations']:
+                            rec['field_id'] = field_name
+                            all_recommendations.append(rec)
+            
+            if not field_analyses:
+                logger.warning(f"No field analyses completed for farm {farm_id}")
+                return None
+
+            # Calculate overall farm stress level
+            overall_stress = self._calculate_farm_overall_stress(overall_stress_levels)
+            
+            # Get the most common growth stage
+            growth_stages = [analysis.get('growth_stage', 'Unknown') for analysis in field_analyses.values()]
+            most_common_growth_stage = max(set(growth_stages), key=growth_stages.count) if growth_stages else 'Unknown'
+
+            # Aggregate stress analysis from all fields
+            aggregated_stress_analysis = self._aggregate_stress_analysis(field_analyses)
+
+            # Create aggregated result
+            result = {
+                "farmer_id": farmer_id,
+                "farm_id": farm_id,
+                "field_id": None,  # Multi-field analysis
+                "date": start_of_day.strftime("%Y-%m-%d"),
+                "growth_stage": most_common_growth_stage,
+                "overall_stress": overall_stress,
+                "stress_analysis": aggregated_stress_analysis,
+                "field_analyses": field_analyses,  # Individual field results
+                "recommendations": all_recommendations,  # All recommendations from all fields
+                "total_fields": len(fields),
+                "fields_processed": len(field_analyses),
+                "status": "multi_field_analysis",
+                "message": f"Analyzed {len(field_analyses)} fields successfully"
+            }
+
+            logger.info(f"Multi-field analysis completed: {len(field_analyses)} fields processed, {len(all_recommendations)} total recommendations")
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in multi-field analysis: {e}")
+            return None
+
+    def _calculate_farm_overall_stress(self, stress_levels: list) -> str:
+        """Calculate overall farm stress level from individual field stress levels"""
+        if not stress_levels:
+            return "unknown"
+        
+        # Count stress levels
+        stress_counts = {}
+        for stress in stress_levels:
+            stress_counts[stress] = stress_counts.get(stress, 0) + 1
+        
+        # Determine overall stress based on most severe level present
+        if stress_counts.get("critical", 0) > 0:
+            return "critical"
+        elif stress_counts.get("high", 0) > 0:
+            return "high"
+        elif stress_counts.get("moderate", 0) > 0:
+            return "moderate"
+        elif stress_counts.get("low", 0) > 0:
+            return "low"
+        else:
+            return "unknown"
+
+    def _aggregate_stress_analysis(self, field_analyses: dict) -> dict:
+        """Aggregate stress analysis from multiple fields"""
+        aggregated = {}
+        
+        # Get all parameters from all fields
+        all_parameters = set()
+        for analysis in field_analyses.values():
+            if 'stress_analysis' in analysis:
+                all_parameters.update(analysis['stress_analysis'].keys())
+        
+        # Aggregate each parameter
+        for param in all_parameters:
+            param_data = []
+            for analysis in field_analyses.values():
+                if 'stress_analysis' in analysis and param in analysis['stress_analysis']:
+                    param_data.append(analysis['stress_analysis'][param])
+            
+            logger.info(f"🔍 Aggregating parameter '{param}': found {len(param_data)} field analyses")
+            if param_data:
+                logger.info(f"🔍 Parameter '{param}' data: {[d.get('stress_level', 'unknown') for d in param_data]}")
+                # Calculate average values and determine overall status
+                avg_actual = sum(d.get('actual_value', 0) for d in param_data) / len(param_data)
+                avg_optimal_min = sum(d.get('optimal_range', [0, 0])[0] for d in param_data) / len(param_data)
+                avg_optimal_max = sum(d.get('optimal_range', [0, 0])[1] for d in param_data) / len(param_data)
+                
+                # Determine overall stress level for this parameter
+                stress_levels = [d.get('stress_level', 'unknown') for d in param_data]
+                if 'critical' in stress_levels:
+                    overall_stress = 'critical'
+                elif 'high' in stress_levels:
+                    overall_stress = 'high'
+                elif 'moderate' in stress_levels or 'medium' in stress_levels:
+                    overall_stress = 'moderate'
+                elif 'low' in stress_levels:
+                    overall_stress = 'low'
+                else:
+                    overall_stress = 'unknown'
+                
+                # Determine status icon
+                if overall_stress == 'critical':
+                    status_icon = "🔴"
+                elif overall_stress == 'high':
+                    status_icon = "🟠"
+                elif overall_stress == 'moderate':
+                    status_icon = "🟡"
+                elif overall_stress == 'low':
+                    status_icon = "🟢"
+                else:
+                    status_icon = "⚪"
+                
+                aggregated[param] = {
+                    'actual_value': round(avg_actual, 2),
+                    'optimal_range': [round(avg_optimal_min, 2), round(avg_optimal_max, 2)],
+                    'stress_level': overall_stress,
+                    'status': status_icon,
+                    'fields_analyzed': len(param_data)
+                }
+        
+        return aggregated
+
+    def analyze_field_with_actual_data(self, field: dict, farmer_id: str, use_today: bool = False) -> Optional[Dict[str, Any]]:
+        """
+        Analyze field using actual sensor data from the farms collection
+        
+        Args:
+            field: Field data from farms collection
+            farmer_id: The ID of the farmer
+            use_today: If True, analyze today's data. Otherwise, analyze yesterday's data.
+            
+        Returns:
+            Dictionary with analysis results or None if analysis fails
+        """
+        try:
+            field_name = field.get("fieldName", "Unknown")
+            growth_stage = field.get("growthStage", "Unknown")
+            sensors = field.get("sensors", [])
+            
+            logger.info(f"Analyzing field {field_name} with growth stage {growth_stage}")
+            
+            if not sensors:
+                logger.warning(f"No sensors found for field {field_name}")
+                return None
+            
+            # Get the first sensor's readings (assuming one sensor per field for now)
+            sensor = sensors[0]
+            readings = sensor.get("readings", {})
+            
+            if not readings:
+                logger.warning(f"No readings found for field {field_name}")
+                return None
+            
+            logger.info(f"Using actual sensor data for field {field_name}: {readings}")
+            
+            # Convert readings to the format expected by stress analysis
+            sensor_data = [{
+                "data": {
+                    "temperature": readings.get("temperature", 0),
+                    "humidity": readings.get("humidity", 0),
+                    "soilMoisture": readings.get("soilMoisture", 0),
+                    "lightIntensity": readings.get("lightIntensity", 0),
+                    "pH": readings.get("soilPh", 0)  # Note: soilPh -> pH
+                },
+                "timestamp": datetime.now()  # Use current time since we don't have historical timestamps
+            }]
+            
+            # Analyze stress factors using actual data
+            stress_analysis = self._analyze_stress_factors_from_sensor_data(sensor_data)
+            
+            # Calculate overall stress
+            overall_stress = self._calculate_overall_stress_from_sensor_data(sensor_data)
+            
+            # Calculate days since planting
+            planting_date = field.get("plantingDate")
+            days_since_planting = 0
+            if planting_date:
+                if isinstance(planting_date, str):
+                    planting_date = datetime.fromisoformat(planting_date.replace('Z', '+00:00'))
+                days_since_planting = (datetime.now() - planting_date).days
+            
+            # Create weather summary from sensor data
+            weather_summary = {
+                "avg_temp": readings.get("temperature", 0),
+                "min_temp": readings.get("temperature", 0),
+                "max_temp": readings.get("temperature", 0),
+                "avg_humidity": readings.get("humidity", 0),
+                "min_humidity": readings.get("humidity", 0),
+                "max_humidity": readings.get("humidity", 0),
+                "avg_soil_moisture": readings.get("soilMoisture", 0),
+                "min_soil_moisture": readings.get("soilMoisture", 0),
+                "max_soil_moisture": readings.get("soilMoisture", 0),
+                "avg_soil_ph": readings.get("soilPh", 0),
+                "min_soil_ph": readings.get("soilPh", 0),
+                "max_soil_ph": readings.get("soilPh", 0),
+                "avg_light_intensity": readings.get("lightIntensity", 0),
+                "min_light_intensity": readings.get("lightIntensity", 0),
+                "max_light_intensity": readings.get("lightIntensity", 0),
+                "data_points": 1
+            }
+            
+            result = {
+                "farmer_id": farmer_id,
+                "farm_id": str(field.get("_id", "")),
+                "field_id": field_name,
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "growth_stage": growth_stage,
+                "overall_stress": overall_stress,
+                "stress_analysis": stress_analysis,
+                "weather_summary": weather_summary,
+                "daysSincePlanting": days_since_planting,
+                "status": "success",
+                "message": f"Analyzed field {field_name} using actual sensor data"
+            }
+            
+            logger.info(f"Successfully analyzed field {field_name} with actual data")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error analyzing field with actual data: {e}")
+            return None
+
     def analyze_daily_performance(self, farmer_id: str, use_today: bool = False, field_id: str = None) -> Optional[Dict[str, Any]]:
         """
         Analyze daily performance data from MongoDB sensor readings.
@@ -73,9 +378,12 @@ class DescriptiveAnalytics:
             # Add field filter if provided
             if field_id:
                 query["field_id"] = field_id
+                logger.info(f"Searching for sensor data with field_id: {field_id}")
 
+            logger.info(f"Query for sensor data: {query}")
             # Fetch sensor readings
             sensor_data = list(sensor_readings_collection.find(query).sort("timestamp", -1))
+            logger.info(f"Found {len(sensor_data)} sensor readings")
             
             if not sensor_data:
                 logger.warning(f"No sensor data found for farm {farm_id} on {start_of_day}")
@@ -139,6 +447,23 @@ class DescriptiveAnalytics:
             # Calculate days since planting for this field
             days_since_planting = self._calculate_days_since_planting(farm, field_id)
             
+            # Debug: Check sensor data before stress analysis
+            print(f"🔍 DEBUG: About to call stress analysis with {len(sensor_data)} sensor readings")
+            if sensor_data:
+                print(f"🔍 DEBUG: First sensor reading: {sensor_data[0]}")
+            
+            stress_analysis_result = self._analyze_stress_factors_from_sensor_data(sensor_data)
+            print(f"🔍 DEBUG: Stress analysis result: {stress_analysis_result}")
+            
+            # Generate current metrics from latest sensor data
+            current_metrics = self._generate_current_metrics(sensor_data)
+            
+            # Generate weekly data from sensor data
+            weekly_data = self._generate_weekly_data(sensor_data)
+            
+            # Generate growth stage analysis
+            growth_stage_analysis = self._generate_growth_stage_analysis(growth_stage, days_since_planting)
+            
             results = {
                 "farmer_id": farmer_id,
                 "farm_id": farm_id,
@@ -146,9 +471,12 @@ class DescriptiveAnalytics:
                 "date": start_of_day.strftime("%Y-%m-%d"),
                 "growth_stage": growth_stage,
                 "overall_stress": overall_stress,
-                "stress_analysis": self._analyze_stress_factors_from_sensor_data(sensor_data),
+                "stress_analysis": stress_analysis_result,
                 "weather_summary": self._summarize_sensor_data(sensor_data),
-                "daysSincePlanting": days_since_planting
+                "daysSincePlanting": days_since_planting,
+                "current_metrics": current_metrics,
+                "weekly_data": weekly_data,
+                "growth_stage_analysis": growth_stage_analysis
             }
 
             return results
@@ -185,8 +513,8 @@ class DescriptiveAnalytics:
                     humidities.append(data['humidity'])
                 if 'soilMoisture' in data and data['soilMoisture'] is not None:
                     soil_moistures.append(data['soilMoisture'])
-                if 'soilPh' in data and data['soilPh'] is not None:
-                    soil_phs.append(data['soilPh'])
+                if 'pH' in data and data['pH'] is not None:
+                    soil_phs.append(data['pH'])
         
         if not any([temps, humidities, soil_moistures, soil_phs]):
             return "unknown"
@@ -447,7 +775,9 @@ class DescriptiveAnalytics:
         Returns:
             Dictionary with analysis for each stress factor
         """
+        logger.info(f"🔍 _analyze_stress_factors_from_sensor_data called with {len(sensor_data)} readings")
         if not sensor_data:
+            logger.warning("🔍 No sensor data provided to stress analysis")
             return {}
         
         # Calculate averages from sensor data
@@ -460,16 +790,21 @@ class DescriptiveAnalytics:
         for reading in sensor_data:
             if 'data' in reading:
                 data = reading['data']
+                logger.info(f"🔍 Processing sensor reading: {data}")
                 if 'temperature' in data and data['temperature'] is not None:
                     temps.append(data['temperature'])
                 if 'humidity' in data and data['humidity'] is not None:
                     humidities.append(data['humidity'])
                 if 'soilMoisture' in data and data['soilMoisture'] is not None:
                     soil_moistures.append(data['soilMoisture'])
-                if 'soilPh' in data and data['soilPh'] is not None:
-                    soil_phs.append(data['soilPh'])
+                if 'pH' in data and data['pH'] is not None:
+                    soil_phs.append(data['pH'])
                 if 'lightIntensity' in data and data['lightIntensity'] is not None:
                     light_intensities.append(data['lightIntensity'])
+            else:
+                logger.warning(f"🔍 Sensor reading missing 'data' field: {reading}")
+        
+        logger.info(f"🔍 Collected data - temps: {len(temps)}, humidities: {len(humidities)}, soil_moistures: {len(soil_moistures)}, soil_phs: {len(soil_phs)}, light_intensities: {len(light_intensities)}")
         
         analysis = {}
         
@@ -601,8 +936,8 @@ class DescriptiveAnalytics:
                     humidities.append(data['humidity'])
                 if 'soilMoisture' in data and data['soilMoisture'] is not None:
                     soil_moistures.append(data['soilMoisture'])
-                if 'soilPh' in data and data['soilPh'] is not None:
-                    soil_phs.append(data['soilPh'])
+                if 'pH' in data and data['pH'] is not None:
+                    soil_phs.append(data['pH'])
                 if 'lightIntensity' in data and data['lightIntensity'] is not None:
                     light_intensities.append(data['lightIntensity'])
         
@@ -688,6 +1023,162 @@ class DescriptiveAnalytics:
         except Exception as e:
             logger.warning(f"Could not calculate days since planting: {e}")
             return 30  # Default fallback
+
+    def _generate_current_metrics(self, sensor_data: list) -> Dict[str, Any]:
+        """Generate current metrics from latest sensor data"""
+        if not sensor_data:
+            return {
+                "temperature": 0.0,
+                "humidity": 0.0,
+                "soilMoisture": 0.0,
+                "soilPh": 0.0,
+                "lightIntensity": 0.0,
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        # Get the latest reading
+        latest_reading = sensor_data[0]
+        data = latest_reading.get('data', {})
+        
+        return {
+            "temperature": data.get('temperature', 0.0),
+            "humidity": data.get('humidity', 0.0),
+            "soilMoisture": data.get('soilMoisture', 0.0),
+            "soilPh": data.get('pH', 0.0),
+            "lightIntensity": data.get('lightIntensity', 0.0),
+            "timestamp": latest_reading.get('timestamp', datetime.now()).isoformat()
+        }
+
+    def _generate_weekly_data(self, sensor_data: list) -> Dict[str, Any]:
+        """Generate weekly data from sensor readings"""
+        if not sensor_data:
+            return {
+                "dailyData": [],
+                "summary": {
+                    "totalReadings": 0,
+                    "daysWithData": 0,
+                    "lastUpdate": datetime.now().isoformat()
+                }
+            }
+        
+        # Group data by day
+        daily_data = {}
+        for reading in sensor_data:
+            date_key = reading['timestamp'].strftime('%Y-%m-%d')
+            if date_key not in daily_data:
+                daily_data[date_key] = []
+            daily_data[date_key].append(reading)
+        
+        # Generate daily averages for the last 7 days
+        daily_averages = []
+        for i in range(7):
+            date = datetime.now() - timedelta(days=i)
+            date_key = date.strftime('%Y-%m-%d')
+            
+            if date_key in daily_data:
+                day_readings = daily_data[date_key]
+                data_points = [r.get('data', {}) for r in day_readings]
+                
+                # Calculate averages
+                avg_temp = sum(d.get('temperature', 0) for d in data_points) / len(data_points) if data_points else 0
+                avg_humidity = sum(d.get('humidity', 0) for d in data_points) / len(data_points) if data_points else 0
+                avg_soil_moisture = sum(d.get('soilMoisture', 0) for d in data_points) / len(data_points) if data_points else 0
+                avg_soil_ph = sum(d.get('pH', 0) for d in data_points) / len(data_points) if data_points else 0
+                avg_light = sum(d.get('lightIntensity', 0) for d in data_points) / len(data_points) if data_points else 0
+                
+                daily_averages.append({
+                    "date": date_key,
+                    "temperature": round(avg_temp, 2),
+                    "humidity": round(avg_humidity, 2),
+                    "soilMoisture": round(avg_soil_moisture, 2),
+                    "soilPh": round(avg_soil_ph, 2),
+                    "lightIntensity": round(avg_light, 2)
+                })
+            else:
+                daily_averages.append({
+                    "date": date_key,
+                    "temperature": 0.0,
+                    "humidity": 0.0,
+                    "soilMoisture": 0.0,
+                    "soilPh": 0.0,
+                    "lightIntensity": 0.0
+                })
+        
+        return {
+            "dailyData": daily_averages,
+            "summary": {
+                "totalReadings": len(sensor_data),
+                "daysWithData": len(daily_data),
+                "lastUpdate": datetime.now().isoformat()
+            }
+        }
+
+    def _generate_growth_stage_analysis(self, growth_stage: str, days_since_planting: int) -> Dict[str, Any]:
+        """Generate growth stage analysis"""
+        # Calculate progress percentage based on growth stage
+        growth_percentages = {
+            'VE': 5,
+            'V2': 15,
+            'V3': 25,
+            'V4': 35,
+            'V5': 45,
+            'V6': 55,
+            'V7': 65,
+            'V8': 70,
+            'VT': 75,
+            'R1': 80,
+            'R2': 85,
+            'R3': 90,
+            'R4': 92,
+            'R5': 95,
+            'R6': 100,
+        }
+        
+        progress_percentage = growth_percentages.get(growth_stage, 10)
+        
+        # Calculate expected harvest (roughly 90-120 days from planting)
+        planting_date = datetime.now() - timedelta(days=days_since_planting)
+        expected_harvest = planting_date + timedelta(days=100)
+        
+        return {
+            "currentStage": growth_stage,
+            "progressPercentage": progress_percentage,
+            "stageDescription": self._get_growth_stage_description(growth_stage),
+            "stageInfo": self._get_growth_stage_info_list(),
+            "expectedHarvest": expected_harvest.isoformat()
+        }
+
+    def _get_growth_stage_description(self, stage: str) -> str:
+        """Get description for growth stage"""
+        descriptions = {
+            'VE': 'Seedling emergence - roots developing',
+            'V2': 'Early vegetative growth - rapid leaf development',
+            'V3': 'Early vegetative growth - rapid leaf development',
+            'V4': 'Early vegetative growth - rapid leaf development',
+            'V5': 'Mid vegetative growth - stem elongation',
+            'V6': 'Mid vegetative growth - stem elongation',
+            'V7': 'Mid vegetative growth - stem elongation',
+            'V8': 'Mid vegetative growth - stem elongation',
+            'VT': 'Tasseling - reproductive phase begins',
+            'R1': 'Reproductive phase - grain development',
+            'R2': 'Reproductive phase - grain development',
+            'R3': 'Reproductive phase - grain development',
+            'R4': 'Maturing phase - grain filling',
+            'R5': 'Maturing phase - grain filling',
+            'R6': 'Maturity - ready for harvest',
+        }
+        return descriptions.get(stage, 'Growth stage unknown')
+
+    def _get_growth_stage_info_list(self) -> list:
+        """Get list of growth stage information"""
+        return [
+            {"stage": "VE", "name": "Emergence", "description": "Seedling emergence", "days": 5},
+            {"stage": "V2-V4", "name": "Early Vegetative", "description": "Rapid leaf development", "days": 15},
+            {"stage": "V5-V8", "name": "Mid Vegetative", "description": "Stem elongation", "days": 20},
+            {"stage": "VT", "name": "Tasseling", "description": "Reproductive phase begins", "days": 10},
+            {"stage": "R1-R3", "name": "Reproductive", "description": "Grain development", "days": 25},
+            {"stage": "R4-R6", "name": "Maturing", "description": "Grain filling to maturity", "days": 15},
+        ]
 
 
 # Global instance

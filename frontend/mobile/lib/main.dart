@@ -7,6 +7,8 @@ import 'package:mobile/features/prescriptions/presentation/bloc/prescription_blo
 // Core
 import 'core/di/injection_container.dart' as di;
 import 'core/widgets/connectivity_indicator.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/background_notification_service.dart';
 
 // Features
 import 'features/farm/presentation/bloc/farm_bloc.dart';
@@ -21,6 +23,18 @@ void main() async {
 
   // Initialize dependency injection
   await di.init();
+
+  // Initialize notification service
+  await NotificationService().initialize();
+
+    // Initialize background notification service
+    try {
+      await BackgroundNotificationService.initialize();
+      print('✅ Background notification service initialized successfully');
+    } catch (e) {
+      print('⚠️ Background notification service failed to initialize: $e');
+      print('⚠️ App will continue without background notifications');
+    }
 
   runApp(
     ConnectivityIndicator(

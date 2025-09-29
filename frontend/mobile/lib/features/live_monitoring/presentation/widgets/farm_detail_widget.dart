@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/features/farm/presentation/bloc/farm_bloc.dart';
 import 'growth_progress_widget.dart';
+import 'historical_tab_widget.dart';
 import '../../../farm/domain/entities/farm.dart';
 import '../../domain/entities/sensor_reading.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../bloc/monitoring_bloc.dart';
-import '../bloc/analytics_bloc.dart';
 import '../../domain/entities/analytics_entities.dart';
-import '../../../../core/services/cache_service.dart';
 
 class FarmDetailWidget extends StatefulWidget {
   final Farm farm;
@@ -44,6 +42,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   MetricsModel? _currentMetrics;
   WeeklyDataModel? _weeklyData;
   GrowthStageAnalysisModel? _growthStageAnalysis;
+  Map<String, dynamic>? _stressAnalysis; // Store stress analysis data
   bool _isLoadingAnalytics = false;
   String? _analyticsError;
 
@@ -77,33 +76,530 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   void _loadAnalyticsData() async {
     if (widget.farm.id == null) return;
 
-    // Check cache first
-    final isCacheValid = await CacheService.isCacheValid();
-    if (isCacheValid) {
-      final cachedAnalytics = await CacheService.getCachedAnalytics();
-      final cachedCropCondition = await CacheService.getCachedCropCondition();
-      final cachedPrescriptions = await CacheService.getCachedPrescriptions();
+    // Load analytics data using MonitoringBloc
+    context.read<MonitoringBloc>().add(
+      LoadFarmAnalyticsEvent(farmId: widget.farm.id!),
+    );
+  }
+
+  void _parseAnalyticsData(Map<String, dynamic> analyticsData) {
+    try {
+      print('🔍 Raw analytics data structure: ${analyticsData.keys.toList()}');
       
-      if (cachedAnalytics != null) {
+      // Try to use complete analytics data first (with stress analysis)
+      if (analyticsData['descriptive'] != null) {
+        final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+        print('🔍 Using complete analytics data with stress analysis');
+        
+        // Get timestamp from analytics data (actual ThingSpeak timestamp)
+        final timestamp = descriptive['date'] != null 
+            ? DateTime.parse(descriptive['date'] as String)
+            : DateTime.now();
+        
+        // Store stress analysis data for status indicators
+        final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+        if (stressAnalysis != null) {
+          _stressAnalysis = stressAnalysis;
+          print('🔍 Stored stress analysis data: $_stressAnalysis');
+        }
+        
+        // Extract values from stress analysis (real ThingSpeak data)
+        final temperatureData = stressAnalysis?['Temperature'] as Map<String, dynamic>?;
+        final humidityData = stressAnalysis?['Humidity'] as Map<String, dynamic>?;
+        final soilMoistureData = stressAnalysis?['Soil Moisture'] as Map<String, dynamic>?;
+        final soilPhData = stressAnalysis?['Soil pH'] as Map<String, dynamic>?;
+        final lightIntensityData = stressAnalysis?['Light Intensity'] as Map<String, dynamic>?;
+        
+        _currentMetrics = MetricsModel(
+          soilPh: (soilPhData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+          soilMoisture: (soilMoistureData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+          temperature: (temperatureData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+          humidity: (humidityData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+          lightIntensity: (lightIntensityData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+          timestamp: timestamp, // Use actual ThingSpeak timestamp
+        );
+        print('🔍 Using complete analytics data for metrics: ${_currentMetrics?.temperature}°C at ${_currentMetrics?.timestamp}');
+      } else if (analyticsData['data'] != null) {
+        // Fallback to raw sensor data if complete analytics not available
+        final data = analyticsData['data'] as Map<String, dynamic>;
+        final timestamp = data['timestamp'] != null 
+            ? DateTime.parse(data['timestamp'] as String)
+            : DateTime.now();
+        
+        _currentMetrics = MetricsModel(
+          soilPh: (data['soilPh'] as num?)?.toDouble() ?? 0.0,
+          soilMoisture: (data['soilMoisture'] as num?)?.toDouble() ?? 0.0,
+          temperature: (data['temperature'] as num?)?.toDouble() ?? 0.0,
+          humidity: (data['humidity'] as num?)?.toDouble() ?? 0.0,
+          lightIntensity: (data['lightIntensity'] as num?)?.toDouble() ?? 0.0,
+          timestamp: timestamp,
+        );
+        print('🔍 Using raw analytics data for metrics: ${_currentMetrics?.temperature}°C at ${_currentMetrics?.timestamp}');
+      } else if (widget.sensorReadings.isNotEmpty) {
+        // Fallback to sensor readings if analytics data is not available
+        final latestReading = widget.sensorReadings.first;
+        _currentMetrics = MetricsModel(
+          soilPh: latestReading.pH,
+          soilMoisture: latestReading.soilMoisture,
+          temperature: latestReading.temperature,
+          humidity: latestReading.humidity,
+          lightIntensity: latestReading.lightIntensity,
+          timestamp: latestReading.timestamp,
+        );
+        print('🔍 Using sensor readings for metrics: ${_currentMetrics?.temperature}°C');
+      } else {
+        print('🔍 No data available for metrics');
+      }
+
+      // Create weekly data from sensor readings
+      if (widget.sensorReadings.isNotEmpty) {
+        _weeklyData = _createWeeklyDataFromReadings(widget.sensorReadings);
+        print('🔍 Created weekly data from ${widget.sensorReadings.length} readings');
+      } else {
+        print('🔍 No sensor readings available for weekly data');
+      }
+      
+      // If still no weekly data, create a fallback with current metrics
+      if (_weeklyData == null && _currentMetrics != null) {
+        _weeklyData = _createFallbackWeeklyData(_currentMetrics!);
+        print('🔍 Created fallback weekly data from current metrics');
+      }
+
+      // Create growth stage from field data
+      final selectedField = widget.selectedField ?? 
+          (widget.farm.fields.isNotEmpty ? widget.farm.fields.first : null);
+      if (selectedField != null) {
+        _growthStageAnalysis = _createGrowthStageFromField(selectedField);
+        print('🔍 Created growth stage from field: ${selectedField.growthStage}');
+      }
+
+      // Try to parse analytics data if available
+      if (analyticsData['prescriptive'] != null) {
+        final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+        print('🔍 Prescriptive data keys: ${prescriptive.keys.toList()}');
+        
+        // Try to get crop condition from analytics (new field)
+        final cropCondition = prescriptive['crop_condition'] as Map<String, dynamic>?;
+        if (cropCondition != null) {
+          _cropCondition = CropConditionModel.fromJson(cropCondition);
+          print('🔍 Parsed crop condition from analytics: ${_cropCondition?.status}');
+        }
+      }
+
+      // Try to parse descriptive analytics
+      if (analyticsData['descriptive'] != null) {
+        final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+        print('🔍 Descriptive data keys: ${descriptive.keys.toList()}');
+        
+        // Try to get current metrics from analytics (new field)
+        final currentMetrics = descriptive['current_metrics'] as Map<String, dynamic>?;
+        if (currentMetrics != null) {
+          _currentMetrics = MetricsModel.fromJson(currentMetrics);
+          print('🔍 Parsed metrics from analytics: ${_currentMetrics?.temperature}°C');
+        }
+        
+        // Try to get weekly data from analytics (new field)
+        final weeklyData = descriptive['weekly_data'] as Map<String, dynamic>?;
+        if (weeklyData != null) {
+          _weeklyData = WeeklyDataModel.fromJson(weeklyData);
+          print('🔍 Parsed weekly data from analytics');
+        } else {
+          print('🔍 No weekly data from analytics, will use sensor readings if available');
+        }
+        
+        // Try to get growth stage analysis from analytics (new field)
+        final growthStageAnalysis = descriptive['growth_stage_analysis'] as Map<String, dynamic>?;
+        if (growthStageAnalysis != null) {
+          _growthStageAnalysis = GrowthStageAnalysisModel.fromJson(growthStageAnalysis);
+          print('🔍 Parsed growth stage from analytics: ${_growthStageAnalysis?.currentStage}');
+        }
+        
+        // Parse stress_analysis to create current_metrics if not available
+        if (_currentMetrics == null) {
+          final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+          if (stressAnalysis != null) {
+            // Store stress analysis data for chart display
+            _stressAnalysis = stressAnalysis;
+            print('🔍 Stored stress analysis data: $_stressAnalysis');
+            
+            _currentMetrics = _createMetricsFromStressAnalysis(stressAnalysis);
+            print('🔍 Created metrics from stress analysis: ${_currentMetrics?.temperature}°C');
+          } else {
+            print('🔍 No stress analysis available for metrics');
+          }
+        }
+        
+        // Fallback: Create crop condition from stress analysis if available
+        if (_cropCondition == null) {
+          final overallStress = descriptive['overall_stress'] as String?;
+          print('🔍 Overall stress level: $overallStress');
+          if (overallStress != null && overallStress.toLowerCase() != 'unknown') {
+            _cropCondition = _createCropConditionFromStress(overallStress);
+            print('🔍 Created crop condition from stress analysis: ${_cropCondition?.status}');
+          } else {
+            // If overall_stress is unknown, analyze individual stress levels
+            final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+            if (stressAnalysis != null) {
+              print('🔍 Analyzing individual stress levels: ${stressAnalysis.keys.toList()}');
+              _cropCondition = _createCropConditionFromStressAnalysis(stressAnalysis);
+              print('🔍 Created crop condition from individual stress levels: ${_cropCondition?.status}');
+            } else {
+              print('🔍 No stress analysis available for crop condition');
+            }
+          }
+        }
+      }
+
+      // Create a basic crop condition if none exists
+      if (_cropCondition == null && _currentMetrics != null) {
+        _cropCondition = _createCropConditionFromMetrics(_currentMetrics!);
+        print('🔍 Created crop condition from metrics: ${_cropCondition?.status}');
+      }
+
+      print('🔍 Final parsed data - Crop: ${_cropCondition?.status}, Metrics: ${_currentMetrics?.temperature}°C, Growth: ${_growthStageAnalysis?.currentStage}');
+    } catch (e) {
+      print('🔍 Error parsing analytics data: $e');
         setState(() {
-          _cropCondition = cachedCropCondition;
-          _currentMetrics = cachedAnalytics.currentMetrics;
-          _weeklyData = cachedAnalytics.weeklyData;
-          _growthStageAnalysis = cachedAnalytics.growthStageAnalysis;
-          _isLoadingAnalytics = false;
-          _analyticsError = null;
-        });
-        return; // Don't reload from server if cache is valid
+        _analyticsError = 'Failed to parse analytics data: $e';
+      });
+    }
+  }
+
+  GrowthStageAnalysisModel _createGrowthStageFromField(Field field) {
+    final growthStage = field.growthStage;
+    final plantingDate = field.plantingDate;
+    
+    // Calculate progress percentage based on growth stage
+    final growthPercentages = {
+      'VE': 5,
+      'V2': 15,
+      'V3': 25,
+      'V4': 35,
+      'V5': 45,
+      'V6': 55,
+      'V7': 65,
+      'V8': 70,
+      'VT': 75,
+      'R1': 80,
+      'R2': 85,
+      'R3': 90,
+      'R4': 92,
+      'R5': 95,
+      'R6': 100,
+    };
+
+    final progressPercentage = growthPercentages[growthStage] ?? 10;
+    
+    // Calculate expected harvest (roughly 90-120 days from planting)
+    final expectedHarvest = plantingDate.add(Duration(days: 100));
+    
+    return GrowthStageAnalysisModel(
+      currentStage: growthStage,
+      progressPercentage: progressPercentage,
+      stageDescription: _getGrowthStageDescription(growthStage),
+      stageInfo: _getGrowthStageInfoList(),
+      expectedHarvest: expectedHarvest,
+    );
+  }
+
+  String _getGrowthStageDescription(String stage) {
+    switch (stage) {
+      case 'VE':
+        return 'Seedling emergence - roots developing';
+      case 'V2':
+      case 'V3':
+      case 'V4':
+        return 'Early vegetative growth - rapid leaf development';
+      case 'V5':
+      case 'V6':
+      case 'V7':
+      case 'V8':
+        return 'Mid vegetative growth - stem elongation';
+      case 'VT':
+        return 'Tasseling - reproductive phase begins';
+      case 'R1':
+      case 'R2':
+      case 'R3':
+        return 'Reproductive phase - grain development';
+      case 'R4':
+      case 'R5':
+        return 'Maturing phase - grain filling';
+      case 'R6':
+        return 'Maturity - ready for harvest';
+      default:
+        return 'Growth stage unknown';
+    }
+  }
+
+  List<GrowthStageInfo> _getGrowthStageInfoList() {
+    return [
+      GrowthStageInfo(stage: 'VE', name: 'Emergence', description: 'Seedling emergence', days: 5),
+      GrowthStageInfo(stage: 'V2-V4', name: 'Early Vegetative', description: 'Rapid leaf development', days: 15),
+      GrowthStageInfo(stage: 'V5-V8', name: 'Mid Vegetative', description: 'Stem elongation', days: 20),
+      GrowthStageInfo(stage: 'VT', name: 'Tasseling', description: 'Reproductive phase begins', days: 10),
+      GrowthStageInfo(stage: 'R1-R3', name: 'Reproductive', description: 'Grain development', days: 25),
+      GrowthStageInfo(stage: 'R4-R6', name: 'Maturing', description: 'Grain filling to maturity', days: 15),
+    ];
+  }
+
+  CropConditionModel _createCropConditionFromStress(String stressLevel) {
+    switch (stressLevel.toLowerCase()) {
+      case 'low':
+        return CropConditionModel(
+          status: 'Healthy',
+          message: 'Crop is growing well with minimal stress',
+          color: '#4CAF50', // Green
+          icon: 'good',
+        );
+      case 'medium':
+        return CropConditionModel(
+          status: 'Moderate',
+          message: 'Crop is growing with some stress factors',
+          color: '#FFC107', // Amber
+          icon: 'moderate',
+        );
+      case 'high':
+        return CropConditionModel(
+          status: 'Warning',
+          message: 'Crop needs attention due to high stress',
+          color: '#FF9800', // Orange
+          icon: 'warning',
+        );
+      case 'severe':
+        return CropConditionModel(
+          status: 'Critical',
+          message: 'Crop requires immediate attention',
+          color: '#F44336', // Red
+          icon: 'critical',
+        );
+      default:
+        return CropConditionModel(
+          status: 'Unknown',
+          message: 'Unable to determine crop condition',
+          color: '#9E9E9E', // Grey
+          icon: 'unknown',
+        );
+    }
+  }
+
+  CropConditionModel _createCropConditionFromStressAnalysis(Map<String, dynamic> stressAnalysis) {
+    // Count high stress factors
+    int highStressCount = 0;
+    int mediumStressCount = 0;
+    
+    for (final entry in stressAnalysis.entries) {
+      final data = entry.value as Map<String, dynamic>?;
+      if (data != null) {
+        final stressLevel = data['stress_level'] as String? ?? 'low';
+        switch (stressLevel.toLowerCase()) {
+          case 'high':
+            highStressCount++;
+            break;
+          case 'medium':
+            mediumStressCount++;
+            break;
+        }
       }
     }
+    
+    // Determine condition based on stress levels
+    if (highStressCount >= 3) {
+      return CropConditionModel(
+        status: 'Critical',
+        message: 'Crop requires immediate attention - multiple high stress factors detected',
+        color: '#F44336', // Red
+        icon: 'critical',
+      );
+    } else if (highStressCount >= 2) {
+      return CropConditionModel(
+        status: 'High Stress',
+        message: 'Crop needs attention - several high stress factors detected',
+        color: '#FF9800', // Orange
+        icon: 'warning',
+      );
+    } else if (highStressCount >= 1 || mediumStressCount >= 2) {
+      return CropConditionModel(
+        status: 'Moderate Stress',
+        message: 'Crop is growing with some stress factors',
+        color: '#FFC107', // Amber
+        icon: 'moderate',
+      );
+    } else {
+      return CropConditionModel(
+        status: 'Healthy',
+        message: 'Crop is growing well with minimal stress',
+        color: '#4CAF50', // Green
+        icon: 'good',
+      );
+    }
+  }
 
-    // Only load fresh data from server if not already loading or loaded
-    if (!_isLoadingAnalytics && _currentMetrics == null) {
-      context.read<AnalyticsBloc>().add(LoadAnalyticsData(
-        farmId: widget.farm.id!,
-        fieldId: widget.selectedField?.fieldName,
+  MetricsModel _createMetricsFromStressAnalysis(Map<String, dynamic> stressAnalysis, {DateTime? timestamp}) {
+    // Extract actual values from stress analysis
+    final temperatureData = stressAnalysis['Temperature'] as Map<String, dynamic>?;
+    final humidityData = stressAnalysis['Humidity'] as Map<String, dynamic>?;
+    final soilMoistureData = stressAnalysis['Soil Moisture'] as Map<String, dynamic>?;
+    final soilPhData = stressAnalysis['Soil pH'] as Map<String, dynamic>?;
+    final lightIntensityData = stressAnalysis['Light Intensity'] as Map<String, dynamic>?;
+
+    return MetricsModel(
+      temperature: (temperatureData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+      humidity: (humidityData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+      soilMoisture: (soilMoistureData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+      soilPh: (soilPhData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+      lightIntensity: (lightIntensityData?['actual_value'] as num?)?.toDouble() ?? 0.0,
+      timestamp: timestamp ?? DateTime.now(),
+    );
+  }
+
+  CropConditionModel _createCropConditionFromMetrics(MetricsModel metrics) {
+    // Analyze metrics to determine crop condition
+    String status = 'Normal';
+    String message = 'Crop is growing normally';
+    String color = '#4CAF50'; // Green
+    String icon = 'good';
+
+    // Check temperature
+    if (metrics.temperature < 15 || metrics.temperature > 35) {
+      status = 'Warning';
+      message = 'Temperature is outside optimal range (${metrics.temperature.toStringAsFixed(1)}°C)';
+      color = '#FF9800'; // Orange
+      icon = 'warning';
+    }
+
+    // Check soil moisture
+    if (metrics.soilMoisture < 30) {
+      status = 'Critical';
+      message = 'Soil moisture is critically low (${metrics.soilMoisture.toStringAsFixed(1)}%)';
+      color = '#F44336'; // Red
+      icon = 'critical';
+    } else if (metrics.soilMoisture > 80) {
+      status = 'Warning';
+      message = 'Soil moisture is high (${metrics.soilMoisture.toStringAsFixed(1)}%)';
+      color = '#FF9800'; // Orange
+      icon = 'warning';
+    }
+
+    // Check soil pH
+    if (metrics.soilPh < 6.0 || metrics.soilPh > 7.5) {
+      status = 'Warning';
+      message = 'Soil pH is outside optimal range (${metrics.soilPh.toStringAsFixed(1)})';
+      color = '#FF9800'; // Orange
+      icon = 'warning';
+    }
+
+    // Check humidity
+    if (metrics.humidity < 30 || metrics.humidity > 90) {
+      status = 'Warning';
+      message = 'Humidity is outside optimal range (${metrics.humidity.toStringAsFixed(1)}%)';
+      color = '#FF9800'; // Orange
+      icon = 'warning';
+    }
+
+    return CropConditionModel(
+      status: status,
+      message: message,
+      color: color,
+      icon: icon,
+    );
+  }
+
+  WeeklyDataModel _createWeeklyDataFromReadings(List<SensorReading> readings) {
+    print('🔍 Creating weekly data from ${readings.length} readings');
+    
+    // Group readings by date
+    final Map<String, List<SensorReading>> readingsByDate = {};
+    
+    for (final reading in readings) {
+      final dateKey = '${reading.timestamp.year}-${reading.timestamp.month.toString().padLeft(2, '0')}-${reading.timestamp.day.toString().padLeft(2, '0')}';
+      readingsByDate[dateKey] ??= [];
+      readingsByDate[dateKey]!.add(reading);
+    }
+    
+    print('🔍 Grouped readings by date: ${readingsByDate.keys.toList()}');
+
+    // Create daily data from grouped readings
+    final dailyData = <DailyDataModel>[];
+    final now = DateTime.now();
+    
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      if (readingsByDate.containsKey(dateKey)) {
+        final dayReadings = readingsByDate[dateKey]!;
+        print('🔍 Found ${dayReadings.length} readings for $dateKey');
+        
+        // Calculate averages for the day
+        final avgTemperature = dayReadings.map((r) => r.temperature).reduce((a, b) => a + b) / dayReadings.length;
+        final avgHumidity = dayReadings.map((r) => r.humidity).reduce((a, b) => a + b) / dayReadings.length;
+        final avgSoilMoisture = dayReadings.map((r) => r.soilMoisture).reduce((a, b) => a + b) / dayReadings.length;
+        final avgSoilPh = dayReadings.map((r) => r.pH).reduce((a, b) => a + b) / dayReadings.length;
+        final avgLightIntensity = dayReadings.map((r) => r.lightIntensity).reduce((a, b) => a + b) / dayReadings.length;
+        
+        dailyData.add(DailyDataModel(
+          date: date,
+          temperature: avgTemperature,
+          humidity: avgHumidity,
+          soilMoisture: avgSoilMoisture,
+          soilPh: avgSoilPh,
+          lightIntensity: avgLightIntensity,
+        ));
+      } else {
+        print('🔍 No readings found for $dateKey, using zeros');
+        // No data for this day, use zeros
+        dailyData.add(DailyDataModel(
+          date: date,
+          temperature: 0.0,
+          humidity: 0.0,
+          soilMoisture: 0.0,
+          soilPh: 0.0,
+          lightIntensity: 0.0,
+        ));
+      }
+    }
+    
+    print('🔍 Created ${dailyData.length} daily data points');
+
+    return WeeklyDataModel(
+      dailyData: dailyData,
+      summary: {
+        'totalReadings': readings.length,
+        'daysWithData': readingsByDate.length,
+        'lastUpdate': now.toIso8601String(),
+      },
+    );
+  }
+
+  WeeklyDataModel _createFallbackWeeklyData(MetricsModel currentMetrics) {
+    // Create a fallback weekly data using current metrics for all days
+    final dailyData = <DailyDataModel>[];
+    final now = DateTime.now();
+    
+    for (int i = 6; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      
+      dailyData.add(DailyDataModel(
+        date: date,
+        temperature: currentMetrics.temperature,
+        humidity: currentMetrics.humidity,
+        soilMoisture: currentMetrics.soilMoisture,
+        soilPh: currentMetrics.soilPh,
+        lightIntensity: currentMetrics.lightIntensity,
       ));
     }
+    
+    print('🔍 Created fallback weekly data with ${dailyData.length} days');
+    
+    return WeeklyDataModel(
+      dailyData: dailyData,
+      summary: {
+        'totalReadings': 1,
+        'daysWithData': 7,
+        'lastUpdate': now.toIso8601String(),
+        'note': 'Data based on current sensor readings',
+      },
+    );
   }
 
   @override
@@ -114,56 +610,33 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AnalyticsBloc, AnalyticsState>(
+    return BlocListener<MonitoringBloc, MonitoringState>(
         listener: (context, state) async {
-          if (state is AnalyticsLoaded) {
+          if (state.farmAnalytics != null) {
+            final analyticsData = state.farmAnalytics!;
+            print('🔍 FarmDetailWidget received analytics: $analyticsData');
+            
             setState(() {
-              _cropCondition = state.cropCondition;
-              _currentMetrics = state.currentMetrics;
-              _weeklyData = state.weeklyData;
-              _growthStageAnalysis = state.growthStageAnalysis;
               _isLoadingAnalytics = false;
               _analyticsError = null;
             });
 
-            // Cache the loaded data
-            if (state.cropCondition != null) {
-              await CacheService.cacheCropCondition(state.cropCondition!);
-            }
-            
-            final analyticsData = AnalyticsData(
-              cropCondition: state.cropCondition,
-              currentMetrics: state.currentMetrics,
-              weeklyData: state.weeklyData,
-              growthStageAnalysis: state.growthStageAnalysis,
-              prescriptions: [], // Will be loaded separately
-            );
-            await CacheService.cacheAnalytics(analyticsData);
-
-            // Cache growth stage if available
-            if (widget.farm.id != null && widget.selectedField?.fieldName != null) {
-              final growthStage = widget.selectedField?.growthStage ?? 
-                  (widget.farm.fields.isNotEmpty ? widget.farm.fields.first.growthStage : 'Unknown');
-              await CacheService.cacheGrowthStage(
-                widget.farm.id!, 
-                widget.selectedField!.fieldName, 
-                growthStage
-              );
-            }
-          } else if (state is AnalyticsError) {
-            setState(() {
-              _isLoadingAnalytics = false;
-              _analyticsError = state.message;
-            });
-          } else if (state is AnalyticsLoading) {
+            // Parse analytics data from MonitoringBloc
+            _parseAnalyticsData(analyticsData);
+          } else if (state.isLoading) {
             setState(() {
               _isLoadingAnalytics = true;
               _analyticsError = null;
             });
+          } else if (state.error != null) {
+            setState(() {
+              _isLoadingAnalytics = false;
+              _analyticsError = state.error;
+            });
           }
         },
         child: Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: MAIZE_PRIMARY_LIGHT,
           body: Stack(
             children: [
               // Main scrollable content
@@ -307,7 +780,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           width: double.infinity,
           padding: EdgeInsets.all(kAppMediumPadding),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: MAIZE_PRIMARY_LIGHT,
             borderRadius: BorderRadius.circular(16.r), //
           ),
           child: Column(
@@ -656,11 +1129,11 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
 
   Widget _buildTabNavigation() {
     return Container(
+      width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: kAppMediumPadding),
-      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(25.r),
+        color: MAIZE_PRIMARY.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(40.r),
       ),
       child: Row(
         children: [
@@ -683,10 +1156,11 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           });
         },
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: 12.h),
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 12.w, horizontal: kAppSmallPadding),        
           decoration: BoxDecoration(
-            color: isSelected ? MAIZE_ACCENT : Colors.transparent,
-            borderRadius: BorderRadius.circular(20.r),
+                color: isSelected ? MAIZE_PRIMARY : Colors.transparent,
+                borderRadius: BorderRadius.circular(40.r),
           ),
           child: Text(
             title,
@@ -694,7 +1168,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : Colors.grey[600],
+              color: isSelected ? Colors.white : MAIZE_ACCENT.withOpacity(0.6),
             ),
           ),
         ),
@@ -735,6 +1209,11 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           verticalSpace(kAppMediumGap),
           // 5 Key Metrics Grid
           _buildKeyMetricsGrid(),
+
+          verticalSpace(16),
+          
+          // Last Updated Indicator
+          _buildLastUpdatedIndicator(),
 
           verticalSpace(24),
         ],
@@ -818,46 +1297,74 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     Color color, {
     bool isFullWidth = false,
   }) {
+    // Get stress level from analytics data
+    final stressLevel = _getStressLevelForMetric(title);
+    final statusColor = _getStatusColor(stressLevel);
+    final statusText = _getFarmerFriendlyStatus(stressLevel);
+    
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.grey[200]!),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         children: [
+          // Status indicator at the top
           Container(
-            width: 48.w,
-            height: 48.h,
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: statusColor,
+              borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Icon(icon, color: color, size: 24.sp),
+            child: Text(
+              statusText,
+              style: TextStyle(
+                fontSize: 10.sp,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           verticalSpace(12),
+          
+          // Icon with color indicator
+          Container(
+            width: 40.w,
+            height: 40.h,
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: statusColor, size: 20.sp),
+          ),
+          verticalSpace(8),
+          
+          // Title
           Text(
             title,
             style: TextStyle(
-              fontSize: 14.sp,
+              fontSize: 12.sp,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),
           verticalSpace(4),
+          
+          // Value
           Text(
             value,
             style: TextStyle(
-              fontSize: 18.sp,
+              fontSize: 16.sp,
               fontWeight: FontWeight.w700,
               color: MAIZE_ACCENT,
             ),
@@ -939,163 +1446,18 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   }
 
   Widget _buildHistoricalTab() {
-    if (_isLoadingAnalytics) {
-      return _buildLoadingState();
-    }
-
-    if (_analyticsError != null) {
-      return _buildErrorState();
-    }
-
-    if (_weeklyData == null) {
-      return _buildNoDataState();
-    }
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Column(
-        children: [
-          // Weekly data charts for each metric
-          _buildWeeklyCharts(),
-          verticalSpace(20),
-          // Summary statistics
-          _buildWeeklySummary(),
-        ],
-      ),
+    final farmId = widget.farm.id!; // Use fallback farm ID
+    print('🔍 FarmDetailWidget: Using farm ID: $farmId');
+    return HistoricalTabWidget(
+      farmId: farmId,
+      fieldId: widget.selectedField?.fieldName,
+      onBack: () {
+        // Handle back navigation if needed
+      },
+      currentMetrics: _currentMetrics, // Pass current metrics
     );
   }
 
-  Widget _buildWeeklyCharts() {
-    return Column(
-      children: [
-        _buildMetricChart(
-          'Soil pH',
-          _weeklyData!.dailyData.map((d) => d.soilPh).toList(),
-          Colors.red,
-        ),
-        verticalSpace(16),
-        _buildMetricChart(
-          'Soil Moisture (%)',
-          _weeklyData!.dailyData.map((d) => d.soilMoisture).toList(),
-          Colors.blue,
-        ),
-        verticalSpace(16),
-        _buildMetricChart(
-          'Temperature (°C)',
-          _weeklyData!.dailyData.map((d) => d.temperature).toList(),
-          Colors.orange,
-        ),
-        verticalSpace(16),
-        _buildMetricChart(
-          'Humidity (%)',
-          _weeklyData!.dailyData.map((d) => d.humidity).toList(),
-          Colors.green,
-        ),
-        verticalSpace(16),
-        _buildMetricChart(
-          'Light Intensity (lux)',
-          _weeklyData!.dailyData.map((d) => d.lightIntensity).toList(),
-          Colors.amber,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricChart(String title, List<double> values, Color color) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: MAIZE_ACCENT,
-            ),
-          ),
-          verticalSpace(12),
-          SizedBox(
-            height: 120.h,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY:
-                    values.isNotEmpty
-                        ? values.reduce((a, b) => a > b ? a : b) + 2
-                        : 10,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final days = [
-                          'Mon',
-                          'Tue',
-                          'Wed',
-                          'Thu',
-                          'Fri',
-                          'Sat',
-                          'Sun',
-                        ];
-                        return Text(
-                          days[value.toInt() % 7],
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: Colors.grey[600],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups:
-                    values.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final value = entry.value;
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: value,
-                            color: color,
-                            width: 16.w,
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                gridData: FlGridData(show: false),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildWeeklySummary() {
     if (_weeklyData?.summary.isEmpty != false) {
@@ -1487,4 +1849,165 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     if (intensity <= 1200) return Colors.orange;
     return Colors.red;
   }
+
+  Widget _buildLastUpdatedIndicator() {
+    final timestamp = _currentMetrics?.timestamp ?? DateTime.now();
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    String timeAgo;
+    if (difference.inMinutes < 1) {
+      timeAgo = 'Just now';
+    } else if (difference.inMinutes < 60) {
+      timeAgo = '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      timeAgo = '${difference.inHours}h ago';
+    } else {
+      timeAgo = '${difference.inDays}d ago';
+    }
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.access_time,
+            size: 16.sp,
+            color: Colors.grey[600],
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            'Last updated: $timeAgo',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Get stress level for a specific metric from analytics data
+  String _getStressLevelForMetric(String metricTitle) {
+    // First try to get from stress analysis if available
+    if (_stressAnalysis != null) {
+      String metricKey = '';
+      switch (metricTitle) {
+        case 'Soil pH':
+          metricKey = 'Soil pH';
+          break;
+        case 'Soil Moisture':
+          metricKey = 'Soil Moisture';
+          break;
+        case 'Temperature':
+          metricKey = 'Temperature';
+          break;
+        case 'Humidity':
+          metricKey = 'Humidity';
+          break;
+        case 'Light Intensity':
+          metricKey = 'Light Intensity';
+          break;
+        default:
+          break;
+      }
+      
+      final metricData = _stressAnalysis![metricKey] as Map<String, dynamic>?;
+      if (metricData != null) {
+        final stressLevel = metricData['stress_level'] as String? ?? 'unknown';
+        print('🔍 $metricTitle stress level from analytics: $stressLevel');
+        return stressLevel;
+      }
+    }
+    
+    // Fallback: Calculate stress level based on metric value and optimal ranges
+    if (_currentMetrics != null) {
+      return _calculateStressLevelFromValue(metricTitle, _currentMetrics!);
+    }
+    
+    return 'unknown';
+  }
+
+  // Calculate stress level based on metric value and optimal ranges
+  String _calculateStressLevelFromValue(String metricTitle, MetricsModel metrics) {
+    switch (metricTitle) {
+      case 'Soil pH':
+        final ph = metrics.soilPh;
+        if (ph < 6.0 || ph > 8.0) return 'critical';
+        if (ph < 6.5 || ph > 7.5) return 'high';
+        return 'low';
+      
+      case 'Soil Moisture':
+        final moisture = metrics.soilMoisture;
+        if (moisture < 30 || moisture > 85) return 'critical';
+        if (moisture < 40 || moisture > 70) return 'high';
+        return 'low';
+      
+      case 'Temperature':
+        final temp = metrics.temperature;
+        if (temp < 15 || temp > 35) return 'critical';
+        if (temp < 20 || temp > 30) return 'high';
+        return 'low';
+      
+      case 'Humidity':
+        final humidity = metrics.humidity;
+        if (humidity < 30 || humidity > 90) return 'critical';
+        if (humidity < 50 || humidity > 80) return 'high';
+        return 'low';
+      
+      case 'Light Intensity':
+        final light = metrics.lightIntensity;
+        if (light < 200 || light > 1200) return 'critical';
+        if (light < 400 || light > 800) return 'high';
+        return 'low';
+      
+      default:
+        return 'unknown';
+    }
+  }
+
+  // Get color based on stress level
+  Color _getStatusColor(String stressLevel) {
+    switch (stressLevel.toLowerCase()) {
+      case 'low':
+        return Colors.green;
+      case 'medium':
+        return Colors.orange;
+      case 'high':
+        return Colors.red;
+      case 'critical':
+        return Colors.red[800]!;
+      case 'unknown':
+        return Colors.grey[600]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Get farmer-friendly status text
+  String _getFarmerFriendlyStatus(String stressLevel) {
+    switch (stressLevel.toLowerCase()) {
+      case 'low':
+        return 'GOOD';
+      case 'medium':
+        return 'WARNING';
+      case 'high':
+        return 'ATTENTION';
+      case 'critical':
+        return 'URGENT';
+      case 'unknown':
+        return 'CHECKING...';
+      default:
+        return 'UNKNOWN';
+    }
+  }
+
 }

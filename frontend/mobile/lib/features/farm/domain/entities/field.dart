@@ -102,19 +102,31 @@ class Field extends Equatable {
   }
 
   factory Field.fromJson(Map<String, dynamic> json) {
+    // Handle the actual backend response structure
+    // Backend returns 'sensors' but we expect 'devices'
+    List<Map<String, dynamic>>? devices;
+    if (json['sensors'] != null) {
+      devices = List<Map<String, dynamic>>.from(json['sensors']);
+    } else if (json['devices'] != null) {
+      devices = List<Map<String, dynamic>>.from(json['devices']);
+    }
+
+    // Get soilType from the first sensor if available, otherwise use default
+    String soilType = 'loamy'; // default
+    if (devices != null && devices.isNotEmpty) {
+      soilType = devices.first['soilType'] ?? 'loamy';
+    }
+
     return Field(
       id: json['id'] ?? json['_id'],
-      farmId: json['farmId'] ?? '',
+      farmId: json['farmId'] ?? '', // This will be set by the parent Farm
       fieldName: json['fieldName'] ?? '',
-      soilType: json['soilType'] ?? '',
+      soilType: soilType,
       plantingDate: DateTime.parse(json['plantingDate']),
       growthStage: json['growthStage'] ?? 'VE',
-      devices:
-          json['devices'] != null
-              ? List<Map<String, dynamic>>.from(json['devices'])
-              : null,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      devices: devices,
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
   }
 

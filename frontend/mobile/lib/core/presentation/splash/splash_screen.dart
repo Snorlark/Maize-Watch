@@ -46,11 +46,18 @@ class _SplashScreenState extends State<SplashScreen>
     });
 
     // Add timeout timer to prevent infinite loading
-    _timeoutTimer = Timer(const Duration(seconds: 30), () {
+    _timeoutTimer = Timer(const Duration(seconds: 15), () {
       if (mounted) {
-        _showErrorAndNavigate(
-          'Connection timeout. Please check your internet connection.',
-        );
+        // Check if user is authenticated but just having network issues
+        final authState = context.read<AuthenticationBloc>().state;
+        if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+          print("🌽 Splash: User is authenticated but network timeout - going to home screen for offline access");
+          _navigateTo(const HomeScreen());
+        } else {
+          _showErrorAndNavigate(
+            'Connection timeout. Please check your internet connection.',
+          );
+        }
       }
     });
   }
@@ -132,14 +139,15 @@ class _SplashScreenState extends State<SplashScreen>
                   "🌽 Splash: Authenticated. Fetching farms for user $userId",
                 );
 
-                // Set a 10-second timeout specifically for farm loading
-                _farmLoadingTimer = Timer(const Duration(seconds: 10), () {
+                // Set a 15-second timeout specifically for farm loading
+                _farmLoadingTimer = Timer(const Duration(seconds: 15), () {
                   if (mounted && _isLoadingFarms) {
                     print(
-                      "🚨 Splash: Farm loading timeout - network issue",
+                      "🚨 Splash: Farm loading timeout - network issue, going to home screen for offline access",
                     );
                     _isLoadingFarms = false;
-                    _showErrorAndNavigate('Connection timeout. Please check your internet connection and try again.');
+                    // Go to home screen for offline access
+                    _navigateTo(const HomeScreen());
                   }
                 });
 
@@ -215,9 +223,9 @@ class _SplashScreenState extends State<SplashScreen>
               } else if (state.message.contains('Network error') ||
                          state.message.contains('Server error') ||
                          state.message.contains('internet connection')) {
-                // Network/server errors should go back to landing with error message
-                print("🚨 Splash: Network/Server error - redirecting to landing");
-                _showErrorAndNavigate(state.message);
+                // Network/server errors should go to home screen for offline access
+                print("🚨 Splash: Network/Server error - going to home screen for offline access");
+                _navigateTo(const HomeScreen());
               } else {
                 // Only redirect to farm registration for legitimate "no farms found" scenarios
                 print(

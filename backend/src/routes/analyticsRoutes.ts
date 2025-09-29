@@ -20,7 +20,8 @@ import {
   getCropAnalytics,
   getWeeklyData,
   getCurrentWeatherForecast,
-  getWeatherForecast
+  getWeatherForecast,
+  createTestSensorData
 } from '../controllers/analyticsController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -31,7 +32,11 @@ import { USER_ROLES } from '../utils/constants';
 
 const router = Router();
 
-// All routes require authentication
+// Public test endpoints (for development only)
+router.get('/test/weekly-data/:farmId', validateObjectId('farmId'), getWeeklyData);
+router.get('/test/crop/:farmId', validateObjectId('farmId'), getCropAnalytics);
+
+// All other routes require authentication
 router.use(authenticate);
 
 // Get dashboard data (Admin gets all, users get their own)
@@ -70,5 +75,8 @@ router.get('/farms/:farmId/weekly-data', validateObjectId('farmId'), getWeeklyDa
 // Weather analytics endpoints
 router.get('/weather/current/:farmId', validateObjectId('farmId'), getCurrentWeatherForecast);
 router.get('/weather/forecast/:farmId', validateObjectId('farmId'), getWeatherForecast);
+
+// Test data endpoint for development
+router.post('/test-data', createTestSensorData);
 
 export default router;

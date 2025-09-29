@@ -18,7 +18,7 @@ class SessionService {
 
   // Session configuration
   static const int _refreshThresholdMinutes = 5; // Refresh token 5 minutes before expiry
-  static const int _sessionTimeoutMinutes = 30; // Auto-logout after 30 minutes of inactivity
+  static const int _sessionTimeoutMinutes = 60; // Auto-logout after 30 minutes of inactivity
   static const int _maxRefreshAttempts = 3;
 
   // Session state
@@ -71,8 +71,9 @@ class SessionService {
             _startSessionTimers();
             debugPrint('🔐 SessionService: Session initialized after token refresh');
           } else {
-            debugPrint('🔐 SessionService: Token refresh failed, clearing session');
-            await clearSession();
+            debugPrint('🔐 SessionService: Token refresh failed, but keeping session data for authentication bloc to handle');
+            // Don't clear session here - let the authentication bloc decide what to do
+            _isSessionActive = false;
           }
         }
       } else {
@@ -91,16 +92,13 @@ class SessionService {
   Future<List<String>> _debugGetAllKeys() async {
     try {
       // This is a debug function - in production, we wouldn't expose all keys
-      final token = await SecureStorage.getToken();
-      final refreshToken = await SecureStorage.getRefreshToken();
-      final userData = await SecureStorage.getUserData();
-      final isLoggedIn = await SecureStorage.isLoggedIn();
+      final allData = await SecureStorage.getAllStoredData();
       
       return [
-        'token: ${token != null ? "exists" : "null"}',
-        'refreshToken: ${refreshToken != null ? "exists" : "null"}',
-        'userData: ${userData != null ? "exists" : "null"}',
-        'isLoggedIn: $isLoggedIn',
+        'token: ${allData['accessToken'] != null ? "exists" : "null"}',
+        'refreshToken: ${allData['refreshToken'] != null ? "exists" : "null"}',
+        'userData: ${allData['userData'] != null ? "exists" : "null"}',
+        'isLoggedIn: ${allData['isLoggedIn']}',
       ];
     } catch (e) {
       return ['Error reading keys: $e'];
@@ -153,13 +151,21 @@ class SessionService {
       final isExpired = await _isTokenExpired(token);
       if (isExpired) {
         debugPrint('🔐 SessionService: Access token expired, attempting refresh');
-        return await refreshAccessToken();
+        // Try to refresh, but don't fail if network is unavailable
+        final refreshSuccess = await refreshAccessToken();
+        if (!refreshSuccess) {
+          debugPrint('🔐 SessionService: Token refresh failed, but allowing offline access');
+          // Allow offline access even if refresh failed
+          return true;
+        }
+        return refreshSuccess;
       }
 
       return true;
     } catch (e) {
       debugPrint('🔐 SessionService: Error checking session validity: $e');
-      return false;
+      // Allow offline access even if there's an error
+      return true;
     }
   }
 
@@ -192,8 +198,8 @@ class SessionService {
         data: {'refreshToken': refreshToken},
         options: Options(
           headers: {'Content-Type': 'application/json'},
-          sendTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
         ),
       );
 
@@ -215,9 +221,17 @@ class SessionService {
     } catch (e) {
       debugPrint('🔐 SessionService: Token refresh failed: $e');
       
-      // If refresh fails, clear session
-      if (e is DioException && e.response?.statusCode == 401) {
-        await clearSession();
+      // Only clear session for authentication errors, not network errors
+      if (e is DioException) {
+        if (e.response?.statusCode == 401) {
+          debugPrint('🔐 SessionService: Unauthorized, clearing session');
+          await clearSession();
+        } else if (e.type == DioExceptionType.connectionTimeout || 
+                   e.type == DioExceptionType.receiveTimeout ||
+                   e.type == DioExceptionType.sendTimeout) {
+          debugPrint('🔐 SessionService: Network timeout, allowing offline access');
+          // Don't clear session for network timeouts
+        }
       }
       
       return false;

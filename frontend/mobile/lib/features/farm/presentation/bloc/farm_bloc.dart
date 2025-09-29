@@ -61,13 +61,28 @@ class FarmBloc extends Bloc<FarmEvent, FarmState> {
     GetUserFarmsEvent event,
     Emitter<FarmState> emit,
   ) async {
+    print('🌽 FarmBloc: Loading user farms for userId: ${event.userId}');
     emit(FarmLoading());
 
     final result = await getUserFarms(GetUserFarmsParams(userId: event.userId));
 
     result.fold(
-      (failure) => emit(FarmError(message: _mapFailureToMessage(failure))),
-      (farms) => emit(FarmsLoaded(farms: farms)),
+      (failure) {
+        print('🌽 FarmBloc: Error loading farms: ${_mapFailureToMessage(failure)}');
+        emit(FarmError(message: _mapFailureToMessage(failure)));
+      },
+      (farms) {
+        print('🌽 FarmBloc: Successfully loaded ${farms.length} farms');
+        for (int i = 0; i < farms.length; i++) {
+          final farm = farms[i];
+          print('🌽 FarmBloc: Farm $i - Name: ${farm.farmName}, Fields: ${farm.fields.length}');
+          for (int j = 0; j < farm.fields.length; j++) {
+            final field = farm.fields[j];
+            print('🌽 FarmBloc: Field $j - Name: ${field.fieldName}, GrowthStage: ${field.growthStage}');
+          }
+        }
+        emit(FarmsLoaded(farms: farms));
+      },
     );
   }
 

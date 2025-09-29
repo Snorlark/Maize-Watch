@@ -20,13 +20,19 @@ class FarmModel extends Farm {
       userIdValue = json['userId']['_id'] ?? '';
     }
 
+    final farmId = json['_id'] ?? json['id'] ?? '';
+    
     return FarmModel(
-      id: json['_id'] ?? json['id'],
+      id: farmId,
       userId: userIdValue,
       farmName: json['farmName'] ?? '',
       location: json['location'] ?? '',
       fields: (json['fields'] as List<dynamic>? ?? [])
-          .map((fieldJson) => Field.fromJson(fieldJson))
+          .map((fieldJson) {
+            // Set farmId for each field
+            fieldJson['farmId'] = farmId;
+            return Field.fromJson(fieldJson);
+          })
           .toList(),
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),

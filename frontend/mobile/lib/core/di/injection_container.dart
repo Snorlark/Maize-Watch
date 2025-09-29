@@ -13,6 +13,11 @@ import '../../features/live_monitoring/domain/usecases/get_current_weather.dart'
 import '../../features/live_monitoring/data/datasources/weather_remote_data_source.dart';
 import '../../features/live_monitoring/data/repositories/weather_repository_impl.dart';
 import '../../features/live_monitoring/domain/repositories/weather_repository.dart';
+import '../../features/live_monitoring/data/datasources/historical_remote_data_source.dart';
+import '../../features/live_monitoring/data/repositories/historical_repository_impl.dart';
+import '../../features/live_monitoring/domain/repositories/historical_repository.dart';
+import '../../features/live_monitoring/domain/usecases/get_weekly_data.dart';
+import '../../features/live_monitoring/domain/usecases/get_latest_data.dart';
 import '../../features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
 import '../../features/farm/domain/usecases/get_farm_analytics.dart';
 import '../storage/secure_storage.dart';
@@ -86,6 +91,14 @@ Future<void> init() async {
     ),
   );
 
+  // Historical data sources
+  sl.registerLazySingleton<HistoricalRemoteDataSource>(
+    () => HistoricalRemoteDataSourceImpl(
+      dio: sl<Dio>(),
+      sessionService: sl<SessionService>(),
+    ),
+  );
+
   // Core services
   sl.registerLazySingleton<SecureStorage>(() => SecureStorage());
   sl.registerLazySingleton<SocketService>(() => SocketService.instance);
@@ -106,12 +119,21 @@ Future<void> init() async {
     ),
   );
 
+  sl.registerLazySingleton<HistoricalRepository>(
+    () => HistoricalRepositoryImpl(
+      remoteDataSource: sl<HistoricalRemoteDataSource>(),
+      networkInfo: sl<NetworkInfo>(),
+    ),
+  );
+
   // Use cases
   sl.registerLazySingleton(() => GetLatestReadings(sl<MonitoringRepository>()));
   sl.registerLazySingleton(
     () => GetHistoricalReadings(sl<MonitoringRepository>()),
   );
   sl.registerLazySingleton(() => GetCurrentWeather(sl<WeatherRepository>()));
+  sl.registerLazySingleton(() => GetWeeklyData(sl<HistoricalRepository>()));
+  sl.registerLazySingleton(() => GetLatestData(sl<HistoricalRepository>()));
 
   // BLoCs
   sl.registerFactory(
@@ -120,6 +142,8 @@ Future<void> init() async {
       getHistoricalReadings: sl<GetHistoricalReadings>(),
       getCurrentWeather: sl<GetCurrentWeather>(),
       getFarmAnalytics: sl<GetFarmAnalytics>(),
+      getWeeklyData: sl<GetWeeklyData>(),
+      getLatestData: sl<GetLatestData>(),
     ),
   );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/features/live_monitoring/domain/usecases/get_localized_greeting.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
@@ -12,6 +13,7 @@ import '../bloc/monitoring_bloc.dart';
 import '../widgets/farm_detail_widget.dart';
 import '../widgets/growth_stage_lottie.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
+import '../../domain/entities/sensor_reading.dart';
 
 class LiveMonitoringScreen extends StatefulWidget {
   const LiveMonitoringScreen({super.key});
@@ -55,20 +57,31 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     final farmState = context.read<FarmBloc>().state;
     final monitoringState = context.read<MonitoringBloc>().state;
     
+    print('🌽 LiveMonitoring: _loadData called - FarmBloc state: ${farmState.runtimeType}');
+    
     // Load user farms only if not already loaded
     if (farmState is! FarmsLoaded) {
+      print('🌽 LiveMonitoring: FarmBloc not loaded, checking auth...');
       final authState = context.read<AuthenticationBloc>().state;
       if (authState.status == AuthenticationStatus.authenticated &&
           authState.user != null) {
         final user = authState.user;
         if (user != null) {
+          print('🌽 LiveMonitoring: Loading farms for user: ${user.id}');
           context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+        } else {
+          print('🌽 LiveMonitoring: User is null');
         }
+      } else {
+        print('🌽 LiveMonitoring: Auth not ready - status: ${authState.status}, user: ${authState.user?.id}');
       }
+    } else {
+      print('🌽 LiveMonitoring: Farms already loaded with ${farmState.farms.length} farms');
     }
     
     // Load latest sensor readings only if not already loaded
     if (monitoringState.latestReadings.isEmpty && !monitoringState.isLoading) {
+      print('🌽 LiveMonitoring: Loading latest readings...');
       context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
     }
   }
@@ -97,7 +110,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       ),
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        backgroundColor: Colors.white,
+        backgroundColor: MAIZE_PRIMARY_LIGHT.withOpacity(0.5),
         body: _selectedFarm != null ? _buildFarmDetailView() : _buildHomeView(),
       ),
     );
@@ -399,7 +412,17 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           return BlocBuilder<MonitoringBloc, MonitoringState>(
             builder: (context, monitoringState) {
               // Generate dynamic tasks based on farm data and sensor readings
-              final tasks = _generateDynamicTasks(farmState, monitoringState);
+              return FutureBuilder<List<Map<String, dynamic>>>(
+                future: _generateDynamicTasks(farmState, monitoringState),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return SizedBox(
+                      height: 140.h,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  
+                  final tasks = snapshot.data ?? [];
 
               return SizedBox(
                 height: 140.h,
@@ -410,7 +433,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     final task = tasks[index];
                     return Padding(
                       padding: EdgeInsets.only(
-                        right: index < tasks.length - 1 ? kAppSmallGap : 0,                        
+                        left: index == 0 ? kAppSmallGap : 0,
+                        right: index < tasks.length ? kAppSmallGap : 0,                        
                       ),
                       child: _buildTaskCard(
                         time: task['time'],
@@ -423,6 +447,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     );
                   },
                 ),
+              );
+                },
               );
             },
           );
@@ -439,7 +465,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     required bool isActive,
     Map<String, dynamic>? taskData,
   }) {
-    return GestureDetector(
+    // Extract additional information from taskData
+    final fieldName = taskData?['fieldName'] as String? ?? 'Unknown Field';    
+    final deadline = taskData?['deadline'] as String? ?? 'ASAP';
+    final urgency = taskData?['urgency'] as String? ?? 'MEDIUM';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
       onTap: () {
         if (taskData != null) {
           Navigator.pushNamed(
@@ -449,59 +481,114 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           );
         }
       },
+        borderRadius: BorderRadius.circular(16.r),
+        splashColor: Colors.black.withOpacity(0.1),
+        highlightColor: Colors.black.withOpacity(0.1),
       child: Container(
-        width: 160.w,
+          width: 155.w, // Increased width to accommodate more information
         padding: EdgeInsets.all(kAppMediumPadding),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20.r),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16.r),
+            
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: 16.sp,
-                  color: isActive ? MAIZE_PRIMARY_LIGHT : Colors.grey[600],
-                ),
-                SizedBox(width: kAppSmallGap),
-                Text(
-                  time,
-                  style: TextTheme.of(context).bodySmall?.copyWith(
-                    color: isActive ? MAIZE_PRIMARY_LIGHT : Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: kAppSmallGap),
-            Text(
-              title,
-              style: TextTheme.of(context).bodyMedium?.copyWith(
-                color: isActive ? MAIZE_PRIMARY_LIGHT : Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+
+              Container(
+               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
+                color: color,
                 borderRadius: BorderRadius.circular(20.r),
               ),
-              child: Text(
-                status,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w500,
-                  color: isActive ? Colors.white : Colors.grey[700],
+              child:  Text(
+                      urgency.toUpperCase(),
+                      style: TextTheme.of(
+                        context,
+                      ).bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+                    ),
+  
+            ),
+
+                
+              SizedBox(height: 6.h),
+              
+       
+              // Task title
+                Text(
+              title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isActive ? MAIZE_ACCENT : Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+
                 ),
               ),
+              Spacer(),
+              
+
+                    Row(                    
+                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                     children: [
+                       // Field name container
+ Container(
+                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                           decoration: BoxDecoration(
+                             color: isActive 
+                                 ? MAIZE_ACCENT.withOpacity(0.2)
+                                 : Colors.black.withOpacity(0.1),
+                             borderRadius: BorderRadius.circular(20.r),
+                           ),
+                           child: Row(
+                             
+                             children: [
+                               Icon(Icons.location_on, color: MAIZE_ACCENT, size: 12.sp),
+                               horizontalSpace(2),
+            Text(
+                                   fieldName,
+                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                     color: MAIZE_ACCENT,
+                fontWeight: FontWeight.w600,
+                                     fontSize: 12.sp,
+                                   ),
+                                 ),
+                               
+                             ],
+                           ),
+                         ),
+                       
+                       
+                       SizedBox(width: 8.w), // Add spacing between containers
+                       
+                       // Deadline container
+                       Flexible(
+                         child: Container(
+                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                             color: isActive 
+                                 ? MAIZE_ACCENT.withOpacity(0.2)
+                                 : Colors.black.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+                           child:  Text(
+                             deadline,
+                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                               color: isActive ? MAIZE_ACCENT : Colors.grey[600],
+                               fontWeight: FontWeight.w600,
+                  fontSize: 12.sp,
+                ),
+                             overflow: TextOverflow.ellipsis,
+              ),
             ),
+                       ),
+                 
           ],
+              ),
+              // Status and send time
+               
+            ],
+          ),
         ),
       ),
     );
@@ -511,16 +598,30 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   Widget _buildFarmFieldsSection() {
     return Container(
       margin: EdgeInsets.only(top: kAppSmallPadding),
-      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
+      padding: EdgeInsets.only(
+        left: kAppMediumPadding, 
+        right: kAppMediumPadding, 
+        top: kAppMediumPadding, 
+        bottom: kAppLargePadding,
+      ),
       decoration: BoxDecoration(
         color: MAIZE_PRIMARY_LIGHT,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20.r),
-          topRight: Radius.circular(20.r),
+          topLeft: Radius.circular(24.r),
+          topRight: Radius.circular(24.r),
         ),
       ),
       child: BlocBuilder<FarmBloc, FarmState>(
         builder: (context, farmState) {
+          print('🌽 LiveMonitoring: FarmBloc state: ${farmState.runtimeType}');
+          if (farmState is FarmsLoaded) {
+            print('🌽 LiveMonitoring: FarmsLoaded with ${farmState.farms.length} farms');
+            for (int i = 0; i < farmState.farms.length; i++) {
+              final farm = farmState.farms[i];
+              print('🌽 LiveMonitoring: Farm $i - Name: ${farm.farmName}, Fields: ${farm.fields.length}');
+            }
+          }
+          
           return BlocBuilder<MonitoringBloc, MonitoringState>(
             builder: (context, monitoringState) {
               final farmName =
@@ -533,6 +634,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 0,
                 (total, farm) => total + farm.fields.length,
               );
+              
+              print('🌽 LiveMonitoring: Final farmName: $farmName, fieldCount: $fieldCount');
 
               // Load analytics and weather data for the first farm if available
               if (farms.isNotEmpty) {
@@ -562,14 +665,14 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                             farmName,
                             style: TextTheme.of(
                               context,
-                            ).bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ).bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           verticalSpace(1),
                           Text(
                             '$fieldCount field${fieldCount != 1 ? 's' : ''} registered',
                             style: TextTheme.of(
                               context,
-                            ).bodySmall?.copyWith(fontSize: 12.sp),
+                            ).bodySmall?.copyWith(),
                           ),
                         ],
                       ),
@@ -581,34 +684,36 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         icon: Icon(
                           Icons.add,
                           size: 16.sp,
-                          color: MAIZE_PRIMARY_LIGHT,
+                          color: Colors.white,
                         ),
                         label: Text(
-                          'Add',
-                          style: TextTheme.of(
-                            context,
-                          ).bodySmall?.copyWith(color: MAIZE_PRIMARY_LIGHT),
+                          'Add Field',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: MAIZE_PRIMARY,
                           padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 8.h,
+                            horizontal: 20.w,
+                            vertical: 12.h,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.r),
+                            borderRadius: BorderRadius.circular(16.r),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: kAppSmallPadding),
+                  SizedBox(height: kAppMediumGap),
                   if (farmState is FarmsLoaded && farmState.farms.isNotEmpty)
                     Column(
                       children: _buildFieldCards(
                         farmState.farms,
                         monitoringState,
                       ),
+                      
                     )
                   else
                     _buildFarmFieldCard(null, monitoringState),
@@ -622,7 +727,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   Widget _buildFarmFieldCard(Farm? farm, MonitoringState? monitoringState) {
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
       onTap: () {
         if (farm != null) {
           setState(() {
@@ -631,34 +738,49 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           });
         }
       },
+        borderRadius: BorderRadius.circular(16.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
       child: Container(
-        margin: EdgeInsets.only(bottom: 16.h),
-        padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: Colors.white, width: 1),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: MAIZE_ACCENT.withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
         ),
         child: Row(
           children: [
             Container(
-              width: 50.w,
-              height: 50.h,
+                width: 60.w,
+                height: 60.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.r),
-                color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(16.r),
+                  color: MAIZE_ACCENT.withOpacity(0.2),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 1,
+                  ),
               ),
               child: farm?.fields.isNotEmpty == true
                   ? GrowthStageLottie(
                       growthStage: farm!.fields.first.growthStage,
-                      width: 50.w,
-                      height: 50.h,
+                        width: 60.w,
+                        height: 60.h,
                       fit: BoxFit.contain,
                     )
                   : Icon(
                       Icons.agriculture,
-                      size: 24.sp,
-                      color: Colors.grey[600],
+                        size: 28.sp,
+                        color: MAIZE_ACCENT,
                     ),
             ),
             horizontalSpace(16),
@@ -667,9 +789,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    farm?.farmName ?? 'Corn Field 1',
-                    style: TextStyle(
-                      fontSize: 16.sp,
+                      farm?.farmName ?? 'No field',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -677,46 +798,60 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   verticalSpace(8),
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 4.h,
+                        horizontal: 12.w,
+                        vertical: 6.h,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8BC34A),
-                      borderRadius: BorderRadius.circular(12.r),
+                        color: _getGrowthStageColor(farm?.fields.isNotEmpty == true 
+                            ? farm!.fields.first.growthStage 
+                            : 'VE'),
+                        borderRadius: BorderRadius.circular(20.r),
                     ),
                     child: Text(
-                      'Towards Harvest',
+                        _getGrowthStageText(farm?.fields.isNotEmpty == true 
+                            ? farm!.fields.first.growthStage 
+                            : 'VE'),
                       style: TextStyle(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w500,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
                   ),
-                  verticalSpace(8),
+                    verticalSpace(12),
                   Row(
                     children: [
-                      Icon(Icons.grass, size: 14.sp, color: Colors.grey[600]),
-                      horizontalSpace(4),
-                      Text(
-                        _getFarmGrowthStatus(farm, monitoringState),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey[600],
+                        Icon(
+                          Icons.grass, 
+                          size: 16.sp, 
+                          color: MAIZE_ACCENT.withOpacity(0.7),
                         ),
-                      ),
-                      horizontalSpace(16),
+                        horizontalSpace(6),
+                        Flexible(
+                          child: Text(
+                        _getFarmGrowthStatus(farm, monitoringState),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: MAIZE_ACCENT.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        horizontalSpace(12),
                       Icon(
-                        Icons.calendar_today,
-                        size: 14.sp,
-                        color: Colors.grey[600],
-                      ),
-                      horizontalSpace(4),
-                      Text(
+                          Icons.sensors,
+                          size: 16.sp,
+                          color: MAIZE_ACCENT.withOpacity(0.7),
+                        ),
+                        horizontalSpace(6),
+                        Flexible(
+                          child: Text(
                         _getFarmActivityCount(farm, monitoringState),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey[600],
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: MAIZE_ACCENT.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -724,8 +859,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 24.sp),
-          ],
+              Icon(
+                Icons.chevron_right, 
+                color: MAIZE_ACCENT.withOpacity(0.6), 
+                size: 24.sp,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -823,14 +963,33 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   // Generate dynamic tasks based on analytics_v2 recommendations
-  List<Map<String, dynamic>> _generateDynamicTasks(
+  Future<List<Map<String, dynamic>>> _generateDynamicTasks(
     FarmState farmState,
     MonitoringState monitoringState,
-  ) {
+  ) async {
     final tasks = <Map<String, dynamic>>[];
     final now = DateTime.now();
 
+    // Debug: Print farm data status
+    print('🔍 _generateDynamicTasks called with farmState: ${farmState.runtimeType}');
+    if (farmState is FarmsLoaded) {
+      print('🔍 Farm Data Status: ${farmState.farms.length} farms loaded');
+    } else {
+      print('🔍 Farm Data Status: Not loaded (${farmState.runtimeType})');
+    }
+
     if (farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+      // Debug: Print farm data status
+      print('🔍 Farm Data Status: ${farmState.farms.length} farms loaded');
+      if (farmState.farms.isNotEmpty) {
+        final farm = farmState.farms.first;
+        print('🔍 First Farm: ${farm.farmName}, Fields: ${farm.fields.length}');
+        if (farm.fields.isNotEmpty) {
+          final field = farm.fields.first;
+          print('🔍 First Field: ${field.fieldName}, Soil: ${field.soilType}, Stage: ${field.growthStage}');
+        }
+      }
+      
       // Try to get analytics recommendations from monitoring state
       final analyticsData = monitoringState.farmAnalytics;
 
@@ -850,6 +1009,19 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           print('🔍 Prescriptive Keys: ${prescriptive.keys.toList()}');
           print('🔍 Prescriptive Data: $prescriptive');
         }
+        
+        // Debug field analyses data
+        if (analyticsData['descriptive'] != null) {
+          final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+          if (descriptive['field_analyses'] != null) {
+            final fieldAnalyses = descriptive['field_analyses'] as Map<String, dynamic>;
+            print('🔍 Field Analyses Keys: ${fieldAnalyses.keys.toList()}');
+            for (final key in fieldAnalyses.keys) {
+              final fieldData = fieldAnalyses[key] as Map<String, dynamic>;
+              print('🔍 Field $key: field_id=${fieldData['field_id']}, growth_stage=${fieldData['growth_stage']}');
+            }
+          }
+        }
       }
 
       List<dynamic> recommendations = [];
@@ -867,27 +1039,32 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
       if (recommendations.isNotEmpty) {
         // Show notifications for new high-priority prescriptions
-        _showPrescriptionNotifications(recommendations);
+        await _showPrescriptionNotifications(recommendations);
+        
+        print('🔍 Processing ${recommendations.length} recommendations for task cards');
         
         // Convert analytics recommendations to task cards
-        for (int i = 0; i < recommendations.length && i < 4; i++) {
+        for (int i = 0; i < recommendations.length; i++) {
           final rec = recommendations[i] as Map<String, dynamic>;
-          print('🔍 Processing recommendation $i: $rec');
+          print('🔍 Processing recommendation $i: ${rec['action']} for field ${rec['field_id']}');
           
           final urgency = rec['urgency'] as String? ?? 'LOW';
           final timeline = rec['timeline'] as String? ?? '1 day';
           final action = rec['action'] as String? ?? 'Check farm';
           final details = rec['details'] as String? ?? '';
           final category = rec['category'] as String? ?? 'general';
+          final instructions = rec['instructions'] as List<dynamic>? ?? [];
           
-          // Extract field-specific information
-          final fieldName = rec['field_name'] as String? ?? 'Unknown Field';
-          final soilType = rec['soil_type'] as String? ?? 'Unknown';
-          final growthStage = rec['growth_stage'] as String? ?? 'Unknown';
-          final fieldId = rec['field_id'] as String?;
+      // Extract field-specific information directly from recommendation data
+      String fieldName = rec['field_name'] as String? ?? 'Unknown Field';
+      String soilType = rec['soil_type'] as String? ?? 'Loam';
+      String growthStage = rec['growth_stage'] as String? ?? 'Unknown';
+      String? fieldId = rec['field_id'] as String?;
           final parameter = rec['parameter'] as String? ?? 'general';
           
-          print('🔍 Extracted field data - Name: $fieldName, Soil: $soilType, Stage: $growthStage');
+      print('🔍 Using recommendation data directly: $fieldName, $soilType, $growthStage, $fieldId');
+          
+          print('🔍 Extracted field data - Name: $fieldName, Soil: $soilType, Stage: $growthStage, FieldId: $fieldId');
 
           // Format the title to show the actual action with better readability
           String formattedTitle = _formatRecommendationTitle(action, category);
@@ -900,21 +1077,37 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
           // Format timeline for display instead of calculated time
           String displayTime = _formatTimelineForDisplay(timeline);
+          
+          // Calculate send time (when the recommendation was created)
+          String sendTime = _formatSendTime(rec['created_timestamp'] as String?);
+          
+          // Calculate deadline based on timeline and urgency
+          String deadline = _calculateDeadline(timeline, urgency);
 
           tasks.add({
-            'time': displayTime,
+            'id': 'analytics_${DateTime.now().millisecondsSinceEpoch}_${recommendations.indexOf(rec)}',
             'title': formattedTitle,
-            'status': status,
-            'color': _getColorForUrgency(urgency),
-            'isActive': urgency == 'HIGH' || urgency == 'URGENT',
-            'details': details, // Store full details for potential expansion
+            'description': details,
             'category': category,
-            'fieldName': fieldName, // ✅ Add field-specific data
-            'soilType': soilType, // ✅ Add field-specific data
-            'growthStage': growthStage, // ✅ Add field-specific data
-            'fieldId': fieldId, // ✅ Add field-specific data
-            'parameter': parameter, // ✅ Add parameter info
-            'urgency': urgency, // ✅ Add urgency for detailed view
+            'urgency': urgency,
+            'timeline': timeline,
+            'parameter': parameter,
+            'fieldName': fieldName,
+            'soilType': soilType,
+            'growthStage': growthStage,
+            'fieldId': fieldId,
+            'priority': _mapUrgencyToPriority(urgency),
+            'status': status,
+            'dueDate': _calculateDueDate(timeline),
+            'createdAt': DateTime.now(),
+            'updatedAt': DateTime.now(),
+            'time': displayTime,
+            'color': _getColorForUrgency(urgency),
+            'isActive': urgency == 'HIGH' || urgency == 'URGENT' || urgency == 'MEDIUM',
+            'details': details,
+            'sendTime': sendTime,
+            'deadline': deadline,
+            'instructions': instructions,
           });
         }
       } else if (monitoringState.isLoading) {
@@ -926,6 +1119,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'status': 'Processing',
           'color': Colors.grey[300],
           'isActive': false,
+          'fieldName': 'System',
+          'sendTime': 'Just now',
+          'deadline': 'Soon',
+          'urgency': 'LOW',
+          'instructions': [],
+          'description': 'Processing farm analytics data...',
         });
       } else {
         // Show proper no-data message instead of fallback tasks
@@ -936,6 +1135,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'status': 'All Clear',
           'color': Colors.green[300],
           'isActive': false,
+          'fieldName': 'All Fields',
+          'sendTime': 'Just now',
+          'deadline': 'N/A',
+          'urgency': 'LOW',
+          'instructions': [],
+          'description': 'All farm operations are up to date.',
         });
       }
     } else {
@@ -947,6 +1152,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'status': 'Required',
           'color': MAIZE_PRIMARY,
           'isActive': true,
+          'fieldName': 'New Farm',
+          'sendTime': 'Just now',
+          'deadline': 'Today',
+          'urgency': 'HIGH',
+          'instructions': ['Register your farm details', 'Add field information', 'Configure sensor settings'],
+          'description': 'Complete farm registration to start monitoring',
         },
         {
           'time': '${(now.hour + 1).toString().padLeft(2, '0')}:00',
@@ -954,6 +1165,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'status': 'Pending',
           'color': Colors.white,
           'isActive': false,
+          'fieldName': 'All Fields',
+          'sendTime': 'Just now',
+          'deadline': 'This week',
+          'urgency': 'MEDIUM',
+          'instructions': ['Install soil moisture sensors', 'Set up weather station', 'Connect to monitoring system'],
+          'description': 'Install sensors to enable real-time monitoring',
         },
       ]);
     }
@@ -1071,15 +1288,15 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
   Color _getColorForUrgency(String urgency) {
     switch (urgency.toUpperCase()) {
-      case 'HIGH':
-        return Colors.orange[600]!;
       case 'URGENT':
         return Colors.red[600]!;
+      case 'HIGH':
+        return Colors.orange[800]!;
       case 'MEDIUM':
         return MAIZE_PRIMARY;
       case 'LOW':
       default:
-        return Colors.white;
+        return MAIZE_BUTTON_TRANSPARENT;
     }
   }
 
@@ -1209,150 +1426,126 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     Field field,
     MonitoringState? monitoringState,
   ) {
-    return GestureDetector(
+    return Padding(padding: EdgeInsets.only(bottom: kAppMediumGap),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
       onTap: () {
         setState(() {
           _selectedFarm = farm;
           _selectedField = field;
         });
       },
+        borderRadius: BorderRadius.circular(16.r),
+        splashColor: MAIZE_ACCENT.withOpacity(0.1),
+        highlightColor: MAIZE_ACCENT.withOpacity(0.05),
       child: Container(
-        margin: EdgeInsets.only(bottom: 16.h),
-        padding: EdgeInsets.all(12.w),
+          padding: EdgeInsets.all(kAppMediumPadding),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
+            color: Colors.white.withOpacity(0.5),  
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: Colors.white,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
         ),
         child: Row(
           children: [
             Container(
-              width: 50.w,
-              height: 50.h,
+                width: 70.w,
+                height: 70.h,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12.r),
-                color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(40.r),
+                  color: MAIZE_ACCENT.withOpacity(0.1),                 
               ),
               child: GrowthStageLottie(
                 growthStage: field.growthStage,
-                width: 50.w,
-                height: 50.h,
+                  width: 70.w,
+                  height: 70.h,
                 fit: BoxFit.contain,
               ),
             ),
-            horizontalSpace(16),
+              horizontalSpace(kAppSmallGap),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                    Row(                      
+                      children: [
+                      
                   Text(
                     field.fieldName,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,                        
+                      ),
                     ),
-                  ),
-                  verticalSpace(4),
-                  Text(
-                    farm.farmName,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  verticalSpace(8),
+                    horizontalSpace(kAppSmallGap),
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 4.h,
+                        horizontal: 8.w, vertical: 4.h
                     ),
                     decoration: BoxDecoration(
-                      color: _getGrowthStageColor(field.growthStage),
-                      borderRadius: BorderRadius.circular(12.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _getGrowthStageColor(field.growthStage).withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                        color: _getCropConditionColor(monitoringState),
+                        borderRadius: BorderRadius.circular(20.r),
                     ),
                     child: Text(
-                      _getGrowthStageText(field.growthStage),
-                      style: TextStyle(
-                        fontSize: 10.sp,
+                       _getCropConditionText(monitoringState),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
+                          fontSize: 12.sp,
                       ),
                     ),
                   ),
-                  verticalSpace(8),
-                  Row(
-                    children: [
-                      Icon(Icons.grass, size: 14.sp, color: _getGrowthStatusColor(field.growthStage)),
-                      horizontalSpace(4),
+
+                    ]),
+
+                  
+                     verticalSpace(kAppSmallGap),
+                    
+
+     
+                      Text(
+                            'Soil Type: ${field.soilType}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(                          
+                          
+                          color: MAIZE_ACCENT,
+                        ),
+                      ),
+
+                      
+                      horizontalSpace(kAppSmallGap),
                       Text(
                         _getFieldGrowthStatus(field),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: _getGrowthStatusColor(field.growthStage),
-                          fontWeight: FontWeight.w500,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                         
+                          color: MAIZE_ACCENT,
                         ),
                       ),
-                      horizontalSpace(16),
-                      Icon(Icons.sensors, size: 14.sp, color: field.sensors.isNotEmpty ? Colors.green : Colors.grey[600]),
-                      horizontalSpace(4),
-                      Text(
-                        _getFieldDeviceCount(field),
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: field.sensors.isNotEmpty ? Colors.green : Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                                                                                                                        
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 24.sp),
+              Icon(
+                Icons.north_east, 
+                color: MAIZE_ACCENT, 
+                size: 18.sp,
+              ),
           ],
         ),
       ),
-    );
+      ),
+    ));
   }
 
   // Helper methods for field display
-  Color _getGrowthStatusColor(String growthStage) {
-    // Color based on growth stage progress
-    switch (growthStage) {
-      case 'VE':
-      case 'V2':
-      case 'V3':
-      case 'V4':
-        return Colors.blue; // Early stages - blue
-      case 'V5':
-      case 'V6':
-      case 'V7':
-      case 'V8':
-        return Colors.green; // Good vegetative growth - green
-      case 'VT':
-        return Colors.orange; // Transition - orange
-      case 'R1':
-      case 'R2':
-      case 'R3':
-        return Colors.purple; // Reproductive - purple
-      case 'R4':
-      case 'R5':
-        return Colors.deepOrange; // Maturing - deep orange
-      case 'R6':
-        return Colors.red; // Maturity - red
-      default:
-        return Colors.grey;
-    }
-  }
 
   Color _getGrowthStageColor(String growthStage) {
     switch (growthStage) {
@@ -1435,35 +1628,397 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     return 'Growth: $percentage%';
   }
 
-  String _getFieldDeviceCount(Field field) {
-    final deviceCount = field.sensors.length;
-    return '$deviceCount Device${deviceCount != 1 ? 's' : ''}';
+
+  String _getCropConditionText(MonitoringState? monitoringState) {
+    // First try to get from analytics data
+    if (monitoringState?.farmAnalytics != null) {
+      final analyticsData = monitoringState!.farmAnalytics!;
+      print('🔍 Analytics data for crop condition: $analyticsData');
+      
+      // Try to get crop condition from prescriptive analytics first
+      if (analyticsData['prescriptive'] != null) {
+        final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+        final cropCondition = prescriptive['crop_condition'] as Map<String, dynamic>?;
+        if (cropCondition != null) {
+          final status = cropCondition['status'] as String? ?? 'Unknown';
+          print('🔍 Found crop condition from prescriptive: $status');
+          return status;
+        }
+      }
+      
+      // Fallback to descriptive analytics
+      final descriptive = analyticsData['descriptive'] as Map<String, dynamic>?;
+      if (descriptive != null) {
+        final overallStress = descriptive['overall_stress'] as String?;
+        if (overallStress != null && overallStress.toLowerCase() != 'unknown') {
+          print('🔍 Found overall stress from descriptive: $overallStress');
+          switch (overallStress.toLowerCase()) {
+            case 'low':
+              return 'Healthy';
+            case 'medium':
+              return 'Moderate stress';
+            case 'high':
+              return 'High stress';
+            case 'severe':
+              return 'Critical stress';
+            default:
+              return 'Unknown';
+          }
+        } else {
+          // If overall_stress is unknown, analyze individual stress levels
+          final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+          if (stressAnalysis != null) {
+            print('🔍 Analyzing individual stress levels from stress_analysis');
+            return _analyzeCropConditionFromStressAnalysis(stressAnalysis);
+          }
+        }
+      }
+    }
+    
+    // Fallback to sensor readings analysis
+    if (monitoringState?.latestReadings.isNotEmpty == true) {
+      final latestReading = monitoringState!.latestReadings.first;
+      return _analyzeCropConditionFromSensor(latestReading);
+    }
+    
+    print('🔍 No crop condition data available');
+    return 'Unknown';
   }
 
-  void _showPrescriptionNotifications(List<dynamic> recommendations) {
+  String _analyzeCropConditionFromSensor(SensorReading reading) {
+    // Analyze sensor readings to determine crop condition
+    int issues = 0;
+    
+    // Check temperature
+    if (reading.temperature < 15 || reading.temperature > 35) {
+      issues++;
+    }
+    
+    // Check soil moisture
+    if (reading.soilMoisture < 30) {
+      issues++;
+    } else if (reading.soilMoisture > 80) {
+      issues++;
+    }
+    
+    // Check soil pH
+    if (reading.pH < 6.0 || reading.pH > 7.5) {
+      issues++;
+    }
+    
+    // Check humidity
+    if (reading.humidity < 30 || reading.humidity > 90) {
+      issues++;
+    }
+    
+    // Determine condition based on number of issues
+    switch (issues) {
+      case 0:
+        return 'Healthy';
+      case 1:
+        return 'Moderate stress';
+      case 2:
+        return 'High stress';
+      default:
+        return 'Critical stress';
+    }
+  }
+
+  String _analyzeCropConditionFromStressAnalysis(Map<String, dynamic> stressAnalysis) {
+    // Count high stress factors
+    int highStressCount = 0;
+    int mediumStressCount = 0;
+    
+    for (final entry in stressAnalysis.entries) {
+      final data = entry.value as Map<String, dynamic>?;
+      if (data != null) {
+        final stressLevel = data['stress_level'] as String? ?? 'low';
+        switch (stressLevel.toLowerCase()) {
+          case 'high':
+            highStressCount++;
+            break;
+          case 'medium':
+            mediumStressCount++;
+            break;
+        }
+      }
+    }
+    
+    // Determine condition based on stress levels
+    if (highStressCount >= 3) {
+      return 'Critical stress';
+    } else if (highStressCount >= 2) {
+      return 'High stress';
+    } else if (highStressCount >= 1 || mediumStressCount >= 2) {
+      return 'Moderate stress';
+    } else {
+      return 'Healthy';
+    }
+  }
+
+  Color _getCropConditionColorFromStressAnalysis(Map<String, dynamic> stressAnalysis) {
+    // Count high stress factors
+    int highStressCount = 0;
+    int mediumStressCount = 0;
+    
+    for (final entry in stressAnalysis.entries) {
+      final data = entry.value as Map<String, dynamic>?;
+      if (data != null) {
+        final stressLevel = data['stress_level'] as String? ?? 'low';
+        switch (stressLevel.toLowerCase()) {
+          case 'high':
+            highStressCount++;
+            break;
+          case 'medium':
+            mediumStressCount++;
+            break;
+        }
+      }
+    }
+    
+    // Determine color based on stress levels
+    if (highStressCount >= 3) {
+      return Colors.red[800]!;
+    } else if (highStressCount >= 2) {
+      return Colors.red;
+    } else if (highStressCount >= 1 || mediumStressCount >= 2) {
+      return Colors.orange[800]!;
+    } else {
+      return MAIZE_PRIMARY;
+    }
+  }
+
+  Color _getCropConditionColor(MonitoringState? monitoringState) {
+    // First try to get from analytics data
+    if (monitoringState?.farmAnalytics != null) {
+      final analyticsData = monitoringState!.farmAnalytics!;
+      
+      // Try to get crop condition from prescriptive analytics first
+      if (analyticsData['prescriptive'] != null) {
+        final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+        final cropCondition = prescriptive['crop_condition'] as Map<String, dynamic>?;
+        if (cropCondition != null) {
+          final status = cropCondition['status'] as String? ?? 'Unknown';
+          switch (status.toLowerCase()) {
+            case 'healthy':
+            case 'excellent':
+              return MAIZE_PRIMARY;
+            case 'moderate stress':
+            case 'warning':
+              return Colors.orange[800]!;
+            case 'high stress':
+            case 'critical stress':
+              return Colors.red;
+            default:
+              return Colors.grey;
+          }
+        }
+      }
+      
+      // Fallback to descriptive analytics
+      final descriptive = analyticsData['descriptive'] as Map<String, dynamic>?;
+      if (descriptive != null) {
+        final overallStress = descriptive['overall_stress'] as String?;
+        if (overallStress != null && overallStress.toLowerCase() != 'unknown') {
+          switch (overallStress.toLowerCase()) {
+            case 'low':
+              return MAIZE_PRIMARY;
+            case 'medium':
+              return Colors.orange[800]!;
+            case 'high':
+              return Colors.red;
+            case 'severe':
+              return Colors.red[800]!;
+            default:
+              return Colors.grey;
+          }
+        } else {
+          // If overall_stress is unknown, analyze individual stress levels
+          final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+          if (stressAnalysis != null) {
+            return _getCropConditionColorFromStressAnalysis(stressAnalysis);
+          }
+        }
+      }
+    }
+    
+    // Fallback to sensor readings analysis
+    if (monitoringState?.latestReadings.isNotEmpty == true) {
+      final latestReading = monitoringState!.latestReadings.first;
+      final condition = _analyzeCropConditionFromSensor(latestReading);
+      switch (condition) {
+        case 'Healthy':
+          return MAIZE_PRIMARY;
+        case 'Moderate stress':
+          return Colors.orange[800]!;
+        case 'High stress':
+          return Colors.red;
+        case 'Critical stress':
+          return Colors.red[800]!;
+        default:
+          return Colors.grey;
+      }
+    }
+    
+    return Colors.grey;
+  }
+
+  Future<void> _showPrescriptionNotifications(List<dynamic> recommendations) async {
+    print('🔔 Checking ${recommendations.length} recommendations for notifications');
+    
+    // Check if notifications are enabled
+    final notificationsEnabled = await _notificationService.areNotificationsEnabled();
+    print('🔔 Notification settings check: enabled = $notificationsEnabled');
+    
+    // Additional debug check with SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final prefsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    print('🔔 SharedPreferences check: enabled = $prefsEnabled');
+    
+    if (!notificationsEnabled || !prefsEnabled) {
+      print('🔔 Notifications are disabled, skipping prescription notifications');
+      return;
+    }
+    
     for (final rec in recommendations) {
       final recMap = rec as Map<String, dynamic>;
       final action = recMap['action'] as String? ?? 'Farm Task';
       final urgency = recMap['urgency'] as String? ?? 'LOW';
       final details = recMap['details'] as String? ?? '';
       final category = recMap['category'] as String? ?? 'general';
+      final fieldId = recMap['field_id'] as String? ?? 'unknown';
+      final fieldName = recMap['field_name'] as String? ?? 'Unknown Field';
       
-      // Create unique ID for this prescription
-      final prescriptionId = '${action}_${urgency}_${category}';
+      // Create unique ID for this prescription including field info
+      final prescriptionId = '${action}_${urgency}_${category}_${fieldId}';
       
-      // Only notify for high/urgent priority prescriptions that haven't been notified yet
-      if ((urgency.toUpperCase() == 'HIGH' || urgency.toUpperCase() == 'URGENT') && 
+      print('🔔 Checking prescription: $action (${urgency}) for $fieldName - Already notified: ${_notifiedPrescriptions.contains(prescriptionId)}');
+      
+      // Notify for all priority prescriptions (HIGH, URGENT, MEDIUM) that haven't been notified yet
+      if ((urgency.toUpperCase() == 'HIGH' || urgency.toUpperCase() == 'URGENT' || urgency.toUpperCase() == 'MEDIUM') && 
           !_notifiedPrescriptions.contains(prescriptionId)) {
         
+        print('🔔 Showing notification for: $action on $fieldName');
+        
         _notificationService.showPrescriptionAlertNotification(
-          title: action,
-          message: details.isNotEmpty ? details : 'High priority farm task requires attention',
+          title: '$action - $fieldName',
+          message: details.isNotEmpty ? details : 'Farm task requires attention',
           priority: urgency,
+          notificationId: prescriptionId.hashCode.abs(), // Use unique ID based on prescription
         );
         
         // Mark as notified
         _notifiedPrescriptions.add(prescriptionId);
+        print('🔔 Marked as notified: $prescriptionId');
       }
+    }
+  }
+
+  // Helper method to format send time
+  String _formatSendTime(String? timestamp) {
+    if (timestamp == null) return 'Just now';
+    
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d ago';
+      } else {
+        return '${dateTime.day}/${dateTime.month}';
+      }
+    } catch (e) {
+      return 'Just now';
+    }
+  }
+
+  String _mapUrgencyToPriority(String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'URGENT':
+        return 'high';
+      case 'HIGH':
+        return 'high';
+      case 'MEDIUM':
+        return 'medium';
+      case 'LOW':
+        return 'low';
+      default:
+        return 'medium';
+    }
+  }
+
+  DateTime _calculateDueDate(String timeline) {
+    final now = DateTime.now();
+    switch (timeline.toLowerCase()) {
+      case 'today':
+        return now.add(const Duration(hours: 2));
+      case 'this week':
+        return now.add(const Duration(days: 3));
+      case 'next week':
+        return now.add(const Duration(days: 7));
+      default:
+        return now.add(const Duration(days: 1));
+    }
+  }
+
+  // Helper method to calculate deadline
+  String _calculateDeadline(String timeline, String urgency) {
+    final now = DateTime.now();
+    
+    // Parse timeline to determine deadline
+    final lowerTimeline = timeline.toLowerCase();
+    
+    if (lowerTimeline == 'today') {
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59);
+      final hoursLeft = endOfDay.difference(now).inHours;
+      if (hoursLeft <= 0) return 'Overdue';
+      return '${hoursLeft}h left';
+    } else if (lowerTimeline.contains('this week')) {
+      final endOfWeek = now.add(Duration(days: 7 - now.weekday));
+      final daysLeft = endOfWeek.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('next') && lowerTimeline.contains('day')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final days = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(days: days));
+      final daysLeft = deadline.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('week')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final weeks = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(days: weeks * 7));
+      final daysLeft = deadline.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('hour')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final hours = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(hours: hours));
+      final hoursLeft = deadline.difference(now).inHours;
+      if (hoursLeft <= 0) return 'Overdue';
+      return '${hoursLeft}h left';
+    }
+    
+    // Default based on urgency
+    switch (urgency.toUpperCase()) {
+      case 'URGENT':
+        return 'ASAP';
+      case 'HIGH':
+        return 'Today';
+      case 'MEDIUM':
+        return 'This week';
+      case 'LOW':
+      default:
+        return 'Flexible';
     }
   }
 }

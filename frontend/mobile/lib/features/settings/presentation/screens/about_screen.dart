@@ -16,204 +16,148 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: MAIZE_PRIMARY_LIGHT,
+      appBar: AppBar(        
+        backgroundColor: MAIZE_PRIMARY_LIGHT,
+        leading: IconButton(onPressed: () {
+          Navigator.pop(context);
+        }, icon: Icon(Icons.arrow_back, color: MAIZE_ACCENT,)),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Header section with background
-            _buildHeaderSection(),
-            
-            // Main content area
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.only(top: kAppSmallPadding),
-                padding: EdgeInsets.only(
-                  left: kAppMediumPadding, 
-                  right: kAppMediumPadding, 
-                  top: kAppMediumPadding, 
-                  bottom: kAppLargePadding,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20.r),
-                    topRight: Radius.circular(20.r),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildAboutSection(),
-                  ],
-                ),
-              ),
-            ),
+            _buildAboutSection(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Container(
-      height: 180.h,
-      padding: EdgeInsets.only(left: kAppMediumPadding, right: kAppMediumPadding, top: kAppMediumPadding, bottom: kAppLargePadding),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20.r),
-          bottomRight: Radius.circular(20.r),
-        ),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/farmer.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Status bar spacing
-          SizedBox(height: 40.h),
-          
-          // Back button and title
-          Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'About',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
-                  ),
-                  SizedBox(height: kAppSmallGap),
-                  Text(
-                    'Learn more about Maize Watch',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
-                  ),                  
-                ],
-              ),
-              Spacer(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAboutSection() {
     return Expanded(
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // App Info Section
-            _buildSectionCard(
-              title: 'App Information',
-              children: [
-                _buildAppInfoItem(),
-              ],
-            ),
-            SizedBox(height: kAppMediumPadding),
+      child: Padding(
+      padding: EdgeInsets.all(kAppMediumPadding),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [                 
+              Text('About', style: Theme.of(context).textTheme.headlineMedium,),
+              verticalSpace(5.h),
+              Text('Learn more about Maize Watch', style: Theme.of(context).textTheme.bodySmall,),   
+              verticalSpace(kAppLargeGap),
+              
+              // App Info Section
+              _buildSectionCard(
+                title: 'App Information',
+                children: [
+                  _buildAppInfoItem(),
+                ],
+              ),
+              verticalSpace(kAppMediumPadding),
 
-            // Features Section
-            _buildSectionCard(
-              title: 'Key Features',
-              children: [
-                _buildFeatureItem(
-                  'Real-time Sensor Monitoring',
-                  'Track temperature, humidity, soil moisture, and light levels',
-                  Icons.sensors,
-                ),
-                SizedBox(height: kAppMediumPadding),
-                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
-                SizedBox(height: kAppMediumPadding),
-                _buildFeatureItem(
-                  'Weather Integration',
-                  'Get weather forecasts and alerts for your farm',
-                  Icons.wb_sunny,
-                ),
-                SizedBox(height: kAppMediumPadding),
-                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
-                SizedBox(height: kAppMediumPadding),
-                _buildFeatureItem(
-                  'Smart Analytics',
-                  'AI-powered insights and recommendations',
-                  Icons.analytics,
-                ),
-                SizedBox(height: kAppMediumPadding),
-                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
-                SizedBox(height: kAppMediumPadding),
-                _buildFeatureItem(
-                  'Multi-language Support',
-                  'Available in English and Filipino',
-                  Icons.language,
-                ),
-              ],
-            ),
-            SizedBox(height: kAppMediumPadding),
+              // Features Section
+              _buildSectionCard(
+                title: 'Key Features',
+                children: [
+                  _buildFeatureItem(
+                    'Real-time Sensor Monitoring',
+                    'Track temperature, humidity, soil moisture, and light levels',
+                    Icons.sensors,
+                  ),
+                  SizedBox(height: kAppMediumPadding),
+                  Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                  SizedBox(height: kAppMediumPadding),
+                  _buildFeatureItem(
+                    'Weather Integration',
+                    'Get weather forecasts and alerts for your farm',
+                    Icons.wb_sunny,
+                  ),
+                  SizedBox(height: kAppMediumPadding),
+                  Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                  SizedBox(height: kAppMediumPadding),
+                  _buildFeatureItem(
+                    'Smart Analytics',
+                    'AI-powered insights and recommendations',
+                    Icons.analytics,
+                  ),
+                  SizedBox(height: kAppMediumPadding),
+                  Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                  SizedBox(height: kAppMediumPadding),
+                  _buildFeatureItem(
+                    'Multi-language Support',
+                    'Available in English and Filipino',
+                    Icons.language,
+                  ),
+                ],
+              ),
+              verticalSpace(kAppMediumPadding),
 
-            // Contact Section
-            _buildSectionCard(
-              title: 'Contact & Support',
-              children: [
-                _buildContactItem(
-                  'Email Support',
-                  'maizewatch@gmail.com',
-                  Icons.email,
-                  () => _showComingSoon('Email'),
-                ),
-                SizedBox(height: kAppMediumPadding),
-                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
-                SizedBox(height: kAppMediumPadding),
-                _buildContactItem(
-                  'Phone Support',
-                  '+63 912 345 6789',
-                  Icons.phone,
-                  () => _showComingSoon('Phone'),
-                ),
-                SizedBox(height: kAppMediumPadding),
-                Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
-                SizedBox(height: kAppMediumPadding),
-                _buildContactItem(
-                  'Website',
-                  'www.maizewatch.com',
-                  Icons.web,
-                  () => _showComingSoon('Website'),
-                ),
-              ],
-            ),
-            SizedBox(height: kAppMediumPadding),
+              // Contact Section
+              _buildSectionCard(
+                title: 'Contact & Support',
+        children: [
+                  _buildContactItem(
+                    'Email Support',
+                    'maizewatch@gmail.com',
+                    Icons.email,
+                    () => _showComingSoon('Email'),
+                  ),
+                  SizedBox(height: kAppMediumPadding),
+                  Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                  SizedBox(height: kAppMediumPadding),
+                  _buildContactItem(
+                    'Phone Support',
+                    '+63 912 345 6789',
+                    Icons.phone,
+                    () => _showComingSoon('Phone'),
+                  ),
+                  SizedBox(height: kAppMediumPadding),
+                  Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
+                  SizedBox(height: kAppMediumPadding),
+                  _buildContactItem(
+                    'Website',
+                    'www.maizewatch.com',
+                    Icons.web,
+                    () => _showComingSoon('Website'),
+                  ),
+                ],
+              ),
+              verticalSpace(kAppMediumPadding),
 
-            // Social Media Section
-            _buildSectionCard(
-              title: 'Follow Us',
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildSocialIcon(
-                      icon: Icons.camera_alt,
-                      label: 'Instagram',
-                      onTap: () => _showComingSoon('Instagram'),
-                    ),
-                    _buildSocialIcon(
-                      icon: Icons.code,
-                      label: 'GitHub',
-                      onTap: () => _showComingSoon('GitHub'),
-                    ),
-                    _buildSocialIcon(
-                      icon: Icons.business,
-                      label: 'LinkedIn',
-                      onTap: () => _showComingSoon('LinkedIn'),
-                    ),
-                    _buildSocialIcon(
-                      icon: Icons.alternate_email,
-                      label: 'Twitter',
-                      onTap: () => _showComingSoon('Twitter'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+              // Social Media Section
+              _buildSectionCard(
+                title: 'Follow Us',
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildSocialIcon(
+                        icon: Icons.camera_alt,
+                        label: 'Instagram',
+                        onTap: () => _showComingSoon('Instagram'),
+                      ),
+                      _buildSocialIcon(
+                        icon: Icons.code,
+                        label: 'GitHub',
+                        onTap: () => _showComingSoon('GitHub'),
+                      ),
+                      _buildSocialIcon(
+                        icon: Icons.business,
+                        label: 'LinkedIn',
+                        onTap: () => _showComingSoon('LinkedIn'),
+                      ),
+                      _buildSocialIcon(
+                        icon: Icons.alternate_email,
+                        label: 'Twitter',
+                        onTap: () => _showComingSoon('Twitter'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              verticalSpace(kAppLargeGap), // Add some bottom padding
+            ],
+          ),
         ),
       ),
     );
@@ -226,9 +170,9 @@ class _AboutScreenState extends State<AboutScreen> {
     return Container(
       padding: EdgeInsets.all(kAppMediumPadding),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey[200] ?? Colors.grey, width: 1),
+        border: Border.all(color: Colors.white, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,90 +190,90 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Widget _buildAppInfoItem() {
     return Row(
-      children: [
-        Container(
-          width: 60.w,
+              children: [
+                Container(
+                  width: 60.w,
           height: 60.w,
-          decoration: BoxDecoration(
+                  decoration: BoxDecoration(
             color: MAIZE_ACCENT.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16.r),
+                    borderRadius: BorderRadius.circular(16.r),
           ),
           child: Icon(
             Icons.agriculture,
             color: MAIZE_ACCENT,
             size: 30.sp,
-          ),
-        ),
-        SizedBox(width: kAppMediumPadding),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Maize Watch',
-                style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: kAppMediumPadding),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Maize Watch',
+                        style: TextStyle(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.bold,
                   color: Colors.black87,
-                ),
-              ),
-              Text(
-                'version 1.0.0',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+                        ),
+                      ),
+                      Text(
+                        'version 1.0.0',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               SizedBox(height: kAppSmallPadding),
-              Text(
-                'Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.',
-                style: TextStyle(
+                Text(
+                  'Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.',
+                  style: TextStyle(
                   fontSize: 14.sp,
-                  color: Colors.black87,
+                    color: Colors.black87,
                   height: 1.4,
                 ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
     );
   }
 
   Widget _buildFeatureItem(String title, String description, IconData icon) {
     return Row(
-      children: [
-        Container(
+        children: [
+          Container(
           padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            color: MAIZE_ACCENT.withOpacity(0.1),
+            decoration: BoxDecoration(
+              color: MAIZE_ACCENT.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20.r),
-          ),
-          child: Icon(
-            icon,
-            color: MAIZE_ACCENT,
+            ),
+            child: Icon(
+              icon,
+              color: MAIZE_ACCENT,
             size: 24.sp,
           ),
         ),
         SizedBox(width: kAppMediumGap),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
+                  ),
               SizedBox(height: 5.h),
-              Text(
-                description,
+                Text(
+                  description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
     );
   }
 
@@ -358,26 +302,26 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
               ),
               SizedBox(width: kAppMediumGap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 5.h),
-                    Text(
-                      value,
+                  Text(
+                    value,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Icon(
+            ),
+            Icon(
                 Icons.north_east,
-                color: MAIZE_ACCENT,
-                size: 24.sp,
+                  color: MAIZE_ACCENT,
+                  size: 24.sp,
               )
             ],
           ),
@@ -394,35 +338,35 @@ class _AboutScreenState extends State<AboutScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+      onTap: onTap,
         borderRadius: BorderRadius.circular(25.r),
         splashColor: MAIZE_ACCENT.withOpacity(0.1),
         highlightColor: MAIZE_ACCENT.withOpacity(0.05),
-        child: Column(
-          children: [
-            Container(
-              width: 50.w,
-              height: 50.h,
-              decoration: BoxDecoration(
+      child: Column(
+        children: [
+          Container(
+            width: 50.w,
+            height: 50.h,
+            decoration: BoxDecoration(
                 color: MAIZE_ACCENT.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: MAIZE_ACCENT,
-                size: 24.sp,
-              ),
+              shape: BoxShape.circle,
             ),
-            SizedBox(height: 4.h),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10.sp,
-                color: MAIZE_ACCENT,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Icon(
+              icon,
+              color: MAIZE_ACCENT,
+              size: 24.sp,
             ),
-          ],
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              color: MAIZE_ACCENT,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
         ),
       ),
     );

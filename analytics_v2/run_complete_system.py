@@ -23,12 +23,19 @@ def run_complete_system(farmer_id: str, field_id: str = None):
     print(f"Farmer ID: {farmer_id}")
     if field_id:
         print(f"Field ID: {field_id}")
+    else:
+        print("Field ID: ALL FIELDS (Multi-field analysis)")
     print(f"Analysis Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print("=" * 60)
     
     # Step 1: Descriptive Analytics
     print("\nStep 1: Analyzing today's performance...")
-    descriptive_results = descriptive_analytics.analyze_daily_performance(farmer_id, use_today=True)
+    if field_id:
+        # Single field analysis
+        descriptive_results = descriptive_analytics.analyze_daily_performance(farmer_id, use_today=True, field_id=field_id)
+    else:
+        # Multi-field analysis
+        descriptive_results = descriptive_analytics.analyze_all_fields_performance(farmer_id, use_today=True)
     
     if not descriptive_results:
         print("FAILED: Could not complete descriptive analysis")
@@ -48,24 +55,45 @@ def run_complete_system(farmer_id: str, field_id: str = None):
     
     # Step 3: Prescriptive Analytics
     print("\nStep 3: Generating actionable recommendations...")
-    prescriptive_results = prescriptive_analytics.generate_recommendations(
-        descriptive_results, predictive_results, field_id
-    )
+    if field_id:
+        # Single field prescriptive analysis
+        prescriptive_results = prescriptive_analytics.generate_recommendations(
+            descriptive_results, predictive_results, field_id
+        )
+    else:
+        # Multi-field prescriptive analysis
+        prescriptive_results = prescriptive_analytics.generate_multi_field_recommendations(
+            descriptive_results, predictive_results
+        )
     
     if not prescriptive_results:
         print("FAILED: Could not generate recommendations")
         return {"descriptive": descriptive_results, "predictive": predictive_results}
     
-    print(f"COMPLETED: {prescriptive_results['total_recommendations']} recommendations generated with priority score {prescriptive_results['priority_score']}")
+    if field_id:
+        print(f"COMPLETED: {prescriptive_results['total_recommendations']} recommendations generated with priority score {prescriptive_results['priority_score']}")
+    else:
+        print(f"COMPLETED: {prescriptive_results['total_recommendations']} recommendations generated across {prescriptive_results.get('fields_processed', 0)} fields with priority score {prescriptive_results['priority_score']}")
     
     # Step 4: Display Final Report
     print_final_report(descriptive_results, predictive_results, prescriptive_results)
     
-    return {
+    # Output results as JSON for Node.js backend
+    results = {
         "descriptive": descriptive_results,
         "predictive": predictive_results,
         "prescriptive": prescriptive_results
     }
+    
+    # Print JSON output for Node.js backend to parse
+    import json
+    print("\n" + "="*60)
+    print("JSON_OUTPUT_START")
+    print(json.dumps(results, default=str))
+    print("JSON_OUTPUT_END")
+    print("="*60)
+    
+    return results
 
 def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
     """Print comprehensive final report"""
@@ -79,6 +107,13 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
     print(f"Growth Stage: {descriptive['growth_stage']}")
     print(f"Overall Condition: {descriptive['overall_stress'].upper()}")
     print(f"Priority Score: {prescriptive['priority_score']}/100")
+    
+    # Multi-field information
+    if descriptive.get('total_fields'):
+        print(f"Fields Analyzed: {descriptive.get('fields_processed', 0)}/{descriptive.get('total_fields', 0)}")
+        if descriptive.get('field_analyses'):
+            field_names = list(descriptive['field_analyses'].keys())
+            print(f"Field Names: {', '.join(field_names)}")
     
     # Current Conditions
     print(f"\nYESTERDAY'S CONDITIONS:")
@@ -169,22 +204,33 @@ def print_final_report(descriptive: dict, predictive: dict, prescriptive: dict):
     if urgent_actions:
         print(f"\nURGENT ACTIONS:")
         for i, rec in enumerate(urgent_actions, 1):
-            print(f"{i}. {rec['details']}")
-            # print(f"   {rec['details']}")
+            field_info = f" [{rec.get('field_name', 'Unknown Field')}]" if rec.get('field_name') else ""
+            print(f"{i}. {rec['details']}{field_info}")
             print(f"   Timeline: {rec['timeline']}")
     
     if high_actions:
         print(f"\nHIGH PRIORITY:")
         for i, rec in enumerate(high_actions, 1):
-            print(f"{i}. {rec['details']}")
-          #  print(f"   {rec['details']}")
+            field_info = f" [{rec.get('field_name', 'Unknown Field')}]" if rec.get('field_name') else ""
+            print(f"{i}. {rec['details']}{field_info}")
             print(f"   Timeline: {rec['timeline']}")
     
     if medium_actions:
         print(f"\nMEDIUM PRIORITY:")
         for i, rec in enumerate(medium_actions, 1):
-            print(f"{i}. {rec['action']}")
+            field_info = f" [{rec.get('field_name', 'Unknown Field')}]" if rec.get('field_name') else ""
+            print(f"{i}. {rec['action']}{field_info}")
             print(f"   Timeline: {rec['timeline']}")
+    
+    # Show field-specific recommendations if available
+    if prescriptive.get('field_recommendations'):
+        print(f"\nFIELD-SPECIFIC RECOMMENDATIONS:")
+        for field_name, field_recs in prescriptive['field_recommendations'].items():
+            if field_recs:
+                print(f"\n{field_name.upper()}:")
+                for i, rec in enumerate(field_recs[:3], 1):  # Show first 3 recommendations per field
+                    urgency_icon = "🔴" if rec['urgency'] == 'URGENT' else "🟠" if rec['urgency'] == 'HIGH' else "🟡"
+                    print(f"  {urgency_icon} {rec['action']} ({rec['timeline']})")
     
     print("\n" + "="*60)
     print("Report generated successfully. Data saved to database.")

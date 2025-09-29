@@ -41,10 +41,6 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
   void initState() {
     super.initState();
     _deriveLocationFromUserData();
-    // Ensure authentication state is properly initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
-    });
   }
 
   void _deriveLocationFromUserData() {
@@ -110,16 +106,6 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                   ),
             ),
           );
-
-          // Force authentication state refresh and maintain session
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
-            }
-          });
-
-          // Also refresh immediately to prevent authentication loss
-          context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
         } else if (state is FarmError) {
           // Check if it's an authentication error
           if (state.message.contains('Authentication expired') ||
@@ -452,6 +438,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
             .map(
               (fieldJson) => Field(
                 fieldName: fieldJson['fieldName'] as String,
+                soilType: 'loamy', // Default soil type for field
                 plantingDate: DateTime.parse(
                   fieldJson['plantingDate'] as String,
                 ),

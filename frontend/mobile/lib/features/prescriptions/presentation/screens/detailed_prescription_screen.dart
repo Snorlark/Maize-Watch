@@ -3,381 +3,250 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 
-class DetailedPrescriptionScreen extends StatelessWidget {
+class DetailedPrescriptionScreen extends StatefulWidget {
   const DetailedPrescriptionScreen({super.key});
 
   @override
+  State<DetailedPrescriptionScreen> createState() => _DetailedPrescriptionScreenState();
+}
+
+class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen> {
+  bool _isCompleted = false;
+  Map<String, bool> _expandedInstructions = {}; // Track which instructions are expanded
+
+  @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> taskData =
+    final Map<String, dynamic> prescriptionData =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
 
-    final String title = taskData['title'] ?? 'Farm Task';
-    final String status = taskData['status'] ?? 'Unknown';
-    final String details = taskData['details'] ?? 'No details available';
-    final String category = taskData['category'] ?? 'general';
-    final String time = taskData['time'] ?? 'Now';
-    final bool isActive = taskData['isActive'] ?? false;
-    final String fieldName = taskData['fieldName'] ?? 'Main Field';
-    final String soilType = taskData['soilType'] ?? 'Loam';
-    final String growthStage = taskData['growthStage'] ?? 'V8';
-    final String urgency = taskData['urgency'] ?? 'MEDIUM';
-    final String timeline = taskData['timeline'] ?? 'This week';
+    final String title = prescriptionData['title'] ?? 'Farm Prescription';
+    final String description = prescriptionData['description'] ?? 'No details available';
+    final String fieldName = prescriptionData['fieldName'] ?? 'Unknown Field';
+    final String soilType = prescriptionData['soilType'] ?? 'Unknown';
+    final String growthStage = prescriptionData['growthStage'] ?? 'Unknown';
+    final String urgency = prescriptionData['urgency'] ?? 'MEDIUM';
+    final String timeline = prescriptionData['timeline'] ?? 'Today';
+    final DateTime? createdAt = prescriptionData['createdAt'] as DateTime?;
 
-    // Get severity-based theming
-    final severityTheme = _getSeverityTheme(urgency);
+    // Calculate send time and deadline
+    final sendTime = _formatSendTime(createdAt);
+    final deadline = _calculateDeadline(timeline, urgency);
     final urgencyColor = _getUrgencyColor(urgency);
-    final categoryColor = _getCategoryColor(category);
 
     return Scaffold(
-      backgroundColor: severityTheme['background'],
       extendBodyBehindAppBar: true,
+      backgroundColor: MAIZE_PRIMARY_LIGHT,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: urgencyColor.withOpacity(0.7),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: severityTheme['text']),
           onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back, color: MAIZE_ACCENT),
         ),
-        title: Text(
-          'Farm Prescription',
-          style: TextStyle(
-            color: severityTheme['text'],
-            fontWeight: FontWeight.bold,
-            fontSize: 20.sp,
+        title: Text(fieldName, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+        
+        actions: [
+          // Mark as completed toggle in header
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _isCompleted = !_isCompleted;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
+                  backgroundColor: _isCompleted ? Colors.green : Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+              );
+            },
+            child: Text(_isCompleted ? 'Undo Complete' : 'Mark Complete', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
           ),
-        ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(kAppMediumPadding),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card with severity theming
-            _buildHeaderCard(title, status, time, urgencyColor, isActive, fieldName, soilType, growthStage, urgency, timeline, severityTheme),
-            
-            SizedBox(height: kAppMediumPadding),
-            
-            // Category Card
-            _buildCategoryCard(category, categoryColor, severityTheme),
-            
-            SizedBox(height: kAppMediumPadding),
-            
-            // Details Card
-            _buildDetailsCard(details, severityTheme),
-            
-            SizedBox(height: kAppMediumPadding),
-            
-            // Action Steps Card
-            _buildActionStepsCard(details, category, severityTheme),
-            
-            SizedBox(height: kAppMediumPadding),
-            
-            // Materials Card
-            _buildMaterialsCard(category, categoryColor, severityTheme),
-            
-            SizedBox(height: kAppMediumPadding),
-            
-            // Tips Card
-            _buildTipsCard(category, severityTheme),
-            
-            SizedBox(height: kAppLargePadding),
-            
-            // Action Buttons
-            _buildActionButtons(context),
+            _buildPrescriptionSection(prescriptionData, title, description, fieldName, soilType, growthStage, urgency, timeline, deadline, sendTime, urgencyColor),
+            _buildActionButtons(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderCard(String title, String status, String time, Color urgencyColor, bool isActive, String fieldName, String soilType, String growthStage, String urgency, String timeline, Map<String, Color> severityTheme) {
-    return Container(
-      width: double.infinity,
+  Widget _buildPrescriptionSection(Map<String, dynamic> prescriptionData, String title, String description, String fieldName, String soilType, String growthStage, String urgency, String timeline, String deadline, String sendTime, Color urgencyColor) {
+    return Expanded(
+      child: Container(
+        color: MAIZE_PRIMARY_LIGHT,
       padding: EdgeInsets.all(kAppMediumPadding),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [urgencyColor, urgencyColor.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: urgencyColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+        child: SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+              Text(title, style: Theme.of(context).textTheme.headlineMedium),
+              verticalSpace(kAppSmallGap),
+              Row(children: [
+                 Container(
+                  padding: EdgeInsets.symmetric(horizontal: kAppSmallPadding, vertical: kAppSmallPadding),
+                  decoration: BoxDecoration(
+                    color: MAIZE_ACCENT.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Row(
             children: [
-              Icon(
-                _getCategoryIcon(''),
-                color: Colors.white,
-                size: 24.sp,
-              ),
+                      Icon(Icons.timelapse, color: MAIZE_ACCENT, size: 12.sp),
               SizedBox(width: kAppSmallGap),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.bold,
+                      Text('Deadline: $deadline', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: kAppSmallGap),
-          Row(
-            children: [
+                SizedBox(width: kAppSmallGap),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding: EdgeInsets.symmetric(horizontal: kAppSmallPadding, vertical: kAppSmallPadding),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(15.r),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
+                    color: MAIZE_ACCENT.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20.r),
                   ),
-                ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.send, color: MAIZE_ACCENT, size: 12.sp),
+                      SizedBox(width: kAppSmallGap),
+                      Text(sendTime, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),               
+                
+               
+
+              ],),
+              verticalSpace(kAppMediumGap),
+                           
+              
+              // Description
+              _buildMenuItem(
+                title: 'Description',
+                subtitle: description,
+                icon: Icons.description,
+                isFullWidth: true,
               ),
-              const Spacer(),
+              verticalSpace(kAppSmallGap),
+                            
+              
+              // Field information
               Row(
                 children: [
-                  Icon(
-                    Icons.schedule,
-                    color: Colors.white.withOpacity(0.8),
-                    size: 16.sp,
+                  Expanded(
+                    child: _buildMenuItem(
+                      title: 'Growth Stage',
+                      subtitle: growthStage,
+                      icon: Icons.trending_up,
+                    ),
                   ),
-                  SizedBox(width: 4.w),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
+                  SizedBox(width: kAppSmallGap),
+                  Expanded(
+                    child: _buildMenuItem(
+                      title: 'Soil Type',
+                      subtitle: soilType,
+                      icon: Icons.eco,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
-          SizedBox(height: kAppSmallGap),
-          Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.white.withOpacity(0.9), size: 16.sp),
-              SizedBox(width: 4.w),
-              Text(
-                'Field: $fieldName',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14.sp,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            children: [
-              Icon(Icons.eco, color: Colors.white.withOpacity(0.9), size: 16.sp),
-              SizedBox(width: 4.w),
-              Text(
-                'Soil: $soilType | Stage: $growthStage',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14.sp,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 4.h),
-          Row(
-            children: [
-              Icon(Icons.priority_high, color: Colors.white.withOpacity(0.9), size: 16.sp),
-              SizedBox(width: 4.w),
-              Text(
-                'Priority: $urgency | Timeline: $timeline',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14.sp,
-                ),
-              ),
-            ],
-          ),
+       verticalSpace(kAppSmallGap),
+
+      // Detailed Instructions Dropdown
+              if (prescriptionData['instructions'] != null && (prescriptionData['instructions'] as List).isNotEmpty) ...[
+                _buildInstructionsDropdown(prescriptionData, urgencyColor),
+                verticalSpace(kAppSmallGap),
+              ],     
         ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryCard(String category, Color categoryColor, Map<String, Color> severityTheme) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(kAppMediumPadding),
-      decoration: BoxDecoration(
-        color: severityTheme['card'],
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: categoryColor.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: categoryColor.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _getCategoryIcon(category),
-                color: categoryColor,
-                size: 20.sp,
-              ),
-              SizedBox(width: kAppSmallGap),
-              Text(
-                'Category',
-                style: TextStyle(
-                  color: categoryColor,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: kAppSmallGap),
-          Text(
-            _formatCategoryName(category),
-            style: TextStyle(
-              color: severityTheme['text'],
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailsCard(String details, Map<String, Color> severityTheme) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(kAppMediumPadding),
-      decoration: BoxDecoration(
-        color: severityTheme['card'],
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: severityTheme['accent']!.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: severityTheme['accent'],
-                size: 20.sp,
-              ),
-              SizedBox(width: kAppSmallGap),
-              Text(
-                'What to Do',
-                style: TextStyle(
-                  color: severityTheme['accent'],
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: kAppSmallGap),
-          Text(
-            details.isNotEmpty ? details : 'Follow the recommended actions for this task.',
-            style: TextStyle(
-              color: severityTheme['text'],
-              fontSize: 16.sp,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionStepsCard(String details, String category, Map<String, Color> severityTheme) {
-    final List<String> steps = _getActionSteps(details, category);
+  Widget _buildInstructionsDropdown(Map<String, dynamic> prescriptionData, Color urgencyColor) {
+    final prescriptionId = prescriptionData['id'] as String? ?? '';
+    final instructions = prescriptionData['instructions'] as List<dynamic>? ?? [];
+    final isExpanded = _expandedInstructions[prescriptionId] ?? false;
     
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(kAppMediumPadding),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _expandedInstructions[prescriptionId] = !isExpanded;
+          });
+        },
+        borderRadius: BorderRadius.circular(12.r),
+        splashColor: Colors.black.withOpacity(0.1),
+        highlightColor: Colors.black.withOpacity(0.05),
+        child: Container(
       decoration: BoxDecoration(
-        color: severityTheme['card'],
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: severityTheme['accent']!.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: MAIZE_PRIMARY.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Dropdown header
+          InkWell(
+            onTap: () {
+              setState(() {
+                _expandedInstructions[prescriptionId] = !isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(12.r),
+            child: Container(
+              padding: EdgeInsets.all(16.w),
+              child: Row(
             children: [
-              Icon(
-                Icons.checklist,
-                color: severityTheme['accent'],
-                size: 20.sp,
-              ),
-              SizedBox(width: kAppSmallGap),
+                  Icon(Icons.list_alt, color: MAIZE_ACCENT, size: 20.sp),
+                  SizedBox(width: 8.w),
               Text(
-                'Step-by-Step Guide',
-                style: TextStyle(
-                  color: severityTheme['accent'],
-                  fontSize: 16.sp,
+                    'Step-by-Step Instructions (${instructions.length} steps)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: MAIZE_ACCENT,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
+                  Spacer(),
+              Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: MAIZE_ACCENT,
+                size: 20.sp,
+              ),
+                ],
+              ),
+            ),
           ),
-          SizedBox(height: kAppMediumGap),
-          ...steps.asMap().entries.map((entry) {
-            final int index = entry.key;
-            final String step = entry.value;
-            return Padding(
-              padding: EdgeInsets.only(bottom: kAppSmallGap),
+          // Dropdown content
+          if (isExpanded) ...[
+            Divider(height: 1, color: MAIZE_ACCENT),
+            Container(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+                  ...instructions.asMap().entries.map((entry) => 
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 8.h),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 24.w,
-                    height: 24.h,
+                            height: 24.w,
                     decoration: BoxDecoration(
-                      color: severityTheme['accent'],
+                              color: MAIZE_ACCENT,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
-                        '${index + 1}',
+                                '${entry.key + 1}',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12.sp,
@@ -386,427 +255,235 @@ class DetailedPrescriptionScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: kAppSmallGap),
+                          SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
-                      step,
-                      style: TextStyle(
-                        color: severityTheme['text'],
-                        fontSize: 14.sp,
+                              entry.value.toString(),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: MAIZE_ACCENT,
                         height: 1.4,
+                                decoration: _isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
                     ),
                   ),
                 ],
               ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMaterialsCard(String category, Color categoryColor, Map<String, Color> severityTheme) {
-    final List<String> materialsList = _getMaterialsForCategory(category);
-    
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(kAppMediumPadding),
-      decoration: BoxDecoration(
-        color: severityTheme['card'],
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: categoryColor.withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: categoryColor.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.inventory,
-                color: categoryColor,
-                size: 20.sp,
-              ),
-              SizedBox(width: kAppSmallGap),
-              Text(
-                'Required Materials',
-                style: TextStyle(
-                  color: categoryColor,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: kAppMediumGap),
-          ...materialsList.map((material) => Padding(
-            padding: EdgeInsets.only(bottom: kAppSmallGap),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.green,
-                  size: 16.sp,
-                ),
-                SizedBox(width: kAppSmallGap),
-                Expanded(
-                  child: Text(
-                    material,
-                    style: TextStyle(
-                      color: severityTheme['text'],
-                      fontSize: 14.sp,
                     ),
-                  ),
-                ),
-              ],
+                  ).toList(),
+                ],
+              ),
             ),
-          )).toList(),
+          ],
         ],
       ),
-    );
+    )));
   }
 
-  Widget _buildTipsCard(String category, Map<String, Color> severityTheme) {
-    final List<String> tips = _getTipsForCategory(category);
-    
+  Widget _buildMenuItem({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    bool isFullWidth = false,
+    Widget? trailing,
+  }) {
     return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(kAppMediumPadding),
+      width: isFullWidth ? double.infinity : null,
+      padding: EdgeInsets.symmetric(horizontal: kAppSmallPadding, vertical: kAppMediumPadding),
       decoration: BoxDecoration(
-        color: severityTheme['card'],
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: severityTheme['accent']!.withOpacity(0.3), width: 2),
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.white),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.lightbulb_outline,
-                color: severityTheme['accent'],
+          Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              color: MAIZE_ACCENT.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30.r),
+            ),
+            child: Icon(
+              icon,
+              color: MAIZE_ACCENT,
                 size: 20.sp,
               ),
-              SizedBox(width: kAppSmallGap),
-              Text(
-                'Helpful Tips',
-                style: TextStyle(
-                  color: severityTheme['accent'],
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
           ),
-          SizedBox(height: kAppSmallGap),
-          ...tips.map((tip) => Padding(
-            padding: EdgeInsets.only(bottom: 4.h),
-            child: Row(
+          SizedBox(width: kAppSmallGap),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '• ',
-                  style: TextStyle(
-                    color: severityTheme['accent'],
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  title,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: MAIZE_ACCENT.withOpacity(0.8)),
                 ),
-                Expanded(
-                  child: Text(
-                    tip,
-                    style: TextStyle(
-                      color: severityTheme['text'],
-                      fontSize: 14.sp,
-                    ),
-                  ),
+                SizedBox(height: 3.h),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          )).toList(),
+          ),
+          if (trailing != null) ...[
+            SizedBox(width: kAppSmallGap),
+            trailing,
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
-    return Column(
+  Widget _buildActionButtons() {
+    return Container(
+      color: MAIZE_PRIMARY_LIGHT,
+      padding: EdgeInsets.all(kAppMediumPadding),
+      child: Row(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 50.h,
-          child: ElevatedButton(
+          Expanded(
+            child: OutlinedButton(
             onPressed: () {
-              // Mark as completed
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Task marked as completed!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MAIZE_PRIMARY,
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: kAppMediumPadding),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25.r),
+                  borderRadius: BorderRadius.circular(12.r),
               ),
+                side: BorderSide(color: Colors.grey[400]!),
             ),
             child: Text(
-              'Mark as Completed',
+                'Back',
               style: TextStyle(
-                color: Colors.white,
+                  color: Colors.grey[600],
                 fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-        ),
-        SizedBox(height: kAppSmallGap),
-        SizedBox(
-          width: double.infinity,
-          height: 50.h,
-          child: OutlinedButton(
+          SizedBox(width: kAppSmallGap),
+          Expanded(
+            child: ElevatedButton(
             onPressed: () {
-              // Remind me later
+                setState(() {
+                  _isCompleted = !_isCompleted;
+                });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('You will be reminded later'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-              Navigator.pop(context);
-            },
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: MAIZE_PRIMARY),
+                  SnackBar(
+                    content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
+                    backgroundColor: _isCompleted ? Colors.green : Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isCompleted ? Colors.green : MAIZE_PRIMARY,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: kAppMediumPadding),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25.r),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
               ),
-            ),
-            child: Text(
-              'Remind Me Later',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                    size: 18.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    _isCompleted ? 'Completed' : 'Mark Complete',
               style: TextStyle(
-                color: MAIZE_PRIMARY,
                 fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'temperature_control':
-        return Icons.thermostat;
-      case 'humidity_control':
-        return Icons.water_drop;
-      case 'lighting':
-        return Icons.wb_sunny;
-      case 'water_management':
-        return Icons.opacity;
-      case 'fertilization':
-        return Icons.grass;
-      default:
-        return Icons.agriculture;
+  // Helper method to format send time
+  String _formatSendTime(DateTime? timestamp) {
+    if (timestamp == null) return 'Just now';
+    
+    try {
+      final now = DateTime.now();
+      final difference = now.difference(timestamp);
+      
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d ago';
+      } else {
+        return '${timestamp.day}/${timestamp.month}';
+      }
+    } catch (e) {
+      return 'Just now';
     }
   }
 
-  String _formatCategoryName(String category) {
-    switch (category) {
-      case 'temperature_control':
-        return 'Temperature Control';
-      case 'humidity_control':
-        return 'Humidity Management';
-      case 'lighting':
-        return 'Lighting Adjustment';
-      case 'water_management':
-        return 'Water Management';
-      case 'fertilization':
-        return 'Fertilization';
-      default:
-        return 'General Farm Task';
+  // Helper method to calculate deadline
+  String _calculateDeadline(String timeline, String urgency) {
+    final now = DateTime.now();
+    
+    // Parse timeline to determine deadline
+    final lowerTimeline = timeline.toLowerCase();
+    
+    if (lowerTimeline == 'today') {
+      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59);
+      final hoursLeft = endOfDay.difference(now).inHours;
+      if (hoursLeft <= 0) return 'Overdue';
+      return '${hoursLeft}h left';
+    } else if (lowerTimeline.contains('this week')) {
+      final endOfWeek = now.add(Duration(days: 7 - now.weekday));
+      final daysLeft = endOfWeek.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('next') && lowerTimeline.contains('day')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final days = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(days: days));
+      final daysLeft = deadline.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('week')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final weeks = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(days: weeks * 7));
+      final daysLeft = deadline.difference(now).inDays;
+      if (daysLeft <= 0) return 'Overdue';
+      return '${daysLeft}d left';
+    } else if (lowerTimeline.contains('hour')) {
+      final match = RegExp(r'(\d+)').firstMatch(lowerTimeline);
+      final hours = int.tryParse(match?.group(1) ?? '1') ?? 1;
+      final deadline = now.add(Duration(hours: hours));
+      final hoursLeft = deadline.difference(now).inHours;
+      if (hoursLeft <= 0) return 'Overdue';
+      return '${hoursLeft}h left';
     }
+    
+    // Default fallback
+    return timeline;
   }
 
-  List<String> _getActionSteps(String details, String category) {
-    switch (category) {
-      case 'temperature_control':
-        return [
-          'Check current temperature readings',
-          'Install heating equipment or row covers',
-          'Monitor temperature changes every 2 hours',
-          'Adjust heating as needed to maintain optimal range',
-        ];
-      case 'humidity_control':
-        return [
-          'Assess current humidity levels',
-          'Improve ventilation by opening vents or fans',
-          'Remove excess moisture sources',
-          'Monitor humidity levels regularly',
-        ];
-      case 'lighting':
-        return [
-          'Measure current light levels',
-          'Install supplemental LED grow lights',
-          'Position lights at optimal distance from plants',
-          'Set timer for 12-16 hours daily light exposure',
-        ];
-      case 'water_management':
-        return [
-          'Check soil moisture levels',
-          'Improve drainage if waterlogged',
-          'Adjust irrigation schedule',
-          'Monitor plant water stress signs',
-        ];
-      case 'fertilization':
-        return [
-          'Test soil nutrient levels',
-          'Select appropriate fertilizer type',
-          'Apply fertilizer according to package instructions',
-          'Water thoroughly after application',
-        ];
-      default:
-        return [
-          'Assess the current situation',
-          'Gather necessary tools and materials',
-          'Follow recommended procedures',
-          'Monitor results and adjust as needed',
-        ];
-    }
-  }
-
-  List<String> _getMaterialsForCategory(String category) {
-    switch (category.toLowerCase()) {
-      case 'temperature_control':
-        return [
-          'Thermal blankets',
-          'Temperature monitoring device',
-          'Protective covers',
-        ];
-      case 'humidity_control':
-        return [
-          'Humidity meter',
-          'Ventilation equipment',
-          'Dehumidifier if needed',
-        ];
-      case 'lighting':
-        return [
-          'LED grow lights',
-          'Light timer',
-          'Light meter',
-        ];
-      case 'water_management':
-        return [
-          'Watering system',
-          'Soil moisture meter',
-          'Mulch materials',
-        ];
-      case 'fertilization':
-        return [
-          'NPK fertilizer',
-          'Fertilizer spreader',
-          'Measuring tools',
-        ];
-      default:
-        return [
-          'Basic farm tools',
-          'Safety equipment',
-          'Monitoring devices',
-        ];
-    }
-  }
-
-  List<String> _getTipsForCategory(String category) {
-    switch (category) {
-      case 'temperature_control':
-        return [
-          'Optimal temperature for maize is 20-30°C (68-86°F)',
-          'Use thermal blankets during cold nights',
-          'Avoid sudden temperature changes',
-        ];
-      case 'humidity_control':
-        return [
-          'Ideal humidity range is 50-70%',
-          'Good air circulation prevents fungal diseases',
-          'Avoid watering late in the day',
-        ];
-      case 'lighting':
-        return [
-          'Maize needs 6-8 hours of direct sunlight daily',
-          'LED lights are energy-efficient for supplemental lighting',
-          'Position lights 12-24 inches above plants',
-        ];
-      case 'water_management':
-        return [
-          'Water deeply but less frequently',
-          'Check soil moisture 2-3 inches deep',
-          'Mulch around plants to retain moisture',
-        ];
-      case 'fertilization':
-        return [
-          'Use balanced NPK fertilizer (10-10-10 or similar)',
-          'Apply fertilizer when soil is moist',
-          'Follow package instructions for application rates',
-        ];
-      default:
-        return [
-          'Always follow safety guidelines',
-          'Keep records of actions taken',
-          'Consult experts when in doubt',
-        ];
-    }
-  }
-
-  // Severity-based theming methods
-  Map<String, Color> _getSeverityTheme(String urgency) {
-    switch (urgency.toUpperCase()) {
-      case 'URGENT':
-        return {
-          'background': Colors.red[50]!,
-          'text': Colors.red[800]!,
-          'accent': Colors.red[600]!,
-          'card': Colors.red[100]!,
-        };
-      case 'HIGH':
-        return {
-          'background': Colors.orange[50]!,
-          'text': Colors.orange[800]!,
-          'accent': Colors.orange[600]!,
-          'card': Colors.orange[100]!,
-        };
-      case 'MEDIUM':
-        return {
-          'background': MAIZE_PRIMARY_LIGHT,
-          'text': MAIZE_ACCENT,
-          'accent': MAIZE_PRIMARY,
-          'card': Colors.blue[100]!,
-        };
-      case 'LOW':
-        return {
-          'background': Colors.green[50]!,
-          'text': Colors.green[800]!,
-          'accent': Colors.green[600]!,
-          'card': Colors.green[100]!,
-        };
-      default:
-        return {
-          'background': MAIZE_PRIMARY_LIGHT,
-          'text': MAIZE_ACCENT,
-          'accent': MAIZE_PRIMARY,
-          'card': Colors.grey[100]!,
-        };
-    }
-  }
 
   Color _getUrgencyColor(String urgency) {
     switch (urgency.toUpperCase()) {
@@ -820,27 +497,6 @@ class DetailedPrescriptionScreen extends StatelessWidget {
         return Colors.green[600]!;
       default:
         return Colors.grey[600]!;
-    }
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'irrigation':
-        return Colors.blue[600]!;
-      case 'fertilization':
-        return Colors.green[600]!;
-      case 'weather':
-        return Colors.cyan[600]!;
-      case 'monitoring':
-        return Colors.purple[600]!;
-      case 'humidity_control':
-        return Colors.teal[600]!;
-      case 'temperature_control':
-        return Colors.red[400]!;
-      case 'general':
-        return MAIZE_ACCENT;
-      default:
-        return Colors.orange[600]!;
     }
   }
 }

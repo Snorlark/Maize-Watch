@@ -405,6 +405,7 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         print('🔍 Complete Analytics Response: $responseData');
+        // The crop analytics endpoint returns data directly, not wrapped in 'data' field
         return responseData['data'] as Map<String, dynamic>;
       } else if (response.statusCode == 401) {
         // Try to refresh token

@@ -12,7 +12,7 @@ class AppConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://10.125.93.206:8080';
+        return 'http://10.133.241.206:8080';
       case Environment.staging:
         return 'https://maize-watch.onrender.com';
       case Environment.production:

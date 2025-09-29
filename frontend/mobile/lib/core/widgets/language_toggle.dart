@@ -20,24 +20,29 @@ class LanguageToggle extends StatelessWidget {
     final dropdownBackgroundColor =
         color_toggle == MAIZE_PRIMARY_LIGHT ? MAIZE_PRIMARY : Colors.white;
 
-    return Theme(
-      data: Theme.of(context).copyWith(canvasColor: dropdownBackgroundColor),
-      child: Padding(
-        padding: EdgeInsets.all(kAppMediumPadding),
-        child: DropdownButton<Locale>(
-          borderRadius: BorderRadius.circular(10),
-          elevation: 0,
-          underline: SizedBox.shrink(),
-          dropdownColor: dropdownBackgroundColor,
-          icon: Icon(Icons.arrow_drop_down, color: color_toggle),
-          value: _getCurrentLocale(context.watch<SettingsBloc>().state),
-          onChanged: (Locale? newLocale) {
-            if (newLocale != null) {
-              context.read<SettingsBloc>().add(UpdateLanguage(newLocale.languageCode));
-            }
-          },
-          items:
-              S.delegate.supportedLocales.map((locale) {
+    return BlocBuilder<SettingsBloc, SettingsState>(
+      builder: (context, state) {
+        print('🔧 LanguageToggle: Settings state: ${state.runtimeType}');
+        
+        return Theme(
+          data: Theme.of(context).copyWith(canvasColor: dropdownBackgroundColor),
+          child: Padding(
+            padding: EdgeInsets.all(kAppMediumPadding),
+            child: DropdownButton<Locale>(
+              borderRadius: BorderRadius.circular(10),
+              elevation: 0,
+              underline: SizedBox.shrink(),
+              dropdownColor: dropdownBackgroundColor,
+              icon: Icon(Icons.arrow_drop_down, color: color_toggle),
+              value: _getCurrentLocale(state),
+              onChanged: (Locale? newLocale) {
+                if (newLocale != null) {
+                  print('🔧 LanguageToggle: Language changed to: ${newLocale.languageCode}');
+                  context.read<SettingsBloc>().add(UpdateLanguage(newLocale.languageCode));
+                }
+              },
+              items: S.delegate.supportedLocales.map((locale) {
+                print('🔧 LanguageToggle: Creating dropdown item for locale: ${locale.languageCode}');
                 return DropdownMenuItem<Locale>(
                   value: locale,
                   child: Text(
@@ -46,21 +51,36 @@ class LanguageToggle extends StatelessWidget {
                   ),
                 );
               }).toList(),
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   Locale _getCurrentLocale(SettingsState state) {
+    print('🔧 LanguageToggle: Getting current locale for state: ${state.runtimeType}');
+    print('🔧 LanguageToggle: Available locales: ${S.delegate.supportedLocales}');
+    
+    String currentLanguage = 'en'; // Default language
+    
     if (state is SettingsLoaded) {
-      final language = state.settings.language;
-      // Find matching locale from supported locales
-      final matchingLocale = S.delegate.supportedLocales.firstWhere(
-        (locale) => locale.languageCode == language,
-        orElse: () => S.delegate.supportedLocales.first,
-      );
-      return matchingLocale;
+      currentLanguage = state.settings.language;
+      print('🔧 LanguageToggle: Current language from settings: $currentLanguage');
+    } else if (state is SettingsUpdated) {
+      currentLanguage = state.settings.language;
+      print('🔧 LanguageToggle: Current language from updated settings: $currentLanguage');
+    } else {
+      print('🔧 LanguageToggle: Using default language: $currentLanguage');
     }
-    return S.delegate.supportedLocales.first;
+    
+    // Find matching locale from supported locales
+    final matchingLocale = S.delegate.supportedLocales.firstWhere(
+      (locale) => locale.languageCode == currentLanguage,
+      orElse: () => S.delegate.supportedLocales.first,
+    );
+    
+    print('🔧 LanguageToggle: Matching locale: ${matchingLocale.languageCode}');
+    return matchingLocale;
   }
 }

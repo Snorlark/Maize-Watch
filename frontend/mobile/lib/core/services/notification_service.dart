@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,7 +19,7 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -35,7 +36,43 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    // Request notification permissions
+    await requestPermissions();
+
     _isInitialized = true;
+  }
+
+  Future<bool> requestPermissions() async {
+    try {
+      // Request permissions for Android
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final bool? granted = await _notifications
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestNotificationsPermission();
+        
+        print("🔔 Android notification permission granted: $granted");
+        return granted ?? false;
+      }
+      
+      // Request permissions for iOS
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final bool? granted = await _notifications
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+            ?.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            );
+        
+        print("🔔 iOS notification permission granted: $granted");
+        return granted ?? false;
+      }
+      
+      return false;
+    } catch (e) {
+      print("🚨 Error requesting notification permissions: $e");
+      return false;
+    }
   }
 
   void _onNotificationTapped(NotificationResponse response) {
@@ -45,7 +82,35 @@ class NotificationService {
 
   Future<bool> areNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('notifications_enabled') ?? true;
+    final enabled = prefs.getBool('notifications_enabled') ?? true;
+    final allKeys = prefs.getKeys();
+    print('🔔 NotificationService: areNotificationsEnabled() = $enabled');
+    print('🔔 NotificationService: All SharedPreferences keys: $allKeys');
+    print('🔔 NotificationService: notifications_enabled value: ${prefs.getBool('notifications_enabled')}');
+    return enabled;
+  }
+
+  Future<bool> arePermissionsGranted() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final bool? granted = await _notifications
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.areNotificationsEnabled();
+        return granted ?? false;
+      }
+      
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final NotificationsEnabledOptions? granted = await _notifications
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+            ?.checkPermissions();
+        return granted?.isEnabled ?? false;
+      }
+      
+      return false;
+    } catch (e) {
+      print("🚨 Error checking notification permissions: $e");
+      return false;
+    }
   }
 
   Future<void> setNotificationsEnabled(bool enabled) async {
@@ -66,6 +131,17 @@ class NotificationService {
   Future<void> showSensorSleepModeNotification() async {
     if (!await areNotificationsEnabled()) return;
 
+    // Check if permissions are granted
+    final hasPermissions = await arePermissionsGranted();
+    if (!hasPermissions) {
+      print('🔔 Notification permissions not granted, requesting permissions...');
+      final granted = await requestPermissions();
+      if (!granted) {
+        print('🔔 Notification permissions denied, cannot show notification');
+        return;
+      }
+    }
+
     const vibrationOnly = false; // We want sound for sleep mode alerts
     await _showNotification(
       id: SENSOR_SLEEP_MODE_ID,
@@ -80,23 +156,56 @@ class NotificationService {
     required String title,
     required String message,
     String? priority,
+    int? notificationId,
   }) async {
-    if (!await areNotificationsEnabled()) return;
+    print('🔔 NotificationService: Attempting to show prescription notification');
+    print('🔔 Title: $title, Message: $message, Priority: $priority');
+    
+    if (!await areNotificationsEnabled()) {
+      print('🔔 Notifications are disabled');
+      return;
+    }
+
+    // Check if permissions are granted
+    final hasPermissions = await arePermissionsGranted();
+    if (!hasPermissions) {
+      print('🔔 Notification permissions not granted, requesting permissions...');
+      final granted = await requestPermissions();
+      if (!granted) {
+        print('🔔 Notification permissions denied, cannot show notification');
+        return;
+      }
+    }
 
     final vibrationOnly = await isVibrationOnly();
     final emoji = _getPriorityEmoji(priority);
     
+    print('🔔 Showing notification with emoji: $emoji, vibrationOnly: $vibrationOnly');
+    
     await _showNotification(
-      id: PRESCRIPTION_ALERT_ID,
+      id: notificationId ?? PRESCRIPTION_ALERT_ID,
       title: '$emoji $title',
       body: message,
       payload: 'prescription_alert',
       vibrationOnly: vibrationOnly,
     );
+    
+    print('🔔 Notification shown successfully');
   }
 
   Future<void> showSensorOfflineNotification(String sensorName) async {
     if (!await areNotificationsEnabled()) return;
+
+    // Check if permissions are granted
+    final hasPermissions = await arePermissionsGranted();
+    if (!hasPermissions) {
+      print('🔔 Notification permissions not granted, requesting permissions...');
+      final granted = await requestPermissions();
+      if (!granted) {
+        print('🔔 Notification permissions denied, cannot show notification');
+        return;
+      }
+    }
 
     final vibrationOnly = await isVibrationOnly();
     
@@ -125,6 +234,7 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
+      icon: '@mipmap/launcher_icon',      
     );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(

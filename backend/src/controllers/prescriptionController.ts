@@ -3,6 +3,8 @@ import { validationResult } from 'express-validator';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
+import Prescription from '../models/Prescription';
+import mongoose from 'mongoose';
 
 /**
  * @desc    Get prescriptions for a farm
@@ -14,77 +16,62 @@ export const getPrescriptions = catchAsync(async (req: Request, res: Response) =
   const currentUser = (req as any).user;
 
   try {
-    // Temporarily bypass Python analytics service and use direct prescriptions
-    // This will be replaced with real analytics data once the Python service is working
-    console.log('🔍 Prescription Controller - Generating prescriptions for farm:', farmId);
+    console.log('🔍 Prescription Controller - Fetching prescriptions for farm:', farmId);
     
-    const prescriptions = [
-      {
-        id: `prescription_${farmId}_1`,
-        farmId: farmId,
-        title: 'Check Soil Moisture',
-        description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
-        priority: 'high',
-        status: 'pending',
-        dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: 'irrigation',
-        estimatedDuration: '30 minutes',
-        materials: _getMaterialsForCategory('irrigation'),
-        instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
-        urgency: 'HIGH',
-        timeline: 'Today',
-        parameter: 'soil_moisture',
-        fieldName: 'Main Field',
-        soilType: 'Loam',
-        growthStage: 'V8'
-      },
-      {
-        id: `prescription_${farmId}_2`,
-        farmId: farmId,
-        title: 'Monitor Weather Conditions',
-        description: 'Check current weather and forecast to plan farm activities accordingly.',
-        priority: 'medium',
-        status: 'pending',
-        dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: 'weather',
-        estimatedDuration: '15 minutes',
-        materials: _getMaterialsForCategory('weather'),
-        instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
-        urgency: 'MEDIUM',
-        timeline: 'Today',
-        parameter: 'weather',
-        fieldName: 'Main Field',
-        soilType: 'Loam',
-        growthStage: 'V8'
-      },
-      {
-        id: `prescription_${farmId}_3`,
-        farmId: farmId,
-        title: 'Inspect Crop Health',
-        description: 'Visually inspect crops for signs of disease, pests, or nutrient deficiencies.',
-        priority: 'medium',
-        status: 'pending',
-        dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000), // 6 hours from now
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        category: 'monitoring',
-        estimatedDuration: '45 minutes',
-        materials: _getMaterialsForCategory('monitoring'),
-        instructions: _getInstructionsForCategory('monitoring', 'Inspect crop health'),
-        urgency: 'MEDIUM',
-        timeline: 'Today',
-        parameter: 'crop_health',
-        fieldName: 'Main Field',
-        soilType: 'Loam',
-        growthStage: 'V8'
-      }
-    ];
+    // Convert farmId to ObjectId
+    const farmObjectId = new mongoose.Types.ObjectId(farmId);
+    
+    // Try to get prescriptions from database first
+    let prescriptions = await Prescription.find({ farmId: farmObjectId }).sort({ createdAt: -1 });
+    
+    // If no prescriptions in database, generate some sample ones
+    if (prescriptions.length === 0) {
+      console.log('🔍 No prescriptions in database, generating sample prescriptions');
+      
+      const samplePrescriptions = [
+        {
+          farmId: farmObjectId,
+          title: 'Check Soil Moisture',
+          description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
+          priority: 'high' as const,
+          status: 'pending' as const,
+          dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+          category: 'irrigation',
+          estimatedDuration: '30 minutes',
+          materials: _getMaterialsForCategory('irrigation'),
+          instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
+          urgency: 'HIGH' as const,
+          timeline: 'Today',
+          parameter: 'soil_moisture',
+          fieldName: 'Main Field',
+          soilType: 'Loam',
+          growthStage: 'V8'
+        },
+        {
+          farmId: farmObjectId,
+          title: 'Monitor Weather Conditions',
+          description: 'Check current weather and forecast to plan farm activities accordingly.',
+          priority: 'medium' as const,
+          status: 'pending' as const,
+          dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+          category: 'weather',
+          estimatedDuration: '15 minutes',
+          materials: _getMaterialsForCategory('weather'),
+          instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
+          urgency: 'MEDIUM' as const,
+          timeline: 'Today',
+          parameter: 'weather',
+          fieldName: 'Main Field',
+          soilType: 'Loam',
+          growthStage: 'V8'
+        }
+      ];
 
-    logger.info(`Generated ${prescriptions.length} prescriptions for farm ${farmId}`);
+      // Save sample prescriptions to database
+      prescriptions = await Prescription.insertMany(samplePrescriptions);
+    }
+
+    logger.info(`Retrieved ${prescriptions.length} prescriptions for farm ${farmId}`);
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -92,7 +79,7 @@ export const getPrescriptions = catchAsync(async (req: Request, res: Response) =
     });
   } catch (error) {
     console.log('🚨 Prescription Controller - Error details:', error);
-    logger.error('Error generating prescriptions:', error);
+    logger.error('Error fetching prescriptions:', error);
     
     // Return fallback prescriptions on error
     const fallbackPrescriptions = [
@@ -226,18 +213,46 @@ export const updatePrescriptionStatus = catchAsync(async (req: Request, res: Res
   const { status } = req.body;
   const currentUser = (req as any).user;
 
-  // Mock update - in production this would update the database
-  logger.info(`Updating prescription ${id} status to ${status} by user ${currentUser.id}`);
-
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Prescription status updated successfully',
-    data: {
+  try {
+    // Update prescription in database
+    const updatedPrescription = await Prescription.findByIdAndUpdate(
       id,
-      status,
-      updatedAt: new Date()
+      { 
+        status,
+        updatedAt: new Date(),
+        completedBy: status === 'completed' ? currentUser.id : undefined,
+        completedAt: status === 'completed' ? new Date() : undefined
+      },
+      { new: true }
+    );
+
+    if (!updatedPrescription) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Prescription not found'
+      });
     }
-  });
+
+    logger.info(`Updated prescription ${id} status to ${status} by user ${currentUser.id}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Prescription status updated successfully',
+      data: {
+        id: updatedPrescription._id,
+        status: updatedPrescription.status,
+        updatedAt: updatedPrescription.updatedAt,
+        completedBy: updatedPrescription.completedBy,
+        completedAt: updatedPrescription.completedAt
+      }
+    });
+  } catch (error) {
+    logger.error('Error updating prescription status:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to update prescription status'
+    });
+  }
 });
 
 /**
@@ -249,13 +264,29 @@ export const deletePrescription = catchAsync(async (req: Request, res: Response)
   const { id } = req.params;
   const currentUser = (req as any).user;
 
-  // Mock delete - in production this would delete from database
-  logger.info(`Deleting prescription ${id} by user ${currentUser.id}`);
+  try {
+    const deletedPrescription = await Prescription.findByIdAndDelete(id);
+    
+    if (!deletedPrescription) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Prescription not found'
+      });
+    }
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Prescription deleted successfully'
-  });
+    logger.info(`Deleted prescription ${id} by user ${currentUser.id}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Prescription deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Error deleting prescription:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to delete prescription'
+    });
+  }
 });
 
 /**
@@ -267,13 +298,31 @@ export const markAllAsCompleted = catchAsync(async (req: Request, res: Response)
   const { farmId } = req.body;
   const currentUser = (req as any).user;
 
-  // Mock update - in production this would update all pending prescriptions
-  logger.info(`Marking all prescriptions as completed for farm ${farmId} by user ${currentUser.id}`);
+  try {
+    const farmObjectId = new mongoose.Types.ObjectId(farmId);
+    const result = await Prescription.updateMany(
+      { farmId: farmObjectId, status: { $in: ['pending', 'in_progress'] } },
+      { 
+        status: 'completed',
+        completedBy: currentUser.id,
+        completedAt: new Date(),
+        updatedAt: new Date()
+      }
+    );
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'All prescriptions marked as completed'
-  });
+    logger.info(`Marked ${result.modifiedCount} prescriptions as completed for farm ${farmId} by user ${currentUser.id}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: `All prescriptions marked as completed (${result.modifiedCount} updated)`
+    });
+  } catch (error) {
+    logger.error('Error marking prescriptions as completed:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to mark prescriptions as completed'
+    });
+  }
 });
 
 /**
@@ -285,13 +334,23 @@ export const deleteCompletedPrescriptions = catchAsync(async (req: Request, res:
   const { farmId } = req.body;
   const currentUser = (req as any).user;
 
-  // Mock delete - in production this would delete completed prescriptions
-  logger.info(`Deleting completed prescriptions for farm ${farmId} by user ${currentUser.id}`);
+  try {
+    const farmObjectId = new mongoose.Types.ObjectId(farmId);
+    const result = await Prescription.deleteMany({ farmId: farmObjectId, status: 'completed' });
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Completed prescriptions deleted successfully'
-  });
+    logger.info(`Deleted ${result.deletedCount} completed prescriptions for farm ${farmId} by user ${currentUser.id}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: `Completed prescriptions deleted successfully (${result.deletedCount} deleted)`
+    });
+  } catch (error) {
+    logger.error('Error deleting completed prescriptions:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to delete completed prescriptions'
+    });
+  }
 });
 
 /**
@@ -303,11 +362,21 @@ export const deleteAllPrescriptions = catchAsync(async (req: Request, res: Respo
   const { farmId } = req.body;
   const currentUser = (req as any).user;
 
-  // Mock delete - in production this would delete all prescriptions
-  logger.info(`Deleting all prescriptions for farm ${farmId} by user ${currentUser.id}`);
+  try {
+    const farmObjectId = new mongoose.Types.ObjectId(farmId);
+    const result = await Prescription.deleteMany({ farmId: farmObjectId });
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'All prescriptions deleted successfully'
-  });
+    logger.info(`Deleted ${result.deletedCount} prescriptions for farm ${farmId} by user ${currentUser.id}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: `All prescriptions deleted successfully (${result.deletedCount} deleted)`
+    });
+  } catch (error) {
+    logger.error('Error deleting all prescriptions:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to delete all prescriptions'
+    });
+  }
 });
