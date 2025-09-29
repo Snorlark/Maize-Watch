@@ -53,7 +53,7 @@ Future<void> initSettings() async {
   sl.registerLazySingleton(() => update_usecases.UpdateAnalytics(sl<SettingsRepository>()));
 
   // BLoC
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => SettingsBloc(
       getSettings: sl<GetSettings>(),
       getSensorStatus: sl<GetSensorStatus>(),

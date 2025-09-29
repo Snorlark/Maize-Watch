@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../middleware/errorHandler';
 import { HTTP_STATUS } from '../utils/constants';
 import { logger } from '../utils/logger';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Function to check if sensors are in sleep mode (8pm-3am PH time)
 function checkSensorSleepMode(now: Date): boolean {
@@ -31,16 +33,51 @@ const defaultSettings = {
   analyticsEnabled: true,
 };
 
+// File-based storage for user settings (in production, this would be a database)
+const SETTINGS_FILE = path.join(__dirname, '../../data/user_settings.json');
+
+// Helper functions for file-based storage
+function loadUserSettings(): Record<string, any> {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    logger.error('Error loading user settings:', error);
+  }
+  return {};
+}
+
+function saveUserSettings(settings: Record<string, any>): void {
+  try {
+    // Ensure directory exists
+    const dir = path.dirname(SETTINGS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  } catch (error) {
+    logger.error('Error saving user settings:', error);
+  }
+}
+
 export const getSettings = catchAsync(async (req: Request, res: Response) => {
   const currentUser = (req as any).user;
   
   logger.info(`Getting settings for user: ${currentUser.id}`);
 
-  // In production, fetch from database based on user ID
-  // For now, return default settings
+  // Load all user settings from file
+  const allUserSettings = loadUserSettings();
+  
+  // Get user-specific settings or return default if not found
+  const userSettingsData = allUserSettings[currentUser.id] || { ...defaultSettings };
+  
+  logger.info(`Returning settings for user ${currentUser.id}:`, userSettingsData);
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
-    data: defaultSettings,
+    data: userSettingsData,
   });
 });
 
@@ -68,7 +105,20 @@ export const updateNotificationSettings = catchAsync(async (req: Request, res: R
     vibrationOnly,
   });
 
-  // In production, update in database
+  // Load all user settings from file
+  const allUserSettings = loadUserSettings();
+  
+  // Get current user settings or create new ones
+  const currentSettings = allUserSettings[currentUser.id] || { ...defaultSettings };
+  
+  // Update the notification settings
+  currentSettings.notificationsEnabled = enabled;
+  currentSettings.vibrationOnly = vibrationOnly;
+  
+  // Store the updated settings back to file
+  allUserSettings[currentUser.id] = currentSettings;
+  saveUserSettings(allUserSettings);
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Notification settings updated successfully',
@@ -81,7 +131,21 @@ export const updateLanguage = catchAsync(async (req: Request, res: Response) => 
 
   logger.info(`Updating language for user: ${currentUser.id}`, { language });
 
-  // In production, update in database
+  // Load all user settings from file
+  const allUserSettings = loadUserSettings();
+  
+  // Get current user settings or create new ones
+  const currentSettings = allUserSettings[currentUser.id] || { ...defaultSettings };
+  
+  // Update the language
+  currentSettings.language = language;
+  
+  // Store the updated settings back to file
+  allUserSettings[currentUser.id] = currentSettings;
+  saveUserSettings(allUserSettings);
+  
+  logger.info(`Language updated for user ${currentUser.id}, new settings:`, currentSettings);
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Language updated successfully',

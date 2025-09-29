@@ -259,35 +259,6 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
-/**
- * @desc    Reset password
- * @route   POST /api/auth/reset-password
- * @access  Public
- */
-export const resetPassword = catchAsync(async (req: Request, res: Response) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(HTTP_STATUS.BAD_REQUEST).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array().map(err => ({
-        field: 'path' in err ? err.path : 'unknown',
-        message: err.msg
-      }))
-    });
-  }
-
-  const { token, newPassword } = req.body;
-
-  await authService.resetPassword(token, newPassword);
-
-  logger.info('Password reset completed');
-
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
-    message: 'Password reset successfully'
-  });
-});
 
 /**
  * @desc    Change password
@@ -481,5 +452,115 @@ export const validateSession = catchAsync(async (req: Request, res: Response) =>
       tokenExpiry: new Date((req as any).decoded.exp * 1000).toISOString(),
       sessionActive: true
     }
+  });
+});
+
+/**
+ * @desc    Send password reset code via SMS using username
+ * @route   POST /api/auth/send-reset-code
+ * @access  Public
+ */
+export const sendPasswordResetCode = catchAsync(async (req: Request, res: Response) => {
+  const { username } = req.body;
+
+  if (!username) {
+    throw new AppError('Username is required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Send verification code via SMS using username
+  const result = await authService.sendPasswordResetCode(username);
+  
+  if (result.success) {
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Password reset code sent to your phone number'
+    });
+  } else {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: result.message
+    });
+  }
+});
+
+/**
+ * @desc    Verify password reset code and reset password
+ * @route   POST /api/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { username, code, newPassword } = req.body;
+
+  if (!username || !code || !newPassword) {
+    throw new AppError('Username, verification code, and new password are required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Validate password strength
+  if (newPassword.length < 6) {
+    throw new AppError('Password must be at least 6 characters long', HTTP_STATUS.BAD_REQUEST);
+  }
+  
+  if (newPassword.length > 50) {
+    throw new AppError('Password must be less than 50 characters', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Check for at least one letter and one number
+  if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(newPassword)) {
+    throw new AppError('Password must contain at least one letter and one number', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Verify the code and reset password
+  const result = await authService.resetPasswordWithCode(username, code, newPassword);
+  
+  if (result.success) {
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+  } else {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: result.message
+    });
+  }
+});
+
+/**
+ * @desc    Verify password reset code only (for UI validation)
+ * @route   POST /api/auth/verify-reset-code
+ * @access  Public
+ */
+export const verifyResetCode = catchAsync(async (req: Request, res: Response) => {
+  const { username, code } = req.body;
+
+  if (!username || !code) {
+    throw new AppError('Username and verification code are required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Get user by username first
+  const user = await authService.getUserByUsername(username);
+  if (!user) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  // Get phone number from user
+  const phoneNumber = user.contactNumber;
+  if (!phoneNumber) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: 'No phone number associated with this account'
+    });
+  }
+
+  // Verify the code with the phone number
+  const result = await authService.verifyResetCode(phoneNumber, code);
+  
+  res.status(result.success ? HTTP_STATUS.OK : HTTP_STATUS.BAD_REQUEST).json({
+    success: result.success,
+    message: result.message,
+    valid: result.valid
   });
 });

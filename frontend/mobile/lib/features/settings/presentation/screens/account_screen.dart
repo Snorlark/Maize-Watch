@@ -4,10 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/widgets/custom_dialog.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
+import 'package:mobile/features/settings/presentation/bloc/settings_bloc.dart';
+import 'package:mobile/features/settings/presentation/bloc/settings_event.dart';
+import 'package:mobile/features/settings/presentation/bloc/settings_state.dart';
 import 'package:mobile/features/settings/presentation/screens/profile_screen.dart';
-import 'package:mobile/features/settings/presentation/screens/settings_screen.dart';
 import 'package:mobile/features/settings/presentation/screens/sensor_status_screen.dart';
 import 'package:mobile/features/settings/presentation/screens/about_screen.dart';
+import 'package:mobile/features/settings/presentation/screens/help_screen.dart';
 import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/features/settings/presentation/widgets/language_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
@@ -21,10 +24,17 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   @override
+  void initState() {
+    super.initState();
+    // Load settings when screen initializes
+    context.read<SettingsBloc>().add(LoadSettings());
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.white,
+      backgroundColor: MAIZE_PRIMARY_LIGHT,
       body: SafeArea(
         child: Column(
           children: [
@@ -161,60 +171,110 @@ class _AccountScreenState extends State<AccountScreen> {
                     SizedBox(height: kAppMediumPadding),
 
 
-                    _buildOptionItem(
-                      title: 'Language',
-                      currentValue: 'English',
-                      icon: Icons.language,
-                      onTap: () {
-                        _showOptionDialog('Language Settings', LanguageSettingsWidget(
-                          currentLanguage: 'English',
-                          onLanguageChanged: (language) {
-                            // Handle language change
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Language changed to $language'),
-                                backgroundColor: MAIZE_ACCENT,
-                              ),
-                            );
+                    BlocBuilder<SettingsBloc, SettingsState>(
+                      builder: (context, settingsState) {
+                        print('🔧 AccountScreen: Settings state: ${settingsState.runtimeType}');
+                        
+                        // Get current language from state without setState
+                        String displayLanguage = 'English';
+                        String languageCode = 'en';
+                        
+                        if (settingsState is SettingsLoaded) {
+                          print('🔧 AccountScreen: Current language: ${settingsState.settings.language}');
+                          languageCode = settingsState.settings.language;
+                          displayLanguage = settingsState.settings.language == 'tl' ? 'Filipino' : 'English';
+                        } else if (settingsState is SettingsUpdated) {
+                          print('🔧 AccountScreen: Settings updated, language: ${settingsState.settings.language}');
+                          languageCode = settingsState.settings.language;
+                          displayLanguage = settingsState.settings.language == 'tl' ? 'Filipino' : 'English';
+                        }
+                        
+                        return _buildOptionItem(
+                          title: 'Language',
+                          currentValue: displayLanguage,
+                          icon: Icons.language,
+                          onTap: () {
+                            print('🔧 AccountScreen: Language dialog opened, current language: $displayLanguage');
+                            _showOptionDialog('Language Settings', LanguageSettingsWidget(
+                              currentLanguage: languageCode,
+                              onLanguageChanged: (language) {
+                                print('🔧 AccountScreen: Language change requested: $language');
+                                context.read<SettingsBloc>().add(UpdateLanguage(language));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Language changed to ${language == 'tl' ? 'Filipino' : 'English'}'),
+                                    backgroundColor: MAIZE_ACCENT,
+                                  ),
+                                );
+                              },
+                            ));
                           },
-                        ));
+                        );
                       },
-                      
                     ),
 
                                         SizedBox(height: kAppMediumPadding),
                     Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
                     SizedBox(height: kAppMediumPadding),
 
-                    _buildOptionItem(
-                      title: 'Notifications',
-                      currentValue: 'On',
-                      icon: Icons.notifications,
-                      onTap: () {
-                        _showOptionDialog('Notification Settings', NotificationSettingsWidget(
-                          isNotificationsEnabled: true,
-                          isVibrationOnly: false,
-                          onNotificationToggled: (enabled) {
-                            // Handle notification toggle
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Notifications ${enabled ? 'enabled' : 'disabled'}'),
-                                backgroundColor: MAIZE_ACCENT,
-                              ),
-                            );
+                    BlocBuilder<SettingsBloc, SettingsState>(
+                      builder: (context, settingsState) {
+                        print('🔧 AccountScreen: Settings state for notifications: ${settingsState.runtimeType}');
+                        String currentNotificationStatus = 'On';
+                        bool notificationsEnabled = true;
+                        bool vibrationOnly = false;
+                        
+                        if (settingsState is SettingsLoaded) {
+                          print('🔧 AccountScreen: Current notification settings: ${settingsState.settings.notificationsEnabled}, ${settingsState.settings.vibrationOnly}');
+                          notificationsEnabled = settingsState.settings.notificationsEnabled;
+                          vibrationOnly = settingsState.settings.vibrationOnly;
+                          currentNotificationStatus = notificationsEnabled ? (vibrationOnly ? 'Vibration Only' : 'On') : 'Off';
+                        } else if (settingsState is SettingsUpdated) {
+                          print('🔧 AccountScreen: Updated notification settings: ${settingsState.settings.notificationsEnabled}, ${settingsState.settings.vibrationOnly}');
+                          notificationsEnabled = settingsState.settings.notificationsEnabled;
+                          vibrationOnly = settingsState.settings.vibrationOnly;
+                          currentNotificationStatus = notificationsEnabled ? (vibrationOnly ? 'Vibration Only' : 'On') : 'Off';
+                        }
+                        
+                        return _buildOptionItem(
+                          title: 'Notifications',
+                          currentValue: currentNotificationStatus,
+                          icon: Icons.notifications,
+                          onTap: () {
+                            print('🔧 AccountScreen: Notification dialog opened, current settings: enabled=$notificationsEnabled, vibrationOnly=$vibrationOnly');
+                            _showOptionDialog('Notification Settings', NotificationSettingsWidget(
+                              isNotificationsEnabled: notificationsEnabled,
+                              isVibrationOnly: vibrationOnly,
+                              onNotificationToggled: (enabled) {
+                                print('🔧 AccountScreen: Notification toggle requested: $enabled');
+                                context.read<SettingsBloc>().add(UpdateNotificationSettings(
+                                  enabled: enabled,
+                                  vibrationOnly: vibrationOnly,
+                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Notifications ${enabled ? 'enabled' : 'disabled'}'),
+                                    backgroundColor: MAIZE_ACCENT,
+                                  ),
+                                );
+                              },
+                              onVibrationOnlyToggled: (vibrationOnly) {
+                                print('🔧 AccountScreen: Vibration only toggle requested: $vibrationOnly');
+                                context.read<SettingsBloc>().add(UpdateNotificationSettings(
+                                  enabled: notificationsEnabled,
+                                  vibrationOnly: vibrationOnly,
+                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Vibration only ${vibrationOnly ? 'enabled' : 'disabled'}'),
+                                    backgroundColor: MAIZE_ACCENT,
+                                  ),
+                                );
+                              },
+                            ));
                           },
-                          onVibrationOnlyToggled: (vibrationOnly) {
-                            // Handle vibration only toggle
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Vibration only ${vibrationOnly ? 'enabled' : 'disabled'}'),
-                                backgroundColor: MAIZE_ACCENT,
-                              ),
-                            );
-                          },
-                        ));
+                        );
                       },
-                      
               ),
             ],
           ),
@@ -247,7 +307,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                          MaterialPageRoute(builder: (context) => const HelpScreen()),
                         );
                       },
                       
@@ -342,7 +402,7 @@ class _AccountScreenState extends State<AccountScreen> {
                Icon(
                 Icons.north_east,
                 color: MAIZE_ACCENT,
-                size: 22.sp,
+                size: 18.sp,
               )
             ],
           ),

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
+import 'package:mobile/generated/l10n.dart';
 
-class LanguageSettingsWidget extends StatefulWidget {
+class LanguageSettingsWidget extends StatelessWidget {
   final String currentLanguage;
   final ValueChanged<String> onLanguageChanged;
 
@@ -14,99 +15,122 @@ class LanguageSettingsWidget extends StatefulWidget {
   });
 
   @override
-  State<LanguageSettingsWidget> createState() => _LanguageSettingsWidgetState();
-}
-
-class _LanguageSettingsWidgetState extends State<LanguageSettingsWidget> {
-  final List<Map<String, String>> languages = [
-    {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
-    {'code': 'tl', 'name': 'Filipino', 'flag': '🇵🇭'},
-  ];
-
-  @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(kAppMediumPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Header
           Row(
             children: [
               Icon(
                 Icons.language,
                 color: MAIZE_ACCENT,
-                size: 24.sp,
+                size: 20.sp,
               ),
               SizedBox(width: kAppSmallGap),
               Text(
-                'Language',
+                'Select Language',
                 style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
                   color: MAIZE_ACCENT,
                 ),
               ),
             ],
           ),
           SizedBox(height: kAppMediumPadding),
-          ...languages.map((language) => _buildLanguageTile(language)).toList(),
+          
+          // Language Options
+          ...S.delegate.supportedLocales.map((locale) => _buildLanguageOption(context, locale)).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildLanguageTile(Map<String, String> language) {
-    final isSelected = language['code'] == widget.currentLanguage;
+  Widget _buildLanguageOption(BuildContext context, Locale locale) {
+    final isSelected = locale.languageCode == currentLanguage;
+    final languageName = _getLanguageName(locale.languageCode);
+    final flag = _getLanguageFlag(locale.languageCode);
     
-    return GestureDetector(
-      onTap: () {
-        widget.onLanguageChanged(language['code']!);
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: kAppSmallPadding),
-        child: Row(
-          children: [
-            Text(
-              language['flag']!,
-              style: TextStyle(fontSize: 24.sp),
+    print('🔧 LanguageSettingsWidget: Building option for ${locale.languageCode}, isSelected: $isSelected, currentLanguage: $currentLanguage');
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: kAppSmallGap),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            print('🔧 LanguageSettingsWidget: Language selected: ${locale.languageCode}');
+            onLanguageChanged(locale.languageCode);
+            Navigator.pop(context);
+          },
+          borderRadius: BorderRadius.circular(8.r),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: kAppMediumPadding,
+              vertical: kAppSmallPadding,
             ),
-            SizedBox(width: kAppSmallGap),
-            Expanded(
-              child: Text(
-                language['name']!,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+            decoration: BoxDecoration(
+              color: isSelected ? MAIZE_ACCENT.withOpacity(0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: isSelected ? MAIZE_ACCENT : Colors.grey.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  flag,
+                  style: TextStyle(fontSize: 20.sp),
                 ),
-              ),
+                SizedBox(width: kAppSmallGap),
+                Expanded(
+                  child: Text(
+                    languageName,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? MAIZE_ACCENT : Colors.black87,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle,
+                    color: MAIZE_ACCENT,
+                    size: 18.sp,
+                  ),
+              ],
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: MAIZE_ACCENT,
-                size: 20.sp,
-              )
-            else
-              Icon(
-                Icons.radio_button_unchecked,
-                color: Colors.grey,
-                size: 20.sp,
-              ),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  String _getLanguageName(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return 'English';
+      case 'tl':
+        return 'Filipino';
+      default:
+        return languageCode.toUpperCase();
+    }
+  }
+
+  String _getLanguageFlag(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return '🇺🇸';
+      case 'tl':
+        return '🇵🇭';
+      default:
+        return '🌐';
+    }
   }
 }

@@ -3413,6 +3413,426 @@ class S {
       args: [],
     );
   }
+
+  /// `Reset Password`
+  String get reset_password {
+    return Intl.message(
+      'Reset Password',
+      name: 'reset_password',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone Number`
+  String get phone_number {
+    return Intl.message(
+      'Phone Number',
+      name: 'phone_number',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification Code`
+  String get verification_code {
+    return Intl.message(
+      'Verification Code',
+      name: 'verification_code',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New Password`
+  String get new_password {
+    return Intl.message(
+      'New Password',
+      name: 'new_password',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send Verification Code`
+  String get send_verification_code {
+    return Intl.message(
+      'Send Verification Code',
+      name: 'send_verification_code',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password reset successfully!`
+  String get password_reset_successful {
+    return Intl.message(
+      'Password reset successfully!',
+      name: 'password_reset_successful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code sent to {phoneNumber}`
+  String verification_code_sent(Object phoneNumber) {
+    return Intl.message(
+      'Verification code sent to $phoneNumber',
+      name: 'verification_code_sent',
+      desc: '',
+      args: [phoneNumber],
+    );
+  }
+
+  /// `Phone number is required`
+  String get phone_number_required {
+    return Intl.message(
+      'Phone number is required',
+      name: 'phone_number_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid phone number`
+  String get phone_number_invalid {
+    return Intl.message(
+      'Please enter a valid phone number',
+      name: 'phone_number_invalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code is required`
+  String get verification_code_required {
+    return Intl.message(
+      'Verification code is required',
+      name: 'verification_code_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid 6-digit code`
+  String get verification_code_invalid {
+    return Intl.message(
+      'Please enter a valid 6-digit code',
+      name: 'verification_code_invalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New password is required`
+  String get new_password_required {
+    return Intl.message(
+      'New password is required',
+      name: 'new_password_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must be at least 6 characters`
+  String get password_min_length {
+    return Intl.message(
+      'Password must be at least 6 characters',
+      name: 'password_min_length',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Passwords do not match`
+  String get passwords_do_not_match {
+    return Intl.message(
+      'Passwords do not match',
+      name: 'passwords_do_not_match',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Network error. Please check your connection.`
+  String get network_error {
+    return Intl.message(
+      'Network error. Please check your connection.',
+      name: 'network_error',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification Settings`
+  String get notification_settings {
+    return Intl.message(
+      'Notification Settings',
+      name: 'notification_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get alerts for farm updates, weather warnings, and sensor issues`
+  String get notification_description {
+    return Intl.message(
+      'Get alerts for farm updates, weather warnings, and sensor issues',
+      name: 'notification_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Silent notifications with vibration only`
+  String get vibration_only_description {
+    return Intl.message(
+      'Silent notifications with vibration only',
+      name: 'vibration_only_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification Types`
+  String get notification_types {
+    return Intl.message(
+      'Notification Types',
+      name: 'notification_types',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Alerts`
+  String get farm_alerts {
+    return Intl.message('Farm Alerts', name: 'farm_alerts', desc: '', args: []);
+  }
+
+  /// `Weather warnings, irrigation alerts, and crop health updates`
+  String get farm_alerts_description {
+    return Intl.message(
+      'Weather warnings, irrigation alerts, and crop health updates',
+      name: 'farm_alerts_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor Status`
+  String get sensor_status {
+    return Intl.message(
+      'Sensor Status',
+      name: 'sensor_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Alerts when sensors go offline or need maintenance`
+  String get sensor_status_description {
+    return Intl.message(
+      'Alerts when sensors go offline or need maintenance',
+      name: 'sensor_status_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prescription Updates`
+  String get prescription_updates {
+    return Intl.message(
+      'Prescription Updates',
+      name: 'prescription_updates',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New farm recommendations and treatment suggestions`
+  String get prescription_updates_description {
+    return Intl.message(
+      'New farm recommendations and treatment suggestions',
+      name: 'prescription_updates_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Settings`
+  String get edit_settings {
+    return Intl.message(
+      'Edit Settings',
+      name: 'edit_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save`
+  String get save {
+    return Intl.message('Save', name: 'save', desc: '', args: []);
+  }
+
+  /// `Saving...`
+  String get saving {
+    return Intl.message('Saving...', name: 'saving', desc: '', args: []);
+  }
+
+  /// `Notification settings updated successfully!`
+  String get notification_settings_updated {
+    return Intl.message(
+      'Notification settings updated successfully!',
+      name: 'notification_settings_updated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update notification settings: {error}`
+  String notification_settings_failed(Object error) {
+    return Intl.message(
+      'Failed to update notification settings: $error',
+      name: 'notification_settings_failed',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Check Notification Status`
+  String get check_notification_status {
+    return Intl.message(
+      'Check Notification Status',
+      name: 'check_notification_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Debug Section`
+  String get debug_section {
+    return Intl.message(
+      'Debug Section',
+      name: 'debug_section',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifications enabled: {enabled}`
+  String notifications_enabled(Object enabled) {
+    return Intl.message(
+      'Notifications enabled: $enabled',
+      name: 'notifications_enabled',
+      desc: '',
+      args: [enabled],
+    );
+  }
+
+  /// `Urgent`
+  String get urgent {
+    return Intl.message('Urgent', name: 'urgent', desc: '', args: []);
+  }
+
+  /// `Medium`
+  String get medium {
+    return Intl.message('Medium', name: 'medium', desc: '', args: []);
+  }
+
+  /// `Prescription Alert`
+  String get prescription_alert {
+    return Intl.message(
+      'Prescription Alert',
+      name: 'prescription_alert',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor Offline`
+  String get sensor_offline {
+    return Intl.message(
+      'Sensor Offline',
+      name: 'sensor_offline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensors in Sleep Mode`
+  String get sensor_sleep_mode {
+    return Intl.message(
+      'Sensors in Sleep Mode',
+      name: 'sensor_sleep_mode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.`
+  String get sensor_sleep_description {
+    return Intl.message(
+      'Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.',
+      name: 'sensor_sleep_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{sensorName} sensor has been offline for more than 30 minutes.`
+  String sensor_offline_description(Object sensorName) {
+    return Intl.message(
+      '$sensorName sensor has been offline for more than 30 minutes.',
+      name: 'sensor_offline_description',
+      desc: '',
+      args: [sensorName],
+    );
+  }
+
+  /// `Farm Task`
+  String get farm_task {
+    return Intl.message('Farm Task', name: 'farm_task', desc: '', args: []);
+  }
+
+  /// `Check Farm`
+  String get check_farm {
+    return Intl.message('Check Farm', name: 'check_farm', desc: '', args: []);
+  }
+
+  /// `Irrigation`
+  String get irrigation {
+    return Intl.message('Irrigation', name: 'irrigation', desc: '', args: []);
+  }
+
+  /// `Fertilization`
+  String get fertilization {
+    return Intl.message(
+      'Fertilization',
+      name: 'fertilization',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pest Control`
+  String get pest_control {
+    return Intl.message(
+      'Pest Control',
+      name: 'pest_control',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Harvest`
+  String get harvest {
+    return Intl.message('Harvest', name: 'harvest', desc: '', args: []);
+  }
+
+  /// `General`
+  String get general {
+    return Intl.message('General', name: 'general', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

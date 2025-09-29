@@ -7,6 +7,8 @@ class MonitoringState extends Equatable {
   final List<SensorReading> historicalReadings;
   final WeatherData? weatherData;
   final Map<String, dynamic>? farmAnalytics;
+  final List<Map<String, dynamic>>? weeklyData;
+  final Map<String, dynamic>? latestData;
   final String? error;
 
   const MonitoringState({
@@ -15,6 +17,8 @@ class MonitoringState extends Equatable {
     this.historicalReadings = const [],
     this.weatherData,
     this.farmAnalytics,
+    this.weeklyData,
+    this.latestData,
     this.error,
   });
 
@@ -24,6 +28,8 @@ class MonitoringState extends Equatable {
     List<SensorReading>? historicalReadings,
     WeatherData? weatherData,
     Map<String, dynamic>? farmAnalytics,
+    List<Map<String, dynamic>>? weeklyData,
+    Map<String, dynamic>? latestData,
     String? error,
   }) {
     return MonitoringState(
@@ -32,6 +38,8 @@ class MonitoringState extends Equatable {
       historicalReadings: historicalReadings ?? this.historicalReadings,
       weatherData: weatherData ?? this.weatherData,
       farmAnalytics: farmAnalytics ?? this.farmAnalytics,
+      weeklyData: weeklyData ?? this.weeklyData,
+      latestData: latestData ?? this.latestData,
       error: error,
     );
   }
@@ -43,6 +51,8 @@ class MonitoringState extends Equatable {
     historicalReadings,
     weatherData,
     farmAnalytics,
+    weeklyData,
+    latestData,
     error,
   ];
 }

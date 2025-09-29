@@ -15,6 +15,8 @@ import {
   disable2FA,
   getProfile,
   validateSession,
+  sendPasswordResetCode,
+  verifyResetCode,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -41,6 +43,8 @@ router.post('/logout-all', authenticate, logoutAll);
 // Password management
 router.post('/forgot-password', passwordResetLimiter, validatePasswordReset, forgotPassword);
 router.post('/reset-password', validatePasswordReset, resetPassword);
+router.post('/send-reset-code', passwordResetLimiter, sendPasswordResetCode);
+router.post('/verify-reset-code', verifyResetCode);
 router.put('/change-password', authenticate, validatePasswordChange, changePassword);
 
 // Email verification

@@ -13,13 +13,14 @@ const iotConnection = mongoose.createConnection(process.env.MONGODB_IOT_URI || '
 // Define the sensor data schema
 const sensorDataSchema = new mongoose.Schema({
   timestamp: { type: Date, required: true, index: true },
+  farm: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Farm' },
   field_id: { type: String, required: true },
-  measurements: {
+  data: {
     temperature: { type: Number, required: true },
     humidity: { type: Number, required: true },
-    soil_moisture: { type: Number, required: true },
-    soil_ph: { type: Number, required: true },
-    light_intensity: { type: Number, required: true }
+    soilMoisture: { type: Number, required: true },
+    soilPh: { type: Number, required: true },
+    lightIntensity: { type: Number, required: true }
   }
 });
 
@@ -232,8 +233,15 @@ class ThingSpeakService {
 
       const sensorData = new SensorData({
         timestamp: manilaTimestamp,
-        field_id: 'maize_field_1',
-        measurements: { temperature, humidity, soil_moisture, soil_ph, light_intensity }
+        farm: new mongoose.Types.ObjectId('68d58aff35083cdabb3a7e26'), // Use actual farm ID
+        field_id: '124', // Use actual field ID
+        data: { 
+          temperature, 
+          humidity, 
+          soilMoisture: soil_moisture, 
+          soilPh: soil_ph, 
+          lightIntensity: light_intensity 
+        }
       });
       await sensorData.save();
       saved += 1;
@@ -292,13 +300,14 @@ class ThingSpeakService {
       // Save new data to MongoDB with Manila time
       const sensorData = new SensorData({
         timestamp: manilaTimestamp,
-        field_id: 'maize_field_1',
-        measurements: {
+        farm: new mongoose.Types.ObjectId('68d58aff35083cdabb3a7e26'), // Use actual farm ID
+        field_id: '124', // Use actual field ID
+        data: {
           temperature,
           humidity,
-          soil_moisture,
-          soil_ph,
-          light_intensity
+          soilMoisture: soil_moisture,
+          soilPh: soil_ph,
+          lightIntensity: light_intensity
         }
       });
 
@@ -306,11 +315,11 @@ class ThingSpeakService {
       
       logger.info('Latest data saved to MongoDB:', {
         timestamp: sensorData.timestamp,
-        temperature: sensorData.measurements?.temperature,
-        humidity: sensorData.measurements?.humidity,
-        soil_moisture: sensorData.measurements?.soil_moisture,
-        soil_ph: sensorData.measurements?.soil_ph,
-        light_intensity: sensorData.measurements?.light_intensity
+        temperature: sensorData.data?.temperature,
+        humidity: sensorData.data?.humidity,
+        soilMoisture: sensorData.data?.soilMoisture,
+        soilPh: sensorData.data?.soilPh,
+        lightIntensity: sensorData.data?.lightIntensity
       });
       
       return true;
@@ -358,11 +367,11 @@ class ThingSpeakService {
 
       return {
         timestamp: mongoData.timestamp,
-        temperature: mongoData.measurements?.temperature || 0,
-        humidity: mongoData.measurements?.humidity || 0,
-        soilMoisture: mongoData.measurements?.soil_moisture || 0,
-        soilPh: mongoData.measurements?.soil_ph || 0,
-        lightIntensity: mongoData.measurements?.light_intensity || 0
+        temperature: mongoData.data?.temperature || 0,
+        humidity: mongoData.data?.humidity || 0,
+        soilMoisture: mongoData.data?.soilMoisture || 0,
+        soilPh: mongoData.data?.soilPh || 0,
+        lightIntensity: mongoData.data?.lightIntensity || 0
       };
     } catch (error: any) {
       logger.error('Error fetching latest data:', error.message);
@@ -424,11 +433,11 @@ class ThingSpeakService {
 
       return mongoData.map(data => ({
         timestamp: data.timestamp,
-        temperature: data.measurements?.temperature || 0,
-        humidity: data.measurements?.humidity || 0,
-        soilMoisture: data.measurements?.soil_moisture || 0,
-        soilPh: data.measurements?.soil_ph || 0,
-        lightIntensity: data.measurements?.light_intensity || 0
+        temperature: data.data?.temperature || 0,
+        humidity: data.data?.humidity || 0,
+        soilMoisture: data.data?.soilMoisture || 0,
+        soilPh: data.data?.soilPh || 0,
+        lightIntensity: data.data?.lightIntensity || 0
       }));
     } catch (error: any) {
       logger.error('Error fetching historical data:', error.message);

@@ -12,6 +12,9 @@ import '../../../features/authentication/presentation/bloc/authentication_bloc.d
 import '../../../features/authentication/presentation/screens/landing_screen.dart';
 import '../../../features/prescriptions/presentation/screens/prescription_screen.dart';
 import '../../theme/colors.dart';
+import '../../services/notification_service.dart';
+import '../../widgets/notification_permission_dialog.dart';
+import '../../widgets/offline_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,8 +31,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Check authentication status on init
-    context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
+    // Only check auth status if we don't already have a user
+    final currentState = context.read<AuthenticationBloc>().state;
+    if (currentState.user == null) {
+      context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
+    }
+    
+    // Check notification permissions after a short delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkNotificationPermissions();
+    });
+  }
+
+  Future<void> _checkNotificationPermissions() async {
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+    
+    final hasPermissions = await notificationService.arePermissionsGranted();
+    if (!hasPermissions && mounted) {
+      // Show permission dialog after a short delay
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          NotificationPermissionDialog.show(context);
+        }
+      });
+    }
   }
 
   @override
@@ -42,8 +68,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      // Check session when app resumes
-      context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
+      // Only check session when app resumes if we don't have a user
+      final currentState = context.read<AuthenticationBloc>().state;
+      if (currentState.user == null) {
+        context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
+      }
     }
   }
 
@@ -103,23 +132,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             }
           }
         },
-        child: Scaffold(
-          body: SafeArea(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: <Widget>[
-                PrescriptionScreen(),
-                const LiveMonitoringScreen(),
-                const AccountScreen(),
-              ],
-              onPageChanged: (page) {
-                setState(() {
-                  _currentIndex = page;
-                });
-              },
+        child: OfflineIndicator(
+          showPersistentIndicator: true,
+          child: Scaffold(
+            body: SafeArea(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: <Widget>[
+                  PrescriptionScreen(),
+                  const LiveMonitoringScreen(),
+                  const AccountScreen(),
+                ],
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentIndex = page;
+                  });
+                },
+              ),
             ),
-          ),
           bottomNavigationBar: Container(
             decoration: const BoxDecoration(color: MAIZE_BOTTOM_OVERLAY),
             child: SafeArea(
@@ -150,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         ),
-      ),
+        ),      ),
     );
   }
 

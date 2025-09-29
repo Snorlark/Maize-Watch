@@ -5,6 +5,8 @@ import QRCode from "qrcode";
 import User, { IUser } from "../models/User";
 import { AppError } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import twilioService from "./twilioService";
+import bcrypt from "bcryptjs";
 // Lazy import to prevent startup connection
 const getEmailService = () => import("../utils/emailService").then(m => m.default);
 
@@ -681,6 +683,143 @@ class AuthService {
       throw error;
     }
   }
+
+  /**
+   * Get user by phone number
+   */
+  async getUserByPhoneNumber(phoneNumber: string): Promise<IUser | null> {
+    try {
+      const user = await User.findOne({ contactNumber: phoneNumber });
+      return user;
+    } catch (error) {
+      logger.error("Error finding user by phone number:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get user by username
+   */
+  async getUserByUsername(username: string): Promise<IUser | null> {
+    try {
+      const user = await User.findOne({ username: username });
+      return user;
+    } catch (error) {
+      logger.error("Error finding user by username:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Send password reset code via SMS using username
+   */
+  async sendPasswordResetCode(username: string): Promise<{ success: boolean; message: string; phoneNumber?: string }> {
+    try {
+      // Check if user exists with this username
+      const user = await this.getUserByUsername(username);
+      if (!user) {
+        return {
+          success: false,
+          message: 'No account found with this username'
+        };
+      }
+
+      // Get phone number from user
+      const phoneNumber = user.contactNumber;
+      if (!phoneNumber) {
+        return {
+          success: false,
+          message: 'No phone number associated with this account'
+        };
+      }
+
+      // Send SMS code
+      const result = await twilioService.sendPasswordResetCode(phoneNumber);
+      return {
+        ...result,
+        phoneNumber: phoneNumber
+      };
+    } catch (error) {
+      logger.error("Error sending password reset code:", error);
+      return {
+        success: false,
+        message: "Failed to send verification code"
+      };
+    }
+  }
+
+  /**
+   * Verify password reset code
+   */
+  async verifyResetCode(phoneNumber: string, code: string): Promise<{ success: boolean; message: string; valid: boolean }> {
+    try {
+      const result = await twilioService.verifyCode(phoneNumber, code);
+      return result;
+    } catch (error) {
+      logger.error("Error verifying reset code:", error);
+      return {
+        success: false,
+        message: "Failed to verify code",
+        valid: false
+      };
+    }
+  }
+
+  /**
+   * Reset password with verification code using username
+   */
+  async resetPasswordWithCode(username: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get user by username first
+      const user = await this.getUserByUsername(username);
+      if (!user) {
+        return {
+          success: false,
+          message: "User not found"
+        };
+      }
+
+      // Get phone number from user
+      const phoneNumber = user.contactNumber;
+      if (!phoneNumber) {
+        return {
+          success: false,
+          message: "No phone number associated with this account"
+        };
+      }
+
+      // Verify the code with the phone number
+      const verificationResult = await this.verifyResetCode(phoneNumber, code);
+      
+      if (!verificationResult.success || !verificationResult.valid) {
+        return {
+          success: false,
+          message: "Invalid verification code"
+        };
+      }
+
+      // Hash the new password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update user password
+      await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+
+      logger.info(`Password reset successful for user ${user.username} (${user._id})`);
+
+      return {
+        success: true,
+        message: "Password reset successfully"
+      };
+    } catch (error) {
+      logger.error("Error resetting password:", error);
+      return {
+        success: false,
+        message: "Failed to reset password"
+      };
+    }
+  }
 }
 
 export default new AuthService();
+

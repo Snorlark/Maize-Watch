@@ -44,8 +44,15 @@ class AmadeoWeatherService:
         """Get weather forecast for next few days based on historical patterns"""
         try:
             current_date = datetime.now(self.timezone)
+            current_weather = self.get_current_weather()
+            
+            # Validate current weather
+            if current_weather.get('temperature', 0) <= 0:
+                logger.warning("Current weather has invalid temperature, using fallback")
+                current_weather = self._get_fallback_weather()
+            
             forecast = {
-                'current': self.get_current_weather(),
+                'current': current_weather,
                 'forecast': []
             }
             
@@ -59,8 +66,18 @@ class AmadeoWeatherService:
                     forecast['forecast'].append(day_forecast)
                 else:
                     # Fallback for missing data
-                    forecast['forecast'].append(self._get_fallback_forecast_day(target_date))
+                    day_forecast = self._get_fallback_forecast_day(target_date)
+                    day_forecast['date'] = target_date.strftime('%Y-%m-%d')
+                    forecast['forecast'].append(day_forecast)
             
+            # Validate the entire forecast
+            for day_forecast in forecast['forecast']:
+                if day_forecast.get('temperature', 0) <= 0:
+                    logger.warning(f"Invalid temperature in forecast: {day_forecast.get('temperature')}, replacing with fallback")
+                    fallback = self._get_fallback_forecast_day(datetime.strptime(day_forecast['date'], '%Y-%m-%d'))
+                    day_forecast.update(fallback)
+            
+            logger.info(f"Weather forecast generated: current temp={forecast['current']['temperature']}°C")
             return forecast
             
         except Exception as e:
@@ -110,25 +127,41 @@ class AmadeoWeatherService:
             avg_humidity = historical_data['humidity_percent'].mean()
             avg_rainfall = historical_data['rainfall_mm'].mean()
             
+            # Check for invalid values and use fallback if needed
+            if pd.isna(avg_temp) or avg_temp == 0:
+                logger.warning("Invalid temperature from historical data, using fallback")
+                return self._get_fallback_weather()
+            
+            if pd.isna(avg_humidity) or avg_humidity == 0:
+                logger.warning("Invalid humidity from historical data, using fallback")
+                return self._get_fallback_weather()
+            
             # Add some realistic variation based on time of day
             hour = current_date.hour
             temp_variation = self._get_temperature_variation(hour)
-            humidity_variation = self._get_humidity_variation(hour, avg_rainfall)
+            humidity_variation = self._get_humidity_variation(hour, avg_rainfall if not pd.isna(avg_rainfall) else 0)
             
             # Calculate final values
             temperature = round(avg_temp + temp_variation, 1)
             humidity = round(max(30, min(95, avg_humidity + humidity_variation)), 1)
             
+            # Ensure temperature is reasonable
+            if temperature <= 0 or temperature > 50:
+                logger.warning(f"Temperature out of range: {temperature}, using fallback")
+                return self._get_fallback_weather()
+            
             # Determine weather condition
-            condition = self._determine_weather_condition(avg_rainfall, temperature, humidity)
+            condition = self._determine_weather_condition(avg_rainfall if not pd.isna(avg_rainfall) else 0, temperature, humidity)
+            
+            logger.info(f"Calculated weather from historical data: temp={temperature}°C, humidity={humidity}%")
             
             return {
                 'temperature': temperature,
                 'humidity': humidity,
-                'wind_speed': round(3.0 + (avg_rainfall * 0.1), 1),  # Wind based on rainfall
+                'wind_speed': round(3.0 + ((avg_rainfall if not pd.isna(avg_rainfall) else 0) * 0.1), 1),  # Wind based on rainfall
                 'condition': condition['condition'],
                 'description': condition['description'],
-                'pressure': round(1013.25 - (avg_rainfall * 0.1), 1),  # Pressure based on rainfall
+                'pressure': round(1013.25 - ((avg_rainfall if not pd.isna(avg_rainfall) else 0) * 0.1), 1),  # Pressure based on rainfall
                 'location': 'Amadeo, Cavite',
                 'timestamp': current_date.isoformat()
             }
@@ -144,22 +177,38 @@ class AmadeoWeatherService:
             avg_humidity = historical_data['humidity_percent'].mean()
             avg_rainfall = historical_data['rainfall_mm'].mean()
             
+            # Check for invalid values and use fallback if needed
+            if pd.isna(avg_temp) or avg_temp == 0:
+                logger.warning("Invalid temperature from historical data for forecast, using fallback")
+                return self._get_fallback_forecast_day(target_date)
+            
+            if pd.isna(avg_humidity) or avg_humidity == 0:
+                logger.warning("Invalid humidity from historical data for forecast, using fallback")
+                return self._get_fallback_forecast_day(target_date)
+            
             # Add seasonal variation
             temp_variation = self._get_seasonal_variation(target_date)
-            humidity_variation = self._get_humidity_variation(12, avg_rainfall)  # Midday humidity
+            humidity_variation = self._get_humidity_variation(12, avg_rainfall if not pd.isna(avg_rainfall) else 0)  # Midday humidity
             
             temperature = round(avg_temp + temp_variation, 1)
             humidity = round(max(30, min(95, avg_humidity + humidity_variation)), 1)
             
-            condition = self._determine_weather_condition(avg_rainfall, temperature, humidity)
+            # Ensure temperature is reasonable
+            if temperature <= 0 or temperature > 50:
+                logger.warning(f"Temperature out of range for forecast: {temperature}, using fallback")
+                return self._get_fallback_forecast_day(target_date)
+            
+            condition = self._determine_weather_condition(avg_rainfall if not pd.isna(avg_rainfall) else 0, temperature, humidity)
+            
+            logger.info(f"Calculated forecast for {target_date.strftime('%Y-%m-%d')}: temp={temperature}°C, humidity={humidity}%")
             
             return {
                 'temperature': temperature,
                 'humidity': humidity,
-                'wind_speed': round(3.0 + (avg_rainfall * 0.1), 1),
+                'wind_speed': round(3.0 + ((avg_rainfall if not pd.isna(avg_rainfall) else 0) * 0.1), 1),
                 'condition': condition['condition'],
                 'description': condition['description'],
-                'rainfall_probability': min(100, max(0, avg_rainfall * 2))  # Convert mm to probability
+                'rainfall_probability': min(100, max(0, (avg_rainfall if not pd.isna(avg_rainfall) else 0) * 2))  # Convert mm to probability
             }
             
         except Exception as e:
@@ -248,9 +297,21 @@ class AmadeoWeatherService:
             )
             
             if latest_reading and 'data' in latest_reading:
+                sensor_data = latest_reading['data']
+                temperature = sensor_data.get('temperature', 23.4)
+                humidity = sensor_data.get('humidity', 83.0)
+                
+                # Ensure we have valid temperature values
+                if temperature is None or temperature == 0:
+                    temperature = 23.4
+                if humidity is None or humidity == 0:
+                    humidity = 83.0
+                
+                logger.info(f"Using sensor data for weather: temp={temperature}°C, humidity={humidity}%")
+                
                 return {
-                    'temperature': latest_reading['data'].get('temperature', 23.4),
-                    'humidity': latest_reading['data'].get('humidity', 83.0),
+                    'temperature': float(temperature),
+                    'humidity': float(humidity),
                     'wind_speed': 5.2,  # Wind speed not available in sensor data
                     'condition': 'partly_cloudy',
                     'description': 'Partly cloudy',
@@ -262,6 +323,7 @@ class AmadeoWeatherService:
             logger.warning(f"Could not fetch real sensor data for weather fallback: {e}")
         
         # Final fallback with real sensor values
+        logger.info("Using final fallback weather data")
         return {
             'temperature': 23.4,
             'humidity': 83.0,
@@ -275,6 +337,41 @@ class AmadeoWeatherService:
     
     def _get_fallback_forecast_day(self, target_date: datetime) -> Dict:
         """Fallback forecast for a day - using real sensor data"""
+        try:
+            # Try to get real sensor data for forecast
+            sensor_readings_collection = db_manager.get_collection("sensor_readings")
+            latest_reading = sensor_readings_collection.find_one(
+                {},
+                sort=[("timestamp", -1)]
+            )
+            
+            if latest_reading and 'data' in latest_reading:
+                sensor_data = latest_reading['data']
+                temperature = sensor_data.get('temperature', 23.4)
+                humidity = sensor_data.get('humidity', 83.0)
+                
+                # Ensure we have valid temperature values
+                if temperature is None or temperature == 0:
+                    temperature = 23.4
+                if humidity is None or humidity == 0:
+                    humidity = 83.0
+                
+                # Add some variation for forecast
+                temperature += (hash(str(target_date)) % 5) - 2  # Add -2 to +2 variation
+                humidity += (hash(str(target_date)) % 10) - 5    # Add -5 to +5 variation
+                
+                return {
+                    'temperature': float(temperature),
+                    'humidity': float(humidity),
+                    'wind_speed': 5.2,
+                    'condition': 'partly_cloudy',
+                    'description': 'Partly cloudy',
+                    'rainfall_probability': 20
+                }
+        except Exception as e:
+            logger.warning(f"Could not fetch sensor data for forecast fallback: {e}")
+        
+        # Final fallback
         return {
             'temperature': 23.4,
             'humidity': 83.0,

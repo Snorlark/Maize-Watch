@@ -83,12 +83,14 @@ class Sensor extends Equatable {
 // Field model
 class Field extends Equatable {
   final String fieldName;
+  final String soilType;
   final DateTime plantingDate;
   final String growthStage; // VE, V3, V8, VT, R1, R6
   final List<Sensor> sensors;
 
   const Field({
     required this.fieldName,
+    required this.soilType,
     required this.plantingDate,
     required this.growthStage,
     required this.sensors,
@@ -97,6 +99,7 @@ class Field extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'fieldName': fieldName,
+      'soilType': soilType,
       'plantingDate': plantingDate.toIso8601String(),
       'growthStage': growthStage,
       'sensors': sensors.map((sensor) => sensor.toJson()).toList(),
@@ -106,6 +109,7 @@ class Field extends Equatable {
   factory Field.fromJson(Map<String, dynamic> json) {
     return Field(
       fieldName: json['fieldName'] ?? '',
+      soilType: json['soilType'] ?? 'loamy',
       plantingDate: DateTime.parse(json['plantingDate']),
       growthStage: json['growthStage'] ?? 'VE',
       sensors: (json['sensors'] as List<dynamic>? ?? [])
@@ -115,7 +119,7 @@ class Field extends Equatable {
   }
 
   @override
-  List<Object?> get props => [fieldName, plantingDate, growthStage, sensors];
+  List<Object?> get props => [fieldName, soilType, plantingDate, growthStage, sensors];
 }
 
 class Farm extends Equatable {

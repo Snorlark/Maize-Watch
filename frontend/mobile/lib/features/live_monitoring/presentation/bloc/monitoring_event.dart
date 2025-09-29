@@ -73,3 +73,29 @@ class AnalyticsUpdatedEvent extends MonitoringEvent {
   @override
   List<Object?> get props => [analytics];
 }
+
+class LoadWeeklyDataEvent extends MonitoringEvent {
+  final String farmId;
+  final String? fieldId;
+  final int? weekOffset;
+
+  const LoadWeeklyDataEvent({
+    required this.farmId,
+    this.fieldId,
+    this.weekOffset,
+  });
+
+  @override
+  List<Object?> get props => [farmId, fieldId, weekOffset];
+}
+
+class LoadLatestDataEvent extends MonitoringEvent {
+  final String farmId;
+
+  const LoadLatestDataEvent({required this.farmId});
+
+  @override
+  List<Object?> get props => [farmId];
+}
+
+class ClearErrorEvent extends MonitoringEvent {}

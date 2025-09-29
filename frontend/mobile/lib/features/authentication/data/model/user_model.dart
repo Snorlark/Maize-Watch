@@ -15,32 +15,32 @@ class UserModel extends User {
     print('🔍 UserModel.fromJson called with: $json');
     
     try {
-      print('🔍 Parsing id: ${json['_id']} (type: ${json['_id'].runtimeType})');
-      final id = json['_id'] as String? ?? json['id'] as String;
+      print('🔍 Parsing id: ${json['_id']} (type: ${json['_id']?.runtimeType})');
+      final id = json['_id']?.toString() ?? json['id']?.toString() ?? '';
       print('🔍 Parsed id: $id');
       
-      print('🔍 Parsing username: ${json['username']} (type: ${json['username'].runtimeType})');
-      final username = json['username'] as String? ?? '';
+      print('🔍 Parsing username: ${json['username']} (type: ${json['username']?.runtimeType})');
+      final username = json['username']?.toString() ?? '';
       print('🔍 Parsed username: $username');
       
-      print('🔍 Parsing fullName: ${json['fullName']} (type: ${json['fullName'].runtimeType})');
-      final fullName = json['fullName'] as String? ?? '';
+      print('🔍 Parsing fullName: ${json['fullName']} (type: ${json['fullName']?.runtimeType})');
+      final fullName = json['fullName']?.toString() ?? '';
       print('🔍 Parsed fullName: $fullName');
       
-      print('🔍 Parsing contactNumber: ${json['contactNumber']} (type: ${json['contactNumber'].runtimeType})');
-      final contactNumber = json['contactNumber'] as String? ?? '';
+      print('🔍 Parsing contactNumber: ${json['contactNumber']} (type: ${json['contactNumber']?.runtimeType})');
+      final contactNumber = json['contactNumber']?.toString() ?? '';
       print('🔍 Parsed contactNumber: $contactNumber');
       
       print('🔍 Parsing address: ${json['address']} (type: ${json['address']?.runtimeType})');
       final address = _parseAddress(json['address']);
       print('🔍 Parsed address: $address');
       
-      print('🔍 Parsing role: ${json['role']} (type: ${json['role'].runtimeType})');
-      final role = json['role'] as String? ?? 'user';
+      print('🔍 Parsing role: ${json['role']} (type: ${json['role']?.runtimeType})');
+      final role = json['role']?.toString() ?? 'user';
       print('🔍 Parsed role: $role');
       
       print('🔍 Parsing password: ${json['password']} (type: ${json['password']?.runtimeType})');
-      final password = json['password'] as String?;
+      final password = json['password']?.toString();
       print('🔍 Parsed password: $password');
       
       print('🔍 Creating UserModel...');

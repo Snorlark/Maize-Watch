@@ -100,26 +100,36 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   Future<void> _onUpdateLanguage(UpdateLanguage event, Emitter<SettingsState> emit) async {
-    if (state is SettingsLoaded) {
-      final currentState = state as SettingsLoaded;
-      emit(SettingsUpdating(
-        settings: currentState.settings,
+    print("🔧 SettingsBloc: UpdateLanguage event received: ${event.language}");
+    
+    // Handle both SettingsLoaded and SettingsUpdated states
+    if (state is SettingsLoaded || state is SettingsUpdated) {
+      final currentState = state as dynamic; // Use dynamic to handle both types
+      print("🔧 SettingsBloc: Current language: ${currentState.settings.language}, New language: ${event.language}");
+      
+      // Update immediately for instant response
+      final updatedSettings = currentState.settings.copyWith(language: event.language);
+      print("🔧 SettingsBloc: Emitting SettingsUpdated with language: ${updatedSettings.language}");
+      emit(SettingsUpdated(
+        settings: updatedSettings,
         sensorStatus: currentState.sensorStatus,
+        message: 'Language updated',
       ));
 
-      final result = await updateLanguage(event.language);
-
-      result.fold(
-        (failure) => emit(SettingsError('Failed to update language')),
-        (_) {
-          final updatedSettings = currentState.settings.copyWith(language: event.language);
-          emit(SettingsUpdated(
-            settings: updatedSettings,
-            sensorStatus: currentState.sensorStatus,
-            message: 'Language updated',
-          ));
-        },
-      );
+      // Update backend in background (non-blocking)
+      // Only try to update backend if user is authenticated
+      try {
+        updateLanguage(event.language).then((result) {
+          result.fold(
+            (failure) => print("🔧 SettingsBloc: Background language update failed: $failure"),
+            (_) => print("🔧 SettingsBloc: Background language update successful"),
+          );
+        });
+      } catch (e) {
+        print("🔧 SettingsBloc: Language update skipped (user not authenticated): $e");
+      }
+    } else {
+      print("🔧 SettingsBloc: State is not SettingsLoaded or SettingsUpdated, current state: ${state.runtimeType}");
     }
   }
 
