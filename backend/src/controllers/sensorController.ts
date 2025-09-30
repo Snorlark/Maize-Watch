@@ -729,7 +729,7 @@ export const getThingSpeakLiveData = catchAsync(async (req: Request, res: Respon
     // Transform ThingSpeak data to match your frontend expectations
     const liveData = {
       _id: 'thingspeak-live-' + Date.now(),
-      timestamp: new Date().toISOString(),
+      timestamp: data.created_at || new Date().toISOString(), // Use actual ThingSpeak timestamp
       temperature: data.field1 || null,
       humidity: data.field2 || null,
       soilMoisture: data.field3 || null,
@@ -738,7 +738,9 @@ export const getThingSpeakLiveData = catchAsync(async (req: Request, res: Respon
       batteryLevel: data.field6 || null,
       signalStrength: data.field7 || null,
       source: 'thingspeak',
-      isLive: true
+      isLive: true,
+      created_at: data.created_at, // Include original ThingSpeak timestamp for debugging
+      entry_id: data.entry_id // Include ThingSpeak entry ID for debugging
     };
 
     logger.info('✅ Successfully fetched ThingSpeak live data:', {
@@ -801,14 +803,16 @@ export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: 
     // Transform historical data
     const transformedData = historicalData.map((reading, index) => ({
       _id: `thingspeak-hist-${Date.now()}-${index}`,
-      timestamp: new Date(Date.now() - (index * 60000)).toISOString(), // Approximate timestamps
+      timestamp: reading.created_at || new Date(Date.now() - (index * 60000)).toISOString(), // Use actual ThingSpeak timestamp
       temperature: reading.field1 || null,
       humidity: reading.field2 || null,
       soilMoisture: reading.field3 || null,
       lightIntensity: reading.field5 || null, // SWAPPED: field5 for light intensity
       soilPh: reading.field4 || null,         // SWAPPED: field4 for soil pH
       batteryLevel: reading.field6 || null,
-      signalStrength: reading.field7 || null
+      signalStrength: reading.field7 || null,
+      created_at: reading.created_at, // Include original ThingSpeak timestamp for debugging
+      entry_id: reading.entry_id // Include ThingSpeak entry ID for debugging
     })).reverse(); // Reverse to get chronological order
 
     logger.info(`✅ Successfully fetched ${transformedData.length} historical readings from ThingSpeak`);

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import Footer from '../components/Footer'
-import { FaThermometerHalf, FaMountain } from 'react-icons/fa'
+import { FaThermometerHalf } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
 import { BsSun } from 'react-icons/bs'
-import { Activity, Gauge, AlertTriangle, Clock, MapPin, ChevronDown, RefreshCw } from 'lucide-react'
+import { Activity, Gauge, AlertTriangle, Clock, MapPin, ChevronDown, RefreshCw, Droplets, TestTube } from 'lucide-react'
 import { sensorService } from '../api/config'
 import apiClient from '../api/client'
 
@@ -118,6 +118,12 @@ const LiveData: React.FC = () => {
       try {
         result = await sensorService.getThingSpeakLiveData();
         console.log('[LiveData] ThingSpeak result:', result);
+        
+        // If ThingSpeak returns success but no data, treat as failure
+        if (result.success && (!result.data || Object.keys(result.data).length === 0)) {
+          console.warn('[LiveData] ThingSpeak returned empty data, treating as failure');
+          throw new Error('ThingSpeak returned empty data');
+        }
       } catch (thingSpeakError) {
         console.warn('[LiveData] ThingSpeak failed, falling back to regular endpoint:', thingSpeakError);
         // Fallback to regular sensor service
@@ -129,19 +135,54 @@ const LiveData: React.FC = () => {
       if (result.success && result.data) {
         const raw = result.data;
         
-        // Update sensor status based on data availability
+        // Enhanced timestamp handling for ThingSpeak data
+        const currentTime = new Date();
+        
+        // Try to get the most accurate timestamp from ThingSpeak response
+        let actualTimestamp = null;
+        
+        // Check for ThingSpeak timestamp formats
+        if (raw.created_at) {
+          actualTimestamp = raw.created_at; // ThingSpeak format
+        } else if (raw.timestamp) {
+          actualTimestamp = raw.timestamp; // Our API format
+        } else if (raw.entry_id && raw.field1) {
+          // If we have ThingSpeak entry data, use current time as fallback
+          console.warn('[LiveData] ThingSpeak data found but no timestamp - using current time');
+          actualTimestamp = new Date().toISOString();
+        }
+        
+        const dataTime = actualTimestamp ? new Date(actualTimestamp) : new Date();
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const timeDiffHours = timeDiffMinutes / 60;
+        const isDataFresh = timeDiffMinutes <= 30;
+        
+        // Enhanced logging for debugging
+        console.log(`[LiveData] Timestamp Analysis:`, {
+          rawTimestamp: raw.timestamp,
+          thingSpeakCreatedAt: raw.created_at,
+          actualTimestamp,
+          currentTime: currentTime.toISOString(),
+          dataTime: dataTime.toISOString(),
+          ageMinutes: timeDiffMinutes.toFixed(1),
+          ageHours: timeDiffHours.toFixed(1),
+          isDataFresh,
+          rawDataKeys: Object.keys(raw)
+        });
+        
+        // If data is more than 13 hours old (like your ThingSpeak data), mark as offline
         setSensorStatus({
-          temperature: raw.temperature !== null && raw.temperature !== undefined,
-          humidity: raw.humidity !== null && raw.humidity !== undefined,
-          soil_moisture: raw.soilMoisture !== null && raw.soilMoisture !== undefined,
-          soil_ph: raw.soilPh !== null && raw.soilPh !== undefined,
-          light_level: raw.lightIntensity !== null && raw.lightIntensity !== undefined
+          temperature: (raw.temperature !== null && raw.temperature !== undefined) && isDataFresh,
+          humidity: (raw.humidity !== null && raw.humidity !== undefined) && isDataFresh,
+          soil_moisture: (raw.soilMoisture !== null && raw.soilMoisture !== undefined) && isDataFresh,
+          soil_ph: (raw.soilPh !== null && raw.soilPh !== undefined) && isDataFresh,
+          light_level: (raw.lightIntensity !== null && raw.lightIntensity !== undefined) && isDataFresh
         });
 
         const transformedData: SensorData = {
           _id: raw._id || 'sensor-reading',
           field_id: selectedFarm?._id || 'general',
-          timestamp: raw.timestamp || new Date().toISOString(),
+          timestamp: actualTimestamp || new Date().toISOString(), // Use the actual timestamp we found
           measurements: {
             temperature: raw.temperature || 0,
             humidity: raw.humidity || 0,
@@ -163,10 +204,13 @@ const LiveData: React.FC = () => {
       // If we don't have any data yet, show mock data to prevent blank screen
       if (!sensorData) {
         console.log('[LiveData] Using mock data since no real data is available');
+        
+        // Use your actual ThingSpeak timestamp (13+ hours old) for realistic demo
+        const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00'; // Your actual last data timestamp
         const mockData: SensorData = {
           _id: 'mock-sensor-001',
           field_id: selectedFarm?._id || 'mock-field',
-          timestamp: new Date().toISOString(),
+          timestamp: thingSpeakTimestamp, // Use old timestamp instead of current time
           measurements: {
             temperature: 25.5,
             humidity: 65,
@@ -176,13 +220,28 @@ const LiveData: React.FC = () => {
           },
         };
         
+        // Apply the same 30-minute logic to mock data
+        const currentTime = new Date();
+        const dataTime = new Date(thingSpeakTimestamp);
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const isDataFresh = timeDiffMinutes <= 30;
+        
+        console.log(`[LiveData] Mock data timestamp analysis:`, {
+          mockTimestamp: thingSpeakTimestamp,
+          currentTime: currentTime.toISOString(),
+          dataTime: dataTime.toISOString(),
+          ageMinutes: timeDiffMinutes.toFixed(1),
+          ageHours: (timeDiffMinutes / 60).toFixed(1),
+          isDataFresh
+        });
+        
         setSensorData(mockData);
         setSensorStatus({
-          temperature: true,
-          humidity: true,
-          soil_moisture: true,
-          soil_ph: true,
-          light_level: true
+          temperature: isDataFresh, // Will be false since data is 13+ hours old
+          humidity: isDataFresh,
+          soil_moisture: isDataFresh,
+          soil_ph: isDataFresh,
+          light_level: isDataFresh
         });
       }
       
@@ -205,6 +264,16 @@ const LiveData: React.FC = () => {
 
   // Manual refresh function
   const handleRefresh = () => {
+    console.log('[LiveData] Manual refresh triggered - clearing cached data');
+    // Clear existing data to force fresh fetch
+    setSensorData(null);
+    setSensorStatus({
+      temperature: false,
+      humidity: false,
+      soil_moisture: false,
+      soil_ph: false,
+      light_level: false
+    });
     fetchData(false);
   };
 
@@ -228,6 +297,7 @@ const LiveData: React.FC = () => {
         {/* Temperature Sensor */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
+            <FaThermometerHalf className={`w-4 h-4 ${sensorStatus.temperature ? 'text-green-600' : 'text-red-600'}`} />
             <div className={`w-3 h-3 rounded-full ${sensorStatus.temperature ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Temperature</span>
           </div>
@@ -238,22 +308,10 @@ const LiveData: React.FC = () => {
           </span>
         </div>
 
-        {/* Humidity Sensor */}
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${sensorStatus.humidity ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</span>
-          </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            sensorStatus.humidity ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            {sensorStatus.humidity ? 'Online' : 'Offline'}
-          </span>
-        </div>
-
         {/* Soil Moisture Sensor */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
+            <Droplets className={`w-4 h-4 ${sensorStatus.soil_moisture ? 'text-green-600' : 'text-red-600'}`} />
             <div className={`w-3 h-3 rounded-full ${sensorStatus.soil_moisture ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture</span>
           </div>
@@ -264,9 +322,24 @@ const LiveData: React.FC = () => {
           </span>
         </div>
 
+        {/* Humidity Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <IoWaterOutline className={`w-4 h-4 ${sensorStatus.humidity ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.humidity ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.humidity ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.humidity ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
         {/* Soil pH Sensor */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
+            <TestTube className={`w-4 h-4 ${sensorStatus.soil_ph ? 'text-green-600' : 'text-red-600'}`} />
             <div className={`w-3 h-3 rounded-full ${sensorStatus.soil_ph ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil pH</span>
           </div>
@@ -277,9 +350,10 @@ const LiveData: React.FC = () => {
           </span>
         </div>
 
-        {/* Light Sensor */}
+        {/* Light Intensity Sensor */}
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-3">
+            <BsSun className={`w-4 h-4 ${sensorStatus.light_level ? 'text-green-600' : 'text-red-600'}`} />
             <div className={`w-3 h-3 rounded-full ${sensorStatus.light_level ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity</span>
           </div>
@@ -293,9 +367,39 @@ const LiveData: React.FC = () => {
 
       {/* Last Update */}
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex items-center gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
-          <Clock className="w-4 h-4" />
-          <span>Last updated: {sensorData ? new Date(sensorData.timestamp).toLocaleString() : 'Never'}</span>
+        <div className="flex flex-col gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>Last updated: {sensorData ? new Date(sensorData.timestamp).toLocaleString('en-US', {
+              year: 'numeric',
+              month: '2-digit', 
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              timeZoneName: 'short'
+            }) : 'Never'}</span>
+          </div>
+          {sensorData && (() => {
+            const now = new Date();
+            const dataTime = new Date(sensorData.timestamp);
+            const diffMinutes = (now.getTime() - dataTime.getTime()) / (1000 * 60);
+            const diffHours = diffMinutes / 60;
+            
+            if (diffMinutes < 60) {
+              return (
+                <div className="text-xs text-gray-500">
+                  Data age: {diffMinutes.toFixed(0)} minutes ago
+                </div>
+              );
+            } else {
+              return (
+                <div className="text-xs text-red-500">
+                  Data age: {diffHours.toFixed(1)} hours ago (Stale)
+                </div>
+              );
+            }
+          })()}
         </div>
       </div>
     </div>
@@ -449,115 +553,85 @@ const LiveData: React.FC = () => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Left Column - Temperature and Sensor Status */}
-          <div className="w-full lg:w-1/3 space-y-6">
-            {/* Temperature Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-50 rounded-lg">
-                  <FaThermometerHalf className="text-[#e74c3c] text-3xl" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>TEMPERATURE</div>
-                  <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.temperature}°C</div>
-                </div>
-              </div>
-            </div>
-
+          {/* Left Column - Sensor Status Only */}
+          <div className="w-full lg:w-1/3">
             {/* Sensor Status */}
             {renderSensorStatus()}
           </div>
 
-          {/* Right Column - Sensor Readings Grid */}
+          {/* Right Column - All Sensor Readings Grid */}
           <div className="w-full lg:w-2/3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Soil Moisture */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-center">
-                  <div className="p-3 bg-orange-50 rounded-lg w-fit mx-auto mb-4">
-                    <FaMountain className="text-3xl text-[#7a5c2d]" />
+            <div className="space-y-6">
+              {/* Top Row - Temperature and Humidity */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Temperature */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-red-50 rounded-lg">
+                      <FaThermometerHalf className="text-[#e74c3c] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>TEMPERATURE</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.temperature}°C</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture</p>
-                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_moisture}</div>
-                  <span className={`inline-block ${
-                    measurements.soil_moisture < 30 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                    {measurements.soil_moisture < 30 ? 'Low Moisture' : 'Good Condition'}
-                  </span>            
+                </div>
+
+                {/* Humidity */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <IoWaterOutline className="text-[#2563eb] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>HUMIDITY</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.humidity}%</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Soil Ph Level */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-center">
-                  <div className="p-3 bg-purple-50 rounded-lg w-fit mx-auto mb-4">
-                    <FaMountain className="text-3xl text-[#7a5c2d]" />
+              {/* Middle Row - Soil Moisture and Soil pH */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Soil Moisture */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-cyan-50 rounded-lg">
+                      <Droplets className="text-[#0891b2] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>SOIL MOISTURE</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.soil_moisture}%</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil pH Level</p>
-                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_ph}</div>
-                  <span className={`inline-block ${
-                    measurements.soil_ph > 7 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                    {measurements.soil_ph < 7 ? 'Good Condition' : 'Soil pH indicates alkalinity'}
-                  </span>          
+                </div>
+
+                {/* Soil pH Level */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 rounded-lg">
+                      <TestTube className="text-[#7c3aed] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>SOIL pH LEVEL</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.soil_ph}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Humidity */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <IoWaterOutline className="text-2xl text-[#2d67c4]" />
+              {/* Bottom Row - Light Intensity (centered) */}
+              <div className="flex justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-6 w-full sm:w-1/2">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-yellow-50 rounded-lg">
+                      <BsSun className="text-[#eab308] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>LIGHT INTENSITY</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.light_level} LUX</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</p>
-                </div>
-                <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
-                  <div 
-                    className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.humidity, 100)}%`, fontSize: 'var(--text-sm)' }}
-                  >
-                    {measurements.humidity}%
-                  </div>
-                </div>
-                <div className="text-center">
-                  <span className={`inline-block ${
-                    measurements.humidity < 40 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                    {measurements.humidity < 40 ? 'Too Low' : 'Good Condition'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Light Intensity */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-yellow-50 rounded-lg">
-                    <BsSun className="text-2xl text-[#deb83c]" />
-                  </div>
-                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity</p>
-                </div>
-                <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
-                  <div 
-                    className="bg-[#deb83c] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.light_level / 10, 100)}%`, fontSize: 'var(--text-sm)' }}
-                  >
-                    {measurements.light_level} LUX
-                  </div>
-                </div>
-                <div className="text-center">
-                  <span className={`inline-block ${
-                    measurements.light_level < 50 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                    {measurements.light_level < 50 ? 'Low Light' : 'Best Condition'}
-                  </span>
                 </div>
               </div>
             </div>

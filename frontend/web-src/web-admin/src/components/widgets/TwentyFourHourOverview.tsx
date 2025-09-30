@@ -32,7 +32,6 @@ const vars: VariableConfig[] = [
   { key: 'soilPh', label: 'Soil pH', unit: '', color: '#0EA5E9', icon: <TestTube className="w-5 h-5 text-sky-600" />, domain: [0, 14] },
 ];
 
-const formatTime = (iso: string) => new Date(iso).toLocaleTimeString();
 const formatDayDate = (d: Date) => d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
 const TwentyFourHourOverview: React.FC = () => {
@@ -57,19 +56,48 @@ const TwentyFourHourOverview: React.FC = () => {
         console.log('[TwentyFourHourOverview] ThingSpeak historical result:', result);
         
         if (result.success && result.data && result.data.length > 0) {
-          // Transform ThingSpeak data to chart format
-          const chartData: HistoryPoint[] = result.data.map((reading: any) => ({
-            timestamp: reading.timestamp,
-            temperature: reading.temperature,
-            humidity: reading.humidity,
-            soilMoisture: reading.soilMoisture,
-            soilPh: reading.soilPh,
-            lightIntensity: reading.lightIntensity
-          }));
+          // Transform ThingSpeak data to chart format with proper timestamp handling
+          const chartData: HistoryPoint[] = result.data.map((reading: any) => {
+            // Use actual ThingSpeak timestamp or created_at
+            let actualTimestamp = reading.created_at || reading.timestamp || new Date().toISOString();
+            
+            return {
+              timestamp: actualTimestamp,
+              temperature: reading.temperature,
+              humidity: reading.humidity,
+              soilMoisture: reading.soilMoisture,
+              soilPh: reading.soilPh,
+              lightIntensity: reading.lightIntensity
+            };
+          });
+          
+          // Calculate data age from the latest reading
+          const latestReading = chartData[chartData.length - 1];
+          const currentTime = new Date();
+          const dataTime = new Date(latestReading.timestamp);
+          const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+          const timeDiffHours = timeDiffMinutes / 60;
+          
+          console.log(`[TwentyFourHourOverview] ThingSpeak data age analysis:`, {
+            latestTimestamp: latestReading.timestamp,
+            currentTime: currentTime.toISOString(),
+            ageMinutes: timeDiffMinutes.toFixed(1),
+            ageHours: timeDiffHours.toFixed(1),
+            dataPoints: chartData.length
+          });
           
           setSeries(chartData);
-          setLastUpdated(new Date().toISOString());
-          setError(null);
+          setLastUpdated(latestReading.timestamp); // Use actual ThingSpeak timestamp
+          
+          // Show data age status
+          if (timeDiffHours > 1) {
+            setError(`ThingSpeak data is ${timeDiffHours.toFixed(1)} hours old`);
+          } else if (timeDiffMinutes > 30) {
+            setError(`ThingSpeak data is ${timeDiffMinutes.toFixed(0)} minutes old`);
+          } else {
+            setError(null);
+          }
+          
           console.log('[TwentyFourHourOverview] Successfully loaded ThingSpeak historical data:', chartData.length, 'points');
           return;
         }
@@ -147,6 +175,31 @@ const TwentyFourHourOverview: React.FC = () => {
         
         if (latestResult.success && latestResult.data) {
           const l = latestResult.data;
+          
+          // Enhanced timestamp handling for latest sensor data
+          const currentTime = new Date();
+          
+          // Try to get the most accurate timestamp from sensor response
+          let actualTimestamp = null;
+          if (l.created_at) {
+            actualTimestamp = l.created_at; // ThingSpeak format
+          } else if (l.timestamp) {
+            actualTimestamp = l.timestamp; // Our API format
+          } else {
+            actualTimestamp = new Date().toISOString(); // Fallback
+          }
+          
+          const dataTime = new Date(actualTimestamp);
+          const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+          const timeDiffHours = timeDiffMinutes / 60;
+          
+          console.log(`[TwentyFourHourOverview] Latest sensor data timestamp analysis:`, {
+            actualTimestamp,
+            currentTime: currentTime.toISOString(),
+            ageMinutes: timeDiffMinutes.toFixed(1),
+            ageHours: timeDiffHours.toFixed(1)
+          });
+          
           const fallback: HistoryPoint[] = [];
           
           // Generate data for TODAY only, up to current hour
@@ -171,8 +224,17 @@ const TwentyFourHourOverview: React.FC = () => {
           }
           
           setSeries(fallback);
-          setLastUpdated(fallback[fallback.length - 1]?.timestamp || null);
-          setError(`Showing today's data up to ${currentHour}:00 (Historical data unavailable)`);
+          setLastUpdated(actualTimestamp); // Use actual sensor timestamp
+          
+          // Show data age status
+          if (timeDiffHours > 1) {
+            setError(`Sensor data is ${timeDiffHours.toFixed(1)} hours old (Historical data unavailable)`);
+          } else if (timeDiffMinutes > 30) {
+            setError(`Sensor data is ${timeDiffMinutes.toFixed(0)} minutes old (Historical data unavailable)`);
+          } else {
+            setError(`Showing today's data up to ${currentHour}:00 (Historical data unavailable)`);
+          }
+          
           console.log('[TwentyFourHourOverview] Using fallback simulated data');
         } else {
           throw new Error('Latest sensor data also failed');
@@ -192,65 +254,100 @@ const TwentyFourHourOverview: React.FC = () => {
     return () => clearInterval(id);
   }, []);
 
+  // Separate logic for main display value (last actual sensor reading)
+  const currentDisplayValue = useMemo(() => {
+    console.log('[TwentyFourHourOverview] Processing currentDisplayValue, series:', series);
+    console.log('[TwentyFourHourOverview] Active variable:', active.key);
+    
+    // Find the most recent data point with a valid value for the active metric
+    for (let i = series.length - 1; i >= 0; i--) {
+      const point = series[i];
+      if (point.timestamp) { // Valid timestamp
+        const value = (point[active.key] ?? null) as number | null;
+        if (typeof value === 'number' && !isNaN(value)) {
+          console.log('[TwentyFourHourOverview] Found last valid value:', value, 'from timestamp:', point.timestamp);
+          return value;
+        }
+      }
+    }
+    
+    console.log('[TwentyFourHourOverview] No valid data found for current display');
+    return null;
+  }, [series, active.key]);
+
   const displayData = useMemo(() => {
     console.log('[TwentyFourHourOverview] Processing displayData, series:', series);
     console.log('[TwentyFourHourOverview] Active variable:', active.key);
     
-    // Determine which day to render (based on latest point)
+    // Determine which day to render (based on latest point or current day)
     const base = series.length ? new Date(series[series.length - 1].timestamp) : new Date();
     const dayStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
     const dayEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
     
     console.log('[TwentyFourHourOverview] Date range:', { base, dayStart, dayEnd });
 
-    // Prepare 24 buckets for each hour
-    const buckets: { start: Date; end: Date; label: string; values: number[] }[] = [];
+    // Create exactly 24 hourly data points (12am to 11pm)
+    const hourlyData: { time: string; value: number; hour: number }[] = [];
+    
+    // Enhanced hour label function for better readability
     const hourLabel = (h: number) => {
-      const isAM = h < 12;
-      const hour12 = h % 12 === 0 ? 12 : h % 12;
-      return `${hour12}${isAM ? 'a' : 'p'}`;
+      if (h === 0) return '12am';
+      if (h === 12) return '12pm';
+      if (h < 12) return `${h}am`;
+      return `${h - 12}pm`;
     };
-    for (let h = 0; h < 24; h++) {
-      const start = new Date(dayStart.getTime());
-      start.setHours(h, 0, 0, 0);
-      const end = new Date(start.getTime());
-      end.setMinutes(59, 59, 999);
-      buckets.push({ start, end, label: hourLabel(h), values: [] });
-    }
 
-    // Distribute series points into hourly buckets
-    for (const p of series) {
-      const t = new Date(p.timestamp);
-      if (t < dayStart || t > dayEnd) continue;
-      const hour = t.getHours();
-      const val = (p[active.key] ?? null) as number | null;
-      if (typeof val === 'number') {
-        buckets[hour].values.push(val);
-      }
-    }
-
-    // Compute per-hour averages
-    const hourlyAverages = buckets.map(b => b.values.length ? b.values.reduce((a, c) => a + c, 0) / b.values.length : null);
-
-    // Forward-fill strategy with initial back-fill:
-    // 1) Find first non-null; back-fill earlier hours with that first value.
-    // 2) Walk forward, carrying last known value to replace nulls.
-    let firstKnownIndex = hourlyAverages.findIndex(v => v !== null && !Number.isNaN(v as any));
-    let carry = firstKnownIndex >= 0 ? (hourlyAverages[firstKnownIndex] as number) : 0;
-    const filled: number[] = new Array(24).fill(0);
-    for (let i = 0; i < 24; i++) {
-      if (i < firstKnownIndex && firstKnownIndex >= 0) {
-        filled[i] = carry; // back-fill to first known value
-      } else {
-        const v = hourlyAverages[i];
-        if (typeof v === 'number' && !Number.isNaN(v)) {
-          carry = v;
+    // Process each hour from 0 to 23 (12am to 11pm)
+    for (let hour = 0; hour < 24; hour++) {
+      const hourStart = new Date(dayStart.getTime());
+      hourStart.setHours(hour, 0, 0, 0); // Set to start of hour (00:00 minutes)
+      
+      const hourEnd = new Date(dayStart.getTime());
+      hourEnd.setHours(hour, 59, 59, 999); // End of hour (59:59 minutes)
+      
+      // Find data points that fall within this hour
+      const hourDataPoints: number[] = [];
+      
+      for (const point of series) {
+        if (!point.timestamp) {
+          // Handle null timestamps - skip this point
+          continue;
         }
-        filled[i] = carry;
+        
+        const pointTime = new Date(point.timestamp);
+        
+        // Check if this data point falls within the current hour
+        if (pointTime >= hourStart && pointTime <= hourEnd) {
+          const value = (point[active.key] ?? null) as number | null;
+          if (typeof value === 'number' && !isNaN(value)) {
+            hourDataPoints.push(value);
+          }
+        }
       }
+      
+      // Calculate the value for this hour
+      let hourValue: number;
+      if (hourDataPoints.length > 0) {
+        // Use average of all data points in this hour
+        hourValue = hourDataPoints.reduce((sum, val) => sum + val, 0) / hourDataPoints.length;
+        hourValue = parseFloat(hourValue.toFixed(1)); // Round to 1 decimal place
+      } else {
+        // No data for this hour - set to zero as requested
+        hourValue = 0;
+      }
+      
+      hourlyData.push({
+        time: hourLabel(hour),
+        value: hourValue,
+        hour: hour
+      });
     }
 
-    const finalData = buckets.map((b, idx) => ({ time: b.label, value: filled[idx] }));
+    console.log('[TwentyFourHourOverview] Generated 24-hour data:', hourlyData);
+    console.log('[TwentyFourHourOverview] Data points with values > 0:', hourlyData.filter(d => d.value > 0).length);
+    
+    // Return only time and value for chart compatibility
+    const finalData = hourlyData.map(({ time, value }) => ({ time, value }));
     console.log('[TwentyFourHourOverview] Final display data:', finalData);
     return finalData;
   }, [series, active.key]);
@@ -283,15 +380,11 @@ const TwentyFourHourOverview: React.FC = () => {
 
       <div className="flex items-center justify-between text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>
         <div>{dateHeader}</div>
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}
-        </div>
       </div>
 
       <div className="flex items-baseline gap-3 mb-2">
         <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>
-          {displayData.length ? `${displayData[displayData.length - 1].value.toFixed(1)}${active.unit}` : '--'}
+          {currentDisplayValue !== null ? `${currentDisplayValue.toFixed(1)}${active.unit}` : '--'}
         </div>
         <div className="text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>{active.label}</div>
       </div>
@@ -358,7 +451,43 @@ const TwentyFourHourOverview: React.FC = () => {
         </button>
       </div>
 
-      {error && (
+      {/* Last updated and data age info */}
+      <div className="flex flex-col items-center gap-1 text-[#4A7C59] mt-3" style={{ fontSize: 'var(--text-sm)' }}>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4" />
+          <span>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString('en-US', {
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZoneName: 'short'
+          }) : 'Never'}</span>
+        </div>
+        {lastUpdated && (() => {
+          const now = new Date();
+          const dataTime = new Date(lastUpdated);
+          const diffMinutes = (now.getTime() - dataTime.getTime()) / (1000 * 60);
+          const diffHours = diffMinutes / 60;
+          
+          if (diffMinutes < 60) {
+            return (
+              <div className="text-xs text-gray-500">
+                Data age: {diffMinutes.toFixed(0)} minutes ago
+              </div>
+            );
+          } else {
+            return (
+              <div className="text-xs text-red-500">
+                Data age: {diffHours.toFixed(1)} hours ago
+              </div>
+            );
+          }
+        })()}
+      </div>
+
+      {error && !error.includes('hours old') && !error.includes('minutes old') && (
         <div className="mt-3 text-center text-xs text-orange-700 bg-orange-50 rounded px-2 py-1">
           {error}
         </div>
