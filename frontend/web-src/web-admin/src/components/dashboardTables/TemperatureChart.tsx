@@ -44,29 +44,133 @@ import { dataTransformUtils } from "../../api/utils/dataTransformUtils";
 import { CHART_CONFIG } from "../../api/utils/chartConfig";
 import { dateUtils } from "../../api/utils/dateUtils";
 
+// Utility Functions
+const formatDateRange = (start: Date, end: Date): string => {
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
+  };
+  return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
+};
 
-// Updated types to match your backend structure and UnifiedExportModal
-interface ChartDataItem {
-  label: string;
-  timestamp: string;
-  temperature: number | null;
-  humidity: number | null;
-  soilMoisture: number | null;
-  soilPh: number | null;
-  lightIntensity: number | null;
-  dataPoints: number;
-  // Chart-specific properties
+const getStartOfWeek = (date: Date): Date => {
+  const daysFromSunday = date.getDay();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
+};
+
+const getEndOfWeek = (date: Date): Date => {
+  const startOfWeek = getStartOfWeek(date);
+  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
+};
+
+const getStartOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const getEndOfMonth = (date: Date): Date => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+};
+
+const getWeeksInMonth = (date: Date): number => {
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const firstWeekday = firstDay.getDay();
+  const lastWeekday = lastDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
+  if (lastWeekday < firstWeekday) weeks++;
+
+  return weeks;
+};
+
+const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
+  const today = baseDate ? new Date(baseDate) : new Date();
+  const defaultThreshold = {
+    min: TEMPERATURE_THRESHOLDS.min,
+    max: TEMPERATURE_THRESHOLDS.max,
+    critical: TEMPERATURE_THRESHOLDS.critical,
+  };
+
+  switch (period) {
+    case 'daily': {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const chartData: DataItem[] = days.map(day => ({
+        day,
+        value: null,
+        dataPoints: 0,
+        threshold: defaultThreshold
+      }));
+      const startOfWeek = getStartOfWeek(today);
+      const endOfWeek = getEndOfWeek(startOfWeek);
+      return {
+        chartData,
+        xKey: 'day',
+        dateRange: formatDateRange(startOfWeek, endOfWeek)
+      };
+    }
+    case 'weekly': {
+      const weeksInMonth = getWeeksInMonth(today);
+      const chartData: DataItem[] = Array.from({ length: weeksInMonth }, (_, i) => ({
+        week: `Week ${i + 1}`,
+        value: null,
+        dataPoints: 0,
+        threshold: defaultThreshold
+      }));
+      const startOfMonth = getStartOfMonth(today);
+      const endOfMonth = getEndOfMonth(today);
+      return {
+        chartData,
+        xKey: 'week',
+        dateRange: formatDateRange(startOfMonth, endOfMonth)
+      };
+    }
+    case 'monthly': {
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      const chartData: DataItem[] = monthNames.map(month => ({
+        month,
+        value: null,
+        dataPoints: 0,
+        threshold: defaultThreshold
+      }));
+      const startOfYear = new Date(today.getFullYear(), 0, 1);
+      const endOfYear = new Date(today.getFullYear(), 11, 31);
+      return {
+        chartData,
+        xKey: 'month',
+        dateRange: formatDateRange(startOfYear, endOfYear)
+      };
+    }
+    default:
+      return { chartData: [], xKey: '', dateRange: '' };
+  }
+};
+
+
+interface DataItem {
+  [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
   value: number | null;
+  dataPoints?: number;
+  threshold: {
+    min: number;
+    max: number;
+    critical: number;
+  };
+  hour?: string;
   day?: string;
   week?: string;
   month?: string;
-  // Add index signature to make it compatible with ChartDataPoint
-  [key: string]: any;
+  timestamp?: string;
 }
 
 interface ApiResponse {
   success: boolean;
-  data: ChartDataItem[];
+  data: DataItem[];
   rawData?: any[];
   error?: string;
   message?: string;
@@ -128,8 +232,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const calculateTrend = (data: ChartDataItem[]): { trend: 'up' | 'down' | 'neutral'; percentage: number } => {
-  const validData = data.filter((item: ChartDataItem) => item.value !== null && item.value !== 0);
+const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; percentage: number } => {
+  const validData = data.filter((item: DataItem) => item.value !== null && item.value !== 0);
   if (validData.length < 2) {
     return { trend: 'neutral', percentage: 0 };
   }
@@ -186,7 +290,7 @@ const viewTypeOptions = [
 
 // Main Component
 const TemperatureDashboard = () => {
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [chartData, setChartData] = useState<DataItem[]>([]);
   const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [dateRange, setDateRange] = useState<string>('');
@@ -194,7 +298,7 @@ const TemperatureDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [viewType, setViewType] = useState<ViewType>('line');
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
-  const [xKey, setXKey] = useState<string>('label');
+  const [xKey, setXKey] = useState<string>('day');
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Intelligent refresh hook
@@ -208,6 +312,14 @@ const TemperatureDashboard = () => {
     enabled: true,
     onRefresh: () => fetchData(overview, selectedDate, true)
   });
+  // Add this inside the TemperatureDashboard component, after the state declarations
+const renderTableCell = (item: DataItem) => {
+  const value = item[xKey];
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value.toString();
+  }
+  return '';
+};
 
   // Updated fetchData function to properly use your MongoDB API
   const fetchData = async (
@@ -245,16 +357,17 @@ const TemperatureDashboard = () => {
     console.log(`[TemperatureDashboard] Received data:`, {
       period,
       dataLength: result.data.length,
-      hasTemperatureData: result.data.some((item: ChartDataItem) => item.temperature !== null)
+      hasTemperatureData: result.data.some((item: DataItem) => item.temperature !== null)
     });
 
     // ✅ Map with explicit type
-    const processedData: ChartDataItem[] = result.data.map((item: ChartDataItem) => ({
+    const processedData: DataItem[] = result.data.map((item: any) => ({
       ...item,
-      value: item.temperature,
+      value: item.temperature ?? null,
       day: period === 'daily' ? item.label : undefined,
       week: period === 'weekly' ? item.label : undefined,
       month: period === 'monthly' ? item.label : undefined,
+      threshold: TEMPERATURE_THRESHOLDS,
     }));
 
 
@@ -268,17 +381,17 @@ const TemperatureDashboard = () => {
           switch (period) {
             case 'daily':
               if (firstItem.date && lastItem.date) {
-                displayRange = `${new Date(firstItem.date).toLocaleDateString()} - ${new Date(lastItem.date).toLocaleDateString()}`;
+                displayRange = formatDateRange(new Date(firstItem.date), new Date(lastItem.date));
               }
               break;
             case 'weekly':
               if (firstItem.weekStart && lastItem.weekEnd) {
-                displayRange = `${new Date(firstItem.weekStart).toLocaleDateString()} - ${new Date(lastItem.weekEnd).toLocaleDateString()}`;
+                displayRange = formatDateRange(new Date(firstItem.weekStart), new Date(lastItem.weekEnd));
               }
               break;
             case 'monthly':
               if (firstItem.monthStart && lastItem.monthEnd) {
-                displayRange = `${new Date(firstItem.monthStart).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(lastItem.monthEnd).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+                displayRange = formatDateRange(new Date(firstItem.monthStart), new Date(lastItem.monthEnd));
               }
               break;
           }
@@ -305,22 +418,15 @@ const TemperatureDashboard = () => {
             startDate = baseDate;
             endDate = baseDate;
         }
-        displayRange = dateUtils.formatDateRange(startDate, endDate);
+        displayRange = formatDateRange(startDate, endDate);
       }
 
       // Set the appropriate xKey for chart rendering
-      let chartXKey = 'label';
-      switch (period) {
-        case 'daily':
-          chartXKey = 'day';
-          break;
-        case 'weekly':
-          chartXKey = 'week';
-          break;
-        case 'monthly':
-          chartXKey = 'month';
-          break;
-      }
+      // Set the appropriate xKey for chart rendering
+// xKey by period
+let chartXKey = 'day';
+if (period === 'weekly') chartXKey = 'week';
+if (period === 'monthly') chartXKey = 'month';
 
       setChartData(processedData);
       setXKey(chartXKey);
@@ -341,7 +447,7 @@ const TemperatureDashboard = () => {
       
       // Set empty data on error
       setChartData([]);
-      setXKey('label');
+      setXKey('day');
       setDateRange('No data available');
     } finally {
       setIsLoading(false);
@@ -407,7 +513,7 @@ const TemperatureDashboard = () => {
   const renderSummary = () => {
     // const validData = chartData.filter((item: ChartDataItem) => item.temperature !== null && item.temperature !== 0);
     const validData = chartData.filter(
-  (item: ChartDataItem) =>
+  (item: DataItem) =>
     item.temperature !== null &&
     item.temperature !== undefined &&
     item.temperature !== 0
@@ -426,7 +532,7 @@ const TemperatureDashboard = () => {
 
     const currentValue = validData[validData.length - 1].temperature as number;
     const averageValue = validData.reduce(
-  (sum, item: ChartDataItem) => sum + (item.temperature as number),
+  (sum, item: DataItem) => sum + (item.temperature as number),
   0
 ) / validData.length;
     const maxValue = Math.max(...validData.map(item => item.temperature as number));
@@ -529,12 +635,14 @@ const TemperatureDashboard = () => {
       );
     }
 
-    const displayData = chartData.map((item: ChartDataItem) => ({
-      ...item,
-      // Ensure the xKey exists for axis and coalesce value to 0 for gaps
-      [xKey]: item[xKey as keyof ChartDataItem] || item.label,
-      value: item.value ?? 0,
-    }));
+    const displayData = (chartData.length === 0 ?
+      getDefaultData(overview, selectedDate).chartData :
+      chartData.filter(item => item.value !== null && item.value !== undefined)
+        .map(item => ({
+          ...item,
+          value: Number(item.value), // Ensure value is always a number
+          threshold: TEMPERATURE_THRESHOLDS
+        })));
 
 
     if (viewType === 'tabular') {
@@ -558,16 +666,16 @@ const TemperatureDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {displayData.map((item: ChartDataItem, index: number) => (
+              {displayData.map((item: DataItem, index: number) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.label}
+                  {renderTableCell(item)}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.temperature ? item.temperature.toFixed(1) : 'N/A'}°C
+                  {item.value?.toFixed(1) ?? '0.0'}°C
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                    {getStatusBadge(item.temperature)}
+                  {getStatusBadge(item.value!)}
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.dataPoints}

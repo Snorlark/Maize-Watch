@@ -563,17 +563,14 @@ const SoilMoistureDashboard = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
     if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
 
-    // Always show chart even with empty data
-    const displayData = (chartData.length === 0 ?
-      getDefaultData(overview, selectedDate).chartData :
-      chartData.map(item => ({
-        ...item,
-        value: item.value ?? 0, // Use nullish coalescing to handle null values
-        threshold: SOIL_MOISTURE_THRESHOLDS
-      }))).map(item => ({
-        ...item,
-        value: Number(item.value) // Ensure value is always a number
-      }));
+      const displayData = (chartData.length === 0 ?
+        getDefaultData(overview, selectedDate).chartData :
+        chartData.filter(item => item.value !== null && item.value !== undefined)
+          .map(item => ({
+            ...item,
+            value: Number(item.value), // Ensure value is always a number
+            threshold: SOIL_MOISTURE_THRESHOLDS
+          })));
 
     if (viewType === 'tabular') {
       return (
@@ -602,7 +599,7 @@ const SoilMoistureDashboard = () => {
                     {item.value?.toFixed(1) ?? '0.0'}%
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                    {getStatusBadge(item.value)}
+                    {getStatusBadge(item.value!)}
                   </td>
                 </tr>
               ))}

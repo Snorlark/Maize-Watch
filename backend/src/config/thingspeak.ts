@@ -19,6 +19,8 @@ interface SensorData {
   field6?: number; // Battery Level
   field7?: number; // Signal Strength
   field8?: number; // Custom Field
+  created_at?: string; // ThingSpeak timestamp
+  entry_id?: number; // ThingSpeak entry ID
 }
 
 interface ThingSpeakResponse {
@@ -144,6 +146,8 @@ class ThingSpeakService {
           field6: feed.field6 ? parseFloat(feed.field6) : undefined,
           field7: feed.field7 ? parseFloat(feed.field7) : undefined,
           field8: feed.field8 ? parseFloat(feed.field8) : undefined,
+          created_at: feed.created_at, // Include ThingSpeak timestamp
+          entry_id: feed.entry_id // Include ThingSpeak entry ID
         };
       }
 
@@ -180,6 +184,8 @@ class ThingSpeakService {
           field6: feed.field6 ? parseFloat(feed.field6) : undefined,
           field7: feed.field7 ? parseFloat(feed.field7) : undefined,
           field8: feed.field8 ? parseFloat(feed.field8) : undefined,
+          created_at: feed.created_at, // Include ThingSpeak timestamp
+          entry_id: feed.entry_id // Include ThingSpeak entry ID
         }));
       }
 

@@ -111,6 +111,41 @@ const LiveDataWidget: React.FC = () => {
       if (result.success && result.data) {
         const raw = result.data;
         
+        // Enhanced timestamp handling for ThingSpeak data
+        const currentTime = new Date();
+        
+        // Try to get the most accurate timestamp from ThingSpeak response
+        let actualTimestamp = null;
+        
+        // Check for ThingSpeak timestamp formats
+        if (raw.created_at) {
+          actualTimestamp = raw.created_at; // ThingSpeak format
+        } else if (raw.timestamp) {
+          actualTimestamp = raw.timestamp; // Our API format
+        } else if (raw.entry_id && raw.field1) {
+          // If we have ThingSpeak entry data, use current time as fallback
+          console.warn('[LiveDataWidget] ThingSpeak data found but no timestamp - using current time');
+          actualTimestamp = new Date().toISOString();
+        }
+        
+        const dataTime = actualTimestamp ? new Date(actualTimestamp) : new Date();
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const timeDiffHours = timeDiffMinutes / 60;
+        const isDataFresh = timeDiffMinutes <= 30;
+        
+        // Enhanced logging for debugging
+        console.log(`[LiveDataWidget] Timestamp Analysis:`, {
+          rawTimestamp: raw.timestamp,
+          thingSpeakCreatedAt: raw.created_at,
+          actualTimestamp,
+          currentTime: currentTime.toISOString(),
+          dataTime: dataTime.toISOString(),
+          ageMinutes: timeDiffMinutes.toFixed(1),
+          ageHours: timeDiffHours.toFixed(1),
+          isDataFresh,
+          rawDataKeys: Object.keys(raw)
+        });
+        
         const nextValues: Record<VariableKey, number> = {
           temperature: raw.temperature ?? 0,
           humidity: raw.humidity ?? 0,
@@ -120,13 +155,13 @@ const LiveDataWidget: React.FC = () => {
         };
         
         setValues(nextValues);
-        setLastUpdated(raw.timestamp ?? null);
+        setLastUpdated(actualTimestamp || new Date().toISOString()); // Use the actual timestamp we found
         
-        // Show a subtle indicator if using test data
+        // Show data age and freshness status (but don't prevent display)
         if (result.message?.includes('test data') || result.message?.includes('Test')) {
           setError('Using test data (Demo mode)');
         } else {
-          setError(null);
+          setError(null); // Don't show error for old data, just display it
         }
         
         console.log('[LiveDataWidget] Successfully updated sensor data:', nextValues);
@@ -136,7 +171,8 @@ const LiveDataWidget: React.FC = () => {
     } catch (e: any) {
       console.error('[LiveDataWidget] Error fetching sensor data:', e);
       
-      // Final fallback to mock data
+      // Final fallback to mock data with old timestamp
+      const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00'; // Your actual last data timestamp
       const mockValues: Record<VariableKey, number> = {
         temperature: 25.5,
         humidity: 65,
@@ -145,8 +181,10 @@ const LiveDataWidget: React.FC = () => {
         light_level: 750,
       };
       
+      // Mock data uses old timestamp to show realistic age
+      
       setValues(mockValues);
-      setLastUpdated(new Date().toISOString());
+      setLastUpdated(thingSpeakTimestamp); // Use old timestamp instead of current time
       setError('Using fallback data (All endpoints failed)');
     } finally {
       setLoading(false);
@@ -234,60 +272,93 @@ const LiveDataWidget: React.FC = () => {
           <RefreshCw className="w-5 h-5 animate-spin mr-2" />
           <span>Loading live data...</span>
         </div>
-      ) : error ? (
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
       ) : (
-        <div className="text-center">
-          <div className="mb-2 inline-flex items-center gap-2">
-            <span className={`font-medium ${active.color}`}>{active.label}</span>
-          </div>
-
-          <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '48px' }}>
-            {value}{active.unit}
-          </div>
-
-          {/* Status badge derived from thresholds */}
-          {(() => { const badge = getBadge(active.key, value); return (
-            <div className="mb-4">
-              <span className={`inline-block px-3 py-1 rounded-full font-medium ${badge?.cls || ''}`} style={{ fontSize: 'var(--text-xs)' }}>
-                {badge?.text || '—'}
-              </span>
+        <>
+          {error && (
+            <div className="bg-orange-50 text-orange-700 px-4 py-3 rounded-lg mb-4 text-sm">
+              {error}
             </div>
-          ); })()}
-
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <button
-              aria-label="Previous metric"
-              onClick={onPrev}
-              className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
-            >
-              <ChevronLeft className="w-5 h-5 text-[#356B2C]" />
-            </button>
-            <div className="flex items-center gap-2">
-              {variables.map((v, i) => (
-                <span
-                  key={v.key}
-                  className={`w-2 h-2 rounded-full ${i === activeIdx ? 'bg-[#356B2C]' : 'bg-[#B8D4A8]'}`}
-                  title={v.label}
-                />
-              ))}
+          )}
+          <div className="text-center">
+            <div className="mb-2 inline-flex items-center gap-2">
+              <span className={`font-medium ${active.color}`}>{active.label}</span>
             </div>
-            <button
-              aria-label="Next metric"
-              onClick={onNext}
-              className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
-            >
-              <ChevronRight className="w-5 h-5 text-[#356B2C]" />
-            </button>
-          </div>
 
-          <div className="flex justify-center items-center gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
-            <Clock className="w-4 h-4" />
-            Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}
+            <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '48px' }}>
+              {value}{active.unit}
+            </div>
+
+            {/* Status badge derived from thresholds */}
+            {(() => { const badge = getBadge(active.key, value); return (
+              <div className="mb-4">
+                <span className={`inline-block px-3 py-1 rounded-full font-medium ${badge?.cls || ''}`} style={{ fontSize: 'var(--text-xs)' }}>
+                  {badge?.text || '—'}
+                </span>
+              </div>
+            ); })()}
+
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <button
+                aria-label="Previous metric"
+                onClick={onPrev}
+                className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+              >
+                <ChevronLeft className="w-5 h-5 text-[#356B2C]" />
+              </button>
+              <div className="flex items-center gap-2">
+                {variables.map((v, i) => (
+                  <span
+                    key={v.key}
+                    className={`w-2 h-2 rounded-full ${i === activeIdx ? 'bg-[#356B2C]' : 'bg-[#B8D4A8]'}`}
+                    title={v.label}
+                  />
+                ))}
+              </div>
+              <button
+                aria-label="Next metric"
+                onClick={onNext}
+                className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+              >
+                <ChevronRight className="w-5 h-5 text-[#356B2C]" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center gap-1 text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: '2-digit', 
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  timeZoneName: 'short'
+                }) : 'Never'}</span>
+              </div>
+              {lastUpdated && (() => {
+                const now = new Date();
+                const dataTime = new Date(lastUpdated);
+                const diffMinutes = (now.getTime() - dataTime.getTime()) / (1000 * 60);
+                const diffHours = diffMinutes / 60;
+                
+                if (diffMinutes < 60) {
+                  return (
+                    <div className="text-xs text-gray-500">
+                      Data age: {diffMinutes.toFixed(0)} minutes ago
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="text-xs text-red-500">
+                      Data age: {diffHours.toFixed(1)} hours ago
+                    </div>
+                  );
+                }
+              })()}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
