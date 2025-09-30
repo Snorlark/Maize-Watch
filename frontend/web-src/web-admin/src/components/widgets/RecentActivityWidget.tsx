@@ -261,14 +261,14 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
             <button 
               onClick={handleManualRefresh}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-1 text-[#4A7C59] hover:text-[#356B2C] transition-colors disabled:opacity-50 text-sm"
+              className="flex items-center gap-2 px-3 py-1 text-[#4A7C59] hover:text-[#356B2C] transition-colors disabled:opacity-50 text-sm cursor-pointer disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             <button 
               onClick={() => navigate('/admin-portal-xyz123/activity-logs')}
-              className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium text-sm cursor-pointer"
             >
               View All
               <ChevronRight className="w-4 h-4" />
@@ -277,10 +277,10 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
         </div>
       </div>
 
-      {/* Error Message */}
+      {/* Error State */}
       {error && (
-        <div className="p-4 bg-red-50 border-b border-red-200">
-          <div className="flex items-center justify-between">
+        <div className="p-6 border-b border-[#E8F2E0]">
+          <div className="flex items-center justify-between bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600" />
               <span className="text-red-700 font-medium text-sm">
@@ -289,7 +289,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
             </div>
             <button
               onClick={handleManualRefresh}
-              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm cursor-pointer"
             >
               Retry
             </button>
