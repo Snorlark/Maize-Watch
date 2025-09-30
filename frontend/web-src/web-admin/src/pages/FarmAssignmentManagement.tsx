@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, MapPin, Calendar, Sprout, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Sprout, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { CurrentFarm, Farm, farmService } from "../api/services/farmService";
@@ -299,7 +299,7 @@ export default function FarmAssignmentManagement() {
             <button
               onClick={fetchFarms}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#5A7A3A] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#5A7A3A] transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -307,7 +307,7 @@ export default function FarmAssignmentManagement() {
           </div>
 
           {/* Stats */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-[#F5F9E8] p-4 rounded-lg">
               <div className="text-2xl font-bold text-[#1E441E]">{farms.length}</div>
               <div className="text-sm text-[#456C2D]">Total Farms</div>
@@ -318,150 +318,130 @@ export default function FarmAssignmentManagement() {
               </div>
               <div className="text-sm text-[#456C2D]">Total Fields</div>
             </div>
-            <div className="bg-[#F5F9E8] p-4 rounded-lg">
-              <div className="text-2xl font-bold text-[#1E441E]">
-                {new Set(farms.map(farm => farm.userId).filter(Boolean)).size}
-              </div>
-              <div className="text-sm text-[#456C2D]">Active Users</div>
-            </div>
           </div>
         </div>
 
         {/* Farm Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-[#E6F0D3]">
-            <h2 className="text-lg font-semibold text-[#1E441E]">Farm Assignments</h2>
-            <p className="text-sm text-[#456C2D] mt-1">
-              Showing {sortedFarms.length} of {farms.length} farms
-            </p>
+        <div className="overflow-x-auto">
+          {/* Table Header */}
+          <div className="flex justify-between mb-4 items-end">
+            <div>
+              <h2 className="text-xl font-semibold text-[#1E441E]">Farm Assignments</h2>
+              <p className="text-sm text-[#456C2D] mt-1">
+                Showing {sortedFarms.length} of {farms.length} farms
+              </p>
+            </div>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-[#456C2D] text-[#F5F5DC]">
+          
+          <table className="min-w-full bg-white rounded-xl shadow-md overflow-hidden">
+            <thead className="bg-[#456C2D] text-[#F5F5DC] text-left">
+              <tr>
+                <th className="px-6 py-3 w-12">#</th>
+                <th 
+                  className="px-6 py-3 cursor-pointer hover:bg-[#5A7A3A] transition-colors"
+                  onClick={() => handleSort('farmName')}
+                >
+                  <div className="flex items-center justify-between">
+                    Farm Name
+                    {getSortIcon('farmName')}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 cursor-pointer hover:bg-[#5A7A3A] transition-colors"
+                  onClick={() => handleSort('location')}
+                >
+                  <div className="flex items-center justify-between">
+                    Location
+                    {getSortIcon('location')}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 cursor-pointer hover:bg-[#5A7A3A] transition-colors"
+                  onClick={() => handleSort('assignedUser')}
+                >
+                  <div className="flex items-center justify-between">
+                    Assigned User
+                    {getSortIcon('assignedUser')}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 cursor-pointer hover:bg-[#5A7A3A] transition-colors"
+                  onClick={() => handleSort('fieldsCount')}
+                >
+                  <div className="flex items-center justify-between">
+                    Fields
+                    {getSortIcon('fieldsCount')}
+                  </div>
+                </th>
+                <th 
+                  className="px-6 py-3 cursor-pointer hover:bg-[#5A7A3A] transition-colors"
+                  onClick={() => handleSort('updatedAt')}
+                >
+                  <div className="flex items-center justify-between">
+                    Last Updated
+                    {getSortIcon('updatedAt')}
+                  </div>
+                </th>
+                <th className="px-6 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && sortedFarms.length === 0 ? (
                 <tr>
-                  <th 
-                    className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
-                    onClick={() => handleSort('farmName')}
-                  >
-                    <div className="flex items-center">
-                      Farm Name
-                      {getSortIcon('farmName')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
-                    onClick={() => handleSort('location')}
-                  >
-                    <div className="flex items-center">
-                      Location
-                      {getSortIcon('location')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
-                    onClick={() => handleSort('assignedUser')}
-                  >
-                    <div className="flex items-center">
-                      Assigned User
-                      {getSortIcon('assignedUser')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
-                    onClick={() => handleSort('fieldsCount')}
-                  >
-                    <div className="flex items-center">
-                      Fields
-                      {getSortIcon('fieldsCount')}
-                    </div>
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
-                    onClick={() => handleSort('updatedAt')}
-                  >
-                    <div className="flex items-center">
-                      Last Updated
-                      {getSortIcon('updatedAt')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left">Actions</th>
+                  <td colSpan={7} className="px-6 py-4 text-center">
+                    <Loader2 className="w-6 h-6 mx-auto animate-spin" />
+                    <p>Loading farms...</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#456C2D] mb-2" />
-                      <p className="text-[#456C2D]">Loading farms...</p>
+              ) : sortedFarms.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-4 text-center">No farms found</td>
+                </tr>
+              ) : (
+                sortedFarms.map((farm, index) => (
+                  <tr key={farm._id} className="border-b hover:bg-[#F5F9E8] transition-colors">
+                    <td className="px-6 py-4 text-center font-medium text-[#456C2D]">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4">{farm.farmName || farm.fieldName || 'Unnamed Farm'}</td>
+                    <td className="px-6 py-4">
+                      {farm.location || 'Location not specified'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getUserDisplayName(farm.userId)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {(farm.fields || []).length}
+                    </td>
+                    <td className="px-6 py-4">
+                      {farm.updatedAt ? new Date(farm.updatedAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 flex gap-2">
+                      <Eye 
+                        className="w-5 h-5 text-[#456C2D] cursor-pointer hover:text-[#8B4513] hover:scale-110 transition-all" 
+                        onClick={() => handleViewDetails(farm)}
+                      />
+                      <UserCheck 
+                        className="w-5 h-5 text-[#8B4513] cursor-pointer hover:text-[#A0522D] hover:scale-110 transition-all" 
+                        onClick={() => handleReassign(farm)}
+                      />
                     </td>
                   </tr>
-                ) : sortedFarms.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <Sprout className="w-16 h-16 text-[#B8D4A8] mx-auto mb-4" />
-                      <p className="text-[#456C2D] text-lg">No farms found</p>
-                      <p className="text-[#7A8471] mt-2">
-                        {searchTerm ? 'Try adjusting your search criteria' : 'No farms have been created yet'}
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  sortedFarms.map((farm) => (
-                    <tr key={farm._id} className="border-b border-[#E6F0D3] hover:bg-[#F5F9E8] transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-[#1E441E]">{farm.farmName || farm.fieldName || 'Unnamed Farm'}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-[#456C2D]">
-                          <MapPin className="w-4 h-4" />
-                          <span className="truncate max-w-xs">{farm.location || 'Location not specified'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-[#456C2D]" />
-                          <span className="text-[#1E441E] font-medium">
-                            {getUserDisplayName(farm.userId)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Sprout className="w-4 h-4 text-[#456C2D]" />
-                          <span className="text-[#1E441E] font-medium">{(farm.fields || []).length}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-[#456C2D]">
-                          <Calendar className="w-4 h-4" />
-                          <span>{farm.updatedAt ? new Date(farm.updatedAt).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewDetails(farm)}
-                            className="p-2 text-[#456C2D] hover:text-[#8B4513] hover:bg-[#F5F9E8] rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleReassign(farm)}
-                            className="p-2 text-[#8B4513] hover:text-[#A0522D] hover:bg-[#F5F9E8] rounded-lg transition-colors"
-                            title="Reassign Farm"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
+          
+          {/* Sort Status Indicator */}
+          {sortField && (
+            <div className="mt-3 text-sm text-[#456C2D]">
+              <span className="font-medium">Sorted by:</span> {sortField === 'farmName' ? 'Farm Name' : 
+                                                              sortField === 'location' ? 'Location' : 
+                                                              sortField === 'assignedUser' ? 'Assigned User' : 
+                                                              sortField === 'fieldsCount' ? 'Fields' : 'Last Updated'} 
+              ({sortDirection === 'asc' ? 'A to Z' : 'Z to A'})
+            </div>
+          )}
         </div>
 
         {/* Modals */}

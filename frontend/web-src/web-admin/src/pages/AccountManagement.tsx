@@ -330,7 +330,7 @@ export default function AccountManagement() {
           <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
                 activeTab === 'users'
                   ? 'bg-[#456C2D] text-white shadow-sm'
                   : 'text-[#456C2D] hover:bg-[#F0F8E8]'
@@ -343,7 +343,7 @@ export default function AccountManagement() {
             {hasFullAdminAccess && (
               <button
                 onClick={() => setActiveTab('farms')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
                   activeTab === 'farms'
                     ? 'bg-[#456C2D] text-white shadow-sm'
                     : 'text-[#456C2D] hover:bg-[#F0F8E8]'
@@ -374,7 +374,7 @@ export default function AccountManagement() {
             <div className="flex justify-center">
               <button
                 onClick={handleOpenCreateModal}
-                className="flex items-center gap-2 px-6 py-3 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
+                className="flex items-center gap-2 px-6 py-3 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium cursor-pointer"
                 style={{ fontSize: 'var(--text-base)' }}
               >
                 <PlusCircle className="w-5 h-5" />
@@ -405,7 +405,7 @@ export default function AccountManagement() {
                 <button
                   onClick={fetchFarms}
                   disabled={farmLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#5A7A3A] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#5A7A3A] transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <RefreshCw className={`w-4 h-4 ${farmLoading ? 'animate-spin' : ''}`} />
                   Refresh
@@ -413,7 +413,7 @@ export default function AccountManagement() {
               </div>
 
               {/* Stats */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-[#F5F9E8] p-4 rounded-lg">
                   <div className="text-2xl font-bold text-[#1E441E]">{farms.length}</div>
                   <div className="text-sm text-[#456C2D]">Total Farms</div>
@@ -423,12 +423,6 @@ export default function AccountManagement() {
                     {farms.reduce((acc, farm) => acc + (farm.fields || []).length, 0)}
                   </div>
                   <div className="text-sm text-[#456C2D]">Total Fields</div>
-                </div>
-                <div className="bg-[#F5F9E8] p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-[#1E441E]">
-                    {new Set(farms.map(farm => farm.userId).filter(Boolean)).size}
-                  </div>
-                  <div className="text-sm text-[#456C2D]">Active Users</div>
                 </div>
               </div>
             </div>
@@ -443,7 +437,7 @@ export default function AccountManagement() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="min-w-full">
+                <table className="min-w-full bg-white rounded-xl shadow-md overflow-hidden">
                   <thead className="bg-[#456C2D] text-[#F5F5DC]">
                     <tr>
                       <th 
@@ -548,14 +542,14 @@ export default function AccountManagement() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleViewDetails(farm)}
-                                className="p-2 text-[#456C2D] hover:text-[#8B4513] hover:bg-[#F5F9E8] rounded-lg transition-colors"
+                                className="p-2 text-[#456C2D] hover:text-[#8B4513] hover:bg-[#F5F9E8] rounded-lg transition-colors cursor-pointer"
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleReassign(farm)}
-                                className="p-2 text-[#8B4513] hover:text-[#A0522D] hover:bg-[#F5F9E8] rounded-lg transition-colors"
+                                className="p-2 text-[#8B4513] hover:text-[#A0522D] hover:bg-[#F5F9E8] rounded-lg transition-colors cursor-pointer"
                                 title="Reassign Farm"
                               >
                                 <UserCheck className="w-4 h-4" />

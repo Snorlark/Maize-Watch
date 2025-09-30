@@ -23,6 +23,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [exportLoading, setExportLoading] = useState(false);
   const usersPerPage = 20;
   
   // Notify parent component about total users count
@@ -193,66 +194,123 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
   };
   
   // Export to PDF
-  const exportToPDF = () => {
-  try {
-    const doc = new jsPDF("portrait", "mm", "a4");
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const exportToPDF = async () => {
+    setExportLoading(true);
+    try {
+      const doc = new jsPDF("portrait", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
 
       const title = "Users List";
-    const now = new Date();
-    const exportDate = now.toLocaleString();
+      const now = new Date();
+      const exportDate = now.toLocaleString();
 
-    // Try adding the logo centered at the top
-    try {
-      const logo = new Image();
-      logo.src = "maizewatch.png"; // ✅ if imported with Webpack
-
-      logo.onload = () => {
-        const logoWidth = 60; // mm
-        const logoHeight = 15;
-        const logoX = (pageWidth - logoWidth) / 2;
-
-        doc.addImage(logo, 'PNG', logoX, 10, logoWidth, logoHeight);
-
-        // Add title below the logo
-        doc.setFontSize(16);
-        doc.text(title, pageWidth / 2, 35, { align: "center" });
+      // Generate PDF content without logo dependency
+      const generatePDFContent = () => {
+        // Add title
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text(title, pageWidth / 2, 20, { align: "center" });
 
         // Add export date
         doc.setFontSize(10);
-        doc.text(`Exported on: ${exportDate}`, pageWidth / 2, 42, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.text(`Exported on: ${exportDate}`, pageWidth / 2, 28, { align: "center" });
 
-        // Table content
-          const tableColumn = ["#", "Name", "Address", "Contact No.", "Username", "Role"];
-          const tableRows = sortedUsers.map((user, index) => [
-            (startIndex + index + 1).toString(),
-          user.fullName,
+        // Add company info
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Maize-Watch System", pageWidth / 2, 35, { align: "center" });
+
+        // Table content - use all users, not just current page
+        const tableColumn = ["#", "Name", "Address", "Contact No.", "Username", "Role"];
+        const tableRows = sortedUsers.map((user, index) => [
+          (index + 1).toString(),
+          user.fullName || 'N/A',
           typeof user.address === 'object' && user.address ? 
             `${user.address.barangay}, ${user.address.municipality}, ${user.address.province}, ${user.address.region}` : 
             user.address || 'N/A',
-          user.contactNumber,
-            user.username,
-            user.role
+          user.contactNumber || 'N/A',
+          user.username || 'N/A',
+          user.role || 'N/A'
         ]);
 
         autoTable(doc, {
           head: [tableColumn],
-          body: tableRows.map(row => row.map(cell => cell || '')),
-          startY: 50,
+          body: tableRows,
+          startY: 45,
           theme: 'grid',
-          styles: { fontSize: 10, cellPadding: 3 },
-          headStyles: { fillColor: [204, 227, 187], textColor: [18, 59, 31] }
+          styles: { 
+            fontSize: 9, 
+            cellPadding: 2,
+            overflow: 'linebreak',
+            cellWidth: 'wrap'
+          },
+          headStyles: { 
+            fillColor: [70, 108, 45], // #456C2D
+            textColor: [245, 245, 220], // #F5F5DC
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            0: { cellWidth: 10 }, // # column
+            1: { cellWidth: 35 }, // Name
+            2: { cellWidth: 45 }, // Address
+            3: { cellWidth: 25 }, // Contact
+            4: { cellWidth: 25 }, // Username
+            5: { cellWidth: 20 }  // Role
+          }
         });
 
-          doc.save("users-list.pdf");
+        // Add footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, doc.internal.pageSize.getHeight() - 10);
+          doc.text(`Total Users: ${sortedUsers.length}`, 20, doc.internal.pageSize.getHeight() - 10);
+        }
+
+        doc.save(`users-list-${new Date().toISOString().split('T')[0]}.pdf`);
+        setExportLoading(false);
       };
-    } catch (error) {
-      console.error("Error adding logo:", error);
+
+      // Try to load logo, but don't depend on it
+      try {
+        const logo = new Image();
+        logo.onload = () => {
+          try {
+            const logoWidth = 40;
+            const logoHeight = 10;
+            const logoX = (pageWidth - logoWidth) / 2;
+            doc.addImage(logo, 'PNG', logoX, 8, logoWidth, logoHeight);
+            generatePDFContent();
+          } catch (logoError) {
+            console.warn("Logo loading failed, generating PDF without logo:", logoError);
+            generatePDFContent();
+          }
+        };
+        logo.onerror = () => {
+          console.warn("Logo not found, generating PDF without logo");
+          generatePDFContent();
+        };
+        logo.src = "/maizewatch.png"; // Try from public folder
+        
+        // Fallback: generate PDF after 500ms if logo doesn't load
+        setTimeout(() => {
+          if (!logo.complete) {
+            console.warn("Logo loading timeout, generating PDF without logo");
+            generatePDFContent();
+          }
+        }, 500);
+      } catch (logoError) {
+        console.warn("Logo initialization failed, generating PDF without logo:", logoError);
+        generatePDFContent();
+      }
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Failed to generate PDF. Please try again.");
+      setExportLoading(false);
     }
-  } catch (err) {
-    console.error("Error generating PDF:", err);
-  }
-};
+  };
   
   return (
     <div className="overflow-x-auto">
@@ -281,9 +339,18 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
           </div>
           <button 
             onClick={exportToPDF}
-            className="flex items-center px-3 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors cursor-pointer"
+            disabled={exportLoading}
+            className="flex items-center px-3 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4 mr-1" /> Export PDF
+            {exportLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" /> Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-1" /> Export PDF
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -406,7 +473,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
               className={`flex items-center px-4 py-2 rounded-lg transition-colors font-medium ${
                 currentPage === 1
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#456C2D] text-[#F5F5DC] hover:bg-[#5A7A3A]'
+                  : 'bg-[#456C2D] text-[#F5F5DC] hover:bg-[#5A7A3A] cursor-pointer'
               }`}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
@@ -419,7 +486,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
                 <button
                   key={page}
                   onClick={() => goToPage(page)}
-                  className={`px-3 py-2 rounded-lg transition-colors font-medium ${
+                  className={`px-3 py-2 rounded-lg transition-colors font-medium cursor-pointer ${
                     currentPage === page
                       ? 'bg-[#8B4513] text-[#F5F5DC]'
                       : 'bg-[#456C2D] text-[#F5F5DC] hover:bg-[#5A7A3A]'
@@ -437,7 +504,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
               className={`flex items-center px-4 py-2 rounded-lg transition-colors font-medium ${
                 currentPage === totalPages
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-[#456C2D] text-[#F5F5DC] hover:bg-[#5A7A3A]'
+                  : 'bg-[#456C2D] text-[#F5F5DC] hover:bg-[#5A7A3A] cursor-pointer'
               }`}
             >
               Next
