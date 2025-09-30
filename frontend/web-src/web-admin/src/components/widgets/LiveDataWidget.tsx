@@ -258,7 +258,7 @@ const LiveDataWidget: React.FC = () => {
         </div>
         <button
           onClick={() => navigate('/admin-portal-xyz123/livedata')}
-          className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium cursor-pointer"
           style={{ fontSize: 'var(--text-sm)' }}
         >
           <Activity className="w-4 h-4" />
@@ -301,7 +301,7 @@ const LiveDataWidget: React.FC = () => {
               <button
                 aria-label="Previous metric"
                 onClick={onPrev}
-                className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+                className="p-2 rounded-lg border hover:bg-[#F5F9F1] cursor-pointer"
               >
                 <ChevronLeft className="w-5 h-5 text-[#356B2C]" />
               </button>
@@ -317,7 +317,7 @@ const LiveDataWidget: React.FC = () => {
               <button
                 aria-label="Next metric"
                 onClick={onNext}
-                className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+                className="p-2 rounded-lg border hover:bg-[#F5F9F1] cursor-pointer"
               >
                 <ChevronRight className="w-5 h-5 text-[#356B2C]" />
               </button>

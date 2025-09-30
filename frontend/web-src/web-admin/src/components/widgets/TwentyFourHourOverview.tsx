@@ -369,7 +369,7 @@ const TwentyFourHourOverview: React.FC = () => {
         </div>
         <button 
           onClick={() => navigate('/admin-portal-xyz123/datahistory')}
-          className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] transition-colors font-medium cursor-pointer"
           style={{ fontSize: 'var(--text-sm)' }}
         >
           <BarChart3 className="w-4 h-4" />
@@ -427,7 +427,7 @@ const TwentyFourHourOverview: React.FC = () => {
       <div className="flex items-center justify-center gap-3 mt-3">
         <button
           aria-label="Previous metric"
-          className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+          className="p-2 rounded-lg border hover:bg-[#F5F9F1] cursor-pointer"
           onClick={() => setActiveIdx((i)=> (i - 1 + vars.length) % vars.length)}
         >
           <ChevronLeft className="w-5 h-5 text-[#356B2C]" />
@@ -436,15 +436,16 @@ const TwentyFourHourOverview: React.FC = () => {
           {vars.map((v, i) => (
             <button
               key={v.key}
-              className={`w-2.5 h-2.5 rounded-full ${i === activeIdx ? 'bg-[#356B2C]' : 'bg-[#B8D4A8]'}`}
+              className={`w-2.5 h-2.5 rounded-full cursor-pointer ${i === activeIdx ? 'bg-[#356B2C]' : 'bg-[#B8D4A8]'}`}
               onClick={() => setActiveIdx(i)}
+              aria-label={`View ${v.label}`}
               title={v.label}
             />
           ))}
         </div>
         <button
           aria-label="Next metric"
-          className="p-2 rounded-lg border hover:bg-[#F5F9F1]"
+          className="p-2 rounded-lg border hover:bg-[#F5F9F1] cursor-pointer"
           onClick={() => setActiveIdx((i)=> (i + 1) % vars.length)}
         >
           <ChevronRight className="w-5 h-5 text-[#356B2C]" />

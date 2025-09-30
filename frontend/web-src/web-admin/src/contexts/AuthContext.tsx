@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService, { User } from '../api/services/authService';
 import * as jwt_decode from 'jwt-decode';
@@ -63,7 +63,7 @@ const INACTIVITY_TIMEOUT = 900000;
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   // Function to decode and validate token
@@ -92,16 +92,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Start the inactivity timer
   const startInactivityTimer = () => {
     // Clear any existing timer
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
     }
     
     // Set inactivity timer (full timeout - direct logout)
-    const inactivityTimerInstance = setTimeout(() => {
+    inactivityTimerRef.current = setTimeout(() => {
+      console.log('Session expired due to inactivity (15 minutes)');
       logout();
     }, INACTIVITY_TIMEOUT);
     
-    setInactivityTimer(inactivityTimerInstance);
+    console.log('Inactivity timer started - will expire in 15 minutes');
   };
 
   // Reset the inactivity timer
@@ -151,11 +152,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Cleanup
       return () => {
-        if (inactivityTimer) {
-          clearTimeout(inactivityTimer);
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
         }
         
         activityEvents.forEach(event => {
+          window.removeEventListener(event, resetTimer);
         });
       };
     }
@@ -217,9 +219,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     authService.logout();
     setUser(null);
     
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      setInactivityTimer(null);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
     }
     
     // Redirect to login page

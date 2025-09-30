@@ -470,7 +470,7 @@ const LiveData: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#356B2C] disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#356B2C] disabled:opacity-50 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -495,7 +495,7 @@ const LiveData: React.FC = () => {
                     const farm = farms.find(f => f._id === e.target.value);
                     setSelectedFarm(farm || null);
                   }}
-                  className="appearance-none bg-white border border-[#B8D4A8] rounded-lg px-4 py-2 pr-8 text-[#356B2C] focus:outline-none focus:ring-2 focus:ring-[#456C2D] focus:border-transparent min-w-[200px]"
+                  className="appearance-none bg-white border border-[#B8D4A8] rounded-lg px-4 py-2 pr-8 text-[#356B2C] focus:outline-none focus:ring-2 focus:ring-[#456C2D] focus:border-transparent min-w-[200px] cursor-pointer disabled:cursor-not-allowed"
                   style={{ fontSize: 'var(--text-sm)' }}
                   disabled={farms.length === 0}
                 >
