@@ -37,7 +37,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Name Your Field',
+            S.current.name_your_field,
             style: textTheme.headlineMedium?.copyWith(
               fontSize: 28.sp,
               height: 1.2,
@@ -48,7 +48,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'Give your field a unique name to help you identify it in your farm',
+            S.current.give_field_unique_name,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w400,
               color: MAIZE_ACCENT.withOpacity(0.8),
@@ -59,8 +59,8 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
 
           // Field Name Input using consistent styling
           _buildInputField(
-            'Field Name',
-            'Field A, North Field, Main Plot',
+            S.current.field_name,
+            S.current.field_name_hint,
             _fieldNameController,
           ),
           SizedBox(height: 20.h),
@@ -83,7 +83,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
-                    'You can have multiple fields in your farm. Each field can have different soil types, planting dates, and sensors.',
+                    S.current.multiple_fields_info,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: Colors.blue.shade700,
@@ -164,12 +164,12 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
     final days = daysSincePlanting;
     if (days == null) return '';
 
-    if (days <= 7) return 'VE - Emergence Stage (${days} days)';
-    if (days <= 21) return 'V3 - Third Leaf Stage (${days} days)';
-    if (days <= 42) return 'V8 - Eighth Leaf Stage (${days} days)';
-    if (days <= 65) return 'VT - Tasseling Stage (${days} days)';
-    if (days <= 85) return 'R1 - Silking Stage (${days} days)';
-    return 'R6 - Maturity Stage (${days} days)';
+    if (days <= 7) return S.current.emergence_stage(days);
+    if (days <= 21) return S.current.third_leaf_stage(days);
+    if (days <= 42) return S.current.eighth_leaf_stage(days);
+    if (days <= 65) return S.current.tasseling_stage(days);
+    if (days <= 85) return S.current.silking_stage(days);
+    return S.current.maturity_stage(days);
   }
 
   @override
@@ -181,7 +181,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Planting Date',
+            S.current.planting_date,
             style: textTheme.headlineMedium?.copyWith(
               fontSize: 28.sp,
               height: 1.2,
@@ -192,7 +192,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'When did you plant your corn? This helps us determine the current growth stage.',
+            S.current.when_did_you_plant,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w400,
               color: MAIZE_ACCENT.withOpacity(0.8),
@@ -257,7 +257,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                     child: Text(
                       widget.controllers.plantingDate != null
                           ? '${widget.controllers.plantingDate!.day}/${widget.controllers.plantingDate!.month}/${widget.controllers.plantingDate!.year}'
-                          : 'Select planting date',
+                          : S.current.select_planting_date,
                       style: TextStyle(
                         fontSize: 16.sp,
                         color:
@@ -293,7 +293,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                       Icon(Icons.timeline, color: MAIZE_ACCENT, size: 20.sp),
                       SizedBox(width: 8.w),
                       Text(
-                        'Estimated Growth Stage',
+                        S.current.estimated_growth_stage,
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: MAIZE_ACCENT,
@@ -335,7 +335,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
-                    'The growth stage is automatically calculated based on your planting date to provide accurate monitoring.',
+                    S.current.growth_stage_calculated,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: Colors.blue.shade700,
@@ -379,7 +379,7 @@ class _DeviceRegistrationFormPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Device Registration',
+          S.current.device_registration,
           style: textTheme.headlineMedium?.copyWith(
             fontSize: 28.sp,
             height: 1.2,
@@ -390,7 +390,7 @@ class _DeviceRegistrationFormPageState
         ),
         SizedBox(height: 8.h),
         Text(
-          'Register monitoring devices for your field (At least one device required)',
+          S.current.register_monitoring_devices,
           style: textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w400,
             color: MAIZE_ACCENT.withOpacity(0.8),
@@ -409,7 +409,7 @@ class _DeviceRegistrationFormPageState
               border: Border.all(color: MAIZE_ACCENT.withOpacity(0.2)),
             ),
             child: Text(
-              '${widget.controllers.devices.length} Device${widget.controllers.devices.length != 1 ? 's' : ''} Registered',
+              S.current.devices_registered(widget.controllers.devices.length),
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,

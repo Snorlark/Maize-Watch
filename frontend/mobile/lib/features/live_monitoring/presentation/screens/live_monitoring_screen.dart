@@ -8,6 +8,7 @@ import 'package:mobile/generated/l10n.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/home_screen_service.dart';
 import '../../../farm/presentation/bloc/farm_bloc.dart';
 import '../../../farm/domain/entities/farm.dart';
 import '../bloc/monitoring_bloc.dart';
@@ -101,45 +102,85 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   void _loadData() {
-    // Only load data if not already loaded
-    final farmState = context.read<FarmBloc>().state;
-    final monitoringState = context.read<MonitoringBloc>().state;
-    
-    print('🌽 LiveMonitoring: _loadData called - FarmBloc state: ${farmState.runtimeType}');
-    
-    // Load user farms only if not already loaded
-    if (farmState is! FarmsLoaded) {
-      print('🌽 LiveMonitoring: FarmBloc not loaded, checking auth...');
-      final authState = context.read<AuthenticationBloc>().state;
-      if (authState.status == AuthenticationStatus.authenticated &&
-          authState.user != null) {
-        final user = authState.user;
-        if (user != null) {
-          print('🌽 LiveMonitoring: Loading farms for user: ${user.id}');
-          context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+    // Load data with optimized caching
+    _loadDataOptimized();
+  }
+
+  /// Optimized data loading with smart caching
+  Future<void> _loadDataOptimized() async {
+    try {
+      final farmState = context.read<FarmBloc>().state;
+      final monitoringState = context.read<MonitoringBloc>().state;
+      
+      print('🌽 LiveMonitoring: _loadDataOptimized called - FarmBloc state: ${farmState.runtimeType}');
+      
+      // Load user farms only if not already loaded
+      if (farmState is! FarmsLoaded) {
+        print('🌽 LiveMonitoring: FarmBloc not loaded, checking auth...');
+        final authState = context.read<AuthenticationBloc>().state;
+        if (authState.status == AuthenticationStatus.authenticated &&
+            authState.user != null) {
+          final user = authState.user;
+          if (user != null) {
+            print('🌽 LiveMonitoring: Loading farms for user: ${user.id}');
+            context.read<FarmBloc>().add(GetUserFarmsEvent(userId: user.id));
+          } else {
+            print('🌽 LiveMonitoring: User is null');
+          }
         } else {
-          print('🌽 LiveMonitoring: User is null');
+          print('🌽 LiveMonitoring: Auth not ready - status: ${authState.status}, user: ${authState.user?.id}');
         }
       } else {
-        print('🌽 LiveMonitoring: Auth not ready - status: ${authState.status}, user: ${authState.user?.id}');
+        print('🌽 LiveMonitoring: Farms already loaded with ${farmState.farms.length} farms');
+        
+        // If farms are loaded, try to load cached home data for instant display
+        if (farmState.farms.isNotEmpty) {
+          final selectedFarm = farmState.farms.first;
+          print('🌽 LiveMonitoring: Loading cached home data for farm: ${selectedFarm.id}');
+          
+          try {
+            final homeData = await HomeScreenService.getHomeScreenData(
+              farmId: selectedFarm.id,
+              forceRefresh: false,
+            );
+            
+            if (homeData.isNotEmpty) {
+              print('🌽 LiveMonitoring: Loaded cached data - Analytics: ${homeData['analytics'] != null}, Prescriptions: ${homeData['prescriptions']?.length ?? 0}');
+              
+              // Update UI with cached data immediately
+              if (homeData['analytics'] != null) {
+                // Trigger analytics update with cached data
+                context.read<MonitoringBloc>().add(LoadAnalyticsEvent(
+                  farmId: selectedFarm.id,
+                  cachedData: homeData['analytics'],
+                ));
+              }
+            }
+          } catch (e) {
+            print('🌽 LiveMonitoring: Error loading cached data: $e');
+          }
+        }
       }
-    } else {
-      print('🌽 LiveMonitoring: Farms already loaded with ${farmState.farms.length} farms');
-    }
-    
-    // Always load latest sensor readings to get fresh data
-    print('🌽 LiveMonitoring: Checking if should load readings - isLoading: ${monitoringState.isLoading}');
-    if (!monitoringState.isLoading) {
-      print('🌽 LiveMonitoring: Loading latest readings...');
-      context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
-    } else {
-      print('🌽 LiveMonitoring: Skipping load readings - already loading');
+      
+      // Always load latest sensor readings to get fresh data
+      print('🌽 LiveMonitoring: Checking if should load readings - isLoading: ${monitoringState.isLoading}');
+      if (!monitoringState.isLoading) {
+        print('🌽 LiveMonitoring: Loading latest readings...');
+        context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+      } else {
+        print('🌽 LiveMonitoring: Skipping load readings - already loading');
+      }
+      
+    } catch (e) {
+      print('🌽 LiveMonitoring: Error in _loadDataOptimized: $e');
     }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    // Stop background refresh when screen is disposed
+    HomeScreenService.stopBackgroundRefresh();
     super.dispose();
   }
 
@@ -560,7 +601,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         padding: EdgeInsets.all(kAppMediumPadding),
         decoration: BoxDecoration(
             color: isCompleted 
-                ? Colors.green[50] 
+                ? Colors.green[300] 
                 : actualColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16.r),
             border: isCompleted 
@@ -582,39 +623,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             Row(
               children: [
                 // Enhanced completion status indicator
-                if (isCompleted) ...[
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-                    decoration: BoxDecoration(
-                      color: Colors.green[600],
-                      borderRadius: BorderRadius.circular(10.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.green.withOpacity(0.3),
-                          blurRadius: 3,
-                          offset: Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.white, size: 12.sp),
-                        SizedBox(width: 3.w),
-                        Text(
-                          'DONE',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                ],
+                
                 
                 // Urgency indicator (shows completion status when completed)
                 Container(
@@ -801,7 +810,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         ],
                       ),
                       const Spacer(),
-                      ElevatedButton.icon(
+                      Expanded( child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pushNamed(context, '/field-registration');
                         },
@@ -827,9 +836,10 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16.r),
                           ),
+                          
                         ),
                       ),
-                    ],
+                  )],
                   ),
                   SizedBox(height: kAppMediumGap),
                   if (farmState is FarmsLoaded && farmState.farms.isNotEmpty)
