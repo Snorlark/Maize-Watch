@@ -766,6 +766,39 @@ class AuthService {
   }
 
   /**
+   * Send verification code for registration
+   */
+  async sendVerificationCode(contactNumber: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await twilioService.sendPasswordResetCode(contactNumber);
+      return result;
+    } catch (error) {
+      logger.error("Error sending verification code:", error);
+      return {
+        success: false,
+        message: "Failed to send verification code"
+      };
+    }
+  }
+
+  /**
+   * Verify code for registration
+   */
+  async verifyCode(contactNumber: string, code: string): Promise<{ success: boolean; message: string; verified: boolean }> {
+    try {
+      const result = await twilioService.verifyCode(contactNumber, code);
+      return result;
+    } catch (error) {
+      logger.error("Error verifying code:", error);
+      return {
+        success: false,
+        message: "Failed to verify code",
+        verified: false
+      };
+    }
+  }
+
+  /**
    * Reset password with verification code using username
    */
   async resetPasswordWithCode(username: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {

@@ -42,8 +42,9 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildSensorStatusSection(),
-            Spacer(),
+            Expanded(
+              child: _buildSensorStatusSection(),
+            ),
             _buildRefreshButton(),
           ],
         ),
@@ -258,12 +259,12 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                     isActive: state.sensorStatus!['lightIntensity'] ?? false,
                     icon: Icons.light_mode,
                    ),
-                  verticalSpace(kAppMediumGap),
+                  verticalSpace(kAppSmallGap),
                   
                   // Status Legend
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(kAppMediumPadding),
+                    padding: EdgeInsets.all(kAppSmallPadding),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(12.r),
@@ -279,7 +280,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                             color: Colors.grey[800],
                           ),
                         ),
-                        SizedBox(height: 8.h),
+                        SizedBox(height: 4.h),
                         Row(
                           children: [
                             Container(
@@ -299,7 +300,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 4.h),
+                        SizedBox(height: 2.h),
                         Row(
                           children: [
                             Container(
@@ -322,7 +323,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                       ],
                     ),
                   ),
-                  verticalSpace(kAppSmallGap),
+                  verticalSpace(kAppSmallGap / 2),
                 ],
               );
             }

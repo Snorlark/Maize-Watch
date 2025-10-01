@@ -88,6 +88,12 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
     });
   }
 
+  void _handleVerifyCode() {
+    _verifyCode().catchError((error) {
+      print('Error in _verifyCode: $error');
+    });
+  }
+
   Future<void> _verifyCode() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -140,7 +146,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-                content: Text('Verification code resent successfully'),
+                content: Text(S.of(context).verification_code_resent),
             backgroundColor: Colors.green,
           ),
         );
@@ -169,7 +175,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          l10n.verify_phone_number,
+              'Verify Phone Number',
           style: textTheme.headlineSmall?.copyWith(
             color: MAIZE_ACCENT,
             fontWeight: FontWeight.bold,
@@ -217,7 +223,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
               
               // Description
               Text(
-                l10n.verification_code_description(widget.contactNumber),
+                'We sent a 6-digit verification code to ${widget.contactNumber}. Please enter it below to continue.',
                 style: textTheme.bodyMedium?.copyWith(
                   color: MAIZE_ACCENT.withOpacity(0.7),
                 ),
@@ -277,10 +283,10 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                     return l10n.verification_code_required;
                   }
                   if (value.length != 6) {
-                    return l10n.verification_code_invalid_length;
+                    return 'Verification code must be 6 digits';
                   }
                   if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                    return l10n.verification_code_invalid_format;
+                    return 'Invalid verification code format';
                   }
                   return null;
                 },
@@ -295,9 +301,8 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
               
               // Verify button
               CustomButton(
-                text: _isLoading ? l10n.verifying : l10n.verify,
-                onPressed: _isLoading ? null : _verifyCode,
-                isLoading: _isLoading,
+                text: _isLoading ? 'Verifying...' : 'Verify',
+                onPressed: _handleVerifyCode,
               ),
               
               SizedBox(height: kAppMediumPadding.h),
@@ -308,10 +313,10 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                   onPressed: _resendCountdown > 0 || _isResending ? null : _resendCode,
                   child: Text(
                     _isResending
-                        ? l10n.resending
+                        ? 'Resending...'
                         : _resendCountdown > 0
-                            ? l10n.resend_in_seconds(_resendCountdown)
-                            : l10n.resend_code,
+                            ? 'Resend in $_resendCountdown seconds'
+                            : 'Resend Code',
                     style: textTheme.bodyMedium?.copyWith(
                       color: _resendCountdown > 0 || _isResending
                           ? MAIZE_ACCENT.withOpacity(0.5)
@@ -326,7 +331,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
               
               // Help text
               Text(
-                l10n.verification_help_text,
+                'Didn\'t receive a code? Check your SMS messages or try resending.',
                 style: textTheme.bodySmall?.copyWith(
                   color: MAIZE_ACCENT.withOpacity(0.6),
                 ),

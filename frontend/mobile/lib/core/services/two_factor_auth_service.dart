@@ -10,7 +10,8 @@ class TwoFactorAuthService {
 
   final Dio _dio = Dio();
 
-  /// Send 2FA code to contact number
+
+  /// Send 2FA code to contact number (for registration)
   Future<Map<String, dynamic>> sendVerificationCode(String contactNumber) async {
     try {
       final response = await _dio.post(
@@ -29,7 +30,7 @@ class TwoFactorAuthService {
         return {
           'success': true,
           'message': response.data['message'] ?? 'Verification code sent successfully',
-          'sid': response.data['sid'],
+          'phoneNumber': response.data['phoneNumber'] ?? contactNumber,
         };
       } else {
         return {
@@ -50,7 +51,7 @@ class TwoFactorAuthService {
     }
   }
 
-  /// Verify 2FA code
+  /// Verify 2FA code (for registration)
   Future<Map<String, dynamic>> verifyCode(String contactNumber, String code) async {
     try {
       final response = await _dio.post(
@@ -94,13 +95,13 @@ class TwoFactorAuthService {
     }
   }
 
-  /// Send password reset code
-  Future<Map<String, dynamic>> sendPasswordResetCode(String contactNumber) async {
+  /// Send password reset code using username
+  Future<Map<String, dynamic>> sendPasswordResetCode(String username) async {
     try {
       final response = await _dio.post(
-        '${AppConfig.baseUrl}/api/auth/send-password-reset-code',
+        '${AppConfig.baseUrl}/api/auth/send-reset-code',
         data: {
-          'contactNumber': contactNumber,
+          'username': username,
         },
         options: Options(
           headers: {
@@ -113,7 +114,7 @@ class TwoFactorAuthService {
         return {
           'success': true,
           'message': response.data['message'] ?? 'Password reset code sent successfully',
-          'sid': response.data['sid'],
+          'phoneNumber': response.data['phoneNumber'],
         };
       } else {
         return {
@@ -136,15 +137,15 @@ class TwoFactorAuthService {
 
   /// Reset password with verification code
   Future<Map<String, dynamic>> resetPasswordWithCode({
-    required String contactNumber,
+    required String username,
     required String code,
     required String newPassword,
   }) async {
     try {
       final response = await _dio.post(
-        '${AppConfig.baseUrl}/api/auth/reset-password-with-code',
+        '${AppConfig.baseUrl}/api/auth/reset-password',
         data: {
-          'contactNumber': contactNumber,
+          'username': username,
           'code': code,
           'newPassword': newPassword,
         },

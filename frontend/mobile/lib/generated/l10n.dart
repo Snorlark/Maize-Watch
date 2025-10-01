@@ -129,10 +129,10 @@ class S {
     return Intl.message('Last Name', name: 'last_name', desc: '', args: []);
   }
 
-  /// `10-digit Contact Number`
+  /// `Contact Number`
   String get contact_number {
     return Intl.message(
-      '10-digit Contact Number',
+      'Contact Number',
       name: 'contact_number',
       desc: '',
       args: [],
@@ -2449,6 +2449,516 @@ class S {
     );
   }
 
+  /// `Unsync Prototype`
+  String get unsync_prototype {
+    return Intl.message(
+      'Unsync Prototype',
+      name: 'unsync_prototype',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to unsync this prototype from the field? This action cannot be undone.`
+  String get unsync_prototype_confirmation {
+    return Intl.message(
+      'Are you sure you want to unsync this prototype from the field? This action cannot be undone.',
+      name: 'unsync_prototype_confirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm Unsync`
+  String get confirm_unsync {
+    return Intl.message(
+      'Confirm Unsync',
+      name: 'confirm_unsync',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype unsynced successfully`
+  String get prototype_unsynced {
+    return Intl.message(
+      'Prototype unsynced successfully',
+      name: 'prototype_unsynced',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to unsync prototype`
+  String get failed_to_unsync_prototype {
+    return Intl.message(
+      'Failed to unsync prototype',
+      name: 'failed_to_unsync_prototype',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No prototypes found`
+  String get no_prototypes_found {
+    return Intl.message(
+      'No prototypes found',
+      name: 'no_prototypes_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You haven't registered any prototypes yet.`
+  String get no_prototypes_registered {
+    return Intl.message(
+      'You haven\'t registered any prototypes yet.',
+      name: 'no_prototypes_registered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype`
+  String get prototype_id {
+    return Intl.message('Prototype', name: 'prototype_id', desc: '', args: []);
+  }
+
+  /// `Field:`
+  String get field_colon {
+    return Intl.message('Field:', name: 'field_colon', desc: '', args: []);
+  }
+
+  /// `Active`
+  String get active {
+    return Intl.message('Active', name: 'active', desc: '', args: []);
+  }
+
+  /// `Inactive`
+  String get inactive {
+    return Intl.message('Inactive', name: 'inactive', desc: '', args: []);
+  }
+
+  /// `Authentication required`
+  String get authentication_required {
+    return Intl.message(
+      'Authentication required',
+      name: 'authentication_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading prototypes`
+  String get error_loading_prototypes {
+    return Intl.message(
+      'Error loading prototypes',
+      name: 'error_loading_prototypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error unsyncing prototype`
+  String get error_unsyncing_prototype {
+    return Intl.message(
+      'Error unsyncing prototype',
+      name: 'error_unsyncing_prototype',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone Verification Required`
+  String get phone_verification_required {
+    return Intl.message(
+      'Phone Verification Required',
+      name: 'phone_verification_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please verify your phone number to complete your registration.`
+  String get phone_verification_description {
+    return Intl.message(
+      'Please verify your phone number to complete your registration.',
+      name: 'phone_verification_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sending...`
+  String get sending {
+    return Intl.message('Sending...', name: 'sending', desc: '', args: []);
+  }
+
+  /// `Continue to Registration`
+  String get continue_to_registration {
+    return Intl.message(
+      'Continue to Registration',
+      name: 'continue_to_registration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Didn't receive the code? Check your SMS messages or try resending.`
+  String get verification_help_text {
+    return Intl.message(
+      'Didn\'t receive the code? Check your SMS messages or try resending.',
+      name: 'verification_help_text',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verify Phone Number`
+  String get verify_phone_number {
+    return Intl.message(
+      'Verify Phone Number',
+      name: 'verify_phone_number',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification Failed`
+  String get verification_failed {
+    return Intl.message(
+      'Verification Failed',
+      name: 'verification_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code resent successfully`
+  String get verification_code_resent {
+    return Intl.message(
+      'Verification code resent successfully',
+      name: 'verification_code_resent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We've sent a 6-digit verification code to {phoneNumber}. Please enter it below to continue.`
+  String verification_code_description(Object phoneNumber) {
+    return Intl.message(
+      'We\'ve sent a 6-digit verification code to $phoneNumber. Please enter it below to continue.',
+      name: 'verification_code_description',
+      desc: '',
+      args: [phoneNumber],
+    );
+  }
+
+  /// `Verification code must be 6 digits`
+  String get verification_code_invalid_length {
+    return Intl.message(
+      'Verification code must be 6 digits',
+      name: 'verification_code_invalid_length',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter your username`
+  String get enter_username {
+    return Intl.message(
+      'Enter your username',
+      name: 'enter_username',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username must be at least 3 characters`
+  String get username_must_be_at_least_3_characters {
+    return Intl.message(
+      'Username must be at least 3 characters',
+      name: 'username_must_be_at_least_3_characters',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter 6-digit code`
+  String get enter_6_digit_code {
+    return Intl.message(
+      'Enter 6-digit code',
+      name: 'enter_6_digit_code',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid verification code format`
+  String get invalid_verification_code_format {
+    return Intl.message(
+      'Invalid verification code format',
+      name: 'invalid_verification_code_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `App Settings`
+  String get app_settings {
+    return Intl.message(
+      'App Settings',
+      name: 'app_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `English`
+  String get english {
+    return Intl.message('English', name: 'english', desc: '', args: []);
+  }
+
+  /// `Frequently Asked Questions`
+  String get frequently_asked_questions {
+    return Intl.message(
+      'Frequently Asked Questions',
+      name: 'frequently_asked_questions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How do I add a new sensor?`
+  String get faq_add_sensor_question {
+    return Intl.message(
+      'How do I add a new sensor?',
+      name: 'faq_add_sensor_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Go to the Farm Management section and tap "Add Sensor". Follow the setup instructions to connect your sensor to the app.`
+  String get faq_add_sensor_answer {
+    return Intl.message(
+      'Go to the Farm Management section and tap "Add Sensor". Follow the setup instructions to connect your sensor to the app.',
+      name: 'faq_add_sensor_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Why is my sensor showing as disconnected?`
+  String get faq_sensor_disconnected_question {
+    return Intl.message(
+      'Why is my sensor showing as disconnected?',
+      name: 'faq_sensor_disconnected_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Check your internet connection and ensure the sensor is properly powered. Try restarting the sensor and refreshing the app.`
+  String get faq_sensor_disconnected_answer {
+    return Intl.message(
+      'Check your internet connection and ensure the sensor is properly powered. Try restarting the sensor and refreshing the app.',
+      name: 'faq_sensor_disconnected_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How often should I check my farm data?`
+  String get faq_check_farm_data_question {
+    return Intl.message(
+      'How often should I check my farm data?',
+      name: 'faq_check_farm_data_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We recommend checking your farm data at least once daily. The app will send notifications for urgent issues.`
+  String get faq_check_farm_data_answer {
+    return Intl.message(
+      'We recommend checking your farm data at least once daily. The app will send notifications for urgent issues.',
+      name: 'faq_check_farm_data_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Can I use the app offline?`
+  String get faq_offline_usage_question {
+    return Intl.message(
+      'Can I use the app offline?',
+      name: 'faq_offline_usage_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Yes, the app can work offline for viewing cached data. However, real-time updates require an internet connection.`
+  String get faq_offline_usage_answer {
+    return Intl.message(
+      'Yes, the app can work offline for viewing cached data. However, real-time updates require an internet connection.',
+      name: 'faq_offline_usage_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How do I change my farm settings?`
+  String get faq_change_farm_settings_question {
+    return Intl.message(
+      'How do I change my farm settings?',
+      name: 'faq_change_farm_settings_question',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Go to Settings > Farm Management to update your farm information, field details, and sensor configurations.`
+  String get faq_change_farm_settings_answer {
+    return Intl.message(
+      'Go to Settings > Farm Management to update your farm information, field details, and sensor configurations.',
+      name: 'faq_change_farm_settings_answer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Debug Data View`
+  String get debug_data_view {
+    return Intl.message(
+      'Debug Data View',
+      name: 'debug_data_view',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Refresh Farm Data`
+  String get refresh_farm_data {
+    return Intl.message(
+      'Refresh Farm Data',
+      name: 'refresh_farm_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Refresh Auth`
+  String get refresh_auth {
+    return Intl.message(
+      'Refresh Auth',
+      name: 'refresh_auth',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No sensor data available`
+  String get no_sensor_data_available {
+    return Intl.message(
+      'No sensor data available',
+      name: 'no_sensor_data_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resend Code`
+  String get resend_code {
+    return Intl.message('Resend Code', name: 'resend_code', desc: '', args: []);
+  }
+
+  /// `Manage your app preferences`
+  String get manage_your_app_preferences {
+    return Intl.message(
+      'Manage your app preferences',
+      name: 'manage_your_app_preferences',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage and unsync prototypes from fields`
+  String get manage_and_unsync_prototypes {
+    return Intl.message(
+      'Manage and unsync prototypes from fields',
+      name: 'manage_and_unsync_prototypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Support`
+  String get support {
+    return Intl.message('Support', name: 'support', desc: '', args: []);
+  }
+
+  /// `Help & FAQ`
+  String get help_faq {
+    return Intl.message('Help & FAQ', name: 'help_faq', desc: '', args: []);
+  }
+
+  /// `Get help and find answers to common questions`
+  String get get_help_and_find_answers {
+    return Intl.message(
+      'Get help and find answers to common questions',
+      name: 'get_help_and_find_answers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contact Support`
+  String get contact_support {
+    return Intl.message(
+      'Contact Support',
+      name: 'contact_support',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get in touch with our support team`
+  String get get_in_touch_with_support_team {
+    return Intl.message(
+      'Get in touch with our support team',
+      name: 'get_in_touch_with_support_team',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Light`
+  String get light {
+    return Intl.message('Light', name: 'light', desc: '', args: []);
+  }
+
+  /// `Crop Health Status`
+  String get crop_health_status {
+    return Intl.message(
+      'Crop Health Status',
+      name: 'crop_health_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Available`
+  String get available {
+    return Intl.message('Available', name: 'available', desc: '', args: []);
+  }
+
+  /// `NULL`
+  String get null_value {
+    return Intl.message('NULL', name: 'null_value', desc: '', args: []);
+  }
+
   /// `Error deleting prescriptions`
   String get error_delete_prescriptions {
     return Intl.message(
@@ -3099,10 +3609,10 @@ class S {
     );
   }
 
-  /// `Contact number must start with 9`
+  /// `Contact number must be in format 09xxxxxxxxx (e.g., 09194022808)`
   String get contact_number_invalid_format {
     return Intl.message(
-      'Contact number must start with 9',
+      'Contact number must be in format 09xxxxxxxxx (e.g., 09194022808)',
       name: 'contact_number_invalid_format',
       desc: '',
       args: [],
@@ -3504,10 +4014,10 @@ class S {
     );
   }
 
-  /// `Verification code sent to your phone number`
+  /// `Verification Code Sent`
   String get verification_code_sent {
     return Intl.message(
-      'Verification code sent to your phone number',
+      'Verification Code Sent',
       name: 'verification_code_sent',
       desc: '',
       args: [],
@@ -5719,6 +6229,41 @@ class S {
       name: 'failed_to_update_profile',
       desc: '',
       args: [error],
+    );
+  }
+
+  /// `Verification code must contain only numbers`
+  String get verification_code_invalid_format {
+    return Intl.message(
+      'Verification code must contain only numbers',
+      name: 'verification_code_invalid_format',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifying...`
+  String get verifying {
+    return Intl.message('Verifying...', name: 'verifying', desc: '', args: []);
+  }
+
+  /// `Verify`
+  String get verify {
+    return Intl.message('Verify', name: 'verify', desc: '', args: []);
+  }
+
+  /// `Resending...`
+  String get resending {
+    return Intl.message('Resending...', name: 'resending', desc: '', args: []);
+  }
+
+  /// `Resend in {seconds} seconds`
+  String resend_in_seconds(Object seconds) {
+    return Intl.message(
+      'Resend in $seconds seconds',
+      name: 'resend_in_seconds',
+      desc: '',
+      args: [seconds],
     );
   }
 }

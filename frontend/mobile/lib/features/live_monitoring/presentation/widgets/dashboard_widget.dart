@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entities/sensor_reading.dart';
+import '../../../../generated/l10n.dart';
 
 class DashboardWidget extends StatelessWidget {
   final List<SensorReading> readings;
@@ -11,7 +12,7 @@ class DashboardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (readings.isEmpty) {
-      return const Center(child: Text('No sensor data available'));
+      return Center(child: Text(S.of(context).no_sensor_data_available));
     }
 
     final currentReading = readings.first;
@@ -29,7 +30,7 @@ class DashboardWidget extends StatelessWidget {
             childAspectRatio: 1.2,
             children: [
               _buildSensorCard(
-                'Temperature',
+                S.of(context).temperature,
                 '${currentReading.temperature.toStringAsFixed(1)}°C',
                 Icons.thermostat,
                 currentReading.isTemperatureOptimal
@@ -37,13 +38,13 @@ class DashboardWidget extends StatelessWidget {
                     : Colors.orange,
               ),
               _buildSensorCard(
-                'Humidity',
+                S.of(context).humidity,
                 '${currentReading.humidity.toStringAsFixed(1)}%',
                 Icons.water_drop,
                 currentReading.isHumidityOptimal ? Colors.blue : Colors.orange,
               ),
               _buildSensorCard(
-                'Soil Moisture',
+                S.of(context).soil_moisture,
                 '${currentReading.soilMoisture.toStringAsFixed(1)}%',
                 Icons.grass,
                 currentReading.isSoilMoistureOptimal
@@ -51,7 +52,7 @@ class DashboardWidget extends StatelessWidget {
                     : Colors.orange,
               ),
               _buildSensorCard(
-                'Light',
+                S.of(context).light,
                 '${currentReading.lightIntensity.toStringAsFixed(1)}%',
                 Icons.wb_sunny,
                 currentReading.isLightOptimal ? Colors.yellow : Colors.orange,
@@ -80,7 +81,7 @@ class DashboardWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Crop Health Status',
+                  S.of(context).crop_health_status,
                   style: TextTheme.of(context).bodyMedium?.copyWith(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.bold,

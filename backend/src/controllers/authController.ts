@@ -564,3 +564,54 @@ export const verifyResetCode = catchAsync(async (req: Request, res: Response) =>
     valid: result.valid
   });
 });
+
+/**
+ * @desc    Send verification code for registration
+ * @route   POST /api/auth/send-verification-code
+ * @access  Public
+ */
+export const sendVerificationCode = catchAsync(async (req: Request, res: Response) => {
+  const { contactNumber } = req.body;
+
+  if (!contactNumber) {
+    throw new AppError('Contact number is required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Send verification code via SMS
+  const result = await authService.sendVerificationCode(contactNumber);
+  
+  if (result.success) {
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Verification code sent to your phone number',
+      phoneNumber: contactNumber
+    });
+  } else {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      message: result.message
+    });
+  }
+});
+
+/**
+ * @desc    Verify code for registration
+ * @route   POST /api/auth/verify-code
+ * @access  Public
+ */
+export const verifyCode = catchAsync(async (req: Request, res: Response) => {
+  const { contactNumber, code } = req.body;
+
+  if (!contactNumber || !code) {
+    throw new AppError('Contact number and verification code are required', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Verify the code
+  const result = await authService.verifyCode(contactNumber, code);
+  
+  res.status(result.success ? HTTP_STATUS.OK : HTTP_STATUS.BAD_REQUEST).json({
+    success: result.success,
+    message: result.message,
+    verified: result.verified
+  });
+});

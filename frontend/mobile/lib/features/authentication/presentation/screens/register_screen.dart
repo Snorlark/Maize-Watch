@@ -236,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _handleNextOrSubmit() {
+  void _handleNextOrSubmit() async {
     print("🔍 RegisterScreen: _handleNextOrSubmit called, currentPage: $currentPage");
     
     if (!_formKeys[currentPage].currentState!.validate()) {
@@ -244,7 +244,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (currentPage < 1) {
+    if (currentPage == 0) {
+      // After contact number input, do phone verification
+      print("🔍 RegisterScreen: Contact number validated, proceeding to phone verification");
+      await _verifyPhoneNumber();
+    } else if (currentPage < 1) {
       print("🔍 RegisterScreen: Going to next page");
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -253,6 +257,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } else {
       print("🔍 RegisterScreen: Submitting registration");
       _submitRegistration();
+    }
+  }
+
+  Future<void> _verifyPhoneNumber() async {
+    print("🔍 RegisterScreen: _verifyPhoneNumber called");
+    
+    // Navigate to phone verification screen
+    final verificationResult = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => PhoneVerificationScreen(
+          contactNumber: _controllers.contactController.text,
+        ),
+      ),
+    );
+
+    if (verificationResult == true) {
+      // Phone verification successful, proceed to next page
+      print("🔍 RegisterScreen: Phone verification successful, proceeding to next page");
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      print("🔍 RegisterScreen: Phone verification failed or cancelled");
     }
   }
 
@@ -267,33 +295,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final addressObject = _controllers.getAddressObject();
     print("🔍 RegisterScreen: Address object: $addressObject");
 
-    // First, verify phone number with 2FA
-    final verificationResult = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => PhoneVerificationScreen(
-          contactNumber: _controllers.contactController.text,
-        ),
+    // Proceed with registration (phone verification already done)
+    print("🔍 RegisterScreen: Proceeding with registration");
+    context.read<AuthenticationBloc>().add(
+      RegisterEvent(
+        username: _controllers.usernameController.text,
+        password: _controllers.passwordController.text,
+        fullName:
+            '${_controllers.firstNameController.text} ${_controllers.lastNameController.text}',
+        contactNumber: _controllers.contactController.text,
+        address: addressObject,
+        role: 'user',
       ),
     );
-
-    if (verificationResult == true) {
-      // Phone verification successful, proceed with registration
-      print("🔍 RegisterScreen: Phone verification successful, proceeding with registration");
-      context.read<AuthenticationBloc>().add(
-        RegisterEvent(
-          username: _controllers.usernameController.text,
-          password: _controllers.passwordController.text,
-          fullName:
-              '${_controllers.firstNameController.text} ${_controllers.lastNameController.text}',
-          contactNumber: _controllers.contactController.text,
-          address: addressObject,
-          role: 'user',
-        ),
-      );
-      print("🔍 RegisterScreen: RegisterEvent dispatched");
-    } else {
-      print("🔍 RegisterScreen: Phone verification failed or cancelled");
-    }
+    print("🔍 RegisterScreen: RegisterEvent dispatched");
   }
 
   @override

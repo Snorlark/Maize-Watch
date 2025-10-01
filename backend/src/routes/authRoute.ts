@@ -17,6 +17,8 @@ import {
   validateSession,
   sendPasswordResetCode,
   verifyResetCode,
+  sendVerificationCode,
+  verifyCode,
 } from '../controllers/authController';
 import { authenticate, optionalAuth } from '../middleware/auth';
 import { authLimiter, passwordResetLimiter } from '../middleware/rateLimiter';
@@ -45,6 +47,8 @@ router.post('/forgot-password', passwordResetLimiter, validatePasswordReset, for
 router.post('/reset-password', validatePasswordReset, resetPassword);
 router.post('/send-reset-code', passwordResetLimiter, sendPasswordResetCode);
 router.post('/verify-reset-code', verifyResetCode);
+router.post('/send-verification-code', passwordResetLimiter, sendVerificationCode);
+router.post('/verify-code', verifyCode);
 router.put('/change-password', authenticate, validatePasswordChange, changePassword);
 
 // Email verification

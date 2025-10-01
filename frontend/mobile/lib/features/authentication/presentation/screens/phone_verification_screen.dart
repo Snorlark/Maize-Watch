@@ -23,46 +23,58 @@ class PhoneVerificationScreen extends StatefulWidget {
 class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
   final TwoFactorAuthService _twoFactorService = TwoFactorAuthService();
   bool _isLoading = false;
+  bool _codeSent = false;
+
+  void _handleSendVerificationCode() {
+    _sendVerificationCode().catchError((error) {
+      // Handle error silently or show user-friendly message
+    });
+  }
 
   Future<void> _sendVerificationCode() async {
     setState(() => _isLoading = true);
 
     final result = await _twoFactorService.sendVerificationCode(widget.contactNumber);
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+    if (!mounted) return;
+    
+    setState(() => _isLoading = false);
 
-      if (result['success'] == true) {
-        // Navigate to verification screen
-        final verificationResult = await Navigator.of(context).push<bool>(
-          MaterialPageRoute(
-            builder: (context) => TwoFactorVerificationScreen(
-              contactNumber: widget.contactNumber,
-              purpose: 'registration',
-              onVerificationSuccess: () {
-                Navigator.of(context).pop(true);
-              },
-            ),
+    if (result['success'] == true) {
+      setState(() {
+        _codeSent = true;
+      });
+      
+      // Navigate to verification screen
+      final verificationResult = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => TwoFactorVerificationScreen(
+            contactNumber: widget.contactNumber,
+            purpose: 'registration',
+            onVerificationSuccess: () {
+              Navigator.of(context).pop(true);
+            },
           ),
-        );
+        ),
+      );
 
-        if (verificationResult == true) {
-          // Verification successful, navigate to registration
-          Navigator.of(context).pop(true);
-        }
-      } else {
-        ErrorDialog.show(
-          context,
-          title: S.of(context).error,
-          message: result['message'] ?? 'Failed to send verification code',
-        );
+      if (!mounted) return;
+
+      if (verificationResult == true) {
+        // Verification successful, navigate to registration
+        Navigator.of(context).pop(true);
       }
+    } else {
+      ErrorDialog.show(
+        context,
+        title: S.of(context).error,
+        message: result['message'] ?? 'Failed to send verification code',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = S.of(context);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -75,7 +87,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Phone Verification Required',
+          S.of(context).verify_phone_number,
           style: textTheme.headlineSmall?.copyWith(
             color: MAIZE_ACCENT,
             fontWeight: FontWeight.bold,
@@ -109,7 +121,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
             
             // Title
             Text(
-              'Phone Verification Required',
+              S.of(context).verify_phone_number,
               style: textTheme.headlineMedium?.copyWith(
                 color: MAIZE_ACCENT,
                 fontWeight: FontWeight.bold,
@@ -121,7 +133,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
             
             // Description
             Text(
-              'Please verify your phone number to complete your registration.',
+              S.of(context).phone_verification_description,
               style: textTheme.bodyLarge?.copyWith(
                 color: MAIZE_ACCENT.withOpacity(0.8),
                 height: 1.5,
@@ -161,18 +173,86 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
             
             SizedBox(height: kAppLargePadding.h * 2),
             
-            // Send verification code button
-            CustomButton(
-                  text: _isLoading ? 'Sending...' : 'Continue to Registration',
-              onPressed: _isLoading ? null : _sendVerificationCode,
-              isLoading: _isLoading,
-            ),
+            // Send verification code button or resend button
+            _isLoading
+                ? Container(
+                    height: 56.h,
+                    decoration: BoxDecoration(
+                      color: MAIZE_PRIMARY.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Text(
+                            S.of(context).sending,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _codeSent
+                    ? Column(
+                        children: [
+                          CustomButton(
+                            text: S.of(context).continue_to_registration,
+                            onPressed: () {
+                              // Navigate to verification screen
+                              Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (context) => TwoFactorVerificationScreen(
+                                    contactNumber: widget.contactNumber,
+                                    purpose: 'registration',
+                                    onVerificationSuccess: () {
+                                      Navigator.of(context).pop(true);
+                                    },
+                                  ),
+                                ),
+                              ).then((verificationResult) {
+                                if (verificationResult == true) {
+                                  Navigator.of(context).pop(true);
+                                }
+                              });
+                            },
+                          ),
+                          SizedBox(height: kAppMediumPadding.h),
+                          TextButton(
+                            onPressed: () => _handleSendVerificationCode(),
+                            child: Text(
+                              S.of(context).resend_code,
+                              style: TextStyle(
+                                color: MAIZE_PRIMARY,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : CustomButton(
+                        text: S.of(context).continue_to_registration,
+                        onPressed: () => _handleSendVerificationCode(),
+                      ),
             
             SizedBox(height: kAppMediumPadding.h),
             
             // Help text
             Text(
-              l10n.verification_help_text,
+              S.of(context).verification_help_text,
               style: textTheme.bodySmall?.copyWith(
                 color: MAIZE_ACCENT.withOpacity(0.6),
               ),

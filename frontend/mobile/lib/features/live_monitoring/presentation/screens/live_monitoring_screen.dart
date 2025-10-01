@@ -1167,7 +1167,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
       // Debug: Print analytics data status
       print(
-        '🔍 Analytics Data Status: ${analyticsData != null ? "Available" : "NULL"}',
+        '🔍 Analytics Data Status: ${analyticsData != null ? S.of(context).available : S.of(context).null_value}',
       );
       if (analyticsData != null) {
         print('🔍 Analytics Keys: ${analyticsData.keys.toList()}');
