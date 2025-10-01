@@ -364,9 +364,9 @@ class S {
     );
   }
 
-  /// `Done`
+  /// `DONE`
   String get done {
-    return Intl.message('Done', name: 'done', desc: '', args: []);
+    return Intl.message('DONE', name: 'done', desc: '', args: []);
   }
 
   /// `LDR Sensor`
@@ -1262,6 +1262,36 @@ class S {
   /// `Language`
   String get language {
     return Intl.message('Language', name: 'language', desc: '', args: []);
+  }
+
+  /// `Select Language`
+  String get select_language {
+    return Intl.message(
+      'Select Language',
+      name: 'select_language',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Language Settings`
+  String get language_settings {
+    return Intl.message(
+      'Language Settings',
+      name: 'language_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completed`
+  String get completed {
+    return Intl.message('Completed', name: 'completed', desc: '', args: []);
+  }
+
+  /// `VE`
+  String get ve_stage {
+    return Intl.message('VE', name: 've_stage', desc: '', args: []);
   }
 
   /// `Notifications`
@@ -3949,11 +3979,6 @@ class S {
     return Intl.message('Status', name: 'status', desc: '', args: []);
   }
 
-  /// `Completed`
-  String get completed {
-    return Intl.message('Completed', name: 'completed', desc: '', args: []);
-  }
-
   /// `In Progress`
   String get in_progress {
     return Intl.message('In Progress', name: 'in_progress', desc: '', args: []);
@@ -4604,46 +4629,6 @@ class S {
     return Intl.message(
       'Partly cloudy',
       name: 'partly_cloudy_description',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Sunny weather conditions`
-  String get sunny_description {
-    return Intl.message(
-      'Sunny weather conditions',
-      name: 'sunny_description',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cloudy weather conditions`
-  String get cloudy_description {
-    return Intl.message(
-      'Cloudy weather conditions',
-      name: 'cloudy_description',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Rainy weather conditions`
-  String get rainy_description {
-    return Intl.message(
-      'Rainy weather conditions',
-      name: 'rainy_description',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Overcast weather conditions`
-  String get overcast_description {
-    return Intl.message(
-      'Overcast weather conditions',
-      name: 'overcast_description',
       desc: '',
       args: [],
     );

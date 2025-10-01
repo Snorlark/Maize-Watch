@@ -7,6 +7,7 @@ import 'data/datasources/prescription_remote_data_source.dart';
 import 'data/repositories/prescription_repository_impl.dart';
 import 'domain/repositories/prescription_repository.dart';
 import 'domain/usecases/get_prescriptions.dart';
+import 'domain/usecases/get_prescriptions_for_farm.dart';
 import 'domain/usecases/update_prescription_status.dart';
 import 'domain/usecases/delete_prescription.dart';
 import 'domain/usecases/mark_all_as_completed.dart';
@@ -41,6 +42,7 @@ Future<void> initPrescriptionFeature() async {
 
   // Use cases
   sl.registerLazySingleton(() => GetPrescriptions(sl<PrescriptionRepository>()));
+  sl.registerLazySingleton(() => GetPrescriptionsForFarm(sl<PrescriptionRepository>()));
   sl.registerLazySingleton(() => UpdatePrescriptionStatus(sl<PrescriptionRepository>()));
   sl.registerLazySingleton(() => DeletePrescription(sl<PrescriptionRepository>()));
   sl.registerLazySingleton(() => MarkAllAsCompleted(sl<PrescriptionRepository>()));
@@ -52,6 +54,7 @@ Future<void> initPrescriptionFeature() async {
   sl.registerLazySingleton(
     () => PrescriptionBloc(
       getPrescriptions: sl<GetPrescriptions>(),
+      getPrescriptionsForFarm: sl<GetPrescriptionsForFarm>(),
       updatePrescriptionStatus: sl<UpdatePrescriptionStatus>(),
       deletePrescription: sl<DeletePrescription>(),
       markAllAsCompleted: sl<MarkAllAsCompleted>(),

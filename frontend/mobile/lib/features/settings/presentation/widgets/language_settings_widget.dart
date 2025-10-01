@@ -32,7 +32,7 @@ class LanguageSettingsWidget extends StatelessWidget {
               ),
               SizedBox(width: kAppSmallGap),
               Text(
-                'Select Language',
+                S.of(context).select_language,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w600,

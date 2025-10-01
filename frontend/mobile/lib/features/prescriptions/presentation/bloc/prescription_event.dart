@@ -11,6 +11,15 @@ class LoadPrescriptions extends PrescriptionEvent {
   const LoadPrescriptions();
 }
 
+class LoadPrescriptionsForFarm extends PrescriptionEvent {
+  final String farmId;
+
+  const LoadPrescriptionsForFarm(this.farmId);
+
+  @override
+  List<Object?> get props => [farmId];
+}
+
 class UpdatePrescriptionStatus extends PrescriptionEvent {
   final String fieldId;
   final String prescriptionId;

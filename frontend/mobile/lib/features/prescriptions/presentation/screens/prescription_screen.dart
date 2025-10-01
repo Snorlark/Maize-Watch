@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/services/prescription_id_mapper.dart';
+import 'package:mobile/core/services/prescription_translation_service.dart';
 // import 'package:mobile/core/widgets/offline_indicator.dart';
 import 'package:mobile/features/prescriptions/presentation/widgets/prescription_filter_chip.dart';
 import 'package:mobile/features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
@@ -880,6 +881,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
     final fieldName = prescription['fieldName'] as String? ?? S.of(context).unknown_field;
     final timeline = prescription['timeline'] as String? ?? S.of(context).today;
     
+    // Translate prescription content
+    final originalTitle = prescription['title'] as String;
+    final originalDescription = prescription['description'] as String;
+    
     // Debug logging for completion status
     print('🔧 BUILDING CARD: ${prescription['title']} - isCompleted: $isCompleted');
     print('🔧 BUILDING CARD: Full prescription data: $prescription');
@@ -952,15 +957,21 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
                 
                 // Task title
                 Expanded(
-                  child: Text(
-                    prescription['title'] as String,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isCompleted ? Colors.green[700] : MAIZE_ACCENT,
-                      fontWeight: FontWeight.w600,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: FutureBuilder<String>(
+                    future: PrescriptionTranslationService.translatePrescriptionTitle(originalTitle),
+                    builder: (context, snapshot) {
+                      final translatedTitle = snapshot.data ?? originalTitle;
+                      return Text(
+                        translatedTitle,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: isCompleted ? Colors.green[700] : MAIZE_ACCENT,
+                          fontWeight: FontWeight.w600,
+                          decoration: isCompleted ? TextDecoration.lineThrough : null,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   ),
                 ),
                 
@@ -974,7 +985,7 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
                     borderRadius: BorderRadius.circular(20.r),
                   ),
                   child: Text(
-                    isCompleted ? 'COMPLETED' : urgency.toUpperCase(),
+                    isCompleted ? S.of(context).completed : urgency.toUpperCase(),
                     style: TextTheme.of(context).bodySmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -987,15 +998,19 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
               SizedBox(height: 5.h),
               
                   // Description
-                  Text(
-                    prescription['description'] as String,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontSize: 12.sp,                 
-                      height: 1.3,
-              decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  FutureBuilder<String>(
+                    future: PrescriptionTranslationService.translatePrescriptionDescription(originalDescription),
+                    builder: (context, snapshot) {
+                      final translatedDescription = snapshot.data ?? originalDescription;
+                      return Text(
+                        translatedDescription,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 12.sp,                 
+                          height: 1.3,
+                          decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        ),
+                      );
+                    },
                   ),
               
               SizedBox(height: 12.h),
