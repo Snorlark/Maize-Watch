@@ -44,7 +44,7 @@ RUN npm install -g pm2
 # SECTION 7: Install Node.js Dependencies
 # ==========================================
 COPY backend/package*.json ./backend/
-RUN cd backend && npm ci --only=production
+RUN cd backend && npm ci
 
 # ==========================================
 # SECTION 8: Install Python Dependencies
@@ -61,20 +61,25 @@ COPY nginx/ ./nginx/
 COPY scripts/ ./scripts/
 
 # ==========================================
-# SECTION 10: Configure Nginx
+# SECTION 10: Build TypeScript Backend
+# ==========================================
+RUN cd backend && npm run build
+
+# ==========================================
+# SECTION 11: Configure Nginx
 # ==========================================
 RUN rm /etc/nginx/sites-enabled/default
 COPY nginx/nginx.conf /etc/nginx/sites-available/app
 RUN ln -s /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app
 
 # ==========================================
-# SECTION 11: Startup Script
+# SECTION 12: Startup Script
 # ==========================================
 COPY scripts/start.sh ./
 RUN chmod +x start.sh
 
 # ==========================================
-# SECTION 12: Security - Non-root User
+# SECTION 13: Security - Non-root User
 # ==========================================
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
@@ -90,17 +95,17 @@ RUN chown -R appuser:appuser /run
 USER appuser
 
 # ==========================================
-# SECTION 13: Expose Port
+# SECTION 14: Expose Port
 # ==========================================
 EXPOSE 10000
 
 # ==========================================
-# SECTION 14: Health Check
+# SECTION 15: Health Check
 # ==========================================
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:10000/health || exit 1
 
 # ==========================================
-# SECTION 15: Start Command
+# SECTION 16: Start Command
 # ==========================================
 CMD ["./start.sh"]
