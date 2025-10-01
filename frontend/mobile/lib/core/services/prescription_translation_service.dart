@@ -1,4 +1,6 @@
+import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class PrescriptionTranslationService {
   static final Map<String, Map<String, String>> _titleTranslations = {
@@ -88,10 +90,28 @@ class PrescriptionTranslationService {
     },
   };
 
-  // Get current language from SharedPreferences
+  // Get current language from SecureStorage (same as settings system) with SharedPreferences fallback
   static Future<String> _getCurrentLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('selected_language_code') ?? 'en';
+    try {
+      // First try to get from SecureStorage (settings system)
+      final settingsJson = await SecureStorage.read(key: 'settings');
+      if (settingsJson != null) {
+        final settingsData = Map<String, dynamic>.from(jsonDecode(settingsJson));
+        final language = settingsData['language'] ?? 'en';
+        // Also store in SharedPreferences for immediate access
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('selected_language_code', language);
+        return language;
+      }
+      
+      // Fallback to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('selected_language_code') ?? 'en';
+    } catch (e) {
+      // Final fallback
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('selected_language_code') ?? 'en';
+    }
   }
 
   // Translate prescription title
