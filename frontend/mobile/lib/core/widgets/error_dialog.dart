@@ -99,6 +99,13 @@ class ErrorDialog {
       'too many attempts',
       'unauthorized',
       'forbidden',
+      'authentication failed',
+      'login failed',
+      'server error',
+      'network error',
+      'connection timed out',
+      'access forbidden',
+      'service not found',
     ];
     final lower = normalized.toLowerCase();
     if (normalized.isNotEmpty &&

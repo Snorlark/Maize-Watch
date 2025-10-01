@@ -292,7 +292,54 @@ class AuthenticationRemoteDataSourceImpl
     if (e.type == DioExceptionType.connectionTimeout) {
       return ServerException("Connection timed out. Please try again.");
     } else if (e.response != null) {
-      return ServerException(e.response!.data['message'] ?? defaultMessage);
+      final responseData = e.response!.data;
+      final statusCode = e.response!.statusCode;
+      
+      // Handle specific HTTP status codes with proper error messages
+      if (statusCode == 401) {
+        return ServerException("Invalid username or password. Please check your credentials and try again.");
+      } else if (statusCode == 400) {
+        // Check for validation errors
+        if (responseData is Map<String, dynamic>) {
+          final message = responseData['message'];
+          if (message != null && message.toString().isNotEmpty) {
+            return ServerException(message.toString());
+          }
+        }
+        return ServerException("Invalid request. Please check your input and try again.");
+      } else if (statusCode == 422) {
+        // Validation errors
+        if (responseData is Map<String, dynamic>) {
+          final errors = responseData['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            final firstError = errors.first;
+            if (firstError is Map<String, dynamic> && firstError['message'] != null) {
+              return ServerException(firstError['message'].toString());
+            }
+          }
+          final message = responseData['message'];
+          if (message != null && message.toString().isNotEmpty) {
+            return ServerException(message.toString());
+          }
+        }
+        return ServerException("Validation failed. Please check your input and try again.");
+      } else if (statusCode == 500) {
+        return ServerException("Server error. Please try again later.");
+      } else if (statusCode == 404) {
+        return ServerException("Service not found. Please try again later.");
+      } else if (statusCode == 403) {
+        return ServerException("Access forbidden. Please check your permissions.");
+      }
+      
+      // Try to get message from response
+      if (responseData is Map<String, dynamic>) {
+        final message = responseData['message'];
+        if (message != null && message.toString().isNotEmpty) {
+          return ServerException(message.toString());
+        }
+      }
+      
+      return ServerException(defaultMessage);
     } else {
       return ServerException("Network error: ${e.message}");
     }

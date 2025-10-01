@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
+import 'package:mobile/core/widgets/error_dialog.dart';
+import 'package:mobile/core/services/two_factor_auth_service.dart';
 import 'package:mobile/generated/l10n.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:mobile/core/config/environment.dart';
 
 class ForgotPasswordOverlay extends StatefulWidget {
   const ForgotPasswordOverlay({super.key});
@@ -16,20 +15,20 @@ class ForgotPasswordOverlay extends StatefulWidget {
 
 class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _contactNumberController = TextEditingController();
   final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final TwoFactorAuthService _twoFactorService = TwoFactorAuthService();
   
   bool _isLoading = false;
   bool _codeSent = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _contactNumberController.dispose();
     _codeController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -41,43 +40,33 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/auth/send-reset-code'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': _usernameController.text,
-        }),
-      );
+    final result = await _twoFactorService.sendPasswordResetCode(_contactNumberController.text);
 
-      final data = json.decode(response.body);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
 
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (result['success'] == true) {
         setState(() {
           _codeSent = true;
-          _isLoading = false;
         });
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.current.verification_code_sent),
+            content: Text(S.of(context).verification_code_sent),
             backgroundColor: Colors.green,
           ),
         );
       } else {
-        setState(() {
-          _errorMessage = data['message'] ?? 'Failed to send verification code';
-          _isLoading = false;
-        });
+        ErrorDialog.show(
+          context,
+          title: S.of(context).error,
+          message: result['message'] ?? 'Failed to send verification code',
+        );
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = S.of(context).network_error;
-        _isLoading = false;
-      });
     }
   }
 
@@ -85,31 +74,30 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_newPasswordController.text != _confirmPasswordController.text) {
-      setState(() {
-        _errorMessage = S.of(context).passwords_do_not_match;
-      });
+      ErrorDialog.show(
+        context,
+        title: S.of(context).error,
+        message: S.of(context).passwords_do_not_match,
+      );
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
-    try {
-      final response = await http.post(
-        Uri.parse('http://10.133.241.206:8080/api/auth/reset-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'username': _usernameController.text,
-          'code': _codeController.text,
-          'newPassword': _newPasswordController.text,
-        }),
-      );
+    final result = await _twoFactorService.resetPasswordWithCode(
+      contactNumber: _contactNumberController.text,
+      code: _codeController.text,
+      newPassword: _newPasswordController.text,
+    );
 
-      final data = json.decode(response.body);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
 
-      if (response.statusCode == 200 && data['success'] == true) {
+      if (result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(S.of(context).password_reset_successful),
@@ -118,16 +106,12 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
         );
         Navigator.of(context).pop();
       } else {
-        setState(() {
-          _errorMessage = data['message'] ?? 'Failed to reset password';
-          _isLoading = false;
-        });
+        ErrorDialog.show(
+          context,
+          title: S.of(context).error,
+          message: result['message'] ?? 'Failed to reset password',
+        );
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = S.of(context).network_error;
-        _isLoading = false;
-      });
     }
   }
 
@@ -180,9 +164,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 SizedBox(height: kAppLargePadding.h),
 
                 if (!_codeSent) ...[
-                  // Username Input
+                  // Contact Number Input
                   Text(
-                    'Username',
+                    S.of(context).contact_number,
                     style: textTheme.bodyMedium?.copyWith(
                       color: MAIZE_ACCENT,
                       fontWeight: FontWeight.w600,
@@ -190,8 +174,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                   ),
                   SizedBox(height: kAppSmallPadding.h),
                   TextFormField(
-                    controller: _usernameController,
-                    keyboardType: TextInputType.text,
+                    controller: _contactNumberController,
+                    keyboardType: TextInputType.phone,
                     style: textTheme.bodyMedium?.copyWith(color: MAIZE_ACCENT),
                     decoration: InputDecoration(
                       filled: true,

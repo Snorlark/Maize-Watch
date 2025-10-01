@@ -10,6 +10,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../generated/l10n.dart';
 import '../widgets/register_form_fields.dart';
 import 'registration_success_screen.dart';
+import 'phone_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -255,7 +256,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _submitRegistration() {
+  void _submitRegistration() async {
     print("🔍 RegisterScreen: _submitRegistration called");
     
     if (!_formKeys[currentPage].currentState!.validate()) {
@@ -266,19 +267,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final addressObject = _controllers.getAddressObject();
     print("🔍 RegisterScreen: Address object: $addressObject");
 
-    print("🔍 RegisterScreen: Dispatching RegisterEvent");
-    context.read<AuthenticationBloc>().add(
-      RegisterEvent(
-        username: _controllers.usernameController.text,
-        password: _controllers.passwordController.text,
-        fullName:
-            '${_controllers.firstNameController.text} ${_controllers.lastNameController.text}',
-        contactNumber: _controllers.contactController.text,
-        address: addressObject,
-        role: 'user',
+    // First, verify phone number with 2FA
+    final verificationResult = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => PhoneVerificationScreen(
+          contactNumber: _controllers.contactController.text,
+        ),
       ),
     );
-    print("🔍 RegisterScreen: RegisterEvent dispatched");
+
+    if (verificationResult == true) {
+      // Phone verification successful, proceed with registration
+      print("🔍 RegisterScreen: Phone verification successful, proceeding with registration");
+      context.read<AuthenticationBloc>().add(
+        RegisterEvent(
+          username: _controllers.usernameController.text,
+          password: _controllers.passwordController.text,
+          fullName:
+              '${_controllers.firstNameController.text} ${_controllers.lastNameController.text}',
+          contactNumber: _controllers.contactController.text,
+          address: addressObject,
+          role: 'user',
+        ),
+      );
+      print("🔍 RegisterScreen: RegisterEvent dispatched");
+    } else {
+      print("🔍 RegisterScreen: Phone verification failed or cancelled");
+    }
   }
 
   @override

@@ -106,12 +106,13 @@ class PrescriptiveAnalytics:
             # Combine all recommendations for this field
             field_recommendations = immediate_actions + preventive_actions + growth_preparations
             
-            # Add field information to each recommendation
+            # Add field information to each recommendation - use the actual field name from field_analysis
+            actual_field_name = field_analysis.get('field_id', field_name)
             for rec in field_recommendations:
-                rec['field_id'] = field_name
-                rec['field_name'] = field_data.get('field_name', field_name)
+                rec['field_id'] = actual_field_name
+                rec['field_name'] = actual_field_name  # Use the actual field name from analysis
             
-            logger.info(f"Generated {len(field_recommendations)} recommendations for field {field_name}")
+            logger.info(f"Generated {len(field_recommendations)} recommendations for field {actual_field_name}")
             return field_recommendations
             
         except Exception as e:
@@ -286,7 +287,8 @@ class PrescriptiveAnalytics:
         stress_analysis = descriptive_results.get('stress_analysis', {})
         growth_stage = field_data.get('growth_stage', 'VE') if field_data else descriptive_results.get('growth_stage', 'VE')
         soil_type = field_data.get('soil_type', 'loam') if field_data else 'loam'
-        field_name = field_data.get('field_name', 'Unknown Field') if field_data else 'Unknown Field'
+        # Use field_id from descriptive_results if available, otherwise fall back to field_data
+        field_name = descriptive_results.get('field_id', field_data.get('field_name', 'Unknown Field')) if descriptive_results.get('field_id') else (field_data.get('field_name', 'Unknown Field') if field_data else 'Unknown Field')
         
         logger.info(f"Generating immediate actions for field '{field_name}' (stage: {growth_stage}, soil: {soil_type})")
         logger.info(f"Stress analysis available: {len(stress_analysis)} factors")

@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/generated/l10n.dart';
+import 'package:mobile/core/services/prescription_translation_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -16,6 +18,11 @@ class NotificationService {
   static const int SENSOR_SLEEP_MODE_ID = 1001;
   static const int PRESCRIPTION_ALERT_ID = 1002;
   static const int SENSOR_OFFLINE_ID = 1003;
+  static const int BACKGROUND_PRESCRIPTION_ID = 2000;
+  
+  // Cache keys
+  static const String _CACHED_NOTIFICATIONS_KEY = 'cached_notifications';
+  static const String _NOTIFICATION_COUNTER_KEY = 'notification_counter';
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -380,5 +387,176 @@ class NotificationService {
 
   Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();
+  }
+
+  /// Cache notification for background delivery
+  Future<void> cacheNotification({
+    required String title,
+    required String message,
+    String? priority,
+    String? prescriptionId,
+    String? fieldName,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedNotifications = await getCachedNotifications();
+      
+      // Get next notification ID
+      final counter = prefs.getInt(_NOTIFICATION_COUNTER_KEY) ?? 0;
+      final notificationId = BACKGROUND_PRESCRIPTION_ID + counter;
+      
+      final notification = {
+        'id': notificationId,
+        'title': title,
+        'message': message,
+        'priority': priority ?? 'medium',
+        'prescriptionId': prescriptionId,
+        'fieldName': fieldName,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'delivered': false,
+      };
+      
+      cachedNotifications.add(notification);
+      
+      // Store updated cache
+      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(cachedNotifications));
+      await prefs.setInt(_NOTIFICATION_COUNTER_KEY, counter + 1);
+      
+      print('🔔 Cached notification: $title');
+    } catch (e) {
+      print('🚨 Error caching notification: $e');
+    }
+  }
+
+  /// Get cached notifications
+  Future<List<Map<String, dynamic>>> getCachedNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString(_CACHED_NOTIFICATIONS_KEY);
+      
+      if (cachedData == null) return [];
+      
+      final List<dynamic> decoded = jsonDecode(cachedData);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (e) {
+      print('🚨 Error getting cached notifications: $e');
+      return [];
+    }
+  }
+
+  /// Deliver cached notifications
+  Future<void> deliverCachedNotifications() async {
+    try {
+      final cachedNotifications = await getCachedNotifications();
+      final undeliveredNotifications = cachedNotifications.where((n) => n['delivered'] == false).toList();
+      
+      if (undeliveredNotifications.isEmpty) return;
+      
+      print('🔔 Delivering ${undeliveredNotifications.length} cached notifications');
+      
+      for (final notification in undeliveredNotifications) {
+        await showPrescriptionAlertNotification(
+          title: notification['title'],
+          message: notification['message'],
+          priority: notification['priority'],
+          notificationId: notification['id'],
+        );
+        
+        // Mark as delivered
+        notification['delivered'] = true;
+      }
+      
+      // Update cache
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(cachedNotifications));
+      
+    } catch (e) {
+      print('🚨 Error delivering cached notifications: $e');
+    }
+  }
+
+  /// Clear delivered notifications from cache
+  Future<void> clearDeliveredNotifications() async {
+    try {
+      final cachedNotifications = await getCachedNotifications();
+      final activeNotifications = cachedNotifications.where((n) => n['delivered'] == false).toList();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(activeNotifications));
+      
+    } catch (e) {
+      print('🚨 Error clearing delivered notifications: $e');
+    }
+  }
+
+  /// Schedule background notification check
+  Future<void> scheduleBackgroundCheck() async {
+    try {
+      // Schedule a notification to check for new prescriptions
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'maize_watch_background',
+        'Background Check',
+        channelDescription: 'Background prescription check',
+        importance: Importance.low,
+        priority: Priority.low,
+        showWhen: false,
+        enableVibration: false,
+        playSound: false,
+      );
+
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: false,
+        presentSound: false,
+      );
+
+      const NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // Schedule notification for 5 minutes from now
+      final scheduledDate = DateTime.now().add(const Duration(minutes: 5));
+      
+      await _notifications.zonedSchedule(
+        9999, // Background check ID
+        'Background Check',
+        'Checking for new prescriptions...',
+        scheduledDate,
+        details,
+      );
+      
+    } catch (e) {
+      print('🚨 Error scheduling background check: $e');
+    }
+  }
+
+  /// Enhanced prescription notification with caching
+  Future<void> showPrescriptionAlertNotificationWithCaching({
+    required String title,
+    required String message,
+    String? priority,
+    String? prescriptionId,
+    String? fieldName,
+    bool cacheForBackground = true,
+  }) async {
+    // Show immediate notification
+    await showPrescriptionAlertNotification(
+      title: title,
+      message: message,
+      priority: priority,
+      notificationId: prescriptionId != null ? int.tryParse(prescriptionId) : null,
+    );
+    
+    // Cache for background delivery if enabled
+    if (cacheForBackground) {
+      await cacheNotification(
+        title: title,
+        message: message,
+        priority: priority,
+        prescriptionId: prescriptionId,
+        fieldName: fieldName,
+      );
+    }
   }
 }

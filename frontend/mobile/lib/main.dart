@@ -35,6 +35,10 @@ void main() async {
       print('🔔 Requesting notification permissions at app start');
       await notificationService.requestPermissions();
     }
+    
+    // Deliver any cached notifications
+    await notificationService.deliverCachedNotifications();
+    print('🔔 Delivered cached notifications on app start');
   } catch (e) {
     print('⚠️ Error requesting notification permissions at app start: $e');
   }

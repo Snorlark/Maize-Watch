@@ -10,12 +10,16 @@ abstract class HistoricalRemoteDataSource {
 
 class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
   final Dio dio;
-  final SessionService _sessionService;
+  // Remove unused field
+  // final SessionService _sessionService;
 
   HistoricalRemoteDataSourceImpl({
     required this.dio,
     required SessionService sessionService,
-  }) : _sessionService = sessionService;
+  }) {
+    // Remove unused field assignment
+    // _sessionService = sessionService;
+  }
 
   @override
   Future<Map<String, dynamic>> getWeeklyData(String farmId, {String? fieldId, int? weekOffset}) async {
@@ -23,7 +27,7 @@ class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
       // Get authentication token
       final token = await SecureStorage.getToken();
       if (token == null) {
-        print('🔍 No authentication token available for historical data');
+        // No authentication token available for historical data
         return _generateFallbackData();
       }
 
@@ -32,7 +36,7 @@ class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
         if (weekOffset != null) 'weekOffset': weekOffset.toString(),
       };
 
-      print('🔍 Fetching weekly data from: /analytics/farms/$farmId/weekly-data');
+      // Fetching weekly data from analytics endpoint
 
       final response = await dio.get(
         '/analytics/farms/$farmId/weekly-data',
@@ -47,11 +51,11 @@ class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('🔍 Weekly data response: ${responseData['data']?.length ?? 0} data points');
+        // Weekly data response received
         return responseData['data'] as Map<String, dynamic>? ?? {};
       } else {
         final responseBody = response.data;
-        print('🔍 Server error: ${response.statusCode} - ${responseBody['message'] ?? 'Unknown error'}');
+        // Server error occurred
         // Return fallback data instead of throwing error
         return _generateFallbackData();
       }
