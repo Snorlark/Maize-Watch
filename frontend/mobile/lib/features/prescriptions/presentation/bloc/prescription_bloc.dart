@@ -14,6 +14,7 @@ import 'package:mobile/features/prescriptions/domain/usecases/mark_all_as_comple
     as usecase;
 import 'package:mobile/features/prescriptions/domain/usecases/update_prescription_status.dart'
     as usecase;
+import 'package:mobile/features/prescriptions/domain/usecases/sync_analytics_prescriptions.dart' as usecase;
 import 'package:mobile/features/prescriptions/presentation/bloc/prescription_event.dart';
 import 'package:mobile/features/prescriptions/presentation/bloc/prescription_state.dart';
 
@@ -26,6 +27,7 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
   final usecase.MarkAllAsCompleted markAllAsCompleted;
   final usecase.DeleteCompletedPrescriptions deleteCompletedPrescriptions;
   final usecase.DeleteAllPrescriptions deleteAllPrescriptions;
+  final usecase.SyncAnalyticsPrescriptions syncAnalyticsPrescriptions;
 
   StreamSubscription<Either<Failure, List<Prescription>>>?
   _prescriptionSubscription;
@@ -36,6 +38,7 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     required this.markAllAsCompleted,
     required this.deleteCompletedPrescriptions,
     required this.deleteAllPrescriptions,
+    required this.syncAnalyticsPrescriptions,
   }) : super(const PrescriptionInitial()) {
     on<LoadPrescriptions>(_onLoadPrescriptions);
     on<UpdatePrescriptionStatus>(_onUpdatePrescriptionStatus);
@@ -44,6 +47,7 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     on<DeleteCompletedPrescriptions>(_onDeleteCompletedPrescriptions);
     on<DeleteAllPrescriptions>(_onDeleteAllPrescriptions);
     on<CheckForNewPrescriptions>(_onCheckForNewPrescriptions);
+    on<SyncAnalyticsPrescriptions>(_onSyncAnalyticsPrescriptions);
   }
 
   void _onLoadPrescriptions(
@@ -183,6 +187,26 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     }
   }
 
+  void _onSyncAnalyticsPrescriptions(
+    SyncAnalyticsPrescriptions event,
+    Emitter<PrescriptionState> emit,
+  ) async {
+    emit(const PrescriptionLoading());
+    
+    final result = await syncAnalyticsPrescriptions(
+      usecase.SyncAnalyticsPrescriptionsParams(
+        farmId: event.farmId,
+        prescriptions: event.prescriptions,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(PrescriptionError(_mapFailureToMessage(failure))),
+      (data) => emit(PrescriptionLoaded(
+        loadedPrescriptions: state.prescriptions,
+      )),
+    );
+  }
 
   @override
   Future<void> close() {

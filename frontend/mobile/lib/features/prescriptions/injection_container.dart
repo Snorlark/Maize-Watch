@@ -12,6 +12,7 @@ import 'domain/usecases/delete_prescription.dart';
 import 'domain/usecases/mark_all_as_completed.dart';
 import 'domain/usecases/delete_completed_prescriptions.dart';
 import 'domain/usecases/delete_all_prescriptions.dart';
+import 'domain/usecases/sync_analytics_prescriptions.dart';
 import 'presentation/bloc/prescription_bloc.dart';
 
 final sl = GetIt.instance;
@@ -45,6 +46,7 @@ Future<void> initPrescriptionFeature() async {
   sl.registerLazySingleton(() => MarkAllAsCompleted(sl<PrescriptionRepository>()));
   sl.registerLazySingleton(() => DeleteCompletedPrescriptions(sl<PrescriptionRepository>()));
   sl.registerLazySingleton(() => DeleteAllPrescriptions(sl<PrescriptionRepository>()));
+  sl.registerLazySingleton(() => SyncAnalyticsPrescriptions(sl<PrescriptionRepository>()));
 
   // BLoC
   sl.registerLazySingleton(
@@ -55,6 +57,7 @@ Future<void> initPrescriptionFeature() async {
       markAllAsCompleted: sl<MarkAllAsCompleted>(),
       deleteCompletedPrescriptions: sl<DeleteCompletedPrescriptions>(),
       deleteAllPrescriptions: sl<DeleteAllPrescriptions>(),
+      syncAnalyticsPrescriptions: sl<SyncAnalyticsPrescriptions>(),
     ),
   );
 }

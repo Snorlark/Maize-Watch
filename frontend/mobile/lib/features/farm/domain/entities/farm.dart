@@ -47,6 +47,9 @@ class Sensor extends Equatable {
   final String description;
   final String soilType; // loamy, sandy, clay, silty
   final SensorReadings readings;
+  final String? prototypeId;
+  final String? prototypeChannelId;
+  final String? prototypeApiKey;
 
   const Sensor({
     required this.deviceID,
@@ -54,6 +57,9 @@ class Sensor extends Equatable {
     required this.description,
     required this.soilType,
     required this.readings,
+    this.prototypeId,
+    this.prototypeChannelId,
+    this.prototypeApiKey,
   });
 
   Map<String, dynamic> toJson() {
@@ -63,6 +69,9 @@ class Sensor extends Equatable {
       'description': description,
       'soilType': soilType,
       'readings': readings.toJson(),
+      'prototypeId': prototypeId,
+      'prototypeChannelId': prototypeChannelId,
+      'prototypeApiKey': prototypeApiKey,
     };
   }
 
@@ -73,11 +82,14 @@ class Sensor extends Equatable {
       description: json['description'] ?? '',
       soilType: json['soilType'] ?? 'loamy',
       readings: SensorReadings.fromJson(json['readings'] ?? {}),
+      prototypeId: json['prototypeId'],
+      prototypeChannelId: json['prototypeChannelId'],
+      prototypeApiKey: json['prototypeApiKey'],
     );
   }
 
   @override
-  List<Object?> get props => [deviceID, sensorName, description, soilType, readings];
+  List<Object?> get props => [deviceID, sensorName, description, soilType, readings, prototypeId, prototypeChannelId, prototypeApiKey];
 }
 
 // Field model

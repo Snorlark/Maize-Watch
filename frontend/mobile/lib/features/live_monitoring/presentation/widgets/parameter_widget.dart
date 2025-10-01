@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
+import 'package:mobile/core/theme/colors.dart';
+
 class ParameterWidget extends StatefulWidget {
   final String title;
   final String unit;
@@ -223,17 +225,10 @@ class _ParameterWidgetState extends State<ParameterWidget> {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: Colors.grey[300]!),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.white),
+       
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,7 +258,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: MAIZE_ACCENT,
                       ),
                     ),
                     Text(
@@ -313,7 +308,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
                   '7-Day Avg',
                   averageValue,
                   widget.unit,
-                  Colors.grey[600]!,
+                  MAIZE_ACCENT,
                 ),
               ),
             ],
@@ -332,9 +327,8 @@ class _ParameterWidgetState extends State<ParameterWidget> {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.grey[200]!),
+        color: valueColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12.r),        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,7 +397,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: MAIZE_ACCENT,
             ),
           ),
           SizedBox(height: 12.h),

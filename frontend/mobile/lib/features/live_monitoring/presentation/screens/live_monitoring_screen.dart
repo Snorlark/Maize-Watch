@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/features/live_monitoring/domain/usecases/get_localized_greeting.dart';
+import 'package:mobile/generated/l10n.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/notification_service.dart';
@@ -30,6 +31,46 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   late Animation<double> _fadeAnimation;
   final NotificationService _notificationService = NotificationService();
   Set<String> _notifiedPrescriptions = {};
+  List<Map<String, dynamic>> _cachedTasks = [];
+
+  // Refresh completion status for all tasks
+  Future<void> _refreshCompletionStatus([StateSetter? setState]) async {
+    print('🔧 LIVE MONITORING: Refreshing completion status for ${_cachedTasks.length} tasks');
+    
+    // Check if user is authenticated
+    final authState = context.read<AuthenticationBloc>().state;
+    print('🔧 LIVE MONITORING: Auth state during refresh - status: ${authState.status}, user: ${authState.user?.id}');
+    
+    if (authState.status != AuthenticationStatus.authenticated || authState.user == null) {
+      print('🔧 LIVE MONITORING: User not authenticated, skipping completion status refresh');
+      return;
+    }
+    
+    // Direct approach: Get completion status directly from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    
+    
+    if (_cachedTasks.isNotEmpty) {
+      for (final task in _cachedTasks) {
+        final taskId = task['id'] as String;
+        final oldStatus = task['isCompleted'];
+        final completionKey = 'completion_${authState.user!.id}_$taskId';
+        final isCompleted = prefs.getBool(completionKey) ?? false;
+        print('🔧 LIVE MONITORING: Refresh - $taskId: old=$oldStatus, new=$isCompleted (user: ${authState.user!.id})');
+        if (task['isCompleted'] != isCompleted) {
+          task['isCompleted'] = isCompleted;
+          task['status'] = isCompleted ? 'completed' : 'pending';
+          print('🔧 LIVE MONITORING: Updated task $taskId status to $isCompleted');
+        }
+      }
+      if (setState != null) {
+        setState(() {}); // Trigger rebuild using StatefulBuilder's setState
+      } else {
+        this.setState(() {}); // Fallback to main widget's setState
+      }
+      print('🔧 LIVE MONITORING: Refresh completed, UI rebuilt');
+    }
+  }
 
   @override
   void initState() {
@@ -50,6 +91,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Load initial data
     _loadData();
     _animationController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh completion status when screen becomes visible
+    _refreshCompletionStatus();
   }
 
   void _loadData() {
@@ -79,10 +127,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       print('🌽 LiveMonitoring: Farms already loaded with ${farmState.farms.length} farms');
     }
     
-    // Load latest sensor readings only if not already loaded
-    if (monitoringState.latestReadings.isEmpty && !monitoringState.isLoading) {
+    // Always load latest sensor readings to get fresh data
+    print('🌽 LiveMonitoring: Checking if should load readings - isLoading: ${monitoringState.isLoading}');
+    if (!monitoringState.isLoading) {
       print('🌽 LiveMonitoring: Loading latest readings...');
       context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+    } else {
+      print('🌽 LiveMonitoring: Skipping load readings - already loading');
     }
   }
 
@@ -213,9 +264,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 double temperature = 16.0;
                 double humidity = 72.5;
                 double windSpeed = 5.2;
-                String weatherCondition = 'Partly Cloudy';
+                String weatherCondition = S.of(context).partly_cloudy;
                 IconData weatherIcon = Icons.cloud;
-                String weatherDescription = 'Partly cloudy';
+                String weatherDescription = S.of(context).partly_cloudy_description;
 
                 // Check if we have analytics data with weather information
                 final analyticsData = monitoringState.farmAnalytics;
@@ -228,8 +279,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                       temperature = (currentWeather['temperature'] as num?)?.toDouble() ?? 16.0;
                       humidity = (currentWeather['humidity'] as num?)?.toDouble() ?? 72.5;
                       windSpeed = (currentWeather['wind_speed'] as num?)?.toDouble() ?? 5.2;
-                      weatherCondition = currentWeather['condition'] as String? ?? 'Partly Cloudy';
-                      weatherDescription = currentWeather['description'] as String? ?? 'Partly cloudy';
+                      weatherCondition = currentWeather['condition'] as String? ?? S.of(context).partly_cloudy;
+                      weatherDescription = currentWeather['description'] as String? ?? S.of(context).partly_cloudy_description;
                       weatherIcon = _getWeatherIcon(weatherCondition);
                       
                       print('🎯 UI using analytics weather data: temp=${temperature}°C, humidity=${humidity}%');
@@ -440,7 +491,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         time: task['time'],
                         title: task['title'],
                         status: task['status'],
-                        color: task['color'],
+                        color: _getColorForUrgency(task['urgency']),
                         isActive: task['isActive'],
                         taskData: task,
                       ),
@@ -466,19 +517,39 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     Map<String, dynamic>? taskData,
   }) {
     // Extract additional information from taskData
-    final fieldName = taskData?['fieldName'] as String? ?? 'Unknown Field';    
-    final deadline = taskData?['deadline'] as String? ?? 'ASAP';
+    final fieldName = taskData?['fieldName'] as String? ?? S.of(context).unknown_field;    
+    final deadline = taskData?['deadline'] as String? ?? S.of(context).asap;
     final urgency = taskData?['urgency'] as String? ?? 'MEDIUM';
+    final isCompleted = taskData?['isCompleted'] as bool? ?? false;
+    
+    // Convert color string back to Color object if needed
+    Color actualColor = color;
+    if (taskData?['color'] is String) {
+      final colorString = taskData!['color'] as String;
+      final colorValue = int.tryParse(colorString);
+      if (colorValue != null) {
+        actualColor = Color(colorValue);
+      }
+    }
+    
+    // Debug logging for completion status
+    print('🔧 BUILDING TASK CARD: $title - isCompleted: $isCompleted');
+    print('🔧 BUILDING TASK CARD: Full task data: $taskData');
     return Material(
       color: Colors.transparent,
       child: InkWell(
-      onTap: () {
+      onTap: () async {
         if (taskData != null) {
-          Navigator.pushNamed(
+          await Navigator.pushNamed(
             context,
             '/detailed-prescription',
             arguments: taskData,
           );
+          // Refresh completion status when returning from detailed screen
+          print('🔧 LIVE MONITORING: Returning from detailed screen, refreshing completion status');
+          await _refreshCompletionStatus();
+          // Force a rebuild by calling setState
+          setState(() {});
         }
       },
         borderRadius: BorderRadius.circular(16.r),
@@ -488,28 +559,79 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           width: 155.w, // Increased width to accommodate more information
         padding: EdgeInsets.all(kAppMediumPadding),
         decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: isCompleted 
+                ? Colors.green[50] 
+                : actualColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16.r),
-            
+            border: isCompleted 
+                ? Border.all(color: Colors.green[300]!, width: 2)
+                : null,
+            boxShadow: isCompleted ? [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.1),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ] : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-
-              Container(
-               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-              child:  Text(
-                      urgency.toUpperCase(),
-                      style: TextTheme.of(
-                        context,
-                      ).bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+            // Completion status and urgency row
+            Row(
+              children: [
+                // Enhanced completion status indicator
+                if (isCompleted) ...[
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: Colors.green[600],
+                      borderRadius: BorderRadius.circular(10.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withOpacity(0.3),
+                          blurRadius: 3,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
                     ),
-  
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white, size: 12.sp),
+                        SizedBox(width: 3.w),
+                        Text(
+                          'DONE',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                ],
+                
+                // Urgency indicator (shows completion status when completed)
+                Container(
+                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: isCompleted ? Colors.green[600] : actualColor,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child:  Text(
+                        isCompleted ? 'DONE' : urgency.toUpperCase(),
+                        style: TextTheme.of(
+                          context,
+                        ).bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
+                      ),
+      
+              ),
+              ],
             ),
 
                 
@@ -520,9 +642,11 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 Text(
               title,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isActive ? MAIZE_ACCENT : Colors.grey[600],
+                  color: isCompleted 
+                      ? Colors.green[700] 
+                      : (isActive ? MAIZE_ACCENT : Colors.grey[600]),
                     fontWeight: FontWeight.w600,
-
+                    decoration: isCompleted ? TextDecoration.lineThrough : null,
                 ),
               ),
               Spacer(),
@@ -627,7 +751,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               final farmName =
                   farmState is FarmsLoaded && farmState.farms.isNotEmpty
                       ? farmState.farms.first.farmName
-                      : 'My Farm';
+                      : S.of(context).my_farm;
               final farms =
                   farmState is FarmsLoaded ? farmState.farms : <Farm>[];
               final fieldCount = farms.fold<int>(
@@ -687,7 +811,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                           color: Colors.white,
                         ),
                         label: Text(
-                          'Add Field',
+                          S.of(context).add_field,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -736,6 +860,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             _selectedFarm = farm;
             _selectedField = farm.fields.isNotEmpty ? farm.fields.first : null;
           });
+          
+          // Reload analytics data for the selected farm
+          if (farm.id != null) {
+            context.read<MonitoringBloc>().add(
+              LoadFarmAnalyticsEvent(farmId: farm.id!),
+            );
+          }
         }
       },
         borderRadius: BorderRadius.circular(16.r),
@@ -789,7 +920,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                      farm?.farmName ?? 'No field',
+                      farm?.farmName ?? S.of(context).no_field,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
@@ -881,7 +1012,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 _selectedFarm ??
                 Farm(
                   userId: '',
-                  farmName: 'Default Farm',
+                  farmName: S.of(context).default_farm,
                   location: '',
                   fields: [],
                   createdAt: DateTime.now(),
@@ -905,15 +1036,15 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   ) {
     // Determine weather condition based on sensor readings
     if (lightIntensity > 80) {
-      return 'Sunny';
+      return S.of(context).sunny;
     } else if (lightIntensity > 60) {
-      return 'Partly Cloudy';
+      return S.of(context).partly_cloudy_weather;
     } else if (lightIntensity > 40) {
-      return 'Cloudy';
+      return S.of(context).cloudy;
     } else if (humidity > 85) {
-      return 'Rainy';
+      return S.of(context).rainy;
     } else {
-      return 'Overcast';
+      return S.of(context).overcast;
     }
   }
 
@@ -945,18 +1076,18 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     final timeFormat =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      S.of(context).january,
+      S.of(context).february,
+      S.of(context).march,
+      S.of(context).april,
+      S.of(context).may,
+      S.of(context).june,
+      S.of(context).july,
+      S.of(context).august,
+      S.of(context).september,
+      S.of(context).october,
+      S.of(context).november,
+      S.of(context).december,
     ];
     final dateFormat = '${months[now.month - 1]} ${now.day}';
     return '$timeFormat | $dateFormat';
@@ -1078,14 +1209,39 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           // Format timeline for display instead of calculated time
           String displayTime = _formatTimelineForDisplay(timeline);
           
+          // Use current time for tasks to ensure they show as "just now"
+          // This ensures tasks are always fresh and not dependent on backend timestamp
+          final createdAt = DateTime.now();
+          
           // Calculate send time (when the recommendation was created)
-          String sendTime = _formatSendTime(rec['created_timestamp'] as String?);
+          String sendTime = _formatSendTime(createdAt.toIso8601String());
           
           // Calculate deadline based on timeline and urgency
           String deadline = _calculateDeadline(timeline, urgency);
 
+          // Get completion status for this task
+          // Create a stable ID based on task content to ensure consistency
+          final stableId = '${action}_${fieldName}_${category}_${parameter}';
+          final taskId = 'analytics_${stableId.hashCode.abs()}';
+          
+          // Check if user is authenticated before getting completion status
+          final authState = context.read<AuthenticationBloc>().state;
+          bool isCompleted = false;
+          
+          print('🔧 Live Monitoring: Auth state - status: ${authState.status}, user: ${authState.user?.id}');
+          
+          if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+            // Direct approach: Get completion status directly from SharedPreferences
+            final prefs = await SharedPreferences.getInstance();
+            final completionKey = 'completion_${authState.user!.id}_$taskId';
+            isCompleted = prefs.getBool(completionKey) ?? false;
+            print('🔧 Live Monitoring: Direct completion status for task $taskId: $isCompleted (user: ${authState.user!.id})');
+          } else {
+            print('🔧 Live Monitoring: User not authenticated, skipping completion status check for task $taskId');
+          }
+          
           tasks.add({
-            'id': 'analytics_${DateTime.now().millisecondsSinceEpoch}_${recommendations.indexOf(rec)}',
+            'id': taskId,
             'title': formattedTitle,
             'description': details,
             'category': category,
@@ -1097,13 +1253,14 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             'growthStage': growthStage,
             'fieldId': fieldId,
             'priority': _mapUrgencyToPriority(urgency),
-            'status': status,
-            'dueDate': _calculateDueDate(timeline),
-            'createdAt': DateTime.now(),
-            'updatedAt': DateTime.now(),
+            'status': isCompleted ? 'completed' : status,
+            'isCompleted': isCompleted,
+            'dueDate': _calculateDueDate(timeline).toIso8601String(),
+            'createdAt': createdAt.toIso8601String(),
+            'updatedAt': createdAt.toIso8601String(),
             'time': displayTime,
-            'color': _getColorForUrgency(urgency),
-            'isActive': urgency == 'HIGH' || urgency == 'URGENT' || urgency == 'MEDIUM',
+            'color': (isCompleted ? Colors.green : _getColorForUrgency(urgency)).value.toString(),
+            'isActive': isCompleted ? false : (urgency == 'HIGH' || urgency == 'URGENT' || urgency == 'MEDIUM'),
             'details': details,
             'sendTime': sendTime,
             'deadline': deadline,
@@ -1175,6 +1332,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       ]);
     }
 
+    // Cache tasks for refresh functionality
+    _cachedTasks = tasks;
     return tasks;
   }
 
@@ -1435,6 +1594,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           _selectedFarm = farm;
           _selectedField = field;
         });
+        
+        // Reload analytics data for the selected field
+        if (farm.id != null) {
+          context.read<MonitoringBloc>().add(
+            LoadFarmAnalyticsEvent(farmId: farm.id!),
+          );
+        }
       },
         borderRadius: BorderRadius.circular(16.r),
         splashColor: MAIZE_ACCENT.withOpacity(0.1),
@@ -1916,7 +2082,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
   // Helper method to format send time
   String _formatSendTime(String? timestamp) {
-    if (timestamp == null) return 'Just now';
+    if (timestamp == null) return S.of(context).just_now;
     
     try {
       final dateTime = DateTime.parse(timestamp);
@@ -1924,7 +2090,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       final difference = now.difference(dateTime);
       
       if (difference.inMinutes < 1) {
-        return 'Just now';
+        return S.of(context).just_now;
       } else if (difference.inMinutes < 60) {
         return '${difference.inMinutes}m ago';
       } else if (difference.inHours < 24) {
@@ -1935,7 +2101,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         return '${dateTime.day}/${dateTime.month}';
       }
     } catch (e) {
-      return 'Just now';
+      return S.of(context).just_now;
     }
   }
 

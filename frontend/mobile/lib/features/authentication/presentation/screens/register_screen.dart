@@ -28,6 +28,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthenticationBloc, AuthenticationState>(
       listener: (context, state) {
+        print("🔍 RegisterScreen: Authentication state changed to: ${state.status}");
+        print("🔍 RegisterScreen: User data available: ${state.user != null}");
+        
         if (state.status == AuthenticationStatus.registrationSuccess) {
           print("🎉 Registration successful! Showing success screen...");
 
@@ -233,27 +236,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleNextOrSubmit() {
+    print("🔍 RegisterScreen: _handleNextOrSubmit called, currentPage: $currentPage");
+    
     if (!_formKeys[currentPage].currentState!.validate()) {
+      print("🔍 RegisterScreen: Form validation failed");
       return;
     }
 
     if (currentPage < 1) {
+      print("🔍 RegisterScreen: Going to next page");
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
+      print("🔍 RegisterScreen: Submitting registration");
       _submitRegistration();
     }
   }
 
   void _submitRegistration() {
+    print("🔍 RegisterScreen: _submitRegistration called");
+    
     if (!_formKeys[currentPage].currentState!.validate()) {
+      print("🔍 RegisterScreen: Form validation failed in submit");
       return;
     }
 
     final addressObject = _controllers.getAddressObject();
+    print("🔍 RegisterScreen: Address object: $addressObject");
 
+    print("🔍 RegisterScreen: Dispatching RegisterEvent");
     context.read<AuthenticationBloc>().add(
       RegisterEvent(
         username: _controllers.usernameController.text,
@@ -265,6 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         role: 'user',
       ),
     );
+    print("🔍 RegisterScreen: RegisterEvent dispatched");
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../core/services/prototype_service.dart';
 import '../screens/field_registration_screen.dart';
 
 // Field Name Input Page
@@ -558,13 +559,72 @@ class _DeviceRegistrationFormPageState
                     color: MAIZE_ACCENT.withOpacity(0.7),
                   ),
                 ),
-                Text(
-                  'Type: ${device.deviceType}',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: MAIZE_ACCENT.withOpacity(0.7),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Prototype: ${device.prototypeId.isNotEmpty ? device.prototypeId : 'Not set'}',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: device.isPrototypeValid 
+                            ? Colors.green 
+                            : device.prototypeValidationError != null 
+                                ? Colors.red 
+                                : MAIZE_ACCENT.withOpacity(0.7),
+                      ),
+                    ),
+                    if (device.isPrototypeValid && device.prototypeChannelId != null) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Channel: ${device.prototypeChannelId}',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.green.withOpacity(0.8),
+                        ),
+                      ),
+                      Text(
+                        'API: ${device.prototypeApiKey?.substring(0, 8) ?? ''}...',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.green.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+                if (device.isPrototypeValid) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, size: 12.sp, color: Colors.green),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Validated',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (device.prototypeValidationError != null) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.error, size: 12.sp, color: Colors.red),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          device.prototypeValidationError!,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.red,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -685,9 +745,14 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _deviceNameController;
   late TextEditingController _deviceIdController;
-  late TextEditingController _macAddressController;
-  late TextEditingController _descriptionController;
+
+  late TextEditingController _prototypeIdController;
   String _selectedSoilType = 'loamy';
+  bool _isValidatingPrototype = false;
+  bool _isPrototypeValid = false;
+  String? _prototypeValidationError;
+  String? _prototypeChannelId;
+  String? _prototypeApiKey;
 
   @override
   void initState() {
@@ -697,16 +762,59 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
       final device = widget.controllers.devices[widget.editIndex!];
       _deviceNameController = TextEditingController(text: device.deviceName);
       _deviceIdController = TextEditingController(text: device.deviceId);
-      _macAddressController = TextEditingController(
-        text: device.deviceMacAddress,
-      );
-      _descriptionController = TextEditingController(text: device.description);
+      _prototypeIdController = TextEditingController(text: device.prototypeId);
       _selectedSoilType = device.soilType;
+      _isPrototypeValid = device.isPrototypeValid;
+      _prototypeValidationError = device.prototypeValidationError;
+      _prototypeChannelId = device.prototypeChannelId;
+      _prototypeApiKey = device.prototypeApiKey;
     } else {
       _deviceNameController = TextEditingController();
       _deviceIdController = TextEditingController();
-      _macAddressController = TextEditingController();
-      _descriptionController = TextEditingController();
+      _prototypeIdController = TextEditingController();
+    }
+  }
+
+  Future<void> _validatePrototypeId() async {
+    if (_prototypeIdController.text.trim().isEmpty) {
+      setState(() {
+        _isPrototypeValid = false;
+        _prototypeValidationError = 'Prototype ID is required';
+      });
+      return;
+    }
+
+    setState(() {
+      _isValidatingPrototype = true;
+      _prototypeValidationError = null;
+    });
+
+    try {
+      final result = await PrototypeService.validatePrototype(_prototypeIdController.text.trim());
+      
+      setState(() {
+        _isValidatingPrototype = false;
+        _isPrototypeValid = result['success'] == true && result['available'] == true;
+        _prototypeValidationError = _isPrototypeValid ? null : result['message'] ?? 'Invalid prototype ID';
+        
+        // Store prototype details if validation is successful
+        if (_isPrototypeValid && result['prototype'] != null) {
+          final prototype = result['prototype'];
+          _prototypeChannelId = prototype['channel_id'];
+          _prototypeApiKey = prototype['api_key'];
+        } else {
+          _prototypeChannelId = null;
+          _prototypeApiKey = null;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isValidatingPrototype = false;
+        _isPrototypeValid = false;
+        _prototypeValidationError = 'Failed to validate prototype ID: $e';
+        _prototypeChannelId = null;
+        _prototypeApiKey = null;
+      });
     }
   }
 
@@ -781,22 +889,11 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
               ),
               SizedBox(height: 16.h),
 
-              // MAC Address Field
-              _buildModalInputField(
-                label: 'MAC Address (Optional)',
-                controller: _macAddressController,
-                hintText: 'e.g., AA:BB:CC:DD:EE:FF',
-              ),
+              // Prototype ID Field
+              _buildPrototypeIdField(),
               SizedBox(height: 16.h),
 
-              // Description Field
-              _buildModalInputField(
-                label: 'Description (Optional)',
-                controller: _descriptionController,
-                hintText: 'Describe the sensor location or purpose',
-                maxLines: 3,
-              ),
-              SizedBox(height: 16.h),
+              
 
               // Soil Type Selection
               _buildSoilTypeSelection(),
@@ -881,6 +978,155 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPrototypeIdField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Prototype ID *',
+          style: TextTheme().bodyMedium?.copyWith(
+            fontWeight: FontWeight.w400,
+            color: MAIZE_ACCENT.withOpacity(0.8),
+            fontSize: 14.sp,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _prototypeIdController,
+                onChanged: (value) {
+                  // Clear validation state when user types
+                  if (_isPrototypeValid || _prototypeValidationError != null) {
+                    setState(() {
+                      _isPrototypeValid = false;
+                      _prototypeValidationError = null;
+                    });
+                  }
+                },
+                decoration: InputDecoration(
+                  hintText: 'e.g., PROTO_001, SENSOR_001',
+                  hintStyle: TextStyle(
+                    fontWeight: FontWeight.w100,
+                    color: MAIZE_ACCENT.withOpacity(0.4),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(
+                      color: _isPrototypeValid 
+                          ? Colors.green.withOpacity(0.5)
+                          : _prototypeValidationError != null
+                              ? Colors.red.withOpacity(0.5)
+                              : MAIZE_ACCENT.withOpacity(0.3),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(
+                      color: _isPrototypeValid 
+                          ? Colors.green.withOpacity(0.5)
+                          : _prototypeValidationError != null
+                              ? Colors.red.withOpacity(0.5)
+                              : MAIZE_ACCENT.withOpacity(0.3),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(
+                      color: _isPrototypeValid 
+                          ? Colors.green
+                          : _prototypeValidationError != null
+                              ? Colors.red
+                              : MAIZE_ACCENT,
+                      width: 2.w,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16.w,
+                    vertical: 12.h,
+                  ),
+                  suffixIcon: _isValidatingPrototype
+                      ? Padding(
+                          padding: EdgeInsets.all(12.w),
+                          child: SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(MAIZE_ACCENT),
+                            ),
+                          ),
+                        )
+                      : _isPrototypeValid
+                          ? Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 20.sp,
+                            )
+                          : _prototypeValidationError != null
+                              ? Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                  size: 20.sp,
+                                )
+                              : null,
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Prototype ID is required';
+                  }
+                  if (!_isPrototypeValid && _prototypeValidationError != null) {
+                    return _prototypeValidationError;
+                  }
+                  return null;
+                },
+              ),
+            ),
+            SizedBox(width: 8.w),
+            ElevatedButton(
+              onPressed: _isValidatingPrototype ? null : _validatePrototypeId,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MAIZE_ACCENT,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              ),
+              child: Text(
+                'Validate',
+                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        if (_prototypeValidationError != null) ...[
+          SizedBox(height: 4.h),
+          Text(
+            _prototypeValidationError!,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.red,
+            ),
+          ),
+        ],
+        if (_isPrototypeValid) ...[
+          SizedBox(height: 4.h),
+          Text(
+            'Prototype ID is valid and available',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.green,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1019,15 +1265,29 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
 
   void _submitDevice() {
     if (_formKey.currentState!.validate()) {
+      // Check if prototype ID is valid before submitting
+      if (!_isPrototypeValid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please validate the prototype ID before submitting'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       if (widget.editIndex != null) {
         // Edit existing device
         final device = widget.controllers.devices[widget.editIndex!];
         device.deviceName = _deviceNameController.text.trim();
         device.deviceId = _deviceIdController.text.trim();
         device.deviceType = 'Multi_Sensor'; // Default device type
-        device.deviceMacAddress = _macAddressController.text.trim();
-        device.description = _descriptionController.text.trim();
         device.soilType = _selectedSoilType;
+        device.prototypeId = _prototypeIdController.text.trim();
+        device.isPrototypeValid = _isPrototypeValid;
+        device.prototypeValidationError = _prototypeValidationError;
+        device.prototypeChannelId = _prototypeChannelId;
+        device.prototypeApiKey = _prototypeApiKey;
       } else {
         // Add new device
         widget.controllers.addDevice();
@@ -1035,9 +1295,12 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
         device.deviceName = _deviceNameController.text.trim();
         device.deviceId = _deviceIdController.text.trim();
         device.deviceType = 'Multi_Sensor'; // Default device type
-        device.deviceMacAddress = _macAddressController.text.trim();
-        device.description = _descriptionController.text.trim();
         device.soilType = _selectedSoilType;
+        device.prototypeId = _prototypeIdController.text.trim();
+        device.isPrototypeValid = _isPrototypeValid;
+        device.prototypeValidationError = _prototypeValidationError;
+        device.prototypeChannelId = _prototypeChannelId;
+        device.prototypeApiKey = _prototypeApiKey;
       }
 
       widget.onDeviceAdded();
@@ -1049,8 +1312,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
   void dispose() {
     _deviceNameController.dispose();
     _deviceIdController.dispose();
-    _macAddressController.dispose();
-    _descriptionController.dispose();
+    _prototypeIdController.dispose();
     super.dispose();
   }
 }
@@ -1253,8 +1515,6 @@ class FarmDataConfirmationPage extends StatelessWidget {
           SizedBox(height: 6.h),
           _buildInfoRow('Device ID', device.deviceId),
           _buildInfoRow('Device Type', device.deviceType),
-          if (device.deviceMacAddress.isNotEmpty)
-            _buildInfoRow('MAC Address', device.deviceMacAddress),
         ],
       ),
     );

@@ -8,22 +8,25 @@ class CacheService {
   static const String _cropConditionKey = 'cached_crop_condition';
   static const String _lastUpdateKey = 'last_cache_update';
   static const String _growthStageKey = 'cached_growth_stage';
+  static const String _userKey = 'current_user_id';
 
-  static Future<void> cachePrescriptions(List<PrescriptionModel> prescriptions) async {
+  static Future<void> cachePrescriptions(List<PrescriptionModel> prescriptions, {String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final prescriptionsJson = prescriptions.map((p) => p.toJson()).toList();
-      await prefs.setString(_prescriptionsKey, jsonEncode(prescriptionsJson));
-      await prefs.setString(_lastUpdateKey, DateTime.now().toIso8601String());
+      final key = userId != null ? '${_prescriptionsKey}_$userId' : _prescriptionsKey;
+      await prefs.setString(key, jsonEncode(prescriptionsJson));
+      await prefs.setString('${_lastUpdateKey}_${userId ?? 'default'}', DateTime.now().toIso8601String());
     } catch (e) {
       print('Error caching prescriptions: $e');
     }
   }
 
-  static Future<List<PrescriptionModel>> getCachedPrescriptions() async {
+  static Future<List<PrescriptionModel>> getCachedPrescriptions({String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final prescriptionsJson = prefs.getString(_prescriptionsKey);
+      final key = userId != null ? '${_prescriptionsKey}_$userId' : _prescriptionsKey;
+      final prescriptionsJson = prefs.getString(key);
       
       if (prescriptionsJson == null) return [];
       
@@ -35,20 +38,22 @@ class CacheService {
     }
   }
 
-  static Future<void> cacheAnalytics(AnalyticsData analytics) async {
+  static Future<void> cacheAnalytics(AnalyticsData analytics, {String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_analyticsKey, jsonEncode(analytics.toJson()));
-      await prefs.setString(_lastUpdateKey, DateTime.now().toIso8601String());
+      final key = userId != null ? '${_analyticsKey}_$userId' : _analyticsKey;
+      await prefs.setString(key, jsonEncode(analytics.toJson()));
+      await prefs.setString('${_lastUpdateKey}_${userId ?? 'default'}', DateTime.now().toIso8601String());
     } catch (e) {
       print('Error caching analytics: $e');
     }
   }
 
-  static Future<AnalyticsData?> getCachedAnalytics() async {
+  static Future<AnalyticsData?> getCachedAnalytics({String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final analyticsJson = prefs.getString(_analyticsKey);
+      final key = userId != null ? '${_analyticsKey}_$userId' : _analyticsKey;
+      final analyticsJson = prefs.getString(key);
       
       if (analyticsJson == null) return null;
       
@@ -121,23 +126,60 @@ class CacheService {
     }
   }
 
-  static Future<void> clearCache() async {
+  static Future<void> clearCache({String? userId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_prescriptionsKey);
-      await prefs.remove(_analyticsKey);
-      await prefs.remove(_cropConditionKey);
-      await prefs.remove(_lastUpdateKey);
       
-      // Clear all growth stage caches
-      final keys = prefs.getKeys();
-      for (final key in keys) {
-        if (key.startsWith(_growthStageKey)) {
-          await prefs.remove(key);
+      if (userId != null) {
+        // Clear user-specific cache
+        await prefs.remove('${_prescriptionsKey}_$userId');
+        await prefs.remove('${_analyticsKey}_$userId');
+        await prefs.remove('${_cropConditionKey}_$userId');
+        await prefs.remove('${_lastUpdateKey}_$userId');
+        
+        // Clear user-specific growth stage caches
+        final keys = prefs.getKeys();
+        for (final key in keys) {
+          if (key.startsWith('${_growthStageKey}_') && key.contains('_$userId')) {
+            await prefs.remove(key);
+          }
+        }
+      } else {
+        // Clear all cache
+        await prefs.remove(_prescriptionsKey);
+        await prefs.remove(_analyticsKey);
+        await prefs.remove(_cropConditionKey);
+        await prefs.remove(_lastUpdateKey);
+        
+        // Clear all growth stage caches
+        final keys = prefs.getKeys();
+        for (final key in keys) {
+          if (key.startsWith(_growthStageKey)) {
+            await prefs.remove(key);
+          }
         }
       }
     } catch (e) {
       print('Error clearing cache: $e');
+    }
+  }
+
+  static Future<void> setCurrentUserId(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, userId);
+    } catch (e) {
+      print('Error setting current user ID: $e');
+    }
+  }
+
+  static Future<String?> getCurrentUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_userKey);
+    } catch (e) {
+      print('Error getting current user ID: $e');
+      return null;
     }
   }
 

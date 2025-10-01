@@ -54,7 +54,7 @@ class FarmDataSummaryModal extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Farm Registration Summary',
-                      style: textTheme.titleLarge?.copyWith(
+                      style: textTheme.bodyLarge?.copyWith(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF2B4625),
@@ -298,10 +298,6 @@ class FarmDataSummaryModal extends StatelessWidget {
           _buildDeviceDetail('Type', device.deviceType),
           _buildDeviceDetail('ID', device.deviceId),
           _buildDeviceDetail('Soil Type', device.soilType),
-          if (device.description.isNotEmpty)
-            _buildDeviceDetail('Description', device.description),
-          if (device.deviceMacAddress.isNotEmpty)
-            _buildDeviceDetail('MAC Address', device.deviceMacAddress),
         ],
       ),
     );

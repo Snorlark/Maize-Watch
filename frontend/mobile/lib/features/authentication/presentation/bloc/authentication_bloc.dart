@@ -2,8 +2,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:convert';
 import '../../../../core/error/failures.dart';
+import '../../../../core/services/cache_service.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/services/session_service.dart';
+import '../../../../core/services/completion_status_manager.dart';
 // import '../../../../core/services/background_task_service.dart';
 import '../../domain/entities/user.dart';
 import '../../data/model/user_model.dart';
@@ -61,6 +63,12 @@ class AuthenticationBloc
       (user) async {
         print("🔐 AuthBloc: Login successful for ${user.username}");
         try {
+          // Set current user ID for cache isolation
+          await CacheService.setCurrentUserId(user.id);
+          
+          // Switch completion status manager to new user
+          await CompletionStatusManager.switchUser(user.id);
+          
           // Get tokens from secure storage (they were stored by the data source)
           print("🔐 AuthBloc: Retrieving tokens from storage...");
           final accessToken = await SecureStorage.getToken();
@@ -117,41 +125,71 @@ class AuthenticationBloc
       role: event.role,
     );
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: AuthenticationStatus.failure,
-          message: _mapFailureToString(failure),
-        ),
-      ),
-      (user) async {
-        // Store user data in secure storage for persistence
-        try {
-          await SecureStorage.storeUserData(jsonEncode({
-            'id': user.id,
-            'username': user.username,
-            'fullName': user.fullName,
-            'contactNumber': user.contactNumber,
-            'address': user.address,
-            'role': user.role,
-          }));
-          print("🔐 AuthBloc: User data stored in secure storage");
-        } catch (e) {
-          print("🚨 AuthBloc: Error storing user data: $e");
-        }
-        
-        // Emit registration success - let the UI handle navigation
-        print(
-          "🔐 AuthBloc: Registration successful for user: ${user.username}",
-        );
+    await result.fold(
+      (failure) async {
         emit(
           state.copyWith(
-            status: AuthenticationStatus.registrationSuccess,
-            user: user,
+            status: AuthenticationStatus.failure,
+            message: _mapFailureToString(failure),
           ),
         );
       },
+      (user) async {
+        // Handle success case asynchronously
+        await _handleRegistrationSuccess(user, emit);
+      },
     );
+  }
+
+  Future<void> _handleRegistrationSuccess(User user, Emitter<AuthenticationState> emit) async {
+    // Store user data in secure storage for persistence
+    try {
+      await SecureStorage.storeUserData(jsonEncode({
+        'id': user.id,
+        'username': user.username,
+        'fullName': user.fullName,
+        'contactNumber': user.contactNumber,
+        'address': user.address,
+        'role': user.role,
+      }));
+      print("🔐 AuthBloc: User data stored in secure storage");
+      
+      // Set current user ID for cache isolation
+      await CacheService.setCurrentUserId(user.id);
+    } catch (e) {
+      print("🚨 AuthBloc: Error storing user data: $e");
+    }
+    
+    // Emit registration success and automatically authenticate the user
+    print(
+      "🔐 AuthBloc: Registration successful for user: ${user.username}",
+    );
+    
+    // Check if we have tokens from registration
+    final accessToken = await SecureStorage.getToken();
+    final refreshToken = await SecureStorage.getRefreshToken();
+    
+    print("🔐 AuthBloc: Token check - AccessToken: ${accessToken != null ? 'Found' : 'Not found'}, RefreshToken: ${refreshToken != null ? 'Found' : 'Not found'}");
+    
+    if (accessToken != null && refreshToken != null) {
+      // We have tokens, so we can authenticate the user immediately
+      print("🔐 AuthBloc: Tokens found from registration, authenticating user");
+      emit(
+        state.copyWith(
+          status: AuthenticationStatus.authenticated,
+          user: user,
+        ),
+      );
+    } else {
+      // No tokens, emit registration success for UI to handle
+      print("🔐 AuthBloc: No tokens found, emitting registration success");
+      emit(
+        state.copyWith(
+          status: AuthenticationStatus.registrationSuccess,
+          user: user,
+        ),
+      );
+    }
   }
 
   Future<void> _onLogout(
@@ -160,9 +198,22 @@ class AuthenticationBloc
   ) async {
     print("🔐 AuthBloc: Starting logout process");
 
+    // Get current user ID before clearing session
+    final currentUserId = await CacheService.getCurrentUserId();
+
     // Clear session using SessionService
     await _sessionService.logout();
     print("🔐 AuthBloc: Session cleared");
+    
+    // Clear user-specific cache
+    if (currentUserId != null) {
+      await CacheService.clearCache(userId: currentUserId);
+      print("🔐 AuthBloc: User-specific cache cleared");
+      
+      // Clear completion status for this user
+      await CompletionStatusManager.clearAll();
+      print("🔐 AuthBloc: Completion status cleared");
+    }
 
     // Stop background tasks
     print("🔄 AuthBloc: Stopping background tasks");

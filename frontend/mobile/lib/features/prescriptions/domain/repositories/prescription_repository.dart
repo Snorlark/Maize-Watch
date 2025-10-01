@@ -33,4 +33,10 @@ abstract class PrescriptionRepository {
   
   // Listen to prescription updates
   Stream<List<Prescription>> get prescriptionUpdates;
+  
+  // Sync analytics prescriptions with backend
+  Future<Either<Failure, Map<String, dynamic>>> syncAnalyticsPrescriptions(
+    String farmId,
+    List<Map<String, dynamic>> prescriptions,
+  );
 }

@@ -1704,9 +1704,9 @@ class S {
     return Intl.message('days ago', name: 'days_ago', desc: '', args: []);
   }
 
-  /// `just now`
+  /// `Just now`
   String get just_now {
-    return Intl.message('just now', name: 'just_now', desc: '', args: []);
+    return Intl.message('Just now', name: 'just_now', desc: '', args: []);
   }
 
   /// `Crop Health`
@@ -3832,6 +3832,1131 @@ class S {
   /// `General`
   String get general {
     return Intl.message('General', name: 'general', desc: '', args: []);
+  }
+
+  /// `Farm Prescriptions`
+  String get farm_prescriptions {
+    return Intl.message(
+      'Farm Prescriptions',
+      name: 'farm_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View and complete your farm prescriptions`
+  String get view_complete_prescriptions {
+    return Intl.message(
+      'View and complete your farm prescriptions',
+      name: 'view_complete_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All`
+  String get all {
+    return Intl.message('All', name: 'all', desc: '', args: []);
+  }
+
+  /// `Pending`
+  String get pending {
+    return Intl.message('Pending', name: 'pending', desc: '', args: []);
+  }
+
+  /// `Apply`
+  String get apply {
+    return Intl.message('Apply', name: 'apply', desc: '', args: []);
+  }
+
+  /// `Overdue`
+  String get overdue {
+    return Intl.message('Overdue', name: 'overdue', desc: '', args: []);
+  }
+
+  /// `{hours}h left`
+  String hours_left(Object hours) {
+    return Intl.message(
+      '${hours}h left',
+      name: 'hours_left',
+      desc: '',
+      args: [hours],
+    );
+  }
+
+  /// `{days}d left`
+  String days_left(Object days) {
+    return Intl.message(
+      '${days}d left',
+      name: 'days_left',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `Sent`
+  String get sent {
+    return Intl.message('Sent', name: 'sent', desc: '', args: []);
+  }
+
+  /// `Deadline`
+  String get deadline {
+    return Intl.message('Deadline', name: 'deadline', desc: '', args: []);
+  }
+
+  /// `Field`
+  String get field {
+    return Intl.message('Field', name: 'field', desc: '', args: []);
+  }
+
+  /// `Instructions`
+  String get instructions {
+    return Intl.message(
+      'Instructions',
+      name: 'instructions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Materials Needed`
+  String get materials_needed {
+    return Intl.message(
+      'Materials Needed',
+      name: 'materials_needed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Estimated Duration`
+  String get estimated_duration {
+    return Intl.message(
+      'Estimated Duration',
+      name: 'estimated_duration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Priority`
+  String get priority {
+    return Intl.message('Priority', name: 'priority', desc: '', args: []);
+  }
+
+  /// `Status`
+  String get status {
+    return Intl.message('Status', name: 'status', desc: '', args: []);
+  }
+
+  /// `Completed`
+  String get completed {
+    return Intl.message('Completed', name: 'completed', desc: '', args: []);
+  }
+
+  /// `In Progress`
+  String get in_progress {
+    return Intl.message('In Progress', name: 'in_progress', desc: '', args: []);
+  }
+
+  /// `Not Started`
+  String get not_started {
+    return Intl.message('Not Started', name: 'not_started', desc: '', args: []);
+  }
+
+  /// `Mark as Complete`
+  String get mark_as_complete {
+    return Intl.message(
+      'Mark as Complete',
+      name: 'mark_as_complete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No prescriptions found`
+  String get no_prescriptions_found {
+    return Intl.message(
+      'No prescriptions found',
+      name: 'no_prescriptions_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading prescriptions...`
+  String get loading_prescriptions {
+    return Intl.message(
+      'Loading prescriptions...',
+      name: 'loading_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading prescriptions`
+  String get error_loading_prescriptions {
+    return Intl.message(
+      'Error loading prescriptions',
+      name: 'error_loading_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prescription Details`
+  String get prescription_details {
+    return Intl.message(
+      'Prescription Details',
+      name: 'prescription_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back to Prescriptions`
+  String get back_to_prescriptions {
+    return Intl.message(
+      'Back to Prescriptions',
+      name: 'back_to_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maize Watch Notifications`
+  String get maize_watch_notifications {
+    return Intl.message(
+      'Maize Watch Notifications',
+      name: 'maize_watch_notifications',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifications for farm monitoring and alerts`
+  String get notifications_for_farm_monitoring {
+    return Intl.message(
+      'Notifications for farm monitoring and alerts',
+      name: 'notifications_for_farm_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Immediate`
+  String get immediate {
+    return Intl.message('Immediate', name: 'immediate', desc: '', args: []);
+  }
+
+  /// `High Priority`
+  String get high_priority {
+    return Intl.message(
+      'High Priority',
+      name: 'high_priority',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Medium Priority`
+  String get medium_priority {
+    return Intl.message(
+      'Medium Priority',
+      name: 'medium_priority',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Low Priority`
+  String get low_priority {
+    return Intl.message(
+      'Low Priority',
+      name: 'low_priority',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New prescription available`
+  String get new_prescription_available {
+    return Intl.message(
+      'New prescription available',
+      name: 'new_prescription_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor offline alert`
+  String get sensor_offline_alert {
+    return Intl.message(
+      'Sensor offline alert',
+      name: 'sensor_offline_alert',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensors in sleep mode`
+  String get sensor_sleep_mode_alert {
+    return Intl.message(
+      'Sensors in sleep mode',
+      name: 'sensor_sleep_mode_alert',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Alert`
+  String get farm_alert {
+    return Intl.message('Farm Alert', name: 'farm_alert', desc: '', args: []);
+  }
+
+  /// `Sensor Alert`
+  String get sensor_alert {
+    return Intl.message(
+      'Sensor Alert',
+      name: 'sensor_alert',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tap to view`
+  String get tap_to_view {
+    return Intl.message('Tap to view', name: 'tap_to_view', desc: '', args: []);
+  }
+
+  /// `Dismiss`
+  String get dismiss {
+    return Intl.message('Dismiss', name: 'dismiss', desc: '', args: []);
+  }
+
+  /// `View All`
+  String get view_all {
+    return Intl.message('View All', name: 'view_all', desc: '', args: []);
+  }
+
+  /// `Notification Sound`
+  String get notification_sound {
+    return Intl.message(
+      'Notification Sound',
+      name: 'notification_sound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification Vibration`
+  String get notification_vibration {
+    return Intl.message(
+      'Notification Vibration',
+      name: 'notification_vibration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification Badge`
+  String get notification_badge {
+    return Intl.message(
+      'Notification Badge',
+      name: 'notification_badge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Quiet Hours`
+  String get quiet_hours {
+    return Intl.message('Quiet Hours', name: 'quiet_hours', desc: '', args: []);
+  }
+
+  /// `From`
+  String get from {
+    return Intl.message('From', name: 'from', desc: '', args: []);
+  }
+
+  /// `To`
+  String get to {
+    return Intl.message('To', name: 'to', desc: '', args: []);
+  }
+
+  /// `Test Notification`
+  String get test_notification {
+    return Intl.message(
+      'Test Notification',
+      name: 'test_notification',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification test successful!`
+  String get notification_test_successful {
+    return Intl.message(
+      'Notification test successful!',
+      name: 'notification_test_successful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification test failed`
+  String get notification_test_failed {
+    return Intl.message(
+      'Notification test failed',
+      name: 'notification_test_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Permission Required`
+  String get permission_required {
+    return Intl.message(
+      'Permission Required',
+      name: 'permission_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notification permission is required to receive alerts`
+  String get notification_permission_required {
+    return Intl.message(
+      'Notification permission is required to receive alerts',
+      name: 'notification_permission_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Go to Settings`
+  String get go_to_settings {
+    return Intl.message(
+      'Go to Settings',
+      name: 'go_to_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `None`
+  String get none {
+    return Intl.message('None', name: 'none', desc: '', args: []);
+  }
+
+  /// `Today`
+  String get today {
+    return Intl.message('Today', name: 'today', desc: '', args: []);
+  }
+
+  /// `Yesterday`
+  String get yesterday {
+    return Intl.message('Yesterday', name: 'yesterday', desc: '', args: []);
+  }
+
+  /// `This week`
+  String get this_week {
+    return Intl.message('This week', name: 'this_week', desc: '', args: []);
+  }
+
+  /// `Last week`
+  String get last_week {
+    return Intl.message('Last week', name: 'last_week', desc: '', args: []);
+  }
+
+  /// `This month`
+  String get this_month {
+    return Intl.message('This month', name: 'this_month', desc: '', args: []);
+  }
+
+  /// `Last month`
+  String get last_month {
+    return Intl.message('Last month', name: 'last_month', desc: '', args: []);
+  }
+
+  /// `Jan`
+  String get jan {
+    return Intl.message('Jan', name: 'jan', desc: '', args: []);
+  }
+
+  /// `Feb`
+  String get feb {
+    return Intl.message('Feb', name: 'feb', desc: '', args: []);
+  }
+
+  /// `Mar`
+  String get mar {
+    return Intl.message('Mar', name: 'mar', desc: '', args: []);
+  }
+
+  /// `Apr`
+  String get apr {
+    return Intl.message('Apr', name: 'apr', desc: '', args: []);
+  }
+
+  /// `May`
+  String get may {
+    return Intl.message('May', name: 'may', desc: '', args: []);
+  }
+
+  /// `Jun`
+  String get jun {
+    return Intl.message('Jun', name: 'jun', desc: '', args: []);
+  }
+
+  /// `Jul`
+  String get jul {
+    return Intl.message('Jul', name: 'jul', desc: '', args: []);
+  }
+
+  /// `Aug`
+  String get aug {
+    return Intl.message('Aug', name: 'aug', desc: '', args: []);
+  }
+
+  /// `Sep`
+  String get sep {
+    return Intl.message('Sep', name: 'sep', desc: '', args: []);
+  }
+
+  /// `Oct`
+  String get oct {
+    return Intl.message('Oct', name: 'oct', desc: '', args: []);
+  }
+
+  /// `Nov`
+  String get nov {
+    return Intl.message('Nov', name: 'nov', desc: '', args: []);
+  }
+
+  /// `Dec`
+  String get dec {
+    return Intl.message('Dec', name: 'dec', desc: '', args: []);
+  }
+
+  /// `Monday`
+  String get monday {
+    return Intl.message('Monday', name: 'monday', desc: '', args: []);
+  }
+
+  /// `Tuesday`
+  String get tuesday {
+    return Intl.message('Tuesday', name: 'tuesday', desc: '', args: []);
+  }
+
+  /// `Wednesday`
+  String get wednesday {
+    return Intl.message('Wednesday', name: 'wednesday', desc: '', args: []);
+  }
+
+  /// `Thursday`
+  String get thursday {
+    return Intl.message('Thursday', name: 'thursday', desc: '', args: []);
+  }
+
+  /// `Friday`
+  String get friday {
+    return Intl.message('Friday', name: 'friday', desc: '', args: []);
+  }
+
+  /// `Saturday`
+  String get saturday {
+    return Intl.message('Saturday', name: 'saturday', desc: '', args: []);
+  }
+
+  /// `Sunday`
+  String get sunday {
+    return Intl.message('Sunday', name: 'sunday', desc: '', args: []);
+  }
+
+  /// `No pending tasks found`
+  String get no_pending_tasks_found {
+    return Intl.message(
+      'No pending tasks found',
+      name: 'no_pending_tasks_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No urgent tasks found`
+  String get no_urgent_tasks_found {
+    return Intl.message(
+      'No urgent tasks found',
+      name: 'no_urgent_tasks_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No farm tasks available`
+  String get no_farm_tasks_available {
+    return Intl.message(
+      'No farm tasks available',
+      name: 'no_farm_tasks_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Follow recommended actions`
+  String get follow_recommended_actions {
+    return Intl.message(
+      'Follow recommended actions',
+      name: 'follow_recommended_actions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unknown Field`
+  String get unknown_field {
+    return Intl.message(
+      'Unknown Field',
+      name: 'unknown_field',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unknown`
+  String get unknown {
+    return Intl.message('Unknown', name: 'unknown', desc: '', args: []);
+  }
+
+  /// `Now`
+  String get now {
+    return Intl.message('Now', name: 'now', desc: '', args: []);
+  }
+
+  /// `Filter Prescriptions`
+  String get filter_prescriptions {
+    return Intl.message(
+      'Filter Prescriptions',
+      name: 'filter_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Urgency`
+  String get urgency {
+    return Intl.message('Urgency', name: 'urgency', desc: '', args: []);
+  }
+
+  /// `Urgent`
+  String get urgency_urgent {
+    return Intl.message('Urgent', name: 'urgency_urgent', desc: '', args: []);
+  }
+
+  /// `High`
+  String get urgency_high {
+    return Intl.message('High', name: 'urgency_high', desc: '', args: []);
+  }
+
+  /// `Medium`
+  String get urgency_medium {
+    return Intl.message('Medium', name: 'urgency_medium', desc: '', args: []);
+  }
+
+  /// `Low`
+  String get urgency_low {
+    return Intl.message('Low', name: 'urgency_low', desc: '', args: []);
+  }
+
+  /// `Category`
+  String get category {
+    return Intl.message('Category', name: 'category', desc: '', args: []);
+  }
+
+  /// `Irrigation`
+  String get category_irrigation {
+    return Intl.message(
+      'Irrigation',
+      name: 'category_irrigation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Humidity Management`
+  String get category_humidity_management {
+    return Intl.message(
+      'Humidity Management',
+      name: 'category_humidity_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Soil Treatment`
+  String get category_soil_treatment {
+    return Intl.message(
+      'Soil Treatment',
+      name: 'category_soil_treatment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Temperature Management`
+  String get category_temperature_management {
+    return Intl.message(
+      'Temperature Management',
+      name: 'category_temperature_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Light Management`
+  String get category_light_management {
+    return Intl.message(
+      'Light Management',
+      name: 'category_light_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Timeline`
+  String get timeline {
+    return Intl.message('Timeline', name: 'timeline', desc: '', args: []);
+  }
+
+  /// `Today`
+  String get timeline_today {
+    return Intl.message('Today', name: 'timeline_today', desc: '', args: []);
+  }
+
+  /// `This Week`
+  String get timeline_this_week {
+    return Intl.message(
+      'This Week',
+      name: 'timeline_this_week',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Next Week`
+  String get timeline_next_week {
+    return Intl.message(
+      'Next Week',
+      name: 'timeline_next_week',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear All`
+  String get clear_all {
+    return Intl.message('Clear All', name: 'clear_all', desc: '', args: []);
+  }
+
+  /// `New Farm Prescriptions`
+  String get new_farm_prescriptions {
+    return Intl.message(
+      'New Farm Prescriptions',
+      name: 'new_farm_prescriptions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You have {count} new farm tasks to complete`
+  String you_have_new_farm_tasks(int count) {
+    return Intl.message(
+      'You have $count new farm tasks to complete',
+      name: 'you_have_new_farm_tasks',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Unknown Sensor`
+  String get unknown_sensor {
+    return Intl.message(
+      'Unknown Sensor',
+      name: 'unknown_sensor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Partly Cloudy`
+  String get partly_cloudy {
+    return Intl.message(
+      'Partly Cloudy',
+      name: 'partly_cloudy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Partly cloudy`
+  String get partly_cloudy_description {
+    return Intl.message(
+      'Partly cloudy',
+      name: 'partly_cloudy_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `My Farm`
+  String get my_farm {
+    return Intl.message('My Farm', name: 'my_farm', desc: '', args: []);
+  }
+
+  /// `ASAP`
+  String get asap {
+    return Intl.message('ASAP', name: 'asap', desc: '', args: []);
+  }
+
+  /// `Loading farm tasks...`
+  String get loading_farm_tasks {
+    return Intl.message(
+      'Loading farm tasks...',
+      name: 'loading_farm_tasks',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Filtered by: {filters}`
+  String filtered_by(Object filters) {
+    return Intl.message(
+      'Filtered by: $filters',
+      name: 'filtered_by',
+      desc: '',
+      args: [filters],
+    );
+  }
+
+  /// `Urgency: {urgency}`
+  String urgency_filter(Object urgency) {
+    return Intl.message(
+      'Urgency: $urgency',
+      name: 'urgency_filter',
+      desc: '',
+      args: [urgency],
+    );
+  }
+
+  /// `Category: {category}`
+  String category_filter(Object category) {
+    return Intl.message(
+      'Category: $category',
+      name: 'category_filter',
+      desc: '',
+      args: [category],
+    );
+  }
+
+  /// `Timeline: {timeline}`
+  String timeline_filter(Object timeline) {
+    return Intl.message(
+      'Timeline: $timeline',
+      name: 'timeline_filter',
+      desc: '',
+      args: [timeline],
+    );
+  }
+
+  /// `Step-by-Step Instructions ({count} steps)`
+  String step_by_step_instructions(Object count) {
+    return Intl.message(
+      'Step-by-Step Instructions ($count steps)',
+      name: 'step_by_step_instructions',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Farm Prescription`
+  String get farm_prescription {
+    return Intl.message(
+      'Farm Prescription',
+      name: 'farm_prescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No details available`
+  String get no_details_available {
+    return Intl.message(
+      'No details available',
+      name: 'no_details_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back Online`
+  String get back_online {
+    return Intl.message('Back Online', name: 'back_online', desc: '', args: []);
+  }
+
+  /// `Offline Mode - Cached Data`
+  String get offline_mode_cached_data {
+    return Intl.message(
+      'Offline Mode - Cached Data',
+      name: 'offline_mode_cached_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Offline`
+  String get offline {
+    return Intl.message('Offline', name: 'offline', desc: '', args: []);
+  }
+
+  /// `Maize Watch would like to send you notifications about:\n\n• New farm prescriptions\n• Sensor alerts\n• Important updates\n\nThis helps you stay informed about your farm's health.`
+  String get notification_permission_message {
+    return Intl.message(
+      'Maize Watch would like to send you notifications about:\n\n• New farm prescriptions\n• Sensor alerts\n• Important updates\n\nThis helps you stay informed about your farm\'s health.',
+      name: 'notification_permission_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not Now`
+  String get not_now {
+    return Intl.message('Not Now', name: 'not_now', desc: '', args: []);
+  }
+
+  /// `Notifications enabled! You'll receive farm updates.`
+  String get notifications_enabled_message {
+    return Intl.message(
+      'Notifications enabled! You\'ll receive farm updates.',
+      name: 'notifications_enabled_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifications disabled. You can enable them in settings.`
+  String get notifications_disabled_message {
+    return Intl.message(
+      'Notifications disabled. You can enable them in settings.',
+      name: 'notifications_disabled_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable`
+  String get enable {
+    return Intl.message('Enable', name: 'enable', desc: '', args: []);
+  }
+
+  /// `Add Field`
+  String get add_field {
+    return Intl.message('Add Field', name: 'add_field', desc: '', args: []);
+  }
+
+  /// `No field`
+  String get no_field {
+    return Intl.message('No field', name: 'no_field', desc: '', args: []);
+  }
+
+  /// `Default Farm`
+  String get default_farm {
+    return Intl.message(
+      'Default Farm',
+      name: 'default_farm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sunny`
+  String get sunny {
+    return Intl.message('Sunny', name: 'sunny', desc: '', args: []);
+  }
+
+  /// `Partly Cloudy`
+  String get partly_cloudy_weather {
+    return Intl.message(
+      'Partly Cloudy',
+      name: 'partly_cloudy_weather',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cloudy`
+  String get cloudy {
+    return Intl.message('Cloudy', name: 'cloudy', desc: '', args: []);
+  }
+
+  /// `Rainy`
+  String get rainy {
+    return Intl.message('Rainy', name: 'rainy', desc: '', args: []);
+  }
+
+  /// `Overcast`
+  String get overcast {
+    return Intl.message('Overcast', name: 'overcast', desc: '', args: []);
+  }
+
+  /// `Jan`
+  String get january {
+    return Intl.message('Jan', name: 'january', desc: '', args: []);
+  }
+
+  /// `Feb`
+  String get february {
+    return Intl.message('Feb', name: 'february', desc: '', args: []);
+  }
+
+  /// `Mar`
+  String get march {
+    return Intl.message('Mar', name: 'march', desc: '', args: []);
+  }
+
+  /// `Apr`
+  String get april {
+    return Intl.message('Apr', name: 'april', desc: '', args: []);
+  }
+
+  /// `Jun`
+  String get june {
+    return Intl.message('Jun', name: 'june', desc: '', args: []);
+  }
+
+  /// `Jul`
+  String get july {
+    return Intl.message('Jul', name: 'july', desc: '', args: []);
+  }
+
+  /// `Aug`
+  String get august {
+    return Intl.message('Aug', name: 'august', desc: '', args: []);
+  }
+
+  /// `Sep`
+  String get september {
+    return Intl.message('Sep', name: 'september', desc: '', args: []);
+  }
+
+  /// `Oct`
+  String get october {
+    return Intl.message('Oct', name: 'october', desc: '', args: []);
+  }
+
+  /// `Nov`
+  String get november {
+    return Intl.message('Nov', name: 'november', desc: '', args: []);
+  }
+
+  /// `Dec`
+  String get december {
+    return Intl.message('Dec', name: 'december', desc: '', args: []);
+  }
+
+  /// `You have {count} new farm tasks to complete`
+  String new_farm_tasks_message(Object count) {
+    return Intl.message(
+      'You have $count new farm tasks to complete',
+      name: 'new_farm_tasks_message',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Delete`
+  String get delete {
+    return Intl.message('Delete', name: 'delete', desc: '', args: []);
+  }
+
+  /// `Delete Prescription`
+  String get delete_prescription {
+    return Intl.message(
+      'Delete Prescription',
+      name: 'delete_prescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this completed prescription? This action cannot be undone.`
+  String get delete_prescription_confirmation {
+    return Intl.message(
+      'Are you sure you want to delete this completed prescription? This action cannot be undone.',
+      name: 'delete_prescription_confirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prescription deleted successfully`
+  String get prescription_deleted_successfully {
+    return Intl.message(
+      'Prescription deleted successfully',
+      name: 'prescription_deleted_successfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error deleting prescription`
+  String get error_deleting_prescription {
+    return Intl.message(
+      'Error deleting prescription',
+      name: 'error_deleting_prescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prescription marked as complete`
+  String get prescription_marked_complete {
+    return Intl.message(
+      'Prescription marked as complete',
+      name: 'prescription_marked_complete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error marking prescription as complete`
+  String get error_marking_complete {
+    return Intl.message(
+      'Error marking prescription as complete',
+      name: 'error_marking_complete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prescription marked as incomplete`
+  String get prescription_marked_incomplete {
+    return Intl.message(
+      'Prescription marked as incomplete',
+      name: 'prescription_marked_incomplete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error marking prescription as incomplete`
+  String get error_marking_incomplete {
+    return Intl.message(
+      'Error marking prescription as incomplete',
+      name: 'error_marking_incomplete',
+      desc: '',
+      args: [],
+    );
   }
 }
 

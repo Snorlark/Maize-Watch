@@ -109,13 +109,21 @@ class BackgroundNotificationService {
         if (prescriptions.isNotEmpty) {
           print('🔄 BackgroundNotificationService: Found ${prescriptions.length} prescriptions');
           
-          // Show notification for new prescriptions
-          await NotificationService().showPrescriptionAlertNotification(
-            title: 'New Farm Prescriptions',
-            message: 'You have ${prescriptions.length} new farm tasks to complete',
-            priority: 'high',
-            notificationId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          );
+          // Check if notifications are enabled before showing
+          final notificationService = NotificationService();
+          final notificationsEnabled = await notificationService.areNotificationsEnabled();
+          
+          if (notificationsEnabled) {
+            // Show notification for new prescriptions
+            await notificationService.showPrescriptionAlertNotification(
+              title: 'New Farm Prescriptions', // This will be translated when called
+              message: 'You have ${prescriptions.length} new farm tasks to complete', // This will be translated when called
+              priority: 'high',
+              notificationId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            );
+          } else {
+            print('🔄 BackgroundNotificationService: Notifications disabled, skipping prescription notification');
+          }
         }
       }
     } catch (e) {
@@ -177,7 +185,7 @@ class BackgroundNotificationService {
               print('🔄 BackgroundNotificationService: Sensor ${sensor['name']} is offline');
               
               await NotificationService().showSensorOfflineNotification(
-                sensor['name'] ?? 'Unknown Sensor',
+                sensor['name'] ?? 'Unknown Sensor', // This will be translated when called
               );
             }
           }
@@ -192,9 +200,9 @@ class BackgroundNotificationService {
     try {
       print('🔄 BackgroundNotificationService: Checking sleep mode...');
       
-      // Check if notifications are enabled
-      final prefs = await SharedPreferences.getInstance();
-      final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      // Check if notifications are enabled using the notification service
+      final notificationService = NotificationService();
+      final notificationsEnabled = await notificationService.areNotificationsEnabled();
       
       if (!notificationsEnabled) {
         print('🔄 BackgroundNotificationService: Notifications disabled, skipping sleep mode check');
@@ -208,7 +216,7 @@ class BackgroundNotificationService {
       if (hour >= 20 || hour < 3) {
         print('🔄 BackgroundNotificationService: Sleep mode active, showing notification');
         
-        await NotificationService().showSensorSleepModeNotification();
+        await notificationService.showSensorSleepModeNotification();
       }
     } catch (e) {
       print('🔄 BackgroundNotificationService: Error checking sleep mode: $e');
