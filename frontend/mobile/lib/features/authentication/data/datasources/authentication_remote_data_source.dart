@@ -40,7 +40,7 @@ class AuthenticationRemoteDataSourceImpl
       
       final response = await client
           .post(
-            '$baseUrl/api/auth/login',
+            '/auth/login',
             data: requestData,
             options: Options(contentType: Headers.jsonContentType),
           )
@@ -134,7 +134,7 @@ class AuthenticationRemoteDataSourceImpl
 
       final response = await client
           .post(
-            '$baseUrl/api/auth/register',
+            '/auth/register',
             data: payload,
             options: Options(contentType: Headers.jsonContentType),
           )
@@ -211,7 +211,7 @@ class AuthenticationRemoteDataSourceImpl
       
       final response = await client
           .put(
-            '$baseUrl/api/users/$userId',
+            '/users/$userId',
             data: userData,
             options: Options(
               contentType: Headers.jsonContentType,
@@ -269,7 +269,7 @@ class AuthenticationRemoteDataSourceImpl
       }
 
       final response = await client.post(
-        '$baseUrl/api/auth/refresh',
+        '/auth/refresh',
         data: {"refreshToken": refreshToken}, // ✅ correct key
         options: Options(contentType: Headers.jsonContentType),
       );

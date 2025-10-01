@@ -40,7 +40,7 @@ final sl = GetIt.instance;
 Future<void> init() async {
   // Network
   sl.registerLazySingleton<Dio>(
-    () => DioFactory.create(baseUrl: AppConfig.baseUrl),
+    () => DioFactory.create(baseUrl: AppConfig.fullApiUrl),
   );
 
   // Data sources

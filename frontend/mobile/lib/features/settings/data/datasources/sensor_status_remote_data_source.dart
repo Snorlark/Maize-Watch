@@ -27,7 +27,7 @@ class SensorStatusRemoteDataSourceImpl implements SensorStatusRemoteDataSource {
 
       final response = await client
           .get(
-            '$baseUrl/api/settings/sensors/status',
+            '/settings/sensors/status',
             options: Options(
               headers: {
                 'Authorization': 'Bearer $accessToken',

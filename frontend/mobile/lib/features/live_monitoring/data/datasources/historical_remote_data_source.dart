@@ -32,13 +32,11 @@ class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
         if (weekOffset != null) 'weekOffset': weekOffset.toString(),
       };
 
-      final uri = Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/$farmId/weekly-data')
-          .replace(queryParameters: queryParams);
-
-      print('🔍 Fetching weekly data from: $uri');
+      print('🔍 Fetching weekly data from: /analytics/farms/$farmId/weekly-data');
 
       final response = await dio.get(
-        uri.toString(),
+        '/analytics/farms/$farmId/weekly-data',
+        queryParameters: queryParams,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
