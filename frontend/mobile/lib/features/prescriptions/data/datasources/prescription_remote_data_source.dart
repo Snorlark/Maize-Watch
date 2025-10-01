@@ -32,7 +32,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
     try {
       // Use a hardcoded farm ID for now - in production this should come from user context
       const farmId = '68cec5d8c98d501ce6ee6ede';
-      final response = await httpClient.get('/api/prescriptions/farm/$farmId');
+      final response = await httpClient.get('/prescriptions/farm/$farmId');
       
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'] ?? [];
@@ -63,7 +63,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
     }
     
     try {
-      final response = await httpClient.get('/api/prescriptions/$id');
+      final response = await httpClient.get('/prescriptions/$id');
       
       if (response.statusCode == 200) {
         return PrescriptionModel.fromJson(response.data['data']).toEntity();
@@ -102,7 +102,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   @override
   Future<void> deletePrescription(String id) async {
     try {
-      final response = await httpClient.delete('/api/prescriptions/$id');
+      final response = await httpClient.delete('/prescriptions/$id');
       
       if (response.statusCode != 204) {
         throw ServerException('Failed to delete prescription: ${response.statusCode} - ${response.statusMessage}');
@@ -116,7 +116,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   Future<void> markAllAsCompleted(bool isCompleted) async {
     try {
       final response = await httpClient.patch(
-        '/api/prescriptions/update-status',
+        '/prescriptions/update-status',
         data: {'isCompleted': isCompleted},
       );
       
@@ -131,7 +131,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   @override
   Future<void> deleteCompletedPrescriptions() async {
     try {
-      final response = await httpClient.delete('/api/prescriptions/completed');
+      final response = await httpClient.delete('/prescriptions/completed');
       
       if (response.statusCode != 204) {
         throw ServerException('Failed to delete completed prescriptions: ${response.statusCode} - ${response.statusMessage}');
@@ -144,7 +144,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   @override
   Future<void> deleteAllPrescriptions() async {
     try {
-      final response = await httpClient.delete('/api/prescriptions');
+      final response = await httpClient.delete('/prescriptions');
       
       if (response.statusCode != 204) {
         throw ServerException('Failed to delete all prescriptions: ${response.statusCode} - ${response.statusMessage}');
@@ -157,7 +157,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   @override
   Future<Map<String, dynamic>> checkForNewPrescriptions() async {
     try {
-      final response = await httpClient.get('/api/prescriptions/check-updates');
+      final response = await httpClient.get('/prescriptions/check-updates');
       
       if (response.statusCode == 200) {
         return {
@@ -184,7 +184,7 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
   ) async {
     try {
       final response = await httpClient.post(
-        '/api/prescriptions/sync-analytics',
+        '/prescriptions/sync-analytics',
         data: {
           'farmId': farmId,
           'prescriptions': prescriptions,

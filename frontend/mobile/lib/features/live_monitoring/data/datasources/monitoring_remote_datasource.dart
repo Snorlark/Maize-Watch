@@ -26,7 +26,7 @@ class MonitoringRemoteDataSourceImpl implements MonitoringRemoteDataSource {
       print('🔍 MonitoringDataSource: Getting latest readings from analytics...');
       
       // Get user farms first to get farm IDs
-      final farmsResponse = await dio.get('/api/farms');
+      final farmsResponse = await dio.get('/farms');
       print('🔍 MonitoringDataSource: Farms response: ${farmsResponse.data}');
 
       if (farmsResponse.data['success'] != true) {
@@ -43,7 +43,7 @@ class MonitoringRemoteDataSourceImpl implements MonitoringRemoteDataSource {
       final farmId = farms.first['_id'] as String;
       print('🔍 MonitoringDataSource: Using farm ID: $farmId');
       
-      final response = await dio.get('/api/analytics/farms/$farmId/complete');
+      final response = await dio.get('/analytics/farms/$farmId/complete');
       print('🔍 MonitoringDataSource: Analytics response received');
 
       if (response.data['success'] != true) {
@@ -103,7 +103,7 @@ class MonitoringRemoteDataSourceImpl implements MonitoringRemoteDataSource {
   ) async {
     try {
       final response = await dio.get(
-        '/api/farms/$farmId/readings/historical',
+        '/farms/$farmId/readings/historical',
         queryParameters: {'days': days},
       );
 
@@ -139,7 +139,7 @@ class MonitoringRemoteDataSourceImpl implements MonitoringRemoteDataSource {
       if (limit != null) queryParams['limit'] = limit;
 
       final response = await dio.get(
-        '/api/sensors/$sensorId/readings',
+        '/sensors/$sensorId/readings',
         queryParameters: queryParams,
       );
 

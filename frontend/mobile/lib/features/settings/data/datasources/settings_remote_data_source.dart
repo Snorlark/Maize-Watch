@@ -28,7 +28,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<SettingsModel> getSettings() async {
     try {
-      final response = await httpClient.get('/api/settings');
+      final response = await httpClient.get('/settings');
       
       if (response.statusCode == 200) {
         return SettingsModel.fromJson(response.data['data']);
@@ -48,7 +48,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<void> updateSettings(SettingsModel settings) async {
     try {
-      final response = await httpClient.put('/api/settings', data: settings.toJson());
+      final response = await httpClient.put('/settings', data: settings.toJson());
       
       if (response.statusCode != 200) {
         throw ServerException('Failed to update settings: ${response.statusCode}');
@@ -66,7 +66,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<SensorStatusModel> getSensorStatus() async {
     try {
-      final response = await httpClient.get('/api/settings/sensors/status');
+      final response = await httpClient.get('/settings/sensors/status');
       
       if (response.statusCode == 200) {
         return SensorStatusModel.fromJson(response.data['data']);
@@ -89,7 +89,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
     required bool vibrationOnly,
   }) async {
     try {
-      final response = await httpClient.patch('/api/settings/notifications', data: {
+      final response = await httpClient.patch('/settings/notifications', data: {
         'enabled': enabled,
         'vibrationOnly': vibrationOnly,
       });
@@ -110,7 +110,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<void> updateLanguage(String language) async {
     try {
-      final response = await httpClient.patch('/api/settings/language', data: {
+      final response = await httpClient.patch('/settings/language', data: {
         'language': language,
       });
       
@@ -130,7 +130,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<void> updateTheme(bool darkMode) async {
     try {
-      final response = await httpClient.patch('/api/settings/theme', data: {
+      final response = await httpClient.patch('/settings/theme', data: {
         'darkMode': darkMode,
       });
       
@@ -153,7 +153,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
     required int syncInterval,
   }) async {
     try {
-      final response = await httpClient.patch('/api/settings/sync', data: {
+      final response = await httpClient.patch('/settings/sync', data: {
         'autoSync': autoSync,
         'syncInterval': syncInterval,
       });
@@ -174,7 +174,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<void> updateDataCollection(bool enabled) async {
     try {
-      final response = await httpClient.patch('/api/settings/data-collection', data: {
+      final response = await httpClient.patch('/settings/data-collection', data: {
         'enabled': enabled,
       });
       
@@ -194,7 +194,7 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
   @override
   Future<void> updateAnalytics(bool enabled) async {
     try {
-      final response = await httpClient.patch('/api/settings/analytics', data: {
+      final response = await httpClient.patch('/settings/analytics', data: {
         'enabled': enabled,
       });
       
