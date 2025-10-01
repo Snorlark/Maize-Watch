@@ -1,7 +1,7 @@
 enum Environment { development, staging, production }
 
 class AppConfig {
-  static Environment _environment = Environment.development;
+  static Environment _environment = Environment.production;
 
   static Environment get environment => _environment;
 
@@ -16,7 +16,7 @@ class AppConfig {
       case Environment.staging:
         return 'https://maize-watch.onrender.com';
       case Environment.production:
-        return 'https://api.maizewatch.com';
+        return 'https://maize-watch-app.onrender.com';
     }
   }
 
