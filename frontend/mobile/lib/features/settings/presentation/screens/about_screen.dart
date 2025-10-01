@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
 
+import '../../../../generated/l10n.dart';
+
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
@@ -41,9 +43,9 @@ class _AboutScreenState extends State<AboutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [                 
-              Text('About', style: Theme.of(context).textTheme.headlineMedium,),
+              Text(S.of(context).about, style: Theme.of(context).textTheme.headlineMedium,),
               verticalSpace(5.h),
-              Text('Learn more about Maize Watch', style: Theme.of(context).textTheme.bodySmall,),   
+              Text(S.of(context).learn_more_about_maize_watch, style: Theme.of(context).textTheme.bodySmall,),   
               verticalSpace(kAppLargeGap),
               
               // App Info Section

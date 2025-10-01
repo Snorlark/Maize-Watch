@@ -166,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [                 
                     Text(S.of(context).account, style: Theme.of(context).textTheme.headlineMedium,),
                     verticalSpace(5.h),
-                    Text('Your Personal Information', style: Theme.of(context).textTheme.bodySmall,),   
+                    Text(S.of(context).your_personal_information, style: Theme.of(context).textTheme.bodySmall,),   
                     verticalSpace(kAppLargeGap),
                      _buildMenuItem(
                        title: 'Username',
@@ -498,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Profile update already in progress. Please wait.'),
+                  content: Text(S.of(context).profile_update_in_progress),
                   backgroundColor: Colors.orange,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -542,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 authState.message == "Profile updated successfully") {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Profile updated successfully!'),
+                  content: Text(S.of(context).profile_updated_successfully),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -584,7 +584,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Request timed out. Please check your connection and try again.'),
+                content: Text(S.of(context).request_timed_out),
                 backgroundColor: Colors.orange,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
@@ -598,7 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         print("🚨 Profile update error: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update profile: ${e.toString()}'),
+            content: Text(S.of(context).failed_to_update_profile(e.toString())),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(

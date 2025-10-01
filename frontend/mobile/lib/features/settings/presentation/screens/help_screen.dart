@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
 
+import '../../../../generated/l10n.dart';
+
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
 
@@ -40,9 +42,9 @@ class _HelpScreenState extends State<HelpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [                 
-              Text('Help', style: Theme.of(context).textTheme.headlineMedium,),
+              Text(S.of(context).help_title, style: Theme.of(context).textTheme.headlineMedium,),
               verticalSpace(5.h),
-              Text('Learn how to use the Maize Watch app', style: Theme.of(context).textTheme.bodySmall,),   
+              Text(S.of(context).learn_how_to_use_maize_watch, style: Theme.of(context).textTheme.bodySmall,),   
               verticalSpace(kAppLargeGap),
               
               // Getting Started Section

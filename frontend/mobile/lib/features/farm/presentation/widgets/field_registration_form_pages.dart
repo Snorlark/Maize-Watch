@@ -448,6 +448,8 @@ class _DeviceRegistrationFormPageState
                   ? 'Add Device'
                   : 'Add Another Device',
               style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: MAIZE_ACCENT,

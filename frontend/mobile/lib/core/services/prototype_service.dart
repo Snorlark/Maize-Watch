@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:mobile/core/config/environment.dart';
+import 'package:mobile/generated/l10n.dart';
 
 class PrototypeService {
   static final Dio _dio = Dio();
@@ -24,13 +25,13 @@ class PrototypeService {
       if (e.response?.statusCode == 404) {
         return {
           'success': false,
-          'message': 'Prototype ID not found',
+          'message': S.current.prototype_id_not_found,
           'available': false,
         };
       } else if (e.response?.statusCode == 400) {
         return {
           'success': false,
-          'message': e.response?.data['message'] ?? 'Invalid prototype ID',
+          'message': e.response?.data['message'] ?? S.current.invalid_prototype_id,
           'available': false,
         };
       } else {

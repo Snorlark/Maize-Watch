@@ -29,47 +29,109 @@ export const getPrescriptions = catchAsync(async (req: Request, res: Response) =
     if (prescriptions.length === 0) {
       console.log('🔍 No prescriptions in database, generating sample prescriptions');
       
-      const samplePrescriptions = [
-        {
-          farmId: farmObjectId,
-          title: 'Check Soil Moisture',
-          description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
-          priority: 'high' as const,
-          status: 'pending' as const,
-          dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-          category: 'irrigation',
-          estimatedDuration: '30 minutes',
-          materials: _getMaterialsForCategory('irrigation'),
-          instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
-          urgency: 'HIGH' as const,
-          timeline: 'Today',
-          parameter: 'soil_moisture',
-          fieldName: 'Main Field',
-          soilType: 'Loam',
-          growthStage: 'V8'
-        },
-        {
-          farmId: farmObjectId,
-          title: 'Monitor Weather Conditions',
-          description: 'Check current weather and forecast to plan farm activities accordingly.',
-          priority: 'medium' as const,
-          status: 'pending' as const,
-          dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
-          category: 'weather',
-          estimatedDuration: '15 minutes',
-          materials: _getMaterialsForCategory('weather'),
-          instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
-          urgency: 'MEDIUM' as const,
-          timeline: 'Today',
-          parameter: 'weather',
-          fieldName: 'Main Field',
-          soilType: 'Loam',
-          growthStage: 'V8'
+      // Fetch actual farm data to get real field names
+      const Farm = require('../models/Farm');
+      const farm = await Farm.findById(farmObjectId);
+      
+      if (!farm || !farm.fields || farm.fields.length === 0) {
+        console.log('🔍 No farm or fields found, using fallback field names');
+        // Fallback to default field names if no farm data
+        const samplePrescriptions = [
+          {
+            farmId: farmObjectId,
+            title: 'Check Soil Moisture',
+            description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
+            priority: 'high' as const,
+            status: 'pending' as const,
+            dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+            category: 'irrigation',
+            estimatedDuration: '30 minutes',
+            materials: _getMaterialsForCategory('irrigation'),
+            instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
+            urgency: 'HIGH' as const,
+            timeline: 'Today',
+            parameter: 'soil_moisture',
+            fieldName: 'Main Field',
+            soilType: 'Loam',
+            growthStage: 'V8'
+          },
+          {
+            farmId: farmObjectId,
+            title: 'Monitor Weather Conditions',
+            description: 'Check current weather and forecast to plan farm activities accordingly.',
+            priority: 'medium' as const,
+            status: 'pending' as const,
+            dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+            category: 'weather',
+            estimatedDuration: '15 minutes',
+            materials: _getMaterialsForCategory('weather'),
+            instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
+            urgency: 'MEDIUM' as const,
+            timeline: 'Today',
+            parameter: 'weather',
+            fieldName: 'Main Field',
+            soilType: 'Loam',
+            growthStage: 'V8'
+          }
+        ];
+        
+        // Save sample prescriptions to database
+        prescriptions = await Prescription.insertMany(samplePrescriptions);
+      } else {
+        console.log('🔍 Found farm with fields:', farm.fields.map((f: any) => f.fieldName));
+        
+        // Generate prescriptions for each actual field
+        const samplePrescriptions = [];
+        
+        for (const field of farm.fields) {
+          console.log(`🔍 Generating prescriptions for field: ${field.fieldName}`);
+          
+          // Generate prescriptions for each field
+          const fieldPrescriptions = [
+            {
+              farmId: farmObjectId,
+              title: 'Check Soil Moisture',
+              description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
+              priority: 'high' as const,
+              status: 'pending' as const,
+              dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+              category: 'irrigation',
+              estimatedDuration: '30 minutes',
+              materials: _getMaterialsForCategory('irrigation'),
+              instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
+              urgency: 'HIGH' as const,
+              timeline: 'Today',
+              parameter: 'soil_moisture',
+              fieldName: field.fieldName,
+              soilType: field.sensors?.[0]?.soilType || 'Loam',
+              growthStage: field.growthStage || 'V8'
+            },
+            {
+              farmId: farmObjectId,
+              title: 'Monitor Weather Conditions',
+              description: 'Check current weather and forecast to plan farm activities accordingly.',
+              priority: 'medium' as const,
+              status: 'pending' as const,
+              dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+              category: 'weather',
+              estimatedDuration: '15 minutes',
+              materials: _getMaterialsForCategory('weather'),
+              instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
+              urgency: 'MEDIUM' as const,
+              timeline: 'Today',
+              parameter: 'weather',
+              fieldName: field.fieldName,
+              soilType: field.sensors?.[0]?.soilType || 'Loam',
+              growthStage: field.growthStage || 'V8'
+            }
+          ];
+          
+          samplePrescriptions.push(...fieldPrescriptions);
         }
-      ];
-
-      // Save sample prescriptions to database
-      prescriptions = await Prescription.insertMany(samplePrescriptions);
+        
+        // Save sample prescriptions to database
+        prescriptions = await Prescription.insertMany(samplePrescriptions);
+      }
     }
 
     logger.info(`Retrieved ${prescriptions.length} prescriptions for farm ${farmId}`);
@@ -416,6 +478,108 @@ export const deleteAllPrescriptions = catchAsync(async (req: Request, res: Respo
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to delete all prescriptions'
+    });
+  }
+});
+
+/**
+ * @desc    Force regenerate prescriptions for all fields
+ * @route   POST /api/prescriptions/force-regenerate
+ * @access  Private
+ */
+export const forceRegeneratePrescriptions = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  try {
+    console.log('🔄 Force regenerating prescriptions for farm:', farmId);
+    
+    const farmObjectId = new mongoose.Types.ObjectId(farmId);
+    
+    // Delete all existing prescriptions
+    await Prescription.deleteMany({ farmId: farmObjectId });
+    console.log('🗑️ Deleted existing prescriptions');
+    
+    // Fetch farm data to get actual field names
+    const Farm = require('../models/Farm');
+    const farm = await Farm.findById(farmObjectId);
+    
+    if (!farm || !farm.fields || farm.fields.length === 0) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'No farm or fields found'
+      });
+    }
+    
+    console.log('🔍 Found farm with fields:', farm.fields.map((f: any) => f.fieldName));
+    
+    // Generate prescriptions for each actual field
+    const samplePrescriptions = [];
+    
+    for (const field of farm.fields) {
+      console.log(`🔍 Generating prescriptions for field: ${field.fieldName}`);
+      
+      // Generate prescriptions for each field
+      const fieldPrescriptions = [
+        {
+          farmId: farmObjectId,
+          title: 'Check Soil Moisture',
+          description: 'Monitor soil moisture levels and irrigate if needed. Optimal range is 30-70% for most crops.',
+          priority: 'high' as const,
+          status: 'pending' as const,
+          dueDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
+          category: 'irrigation',
+          estimatedDuration: '30 minutes',
+          materials: _getMaterialsForCategory('irrigation'),
+          instructions: _getInstructionsForCategory('irrigation', 'Check soil moisture levels'),
+          urgency: 'HIGH' as const,
+          timeline: 'Today',
+          parameter: 'soil_moisture',
+          fieldName: field.fieldName,
+          soilType: field.sensors?.[0]?.soilType || 'Loam',
+          growthStage: field.growthStage || 'V8'
+        },
+        {
+          farmId: farmObjectId,
+          title: 'Monitor Weather Conditions',
+          description: 'Check current weather and forecast to plan farm activities accordingly.',
+          priority: 'medium' as const,
+          status: 'pending' as const,
+          dueDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
+          category: 'weather',
+          estimatedDuration: '15 minutes',
+          materials: _getMaterialsForCategory('weather'),
+          instructions: _getInstructionsForCategory('weather', 'Check weather forecast'),
+          urgency: 'MEDIUM' as const,
+          timeline: 'Today',
+          parameter: 'weather',
+          fieldName: field.fieldName,
+          soilType: field.sensors?.[0]?.soilType || 'Loam',
+          growthStage: field.growthStage || 'V8'
+        }
+      ];
+      
+      samplePrescriptions.push(...fieldPrescriptions);
+    }
+    
+    // Save new prescriptions to database
+    const newPrescriptions = await Prescription.insertMany(samplePrescriptions);
+    
+    logger.info(`Force regenerated ${newPrescriptions.length} prescriptions for farm ${farmId} with fields: ${farm.fields.map((f: any) => f.fieldName).join(', ')}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: `Prescriptions force regenerated successfully (${newPrescriptions.length} created)`,
+      data: {
+        prescriptions: newPrescriptions,
+        fields: farm.fields.map((f: any) => f.fieldName)
+      }
+    });
+  } catch (error) {
+    logger.error('Error force regenerating prescriptions:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to force regenerate prescriptions'
     });
   }
 });

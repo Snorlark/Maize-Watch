@@ -45,7 +45,7 @@ class RegistrationSuccessScreen extends StatelessWidget {
 
               // Success Title
               Text(
-                'User Registration Successful!',
+                S.of(context).user_registration_successful,
                 style: textTheme.headlineMedium?.copyWith(
                   fontSize: 28.sp,
                   fontWeight: FontWeight.bold,
@@ -57,7 +57,7 @@ class RegistrationSuccessScreen extends StatelessWidget {
               SizedBox(height: 16.h),
 
               Text(
-                ' Now let\'s set up your farm data to start monitoring your corn crops.',
+                S.of(context).setup_farm_data_message,
                 style: textTheme.bodySmall?.copyWith(
                   fontSize: 16.sp,
                   height: 1.5,
@@ -119,7 +119,7 @@ class RegistrationSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Continue to Field Registration',
+                    S.of(context).continue_to_field_registration,
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w600,

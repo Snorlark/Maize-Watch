@@ -937,7 +937,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
                 // Delete button only for completed prescriptions
                 if (isCompleted) ...[
                   GestureDetector(
-                    onTap: () => _showDeleteConfirmation(context, prescription),
+                    onTap: () {
+                      print('🔧 DELETE: Delete button tapped for prescription: ${prescription['title']}');
+                      _showDeleteConfirmation(context, prescription);
+                    },
                     child: Icon(
                         Icons.delete_outline,
                         color: Colors.red[600],
