@@ -687,5 +687,26 @@
   "prescription_marked_complete": "Nakamarkang tapos na ang reseta",
   "error_marking_complete": "May error sa pagmarka ng reseta bilang tapos na",
   "prescription_marked_incomplete": "Nakamarkang hindi pa tapos ang reseta",
-  "error_marking_incomplete": "May error sa pagmarka ng reseta bilang hindi pa tapos"
+  "error_marking_incomplete": "May error sa pagmarka ng reseta bilang hindi pa tapos",
+  "sensors_in_sleep_mode": "Mga Sensor sa Sleep Mode",
+  "sensors_sleep_mode_message": "Ang inyong mga sensor ay natutulog na mula 8pm hanggang 3am PH time. Gising sila sa 3am.",
+  "sensor_offline": "Sensor Offline",
+  "sensor_offline_message": "Ang {sensorName} sensor ay offline na ng mahigit 30 minuto.",
+  "@sensor_offline_message": {
+    "placeholders": {
+      "sensorName": {
+        "type": "String"
+      }
+    }
+  },
+  "new_farm_prescriptions": "Mga Bagong Reseta sa Bukid",
+  "new_farm_tasks_message": "Mayroon kayong {count} na bagong gawain sa bukid na kailangang tapusin",
+  "@new_farm_tasks_message": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "overdue": "Nalampasan na"
 }

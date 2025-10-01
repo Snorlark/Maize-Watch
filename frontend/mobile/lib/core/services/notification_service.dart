@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/generated/l10n.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -145,8 +146,8 @@ class NotificationService {
     const vibrationOnly = false; // We want sound for sleep mode alerts
     await _showNotification(
       id: SENSOR_SLEEP_MODE_ID,
-      title: '🌙 Sensors in Sleep Mode',
-      body: 'Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.',
+      title: '🌙 ${S.current.sensors_in_sleep_mode}',
+      body: S.current.sensors_sleep_mode_message,
       payload: 'sensor_sleep_mode',
       vibrationOnly: vibrationOnly,
     );
@@ -211,8 +212,8 @@ class NotificationService {
     
     await _showNotification(
       id: SENSOR_OFFLINE_ID,
-      title: '⚠️ Sensor Offline',
-      body: '$sensorName sensor has been offline for more than 30 minutes.',
+      title: '⚠️ ${S.current.sensor_offline}',
+      body: S.current.sensor_offline_message(sensorName),
       payload: 'sensor_offline',
       vibrationOnly: vibrationOnly,
     );

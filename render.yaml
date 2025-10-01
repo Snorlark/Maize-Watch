@@ -26,5 +26,11 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: ANALYTICS_V2_PATH
+        value: /app/analytics_v2
+      - key: PYTHON_PATH
+        value: python3
+      - key: ENABLE_PYTHON_ANALYTICS
+        value: true
       # Note: REDIS_URL is not set, so Redis features will be disabled
       # This prevents Redis connection errors in production

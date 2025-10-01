@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/core/storage/secure_storage.dart';
+import 'package:mobile/core/services/offline_cache_service.dart';
+import 'package:mobile/generated/l10n.dart';
 
 class BackgroundNotificationService {
   static Timer? _prescriptionCheckTask;
@@ -98,7 +100,7 @@ class BackgroundNotificationService {
 
       // Make API call to get prescriptions
       final response = await http.get(
-        Uri.parse('http://10.133.241.206:8080/api/analytics/farms/$userId/complete'),
+        Uri.parse('https://maize-watch-app.onrender.com/api/analytics/farms/$userId/complete'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -106,8 +108,15 @@ class BackgroundNotificationService {
         final data = json.decode(response.body);
         final prescriptions = data['prescriptive']?['recommendations'] ?? [];
         
+        // Cache the analytics data for offline use
+        await OfflineCacheService.cacheAnalytics(data);
+        
         if (prescriptions.isNotEmpty) {
           print('🔄 BackgroundNotificationService: Found ${prescriptions.length} prescriptions');
+          
+          // Cache prescriptions for offline use
+          final prescriptionList = prescriptions.cast<Map<String, dynamic>>();
+          await OfflineCacheService.cachePrescriptions(prescriptionList);
           
           // Check if notifications are enabled before showing
           final notificationService = NotificationService();
@@ -116,8 +125,8 @@ class BackgroundNotificationService {
           if (notificationsEnabled) {
             // Show notification for new prescriptions
             await notificationService.showPrescriptionAlertNotification(
-              title: 'New Farm Prescriptions', // This will be translated when called
-              message: 'You have ${prescriptions.length} new farm tasks to complete', // This will be translated when called
+              title: S.current.new_farm_prescriptions,
+              message: S.current.new_farm_tasks_message(prescriptions.length),
               priority: 'high',
               notificationId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             );
@@ -167,7 +176,7 @@ class BackgroundNotificationService {
 
       // Make API call to check sensor status
       final response = await http.get(
-        Uri.parse('http://10.133.241.206:8080/api/sensors/status/$userId'),
+        Uri.parse('https://maize-watch-app.onrender.com/api/sensors/status/$userId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
