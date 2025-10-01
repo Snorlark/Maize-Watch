@@ -51,7 +51,7 @@ In the Render dashboard, set these environment variables:
 
 #### Required Variables:
 ```bash
-# Database
+# Database (Use MongoDB Atlas - Free tier available)
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/maizewatch
 
 # ThingSpeak (Get from your ThingSpeak account)
@@ -63,18 +63,25 @@ JWT_SECRET=auto-generated
 ENCRYPTION_KEY=auto-generated
 ```
 
+#### Database Setup (MongoDB Atlas):
+1. **Go to [MongoDB Atlas](https://cloud.mongodb.com)**
+2. **Create a free cluster**
+3. **Create a database user**
+4. **Get your connection string**
+5. **Update MONGO_URI in Render**
+
 #### Optional Variables:
 ```bash
 # Analytics Service URL (internal)
 ANALYTICS_SERVICE_URL=http://localhost:8000
 
-# Redis URL (auto-configured by Render)
-REDIS_URL=auto-configured
-
 # Environment
 NODE_ENV=production
 FLASK_ENV=production
 PYTHONUNBUFFERED=1
+
+# Note: Redis is optional - app works without it
+# REDIS_URL=optional-redis-url
 ```
 
 ### Step 4: Deploy
@@ -192,15 +199,15 @@ curl http://localhost:8000/health  # Analytics
 
 ### Render Pricing (Approximate):
 - **Web Service**: $7/month (Starter plan)
-- **MongoDB**: $0 (if using external Atlas)
-- **Redis**: $7/month (if using Render Redis)
-- **Total**: ~$14/month
-
-### Alternative (Using External Services):
-- **Web Service**: $7/month
 - **MongoDB Atlas**: $0 (Free tier)
-- **Redis**: $0 (if using external)
 - **Total**: ~$7/month
+
+### Features Without Redis:
+- ✅ **All core functionality works**
+- ✅ **Analytics service fully functional**
+- ✅ **Database operations work**
+- ⚠️ **Caching disabled** (slightly slower but still fast)
+- ⚠️ **Real-time features limited** (Socket.IO works but without Redis scaling)
 
 ## 🎉 Success!
 
