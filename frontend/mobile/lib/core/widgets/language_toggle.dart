@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/settings/presentation/bloc/settings_bloc.dart';
 import '../../features/settings/presentation/bloc/settings_event.dart';
@@ -38,6 +39,11 @@ class LanguageToggle extends StatelessWidget {
               onChanged: (Locale? newLocale) {
                 if (newLocale != null) {
                   print('🔧 LanguageToggle: Language changed to: ${newLocale.languageCode}');
+                  
+                  // Store in SharedPreferences for immediate access
+                  _updateLanguagePreference(newLocale.languageCode);
+                  
+                  // Update settings system
                   context.read<SettingsBloc>().add(UpdateLanguage(newLocale.languageCode));
                 }
               },
@@ -82,5 +88,14 @@ class LanguageToggle extends StatelessWidget {
     
     print('🔧 LanguageToggle: Matching locale: ${matchingLocale.languageCode}');
     return matchingLocale;
+  }
+
+  void _updateLanguagePreference(String languageCode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_language_code', languageCode);
+    } catch (e) {
+      print('🔧 LanguageToggle: Failed to update language preference: $e');
+    }
   }
 }

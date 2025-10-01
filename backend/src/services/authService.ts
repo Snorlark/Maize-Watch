@@ -787,13 +787,18 @@ class AuthService {
   async verifyCode(contactNumber: string, code: string): Promise<{ success: boolean; message: string; verified: boolean }> {
     try {
       const result = await twilioService.verifyCode(contactNumber, code);
-      return result;
+      return {
+        success: result.success,
+        message: result.message,
+        verified: result.valid // Map 'valid' to 'verified'
+      };
     } catch (error) {
       logger.error("Error verifying code:", error);
       return {
         success: false,
         message: "Failed to verify code",
-        verified: false
+        verified: false,
+        
       };
     }
   }
