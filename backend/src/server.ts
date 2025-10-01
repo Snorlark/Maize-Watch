@@ -34,10 +34,16 @@ process.on('unhandledRejection', (reason, promise) => {
   // Don't exit the process, just log the error
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions (but don't exit for Redis errors)
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
-  // Don't exit the process, just log the error
+  // Only exit for critical errors, not Redis connection issues
+  if (error.message && error.message.includes('Redis')) {
+    logger.warn('Redis error caught, continuing without Redis...');
+    return;
+  }
+  // For other critical errors, exit
+  process.exit(1);
 });
 
 // Trust proxy for real client IPs when behind reverse proxies
@@ -162,16 +168,7 @@ process.on('SIGINT', async () => {
   });
 });
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+// Note: Error handlers are already defined above (lines 32-41)
 
 // Start the server
 startServer();

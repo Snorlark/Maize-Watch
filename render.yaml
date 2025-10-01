@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 10000
       - key: MONGO_URI
-        value: mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/maizewatch?retryWrites=true&w=majority
+        value: mongodb+srv://larksigmuondbabao:aKO5hHmP0ZZYQPfp@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
       - key: ANALYTICS_SERVICE_URL
         value: http://localhost:8000
       - key: THINGSPEAK_CHANNEL_ID

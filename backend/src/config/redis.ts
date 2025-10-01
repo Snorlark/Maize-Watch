@@ -9,6 +9,8 @@ interface RedisConfig {
   retryDelayOnFailover: number;
   maxRetriesPerRequest: number;
   lazyConnect: boolean;
+  connectTimeout: number;
+  commandTimeout: number;
 }
 
 const getRedisConfig = (): RedisConfig | null => {
@@ -28,8 +30,10 @@ const getRedisConfig = (): RedisConfig | null => {
       password: process.env.REDIS_PASSWORD || url.password || undefined,
       db: parseInt(process.env.REDIS_DB || '0'),
       retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1, // Reduce retries to fail faster
       lazyConnect: true,
+      connectTimeout: 5000, // 5 second timeout
+      commandTimeout: 3000, // 3 second command timeout
     };
   } catch (error) {
     logger.error('Invalid REDIS_URL:', error);
