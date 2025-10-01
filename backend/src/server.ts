@@ -52,7 +52,7 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+  contentSecurityPolicy: process.env.NODE_ENV === 'development' ? {
     useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
@@ -61,7 +61,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: [
         "'self'",
-        process.env.FRONTEND_URL || "http://localhost:3000",
+        process.env.FRONTEND_URL || "http://localhost:8080",
         "ws:",
         "wss:"
       ]
