@@ -9,6 +9,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/home_screen_service.dart';
+import '../../../../core/services/background_notification_service.dart';
 import '../../../farm/presentation/bloc/farm_bloc.dart';
 import '../../../farm/domain/entities/farm.dart';
 import '../bloc/monitoring_bloc.dart';
@@ -89,6 +90,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Initialize notification service
     _notificationService.initialize();
 
+    // Initialize background notification service
+    BackgroundNotificationService.initialize();
+
     // Load initial data
     _loadData();
     _animationController.forward();
@@ -150,9 +154,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               // Update UI with cached data immediately
               if (homeData['analytics'] != null) {
                 // Trigger analytics update with cached data
-                context.read<MonitoringBloc>().add(LoadAnalyticsEvent(
-                  farmId: selectedFarm.id,
-                  cachedData: homeData['analytics'],
+                context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(
+                  farmId: selectedFarm.id ?? '',
                 ));
               }
             }
@@ -181,6 +184,10 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     _animationController.dispose();
     // Stop background refresh when screen is disposed
     HomeScreenService.stopBackgroundRefresh();
+    // Stop background notification service when leaving the screen
+    BackgroundNotificationService.stopAllTasks();
+    // Clear notification tracking to prevent duplicate notifications
+    BackgroundNotificationService.clearNotificationTracking();
     super.dispose();
   }
 
@@ -810,36 +817,41 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         ],
                       ),
                       const Spacer(),
-                      Expanded( child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/field-registration');
-                        },
-                        icon: Icon(
-                          Icons.add,
-                          size: 16.sp,
-                          color: Colors.white,
-                        ),
-                        label: Text(
-                          S.of(context).add_field,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: MAIZE_PRIMARY,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20.w,
-                            vertical: 12.h,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.r),
-                          ),
-                          
-                        ),
-                      ),
-                  )],
+                       Flexible(
+                         child: ElevatedButton.icon(
+                           onPressed: () {
+                             Navigator.pushNamed(context, '/field-registration');
+                           },
+                           icon: Icon(
+                             Icons.add,
+                             size: 16.sp,
+                             color: Colors.white,
+                           ),
+                           label: Text(
+                             S.of(context).add_field,
+                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                               color: Colors.white,
+                               fontWeight: FontWeight.w600,
+                             ),
+                             maxLines: 1,
+                             overflow: TextOverflow.ellipsis,
+                           ),
+                           style: ElevatedButton.styleFrom(
+                             backgroundColor: MAIZE_PRIMARY,
+                             padding: EdgeInsets.symmetric(
+                               horizontal: 20.w,
+                               vertical: 12.h,
+                             ),
+                             shape: RoundedRectangleBorder(
+                               borderRadius: BorderRadius.circular(16.r),
+                             ),
+                           ),
+                         ),
+                       ),
+                       
+                      
+                      
+                  ],
                   ),
                   SizedBox(height: kAppMediumGap),
                   if (farmState is FarmsLoaded && farmState.farms.isNotEmpty)
@@ -1759,28 +1771,28 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   String _getGrowthStageText(String growthStage) {
     switch (growthStage) {
       case 'VE':
-        return 'Emergence';
+        return S.of(context).growth_stage_emergence;
       case 'V2':
       case 'V3':
       case 'V4':
-        return 'Early Vegetative';
+        return S.of(context).growth_stage_early_vegetative;
       case 'V5':
       case 'V6':
       case 'V7':
       case 'V8':
       case 'VT':
-        return 'Mid Vegetative';
+        return S.of(context).growth_stage_mid_vegetative;
       case 'R1':
       case 'R2':
       case 'R3':
-        return 'Reproductive';
+        return S.of(context).growth_stage_reproductive;
       case 'R4':
       case 'R5':
-        return 'Maturing';
+        return S.of(context).growth_stage_maturing;
       case 'R6':
-        return 'Maturity/Harvest';
+        return S.of(context).growth_stage_maturity_harvest;
       default:
-        return 'Unknown';
+        return S.of(context).unknown;
     }
   }
 
@@ -1835,15 +1847,15 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           print('🔍 Found overall stress from descriptive: $overallStress');
           switch (overallStress.toLowerCase()) {
             case 'low':
-              return 'Healthy';
+              return S.of(context).crop_condition_healthy;
             case 'medium':
-              return 'Moderate stress';
+              return S.of(context).crop_condition_moderate_stress;
             case 'high':
-              return 'High stress';
+              return S.of(context).crop_condition_high_stress;
             case 'severe':
-              return 'Critical stress';
+              return S.of(context).crop_condition_critical_stress;
             default:
-              return 'Unknown';
+              return S.of(context).unknown;
           }
         } else {
           // If overall_stress is unknown, analyze individual stress levels
@@ -1863,7 +1875,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     }
     
     print('🔍 No crop condition data available');
-    return 'Unknown';
+    return S.of(context).unknown;
   }
 
   String _analyzeCropConditionFromSensor(SensorReading reading) {
@@ -1895,13 +1907,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Determine condition based on number of issues
     switch (issues) {
       case 0:
-        return 'Healthy';
+        return S.of(context).crop_condition_healthy;
       case 1:
-        return 'Moderate stress';
+        return S.of(context).crop_condition_moderate_stress;
       case 2:
-        return 'High stress';
+        return S.of(context).crop_condition_high_stress;
       default:
-        return 'Critical stress';
+        return S.of(context).crop_condition_critical_stress;
     }
   }
 
@@ -1927,13 +1939,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     
     // Determine condition based on stress levels
     if (highStressCount >= 3) {
-      return 'Critical stress';
+      return S.of(context).crop_condition_critical_stress;
     } else if (highStressCount >= 2) {
-      return 'High stress';
+      return S.of(context).crop_condition_high_stress;
     } else if (highStressCount >= 1 || mediumStressCount >= 2) {
-      return 'Moderate stress';
+      return S.of(context).crop_condition_moderate_stress;
     } else {
-      return 'Healthy';
+      return S.of(context).crop_condition_healthy;
     }
   }
 

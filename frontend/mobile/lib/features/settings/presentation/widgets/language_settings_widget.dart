@@ -65,7 +65,10 @@ class LanguageSettingsWidget extends StatelessWidget {
           onTap: () {
             print('🔧 LanguageSettingsWidget: Language selected: ${locale.languageCode}');
             onLanguageChanged(locale.languageCode);
-            Navigator.pop(context);
+            // Don't pop immediately, let the parent handle the state change
+            Future.delayed(const Duration(milliseconds: 100), () {
+              Navigator.pop(context);
+            });
           },
           borderRadius: BorderRadius.circular(8.r),
           child: Container(

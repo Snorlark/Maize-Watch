@@ -226,7 +226,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
+                    content: Text(_isCompleted ? S.current.marked_as_completed : S.current.marked_as_pending),
                     backgroundColor: _isCompleted ? Colors.green : Colors.orange,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
@@ -644,7 +644,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
+                    content: Text(_isCompleted ? S.current.marked_as_completed : S.current.marked_as_pending),
                     backgroundColor: _isCompleted ? Colors.green : Colors.orange,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(

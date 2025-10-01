@@ -127,7 +127,49 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                       color: isSleepMode ? Colors.orange : null,
                     ),
                   ),   
-                  verticalSpace(kAppLargeGap),
+                  verticalSpace(kAppSmallGap),
+                  
+                  // Status checking indicator
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(kAppMediumPadding),
+                    decoration: BoxDecoration(
+                      color: MAIZE_ACCENT.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(color: MAIZE_ACCENT.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: MAIZE_ACCENT,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: kAppSmallGap),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Status Check',
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: MAIZE_ACCENT,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Checking if sensors are actively sending data to ThingSpeak',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: MAIZE_ACCENT.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  verticalSpace(kAppSmallGap),
                   
                   // Sleep mode indicator
                   if (isSleepMode) ...[
@@ -170,7 +212,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                         ],
                       ),
                     ),
-                    verticalSpace(kAppLargeGap),
+                         verticalSpace(kAppSmallGap),
                   ],
                   
                   // Temperature Sensor
@@ -216,6 +258,70 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                     isActive: state.sensorStatus!['lightIntensity'] ?? false,
                     icon: Icons.light_mode,
                    ),
+                  verticalSpace(kAppMediumGap),
+                  
+                  // Status Legend
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(kAppMediumPadding),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Status Legend',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Row(
+                          children: [
+                            Container(
+                              width: 12.w,
+                              height: 12.h,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Active: Sensor is sending data to ThingSpeak',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4.h),
+                        Row(
+                          children: [
+                            Container(
+                              width: 12.w,
+                              height: 12.h,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Inactive: Sensor is offline or not sending data',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   verticalSpace(kAppSmallGap),
                 ],
               );
@@ -244,45 +350,72 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: Colors.white),
       ),
-      child: Row(
+      child: Column(
+        children: [
+          Row(
             children: [
               Container(
                 padding: EdgeInsets.all(8.w),
                 decoration: BoxDecoration(
-              color: isActive 
-                ? Colors.green.withOpacity(0.1)
-                : Colors.red.withOpacity(0.1),
+                  color: isActive 
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(30.r),
                 ),
                 child: Icon(
                   icon,
-              color: isActive ? Colors.green : Colors.red,
+                  color: isActive ? Colors.green : Colors.red,
                   size: 20.sp,
                 ),
               ),
               SizedBox(width: kAppSmallGap),
-          Expanded(
-            child: Text(
-                title,
+              Expanded(
+                child: Text(
+                  title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: isActive ? Colors.green : Colors.red,
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Text(
-              isActive ? 'Active' : 'Inactive',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.bold,
               ),
-            ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.green : Colors.red,
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Text(
+                  isActive ? 'Active' : 'Inactive',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          // Status explanation
+          Row(
+            children: [
+              Icon(
+                isActive ? Icons.check_circle : Icons.cancel,
+                color: isActive ? Colors.green : Colors.red,
+                size: 16.sp,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  isActive 
+                    ? 'Sensor is actively sending data to ThingSpeak'
+                    : 'Sensor is not sending data or offline',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

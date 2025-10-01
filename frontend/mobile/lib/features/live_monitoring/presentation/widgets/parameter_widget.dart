@@ -57,11 +57,11 @@ class _ParameterWidgetState extends State<ParameterWidget> {
   }
 
   Future<void> fetchLiveData() async {
-    // This would typically fetch from the backend
-    // For now, we'll use the latest data from the weekly data
+    // Use the historical data from ThingSpeak for graphing
     if (widget.data.isNotEmpty && mounted) {
       setState(() {
-        liveData = widget.data.last;
+        // Use the first data point for current value display
+        liveData = widget.data.first;
         isLoading = false;
       });
     }
@@ -369,6 +369,15 @@ class _ParameterWidgetState extends State<ParameterWidget> {
       );
     }
 
+    // Debug: Log the actual data being used for charts
+    print('🔍 ParameterWidget: Building chart for ${widget.parameter}');
+    print('🔍 Data points: ${widget.data.length}');
+    for (int i = 0; i < widget.data.length && i < 3; i++) {
+      final item = widget.data[i];
+      final value = item['measurements']?[widget.parameter] ?? 'null';
+      print('🔍 Data point $i: $value');
+    }
+
     // Find min and max values for scaling
     double minValue = double.infinity;
     double maxValue = double.negativeInfinity;
@@ -381,24 +390,65 @@ class _ParameterWidgetState extends State<ParameterWidget> {
       if (value > maxValue) maxValue = value;
     }
 
-    // Add padding to the range
+    // Handle zero values correctly
     double range = maxValue - minValue;
-    if (range == 0) range = 1; // Avoid division by zero
-    minValue -= range * 0.1;
-    maxValue += range * 0.1;
+    bool allZeroValues = values.every((v) => v == 0.0);
+    
+    if (range == 0) {
+      if (allZeroValues) {
+        // All values are zero - show a flat line at zero
+        minValue = -0.1;
+        maxValue = 0.1;
+        print('🔍 All values are zero for ${widget.parameter}');
+      } else {
+        // All values are the same but not zero
+        minValue = values.first - 0.5;
+        maxValue = values.first + 0.5;
+      }
+    } else {
+      // Add small padding only if there's actual variation
+      double padding = range * 0.1;
+      minValue -= padding;
+      maxValue += padding;
+    }
+    
+    print('🔍 Chart range for ${widget.parameter}: $minValue to $maxValue (values: $values)');
 
     return Container(
       height: 120.h,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Weekly Trend',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: MAIZE_ACCENT,
-            ),
+          Row(
+            children: [
+              Text(
+                'Weekly Trend',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: MAIZE_ACCENT,
+                ),
+              ),
+              if (allZeroValues) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4.r),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    'No Data',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      color: Colors.orange.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: 12.h),
           Container(

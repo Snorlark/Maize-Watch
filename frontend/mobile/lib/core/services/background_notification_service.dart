@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:mobile/core/services/offline_cache_service.dart';
+import 'package:mobile/core/services/home_screen_service.dart';
 import 'package:mobile/generated/l10n.dart';
 
 class BackgroundNotificationService {
@@ -17,7 +18,20 @@ class BackgroundNotificationService {
   static const Duration sensorStatusInterval = Duration(minutes: 30);
   static const Duration sleepModeCheckInterval = Duration(hours: 1);
 
+  // Notification tracking to prevent duplicates
+  static final Set<String> _notifiedPrescriptions = <String>{};
+  static final Set<String> _notifiedSensors = <String>{};
+  static DateTime? _lastNotificationTime;
+  
+  // Service state tracking
+  static bool _isInitialized = false;
+
   static Future<void> initialize() async {
+    if (_isInitialized) {
+      print('🔄 BackgroundNotificationService: Already initialized, skipping...');
+      return;
+    }
+    
     print('🔄 BackgroundNotificationService: Initializing...');
     
     // Stop any existing timers
@@ -28,6 +42,7 @@ class BackgroundNotificationService {
     _startSensorStatusCheck();
     _startSleepModeCheck();
     
+    _isInitialized = true;
     print('✅ BackgroundNotificationService: Initialized successfully');
   }
 
@@ -41,6 +56,12 @@ class BackgroundNotificationService {
     _sleepModeTask = null;
     
     print('🔄 BackgroundNotificationService: All timers stopped');
+  }
+
+  static void stopAllTasks() {
+    stopAllTimers();
+    _isInitialized = false;
+    print('🔄 BackgroundNotificationService: All tasks stopped');
   }
 
   static void _startPrescriptionCheck() {
@@ -100,16 +121,13 @@ class BackgroundNotificationService {
 
       // Make API call to get prescriptions
       final response = await http.get(
-        Uri.parse('https://maize-watch-app.onrender.com/api/analytics/farms/$userId/complete'),
+        Uri.parse('https://maize-watch-app.onrender.com/api/prescriptions'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final prescriptions = data['prescriptive']?['recommendations'] ?? [];
-        
-        // Cache the analytics data for offline use
-        await OfflineCacheService.cacheAnalytics(data);
+        final prescriptions = data['data'] ?? [];
         
         if (prescriptions.isNotEmpty) {
           print('🔄 BackgroundNotificationService: Found ${prescriptions.length} prescriptions');
@@ -123,13 +141,24 @@ class BackgroundNotificationService {
           final notificationsEnabled = await notificationService.areNotificationsEnabled();
           
           if (notificationsEnabled) {
-            // Show notification for new prescriptions
-            await notificationService.showPrescriptionAlertNotification(
-              title: S.current.new_farm_prescriptions,
-              message: S.current.new_farm_tasks_message(prescriptions.length),
-              priority: 'high',
-              notificationId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            );
+            // Check if we already showed notification recently (within last 30 minutes)
+            final now = DateTime.now();
+            if (_lastNotificationTime == null || 
+                now.difference(_lastNotificationTime!).inMinutes > 30) {
+              
+              // Show notification for new prescriptions
+              await notificationService.showPrescriptionAlertNotification(
+                title: 'New Farm Prescriptions', // Will be translated in notification service
+                message: 'You have ${prescriptions.length} new farm tasks to complete',
+                priority: 'high',
+                notificationId: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              );
+              
+              _lastNotificationTime = now;
+              print('🔄 BackgroundNotificationService: Prescription notification shown');
+            } else {
+              print('🔄 BackgroundNotificationService: Skipping notification - already shown recently');
+            }
           } else {
             print('🔄 BackgroundNotificationService: Notifications disabled, skipping prescription notification');
           }
@@ -187,15 +216,19 @@ class BackgroundNotificationService {
         // Check if any sensors are offline for more than 30 minutes
         final now = DateTime.now();
         for (final sensor in sensors) {
-          final lastUpdate = DateTime.tryParse(sensor['lastUpdate'] ?? '');
-          if (lastUpdate != null) {
-            final timeDiff = now.difference(lastUpdate);
-            if (timeDiff.inMinutes > 30) {
-              print('🔄 BackgroundNotificationService: Sensor ${sensor['name']} is offline');
-              
-              await NotificationService().showSensorOfflineNotification(
-                sensor['name'] ?? 'Unknown Sensor', // This will be translated when called
-              );
+          final sensorId = sensor['_id']?.toString();
+          final sensorName = sensor['name'] ?? S.current.unknown_sensor;
+          
+          if (sensorId != null && !_notifiedSensors.contains(sensorId)) {
+            final lastUpdate = DateTime.tryParse(sensor['lastUpdate'] ?? '');
+            if (lastUpdate != null) {
+              final timeDiff = now.difference(lastUpdate);
+              if (timeDiff.inMinutes > 30) {
+                print('🔄 BackgroundNotificationService: Sensor $sensorName is offline');
+                
+                await NotificationService().showSensorOfflineNotification(sensorName);
+                _notifiedSensors.add(sensorId);
+              }
             }
           }
         }
@@ -231,4 +264,15 @@ class BackgroundNotificationService {
       print('🔄 BackgroundNotificationService: Error checking sleep mode: $e');
     }
   }
+
+  /// Clear notification tracking (useful for testing or when user logs out)
+  static void clearNotificationTracking() {
+    _notifiedPrescriptions.clear();
+    _notifiedSensors.clear();
+    _lastNotificationTime = null;
+    print('🔄 BackgroundNotificationService: Notification tracking cleared');
+  }
+
+  /// Check if service is currently running
+  static bool get isRunning => _isInitialized;
 }

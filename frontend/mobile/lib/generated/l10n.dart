@@ -4449,24 +4449,24 @@ class S {
     return Intl.message('Urgency', name: 'urgency', desc: '', args: []);
   }
 
-  /// `Urgent`
+  /// `URGENT`
   String get urgency_urgent {
-    return Intl.message('Urgent', name: 'urgency_urgent', desc: '', args: []);
+    return Intl.message('URGENT', name: 'urgency_urgent', desc: '', args: []);
   }
 
-  /// `High`
+  /// `HIGH`
   String get urgency_high {
-    return Intl.message('High', name: 'urgency_high', desc: '', args: []);
+    return Intl.message('HIGH', name: 'urgency_high', desc: '', args: []);
   }
 
-  /// `Medium`
+  /// `MEDIUM`
   String get urgency_medium {
-    return Intl.message('Medium', name: 'urgency_medium', desc: '', args: []);
+    return Intl.message('MEDIUM', name: 'urgency_medium', desc: '', args: []);
   }
 
-  /// `Low`
+  /// `LOW`
   String get urgency_low {
-    return Intl.message('Low', name: 'urgency_low', desc: '', args: []);
+    return Intl.message('LOW', name: 'urgency_low', desc: '', args: []);
   }
 
   /// `Category`
@@ -5424,6 +5424,276 @@ class S {
       name: 'maturity_stage',
       desc: '',
       args: [days],
+    );
+  }
+
+  /// `User not authenticated`
+  String get user_not_authenticated {
+    return Intl.message(
+      'User not authenticated',
+      name: 'user_not_authenticated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifications for farm monitoring and alerts`
+  String get notifications_channel_description {
+    return Intl.message(
+      'Notifications for farm monitoring and alerts',
+      name: 'notifications_channel_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype ID not found`
+  String get prototype_id_not_found {
+    return Intl.message(
+      'Prototype ID not found',
+      name: 'prototype_id_not_found',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid prototype ID`
+  String get invalid_prototype_id {
+    return Intl.message(
+      'Invalid prototype ID',
+      name: 'invalid_prototype_id',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `COMPLETED`
+  String get status_completed {
+    return Intl.message(
+      'COMPLETED',
+      name: 'status_completed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `User Registration Successful!`
+  String get user_registration_successful {
+    return Intl.message(
+      'User Registration Successful!',
+      name: 'user_registration_successful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Now let's set up your farm data to start monitoring your corn crops.`
+  String get setup_farm_data_message {
+    return Intl.message(
+      'Now let\'s set up your farm data to start monitoring your corn crops.',
+      name: 'setup_farm_data_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue to Field Registration`
+  String get continue_to_field_registration {
+    return Intl.message(
+      'Continue to Field Registration',
+      name: 'continue_to_field_registration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Emergence`
+  String get growth_stage_emergence {
+    return Intl.message(
+      'Emergence',
+      name: 'growth_stage_emergence',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Early Vegetative`
+  String get growth_stage_early_vegetative {
+    return Intl.message(
+      'Early Vegetative',
+      name: 'growth_stage_early_vegetative',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mid Vegetative`
+  String get growth_stage_mid_vegetative {
+    return Intl.message(
+      'Mid Vegetative',
+      name: 'growth_stage_mid_vegetative',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reproductive`
+  String get growth_stage_reproductive {
+    return Intl.message(
+      'Reproductive',
+      name: 'growth_stage_reproductive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturing`
+  String get growth_stage_maturing {
+    return Intl.message(
+      'Maturing',
+      name: 'growth_stage_maturing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturity/Harvest`
+  String get growth_stage_maturity_harvest {
+    return Intl.message(
+      'Maturity/Harvest',
+      name: 'growth_stage_maturity_harvest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Healthy`
+  String get crop_condition_healthy {
+    return Intl.message(
+      'Healthy',
+      name: 'crop_condition_healthy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Moderate stress`
+  String get crop_condition_moderate_stress {
+    return Intl.message(
+      'Moderate stress',
+      name: 'crop_condition_moderate_stress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `High stress`
+  String get crop_condition_high_stress {
+    return Intl.message(
+      'High stress',
+      name: 'crop_condition_high_stress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Critical stress`
+  String get crop_condition_critical_stress {
+    return Intl.message(
+      'Critical stress',
+      name: 'crop_condition_critical_stress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Marked as completed!`
+  String get marked_as_completed {
+    return Intl.message(
+      'Marked as completed!',
+      name: 'marked_as_completed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Marked as pending`
+  String get marked_as_pending {
+    return Intl.message(
+      'Marked as pending',
+      name: 'marked_as_pending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Learn more about Maize Watch`
+  String get learn_more_about_maize_watch {
+    return Intl.message(
+      'Learn more about Maize Watch',
+      name: 'learn_more_about_maize_watch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Learn how to use the Maize Watch app`
+  String get learn_how_to_use_maize_watch {
+    return Intl.message(
+      'Learn how to use the Maize Watch app',
+      name: 'learn_how_to_use_maize_watch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your Personal Information`
+  String get your_personal_information {
+    return Intl.message(
+      'Your Personal Information',
+      name: 'your_personal_information',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile update already in progress. Please wait.`
+  String get profile_update_in_progress {
+    return Intl.message(
+      'Profile update already in progress. Please wait.',
+      name: 'profile_update_in_progress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile updated successfully!`
+  String get profile_updated_successfully {
+    return Intl.message(
+      'Profile updated successfully!',
+      name: 'profile_updated_successfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request timed out. Please check your connection and try again.`
+  String get request_timed_out {
+    return Intl.message(
+      'Request timed out. Please check your connection and try again.',
+      name: 'request_timed_out',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update profile: {error}`
+  String failed_to_update_profile(Object error) {
+    return Intl.message(
+      'Failed to update profile: $error',
+      name: 'failed_to_update_profile',
+      desc: '',
+      args: [error],
     );
   }
 }

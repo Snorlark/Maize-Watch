@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/features/farm/presentation/bloc/farm_bloc.dart';
+import 'package:mobile/core/services/home_screen_service.dart';
+import 'package:mobile/core/services/offline_cache_service.dart';
 import 'growth_progress_widget.dart';
 import 'historical_tab_widget.dart';
 import '../../../farm/domain/entities/farm.dart';
@@ -58,9 +60,9 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
 
     // Load field-specific data when widget initializes
     _loadFieldData();
-    // Defer analytics load until after first build so BlocProvider is in the tree
+    // Load cached data first, then fresh data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAnalyticsData();
+      _loadCachedDataFirst();
     });
   }
 
@@ -79,8 +81,8 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         _stressAnalysis = null;
       });
       
-      // Reload analytics data for the new field
-      _loadAnalyticsData();
+      // Reload cached data first, then fresh data for the new field
+      _loadCachedDataFirst();
     }
   }
 
@@ -93,9 +95,89 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     }
   }
 
+  /// Load cached data first for instant display, then fresh data
+  void _loadCachedDataFirst() async {
+    if (widget.farm.id == null) return;
+
+    print('🌽 FarmDetail: Loading cached data first for farm ${widget.farm.id}');
+    
+    // Show loading indicator
+    setState(() {
+      _isLoadingAnalytics = true;
+      _analyticsError = null;
+    });
+
+    try {
+      // Use HomeScreenService to get cached data (same as home screen)
+      print('🌽 FarmDetail: Calling HomeScreenService.getHomeScreenData with farmId: ${widget.farm.id}');
+      final homeData = await HomeScreenService.getHomeScreenData(
+        farmId: widget.farm.id,
+        forceRefresh: false, // Use cached data if available
+      );
+
+      print('🌽 FarmDetail: HomeScreenService returned: ${homeData.keys.toList()}');
+      print('🌽 FarmDetail: Analytics data: ${homeData['analytics'] != null ? 'EXISTS' : 'NULL'}');
+
+      if (homeData.isNotEmpty && homeData['analytics'] != null) {
+        print('🌽 FarmDetail: Found cached analytics data from HomeScreenService');
+        // Parse and display cached data immediately
+        _parseAnalyticsData(homeData['analytics']);
+        
+        setState(() {
+          _isLoadingAnalytics = false;
+        });
+      } else {
+        print('🌽 FarmDetail: No cached data found, will load fresh data');
+        setState(() {
+          _isLoadingAnalytics = false;
+        });
+      }
+
+      // Load fresh data in background using HomeScreenService
+      _loadFreshDataInBackground();
+      
+    } catch (e) {
+      print('🌽 FarmDetail: Error loading cached data: $e');
+      setState(() {
+        _isLoadingAnalytics = false;
+        _analyticsError = 'Failed to load cached data: $e';
+      });
+      
+      // Still try to load fresh data
+      _loadFreshDataInBackground();
+    }
+  }
+
+  /// Load fresh data in background using HomeScreenService
+  void _loadFreshDataInBackground() async {
+    if (widget.farm.id == null) return;
+
+    print('🌽 FarmDetail: Loading fresh data in background for farm ${widget.farm.id}');
+    
+    try {
+      // Use HomeScreenService to load fresh data (this will also cache it)
+      final homeData = await HomeScreenService.getHomeScreenData(
+        farmId: widget.farm.id,
+        forceRefresh: true, // Force fresh data
+      );
+
+      if (homeData.isNotEmpty && homeData['analytics'] != null) {
+        print('🌽 FarmDetail: Received fresh analytics data from HomeScreenService');
+        // Parse and display fresh data
+        _parseAnalyticsData(homeData['analytics']);
+      }
+    } catch (e) {
+      print('🌽 FarmDetail: Error loading fresh data: $e');
+      // Fallback to MonitoringBloc if HomeScreenService fails
+      _loadAnalyticsData();
+    }
+  }
+
   void _loadAnalyticsData() async {
     if (widget.farm.id == null) return;
 
+    print('🌽 FarmDetail: Loading fresh analytics data via MonitoringBloc for farm ${widget.farm.id}');
+    
     // Load analytics data using MonitoringBloc
     context.read<MonitoringBloc>().add(
       LoadFarmAnalyticsEvent(farmId: widget.farm.id!),
@@ -719,7 +801,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         listener: (context, state) async {
           if (state.farmAnalytics != null) {
             final analyticsData = state.farmAnalytics!;
-            print('🔍 FarmDetailWidget received analytics: $analyticsData');
+            print('🔍 FarmDetailWidget received analytics via MonitoringBloc: $analyticsData');
             
             setState(() {
               _isLoadingAnalytics = false;
@@ -994,9 +1076,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                           ),
                         ),
 
-                        // Sensor count (if any)
+                        // Show prototype names (if any)
                         if (selectedField.sensors.isNotEmpty)
-                          Container(
+                          ...selectedField.sensors.map((sensor) => Container(
+                            margin: EdgeInsets.only(right: 8.w, bottom: 4.h),
                             padding: EdgeInsets.symmetric(
                               horizontal: kAppSmallGap,
                               vertical: 4.h,
@@ -1020,7 +1103,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                                 SizedBox(width: 8.w),
                                 Flexible(
                                   child: Text(
-                                    'Devices: ${selectedField.sensors.length}',
+                                    sensor.deviceID, // Show prototype/device ID
                                     overflow: TextOverflow.ellipsis,
                                     style: Theme.of(
                                       context,
@@ -1031,7 +1114,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                                 ),
                               ],
                             ),
-                          ),
+                          )).toList(),
                       ] else if (widget.farm.fields.isNotEmpty) ...[
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1096,7 +1179,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           ),
           horizontalSpace(12),
           Text(
-            'Loading crop condition...',
+            'Loading analytics data...',
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
         ],

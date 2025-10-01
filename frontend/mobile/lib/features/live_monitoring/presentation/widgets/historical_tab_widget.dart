@@ -53,28 +53,27 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
   }
 
   void _loadWeeklyData() {
-    // Only load if not already loading and no data exists for this week
-    final state = context.read<MonitoringBloc>().state;
-    if (!state.isLoading && (state.weeklyData == null || state.weeklyData!.isEmpty)) {
-      print('🔍 Loading weekly data for farm: ${widget.farmId}, field: ${widget.fieldId}');
-      context.read<MonitoringBloc>().add(
-        LoadWeeklyDataEvent(
-          farmId: widget.farmId,
-          fieldId: widget.fieldId,
-          weekOffset: currentWeekOffset,
-        ),
-      );
-      
-      // Set a timeout to show fallback data if server is too slow
-      Timer(const Duration(seconds: 3), () {
-        if (mounted && state.isLoading) {
+    print('🔍 Loading weekly data for farm: ${widget.farmId}, field: ${widget.fieldId}, weekOffset: $currentWeekOffset');
+    
+    // Always load data when requested (remove the condition that prevents loading)
+    context.read<MonitoringBloc>().add(
+      LoadWeeklyDataEvent(
+        farmId: widget.farmId,
+        fieldId: widget.fieldId,
+        weekOffset: currentWeekOffset,
+      ),
+    );
+    
+    // Set a timeout to show fallback data if server is too slow
+    Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        final currentState = context.read<MonitoringBloc>().state;
+        if (currentState.isLoading) {
           print('⚠️ Server timeout - showing fallback data');
           context.read<MonitoringBloc>().add(ClearErrorEvent());
         }
-      });
-    } else {
-      print('⚠️ Weekly data already loaded or loading, skipping request');
-    }
+      }
+    });
   }
 
   void _navigateWeek(int offset) {
@@ -426,9 +425,9 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.orange,
                 data: weeklyData,
                 parameter: 'temperature',
+                currentValue: widget.currentMetrics?.temperature,
                 optimalRange: _getOptimalRange('temperature'),
                 weekOffset: currentWeekOffset,
-                currentValue: widget.currentMetrics?.temperature,
               ),
               
               verticalSpace(20.h),
@@ -440,9 +439,9 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.blue,
                 data: weeklyData,
                 parameter: 'humidity',
+                currentValue: widget.currentMetrics?.humidity,
                 optimalRange: _getOptimalRange('humidity'),
                 weekOffset: currentWeekOffset,
-                currentValue: widget.currentMetrics?.humidity,
               ),
               
               verticalSpace(20.h),
@@ -454,9 +453,9 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.green,
                 data: weeklyData,
                 parameter: 'soilMoisture',
+                currentValue: widget.currentMetrics?.soilMoisture,
                 optimalRange: _getOptimalRange('soilMoisture'),
                 weekOffset: currentWeekOffset,
-                currentValue: widget.currentMetrics?.soilMoisture,
               ),
               
               verticalSpace(20.h),
@@ -468,9 +467,9 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.lightBlue,
                 data: weeklyData,
                 parameter: 'soilPh',
+                currentValue: widget.currentMetrics?.soilPh,
                 optimalRange: _getOptimalRange('soilPh'),
                 weekOffset: currentWeekOffset,
-                currentValue: widget.currentMetrics?.soilPh,
               ),
               
               verticalSpace(20.h),
@@ -482,9 +481,9 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.amber,
                 data: weeklyData,
                 parameter: 'lightIntensity',
+                currentValue: widget.currentMetrics?.lightIntensity,
                 optimalRange: _getOptimalRange('lightIntensity'),
                 weekOffset: currentWeekOffset,
-                currentValue: widget.currentMetrics?.lightIntensity,
               ),
               
               verticalSpace(50.h),

@@ -8,7 +8,8 @@ import {
   deletePrescription,
   markAllAsCompleted,
   deleteCompletedPrescriptions,
-  deleteAllPrescriptions
+  deleteAllPrescriptions,
+  forceRegeneratePrescriptions
 } from '../controllers/prescriptionController';
 
 const router = Router();
@@ -47,5 +48,8 @@ router.delete('/delete-completed', [
 router.delete('/delete-all', [
   body('farmId').isMongoId().withMessage('Valid farm ID is required')
 ], deleteAllPrescriptions);
+
+// Force regenerate prescriptions for all fields
+router.post('/force-regenerate/:farmId', forceRegeneratePrescriptions);
 
 export default router;

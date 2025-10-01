@@ -181,12 +181,17 @@ class NotificationService {
     final vibrationOnly = await isVibrationOnly();
     final emoji = _getPriorityEmoji(priority);
     
+    // Translate the notification content
+    final translatedTitle = await _translatePrescriptionTitle(title);
+    final translatedMessage = await _translatePrescriptionMessage(message);
+    
     print('🔔 Showing notification with emoji: $emoji, vibrationOnly: $vibrationOnly');
+    print('🔔 Translated - Title: $translatedTitle, Message: $translatedMessage');
     
     await _showNotification(
       id: notificationId ?? PRESCRIPTION_ALERT_ID,
-      title: '$emoji $title',
-      body: message,
+      title: '$emoji $translatedTitle',
+      body: translatedMessage,
       payload: 'prescription_alert',
       vibrationOnly: vibrationOnly,
     );
@@ -210,10 +215,14 @@ class NotificationService {
 
     final vibrationOnly = await isVibrationOnly();
     
+    // Translate the notification content
+    final translatedTitle = await _translateSensorOfflineTitle();
+    final translatedMessage = await _translateSensorOfflineMessage(sensorName);
+    
     await _showNotification(
       id: SENSOR_OFFLINE_ID,
-      title: '⚠️ ${S.current.sensor_offline}',
-      body: S.current.sensor_offline_message(sensorName),
+      title: translatedTitle,
+      body: translatedMessage,
       payload: 'sensor_offline',
       vibrationOnly: vibrationOnly,
     );
@@ -226,10 +235,10 @@ class NotificationService {
     required String payload,
     required bool vibrationOnly,
   }) async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'maize_watch_channel',
-      'Maize Watch Notifications', // This will be translated in the actual notification
-      channelDescription: 'Notifications for farm monitoring and alerts', // This will be translated in the actual notification
+      S.current.maize_watch_notifications,
+      channelDescription: S.current.notifications_channel_description,
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
@@ -244,7 +253,7 @@ class NotificationService {
       presentSound: true,
     );
 
-    const NotificationDetails details = NotificationDetails(
+    NotificationDetails details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -269,6 +278,99 @@ class NotificationService {
         return 'ℹ️';
       default:
         return '📋';
+    }
+  }
+
+  /// Translate prescription notification title
+  Future<String> _translatePrescriptionTitle(String title) async {
+    try {
+      // Get current locale from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final locale = prefs.getString('language') ?? 'en';
+      
+      switch (title.toLowerCase()) {
+        case 'new farm prescriptions':
+          return locale == 'tl' ? 'Mga Bagong Reseta sa Bukid' : 'New Farm Prescriptions';
+        case 'farm task':
+          return locale == 'tl' ? 'Gawain sa Bukid' : 'Farm Task';
+        case 'urgent farm task':
+          return locale == 'tl' ? 'Mahalagang Gawain sa Bukid' : 'Urgent Farm Task';
+        case 'high priority task':
+          return locale == 'tl' ? 'Mataas na Priyoridad na Gawain' : 'High Priority Task';
+        default:
+          return title; // Return original if no translation found
+      }
+    } catch (e) {
+      print('🔔 Error translating title: $e');
+      return title; // Fallback to original title
+    }
+  }
+
+  /// Translate prescription notification message
+  Future<String> _translatePrescriptionMessage(String message) async {
+    try {
+      // Get current locale from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final locale = prefs.getString('language') ?? 'en';
+      
+      // Check for common message patterns
+      if (message.contains('You have') && message.contains('new farm tasks')) {
+        final countMatch = RegExp(r'(\d+)').firstMatch(message);
+        final count = countMatch?.group(1) ?? '0';
+        
+        if (locale == 'tl') {
+          return 'Mayroon kang $count na bagong gawain sa bukid na kailangang tapusin';
+        } else {
+          return 'You have $count new farm tasks to complete';
+        }
+      }
+      
+      if (message.contains('farm task requires attention')) {
+        return locale == 'tl' 
+          ? 'Ang gawain sa bukid ay nangangailangan ng atensyon'
+          : 'Farm task requires attention';
+      }
+      
+      if (message.contains('requires immediate attention')) {
+        return locale == 'tl'
+          ? 'Nangangailangan ng agarang atensyon'
+          : 'Requires immediate attention';
+      }
+      
+      return message; // Return original if no translation found
+    } catch (e) {
+      print('🔔 Error translating message: $e');
+      return message; // Fallback to original message
+    }
+  }
+
+  /// Translate sensor offline notification title
+  Future<String> _translateSensorOfflineTitle() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final locale = prefs.getString('language') ?? 'en';
+      
+      return locale == 'tl' ? '⚠️ Sensor na Offline' : '⚠️ Sensor Offline';
+    } catch (e) {
+      print('🔔 Error translating sensor offline title: $e');
+      return '⚠️ Sensor Offline';
+    }
+  }
+
+  /// Translate sensor offline notification message
+  Future<String> _translateSensorOfflineMessage(String sensorName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final locale = prefs.getString('language') ?? 'en';
+      
+      if (locale == 'tl') {
+        return 'Ang $sensorName sensor ay offline na ng mahigit sa 30 minuto.';
+      } else {
+        return '$sensorName sensor has been offline for more than 30 minutes.';
+      }
+    } catch (e) {
+      print('🔔 Error translating sensor offline message: $e');
+      return '$sensorName sensor has been offline for more than 30 minutes.';
     }
   }
 
