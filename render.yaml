@@ -16,11 +16,6 @@ services:
         value: mongodb+srv://username:password@cluster.mongodb.net/maizewatch
       - key: ANALYTICS_SERVICE_URL
         value: http://localhost:8000
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: maize-watch-redis
-          property: connectionString
       - key: THINGSPEAK_CHANNEL_ID
         value: 3083651
       - key: THINGSPEAK_API_KEY
@@ -31,9 +26,3 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: 1
-
-  # Redis Cache
-  - type: redis
-    name: maize-watch-redis
-    plan: starter
-    maxmemoryPolicy: allkeys-lru
