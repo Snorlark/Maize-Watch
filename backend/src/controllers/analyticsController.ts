@@ -503,7 +503,24 @@ export const getCompleteAnalytics = catchAsync(async (req: Request, res: Respons
   }
 
   try {
-    // First, sync latest data from ThingSpeak to ensure we have fresh data
+    // Check if we have recent analytics data cached (within last 30 minutes)
+    const cachedAnalytics = await CacheService.getFarmAnalytics(farmId);
+    if (cachedAnalytics && cachedAnalytics.timestamp) {
+      const cacheAge = Date.now() - new Date(cachedAnalytics.timestamp).getTime();
+      const thirtyMinutes = 30 * 60 * 1000;
+      
+      if (cacheAge < thirtyMinutes) {
+        logger.info(`Returning cached analytics for farm ${farmId} (age: ${Math.round(cacheAge / 60000)} minutes)`);
+        return res.status(HTTP_STATUS.OK).json({
+          success: true,
+          data: cachedAnalytics.data,
+          cached: true,
+          cacheAge: Math.round(cacheAge / 60000)
+        });
+      }
+    }
+    
+    // Only sync if cache is stale or missing
     logger.info(`Syncing latest data from ThingSpeak for farm ${farmId}`);
     await syncService.syncFarmData(farmId);
     

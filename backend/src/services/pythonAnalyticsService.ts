@@ -500,12 +500,12 @@ export class PythonAnalyticsService {
    * Map farm object to farmer_id format expected by Python system
    */
   private mapFarmToFarmerId(farm: any): string {
-    // Use the actual user ID from the farm to create a proper farmer ID
+    // Use the actual user ID from the farm as the farmer ID
     if (farm.userId) {
-      return `FARMER_${farm.userId.toString().slice(-8).toUpperCase()}`;
+      return farm.userId.toString();
     }
     // Fallback to farm ID if no user ID
-    return farm.deviceId || `FARM_${farm._id.toString().slice(-8).toUpperCase()}`;
+    return farm._id.toString();
   }
 
   /**

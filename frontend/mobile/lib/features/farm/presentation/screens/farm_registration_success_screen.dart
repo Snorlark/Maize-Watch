@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../generated/l10n.dart';
 
 class FarmRegistrationSuccessScreen extends StatelessWidget {
   final String farmName;
@@ -46,7 +47,7 @@ class FarmRegistrationSuccessScreen extends StatelessWidget {
 
               // Success Title
               Text(
-                'Farm Registration Successful!',
+                S.current.farm_registration_successful,
                 style: textTheme.headlineMedium?.copyWith(
                   fontSize: 28.sp,
                   fontWeight: FontWeight.bold,
@@ -59,7 +60,7 @@ class FarmRegistrationSuccessScreen extends StatelessWidget {
 
               // Success Message
               Text(
-                'Congratulations! Your field "$fieldName" in farm "$farmName" has been successfully registered.',
+                S.current.congratulations_field_registered(fieldName, farmName),
                 style: textTheme.bodyLarge?.copyWith(
                   fontSize: 16.sp,
                   color: MAIZE_ACCENT.withOpacity(0.8),
@@ -73,17 +74,17 @@ class FarmRegistrationSuccessScreen extends StatelessWidget {
               // Features List
               _buildFeatureItem(
                 Icons.sensors,
-                'Monitor your crop health with IoT sensors',
+                S.current.monitor_crop_health,
               ),
               SizedBox(height: 16.h),
               _buildFeatureItem(
                 Icons.analytics,
-                'Get real-time analytics and insights',
+                S.current.get_real_time_analytics,
               ),
               SizedBox(height: 16.h),
               _buildFeatureItem(
                 Icons.notifications,
-                'Receive alerts and recommendations',
+                S.current.receive_alerts_recommendations,
               ),
 
               SizedBox(height: 48.h),
@@ -103,7 +104,7 @@ class FarmRegistrationSuccessScreen extends StatelessWidget {
                     elevation: 2,
                   ),
                   child: Text(
-                    'Continue to Dashboard',
+                    S.current.continue_to_dashboard,
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,

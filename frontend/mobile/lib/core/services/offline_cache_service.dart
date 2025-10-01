@@ -176,44 +176,86 @@ class OfflineCacheService {
     }
   }
 
-  // Cache analytics data
-  static Future<void> cacheAnalytics(Map<String, dynamic> analytics) async {
+  // Cache analytics data with user-specific key
+  static Future<void> cacheAnalytics(Map<String, dynamic> analytics, {String? farmId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final authState = await _getCurrentUser();
       if (authState == null) return;
 
-      final cacheKey = '${_analyticsKey}_${authState['id']}';
-      final jsonString = json.encode(analytics);
+      final cacheKey = '${_analyticsKey}_${authState['id']}${farmId != null ? '_$farmId' : ''}';
+      final cacheData = {
+        'data': analytics,
+        'timestamp': DateTime.now().toIso8601String(),
+        'farmId': farmId,
+        'userId': authState['id']
+      };
+      
+      final jsonString = json.encode(cacheData);
       await prefs.setString(cacheKey, jsonString);
       await prefs.setString('${_lastSyncKey}_analytics', DateTime.now().toIso8601String());
       
-      print('💾 OFFLINE CACHE: Cached analytics for user ${authState['id']}');
+      print('💾 OFFLINE CACHE: Cached analytics for user ${authState['id']}${farmId != null ? ' farm $farmId' : ''}');
     } catch (e) {
       print('💾 OFFLINE CACHE: Error caching analytics: $e');
     }
   }
 
-  // Get cached analytics
-  static Future<Map<String, dynamic>?> getCachedAnalytics() async {
+  // Get cached analytics with freshness check
+  static Future<Map<String, dynamic>?> getCachedAnalytics({String? farmId, int maxAgeMinutes = 30}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final authState = await _getCurrentUser();
       if (authState == null) return null;
 
-      final cacheKey = '${_analyticsKey}_${authState['id']}';
+      final cacheKey = '${_analyticsKey}_${authState['id']}${farmId != null ? '_$farmId' : ''}';
       final jsonString = prefs.getString(cacheKey);
       
       if (jsonString != null) {
-        final analytics = json.decode(jsonString) as Map<String, dynamic>;
-        print('💾 OFFLINE CACHE: Retrieved cached analytics');
-        return analytics;
+        final cacheData = json.decode(jsonString) as Map<String, dynamic>;
+        final timestamp = DateTime.parse(cacheData['timestamp']);
+        final age = DateTime.now().difference(timestamp);
+        
+        if (age.inMinutes <= maxAgeMinutes) {
+          print('💾 OFFLINE CACHE: Retrieved fresh cached analytics (age: ${age.inMinutes}m)');
+          return Map<String, dynamic>.from(cacheData['data']);
+        } else {
+          print('💾 OFFLINE CACHE: Cached analytics expired (age: ${age.inMinutes}m)');
+          return null;
+        }
       }
       
       return null;
     } catch (e) {
       print('💾 OFFLINE CACHE: Error getting cached analytics: $e');
       return null;
+    }
+  }
+
+  // Get all cached data for current user (for offline mode)
+  static Future<Map<String, dynamic>> getAllCachedData() async {
+    try {
+      final authState = await _getCurrentUser();
+      if (authState == null) return {};
+
+      final prescriptions = await getCachedPrescriptions();
+      final notifications = await getCachedNotifications();
+      final liveData = await getCachedLiveData();
+      final settings = await getCachedSettings();
+      final analytics = await getCachedAnalytics();
+
+      return {
+        'prescriptions': prescriptions,
+        'notifications': notifications,
+        'liveData': liveData,
+        'settings': settings,
+        'analytics': analytics,
+        'cachedAt': DateTime.now().toIso8601String(),
+        'userId': authState['id']
+      };
+    } catch (e) {
+      print('💾 OFFLINE CACHE: Error getting all cached data: $e');
+      return {};
     }
   }
 

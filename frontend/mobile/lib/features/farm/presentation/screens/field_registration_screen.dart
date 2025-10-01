@@ -48,7 +48,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
   void _deriveLocationFromUserData() {
     print("🌍 User data received: ${widget.userData}");
     final address = widget.userData['address'];
-    String derivedLocation = 'Location not specified';
+    String derivedLocation = S.current.location_not_specified;
 
     print("🌍 Address data: $address (type: ${address.runtimeType})");
 
@@ -270,7 +270,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                               ),
                             )
                             : Text(
-                              _currentStep == _totalSteps ? 'Submit' : 'Next',
+                              _currentStep == _totalSteps ? S.current.submit : S.current.next,
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 fontWeight: FontWeight.w600,
@@ -313,13 +313,13 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     switch (_currentStep) {
       case 1:
         if (_formControllers.fieldName.trim().isEmpty) {
-          CustomSnackbar.showError(context, 'Please enter a field name');
+          CustomSnackbar.showError(context, S.current.please_enter_field_name);
           return false;
         }
         break;
       case 2:
         if (_formControllers.plantingDate == null) {
-          CustomSnackbar.showError(context, 'Please select a planting date');
+          CustomSnackbar.showError(context, S.current.please_select_planting_date);
           return false;
         }
         break;
@@ -328,14 +328,14 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
         if (!_formControllers.hasDevices) {
           CustomSnackbar.showError(
             context,
-            'Please register at least one device to continue',
+            S.current.please_register_device,
           );
           return false;
         }
         if (!_formControllers.areAllDevicesValid) {
           CustomSnackbar.showError(
             context,
-            'Please complete all device information',
+            S.current.please_complete_device_info,
           );
           return false;
         }
@@ -379,7 +379,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     if (currentAuthState.status != AuthenticationStatus.authenticated ||
         currentAuthState.user == null) {
       print('🔐 No authentication found, redirecting to login');
-      CustomSnackbar.showError(context, 'Please log in to continue.');
+      CustomSnackbar.showError(context, S.current.please_log_in_continue);
       Navigator.pushNamedAndRemoveUntil(context, '/landing', (route) => false);
       return;
     }

@@ -5133,6 +5133,299 @@ class S {
       args: [],
     );
   }
+
+  /// `Farm Registration Successful!`
+  String get farm_registration_successful {
+    return Intl.message(
+      'Farm Registration Successful!',
+      name: 'farm_registration_successful',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Congratulations! Your field "{fieldName}" in farm "{farmName}" has been successfully registered.`
+  String congratulations_field_registered(Object fieldName, Object farmName) {
+    return Intl.message(
+      'Congratulations! Your field "$fieldName" in farm "$farmName" has been successfully registered.',
+      name: 'congratulations_field_registered',
+      desc: '',
+      args: [fieldName, farmName],
+    );
+  }
+
+  /// `Monitor your crop health with IoT sensors`
+  String get monitor_crop_health {
+    return Intl.message(
+      'Monitor your crop health with IoT sensors',
+      name: 'monitor_crop_health',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get real-time analytics and insights`
+  String get get_real_time_analytics {
+    return Intl.message(
+      'Get real-time analytics and insights',
+      name: 'get_real_time_analytics',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Receive alerts and recommendations`
+  String get receive_alerts_recommendations {
+    return Intl.message(
+      'Receive alerts and recommendations',
+      name: 'receive_alerts_recommendations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue to Dashboard`
+  String get continue_to_dashboard {
+    return Intl.message(
+      'Continue to Dashboard',
+      name: 'continue_to_dashboard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name Your Field`
+  String get name_your_field {
+    return Intl.message(
+      'Name Your Field',
+      name: 'name_your_field',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Give your field a unique name to help you identify it in your farm`
+  String get give_field_unique_name {
+    return Intl.message(
+      'Give your field a unique name to help you identify it in your farm',
+      name: 'give_field_unique_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Field A, North Field, Main Plot`
+  String get field_name_hint {
+    return Intl.message(
+      'Field A, North Field, Main Plot',
+      name: 'field_name_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can have multiple fields in your farm. Each field can have different soil types, planting dates, and sensors.`
+  String get multiple_fields_info {
+    return Intl.message(
+      'You can have multiple fields in your farm. Each field can have different soil types, planting dates, and sensors.',
+      name: 'multiple_fields_info',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When did you plant your corn? This helps us determine the current growth stage.`
+  String get when_did_you_plant {
+    return Intl.message(
+      'When did you plant your corn? This helps us determine the current growth stage.',
+      name: 'when_did_you_plant',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select planting date`
+  String get select_planting_date {
+    return Intl.message(
+      'Select planting date',
+      name: 'select_planting_date',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Estimated Growth Stage`
+  String get estimated_growth_stage {
+    return Intl.message(
+      'Estimated Growth Stage',
+      name: 'estimated_growth_stage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The growth stage is automatically calculated based on your planting date to provide accurate monitoring.`
+  String get growth_stage_calculated {
+    return Intl.message(
+      'The growth stage is automatically calculated based on your planting date to provide accurate monitoring.',
+      name: 'growth_stage_calculated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device Registration`
+  String get device_registration {
+    return Intl.message(
+      'Device Registration',
+      name: 'device_registration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Register monitoring devices for your field (At least one device required)`
+  String get register_monitoring_devices {
+    return Intl.message(
+      'Register monitoring devices for your field (At least one device required)',
+      name: 'register_monitoring_devices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count, plural, =0{No devices registered} =1{1 Device Registered} other{{count} Devices Registered}}`
+  String devices_registered(num count) {
+    return Intl.plural(
+      count,
+      zero: 'No devices registered',
+      one: '1 Device Registered',
+      other: '$count Devices Registered',
+      name: 'devices_registered',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Location not specified`
+  String get location_not_specified {
+    return Intl.message(
+      'Location not specified',
+      name: 'location_not_specified',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a field name`
+  String get please_enter_field_name {
+    return Intl.message(
+      'Please enter a field name',
+      name: 'please_enter_field_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please select a planting date`
+  String get please_select_planting_date {
+    return Intl.message(
+      'Please select a planting date',
+      name: 'please_select_planting_date',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please register at least one device to continue`
+  String get please_register_device {
+    return Intl.message(
+      'Please register at least one device to continue',
+      name: 'please_register_device',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please complete all device information`
+  String get please_complete_device_info {
+    return Intl.message(
+      'Please complete all device information',
+      name: 'please_complete_device_info',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please log in to continue.`
+  String get please_log_in_continue {
+    return Intl.message(
+      'Please log in to continue.',
+      name: 'please_log_in_continue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `VE - Emergence Stage ({days} days)`
+  String emergence_stage(Object days) {
+    return Intl.message(
+      'VE - Emergence Stage ($days days)',
+      name: 'emergence_stage',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `V3 - Third Leaf Stage ({days} days)`
+  String third_leaf_stage(Object days) {
+    return Intl.message(
+      'V3 - Third Leaf Stage ($days days)',
+      name: 'third_leaf_stage',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `V8 - Eighth Leaf Stage ({days} days)`
+  String eighth_leaf_stage(Object days) {
+    return Intl.message(
+      'V8 - Eighth Leaf Stage ($days days)',
+      name: 'eighth_leaf_stage',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `VT - Tasseling Stage ({days} days)`
+  String tasseling_stage(Object days) {
+    return Intl.message(
+      'VT - Tasseling Stage ($days days)',
+      name: 'tasseling_stage',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `R1 - Silking Stage ({days} days)`
+  String silking_stage(Object days) {
+    return Intl.message(
+      'R1 - Silking Stage ($days days)',
+      name: 'silking_stage',
+      desc: '',
+      args: [days],
+    );
+  }
+
+  /// `R6 - Maturity Stage ({days} days)`
+  String maturity_stage(Object days) {
+    return Intl.message(
+      'R6 - Maturity Stage ($days days)',
+      name: 'maturity_stage',
+      desc: '',
+      args: [days],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

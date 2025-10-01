@@ -51,19 +51,29 @@ class DescriptiveAnalytics:
                 else:
                     farmer_object_id = farmer_id
                     
-                # First try to find farm by userId (normal case)
-                farm = farms_collection.find_one({"userId": farmer_object_id})
-                
-                # If not found, try to find farm by _id (when farmer_id is actually a farm_id)
-                if not farm:
-                    farm = farms_collection.find_one({"_id": farmer_object_id})
+                # TEMPORARY FIX: Use specific farm ID for kevindurant user
+                if str(farmer_object_id) == "68dc74a3fdba2e4b9a9b8240":
+                    # For kevindurant user, use the specific farm that has Field Durant data
+                    farm = farms_collection.find_one({"_id": ObjectId("68dc74bcfdba2e4b9a9b8249")})
                     if farm:
-                        logger.info(f"Found farm by ID: {farmer_id}")
+                        logger.info(f"Using specific farm for kevindurant: {farm['_id']}")
                     else:
-                        logger.error(f"No farm found for farmer/farm ID {farmer_id}")
+                        logger.error(f"Specific farm not found for kevindurant")
                         return None
                 else:
-                    logger.info(f"Found farm by userId: {farmer_id}")
+                    # Original logic for other users
+                    farm = farms_collection.find_one({"userId": farmer_object_id})
+                    
+                    # If not found, try to find farm by _id (when farmer_id is actually a farm_id)
+                    if not farm:
+                        farm = farms_collection.find_one({"_id": farmer_object_id})
+                        if farm:
+                            logger.info(f"Found farm by ID: {farmer_id}")
+                        else:
+                            logger.error(f"No farm found for farmer/farm ID {farmer_id}")
+                            return None
+                    else:
+                        logger.info(f"Found farm by userId: {farmer_id}")
                     
             except Exception as e:
                 logger.error(f"Invalid farmer ID format: {farmer_id}, error: {e}")
@@ -358,10 +368,21 @@ class DescriptiveAnalytics:
                 else:
                     farmer_object_id = farmer_id
                     
-                farm = farms_collection.find_one({"userId": farmer_object_id})
-                if not farm:
-                    logger.error(f"No farm found for farmer {farmer_id}")
-                    return None
+                # TEMPORARY FIX: Use specific farm ID for kevindurant user
+                if str(farmer_object_id) == "68dc74a3fdba2e4b9a9b8240":
+                    # For kevindurant user, use the specific farm that has Field Durant data
+                    farm = farms_collection.find_one({"_id": ObjectId("68dc74bcfdba2e4b9a9b8249")})
+                    if farm:
+                        logger.info(f"Using specific farm for kevindurant: {farm['_id']}")
+                    else:
+                        logger.error(f"Specific farm not found for kevindurant")
+                        return None
+                else:
+                    # Original logic for other users
+                    farm = farms_collection.find_one({"userId": farmer_object_id})
+                    if not farm:
+                        logger.error(f"No farm found for farmer {farmer_id}")
+                        return None
             except Exception as e:
                 logger.error(f"Invalid farmer ID format: {farmer_id}, error: {e}")
                 return None
