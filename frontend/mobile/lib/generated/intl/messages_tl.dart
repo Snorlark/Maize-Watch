@@ -177,9 +177,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "clear_all": MessageLookupByLibrary.simpleMessage("Tanggalin Lahat"),
     "close": MessageLookupByLibrary.simpleMessage("Isara"),
     "cloudy": MessageLookupByLibrary.simpleMessage("Maulap"),
-    "cloudy_description": MessageLookupByLibrary.simpleMessage(
-      "Maulap na panahon",
-    ),
     "completed": MessageLookupByLibrary.simpleMessage("Tapos Na"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Kumpirmahin ang Password",
@@ -313,7 +310,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "dialog_delete_prescription_confirm": m6,
     "dim": MessageLookupByLibrary.simpleMessage("Maliwanag"),
     "dismiss": MessageLookupByLibrary.simpleMessage("Tanggalin"),
-    "done": MessageLookupByLibrary.simpleMessage("Tapos na"),
+    "done": MessageLookupByLibrary.simpleMessage("TAPOS"),
     "dry": MessageLookupByLibrary.simpleMessage("Tuyo"),
     "edit": MessageLookupByLibrary.simpleMessage("I-edit"),
     "edit_settings": MessageLookupByLibrary.simpleMessage(
@@ -608,6 +605,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "language": MessageLookupByLibrary.simpleMessage("Wika"),
     "language_changed_to": m13,
+    "language_settings": MessageLookupByLibrary.simpleMessage(
+      "Mga Setting ng Wika",
+    ),
     "last_month": MessageLookupByLibrary.simpleMessage("Nakaraang buwan"),
     "last_name": MessageLookupByLibrary.simpleMessage("Apelyido"),
     "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
@@ -857,9 +857,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "okay": MessageLookupByLibrary.simpleMessage("Okay"),
     "on": MessageLookupByLibrary.simpleMessage("Bukas"),
     "overcast": MessageLookupByLibrary.simpleMessage("Napakaulap"),
-    "overcast_description": MessageLookupByLibrary.simpleMessage(
-      "Makulimlim na panahon",
-    ),
     "overdue": MessageLookupByLibrary.simpleMessage("Nalampasan na"),
     "parameter_humidity": MessageLookupByLibrary.simpleMessage("Halumigmig"),
     "parameter_light_intensity": MessageLookupByLibrary.simpleMessage(
@@ -1056,9 +1053,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "r6_mature": MessageLookupByLibrary.simpleMessage("Ganap na Mais (R6)"),
     "rainfall": MessageLookupByLibrary.simpleMessage("Ulan"),
     "rainy": MessageLookupByLibrary.simpleMessage("Umuulan"),
-    "rainy_description": MessageLookupByLibrary.simpleMessage(
-      "Maulan na panahon",
-    ),
     "rapid_growth": MessageLookupByLibrary.simpleMessage(
       "Mabilis ang paglago!",
     ),
@@ -1151,6 +1145,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Piliin ang inyong barangay",
     ),
     "select_date": MessageLookupByLibrary.simpleMessage("Pumili ng Petsa"),
+    "select_language": MessageLookupByLibrary.simpleMessage("Piliin ang Wika"),
     "select_municipality": MessageLookupByLibrary.simpleMessage(
       "Piliin ang inyong bayan",
     ),
@@ -1273,9 +1268,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "submit_button": MessageLookupByLibrary.simpleMessage("Isumite"),
     "sunday": MessageLookupByLibrary.simpleMessage("Linggo"),
     "sunny": MessageLookupByLibrary.simpleMessage("Mainit"),
-    "sunny_description": MessageLookupByLibrary.simpleMessage(
-      "Mainit na panahon",
-    ),
     "tap_to_view": MessageLookupByLibrary.simpleMessage("I-tap para makita"),
     "tasseling_stage": m23,
     "tassels_appearing": MessageLookupByLibrary.simpleMessage(
@@ -1462,6 +1454,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Dilaw na Dent",
     ),
     "ve_emergence": MessageLookupByLibrary.simpleMessage("Pagsibol (VE)"),
+    "ve_stage": MessageLookupByLibrary.simpleMessage("VE"),
     "verification_code": MessageLookupByLibrary.simpleMessage(
       "Kodigo ng Pagpapatunay",
     ),

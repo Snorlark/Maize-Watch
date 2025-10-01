@@ -327,7 +327,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                       temperature = (currentWeather['temperature'] as num?)?.toDouble() ?? 16.0;
                       humidity = (currentWeather['humidity'] as num?)?.toDouble() ?? 72.5;
                       windSpeed = (currentWeather['wind_speed'] as num?)?.toDouble() ?? 5.2;
-                      weatherCondition = currentWeather['condition'] as String? ?? S.of(context).partly_cloudy;
+                      final rawCondition = currentWeather['condition'] as String? ?? 'Partly Cloudy';
+                      weatherCondition = _translateWeatherCondition(rawCondition);
                       weatherDescription = currentWeather['description'] as String? ?? S.of(context).partly_cloudy_description;
                       weatherIcon = _getWeatherIcon(weatherCondition);
                       
@@ -640,7 +641,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child:  Text(
-                        isCompleted ? 'DONE' : urgency.toUpperCase(),
+                        isCompleted ? S.of(context).done : urgency.toUpperCase(),
                         style: TextTheme.of(
                           context,
                         ).bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
@@ -1088,6 +1089,23 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     }
   }
 
+  String _translateWeatherCondition(String condition) {
+    switch (condition) {
+      case 'Sunny':
+        return S.of(context).sunny;
+      case 'Partly Cloudy':
+        return S.of(context).partly_cloudy;
+      case 'Cloudy':
+        return S.of(context).cloudy;
+      case 'Rainy':
+        return S.of(context).rainy;
+      case 'Overcast':
+        return S.of(context).overcast;
+      default:
+        return S.of(context).partly_cloudy;
+    }
+  }
+
   double _calculateWindSpeed(double lightIntensity) {
     // Approximate wind speed based on light intensity
     // Higher light intensity might indicate clearer skies and potentially more wind
@@ -1201,6 +1219,22 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         for (int i = 0; i < recommendations.length; i++) {
           final rec = recommendations[i] as Map<String, dynamic>;
           print('🔍 Processing recommendation $i: ${rec['action']} for field ${rec['field_id']}');
+          
+          // Check if this prescription is deleted
+          final deletionStableId = '${rec['action']}_${rec['field_name']}_${rec['category']}_${rec['parameter']}';
+          final deletionTaskId = 'analytics_${deletionStableId.hashCode.abs()}';
+          
+          // Check if this task is deleted
+          final deletionAuthState = context.read<AuthenticationBloc>().state;
+          if (deletionAuthState.status == AuthenticationStatus.authenticated && deletionAuthState.user != null) {
+            final prefs = await SharedPreferences.getInstance();
+            final deletedKey = 'deleted_${deletionAuthState.user!.id}_$deletionTaskId';
+            final isDeleted = prefs.getBool(deletedKey) ?? false;
+            if (isDeleted) {
+              print('🔍 Skipping deleted prescription: $deletionTaskId');
+              continue;
+            }
+          }
           
           final urgency = rec['urgency'] as String? ?? 'LOW';
           final timeline = rec['timeline'] as String? ?? '1 day';
@@ -2081,9 +2115,26 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       final category = recMap['category'] as String? ?? 'general';
       final fieldId = recMap['field_id'] as String? ?? 'unknown';
       final fieldName = recMap['field_name'] as String? ?? 'Unknown Field';
+      final parameter = recMap['parameter'] as String? ?? 'general';
       
       // Create unique ID for this prescription including field info
       final prescriptionId = '${action}_${urgency}_${category}_${fieldId}';
+      
+      // Check if this prescription is deleted
+      final notificationStableId = '${action}_${fieldName}_${category}_${parameter}';
+      final notificationTaskId = 'analytics_${notificationStableId.hashCode.abs()}';
+      
+      // Check if this task is deleted
+      final notificationAuthState = context.read<AuthenticationBloc>().state;
+      if (notificationAuthState.status == AuthenticationStatus.authenticated && notificationAuthState.user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final deletedKey = 'deleted_${notificationAuthState.user!.id}_$notificationTaskId';
+        final isDeleted = prefs.getBool(deletedKey) ?? false;
+        if (isDeleted) {
+          print('🔔 Skipping deleted prescription notification: $notificationTaskId');
+          continue;
+        }
+      }
       
       print('🔔 Checking prescription: $action (${urgency}) for $fieldName - Already notified: ${_notifiedPrescriptions.contains(prescriptionId)}');
       

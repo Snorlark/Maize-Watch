@@ -85,10 +85,43 @@ class PrescriptionRepositoryImpl implements PrescriptionRepository {
 
   @override
   Future<Either<Failure, List<Prescription>>> getPrescriptions() async {
-    // This method is deprecated - use getPrescriptionsForFarm() instead
-    throw UnimplementedError('getPrescriptions() requires farmId parameter - use getPrescriptionsForFarm() instead');
+    try {
+      if (await networkInfo.isConnected) {
+        try {
+          final remotePrescriptions = await remoteDataSource.getPrescriptions();
+          await localDataSource.cachePrescriptions(remotePrescriptions);
+          return Right(remotePrescriptions);
+        } on ServerException catch (e) {
+          // Try to return cached data if available
+          try {
+            final localPrescriptions =
+                await localDataSource.getCachedPrescriptions();
+            if (localPrescriptions.isNotEmpty) {
+              return Right(localPrescriptions);
+            }
+            return Left(ServerFailure(e.message));
+          } on CacheException {
+            return Left(ServerFailure(e.message));
+          }
+        } on ConnectionTimeoutException {
+          return Left(const ConnectionFailure());
+        }
+      }
+
+      // If offline, return cached data
+      try {
+        final localPrescriptions =
+            await localDataSource.getCachedPrescriptions();
+        return Right(localPrescriptions);
+      } on CacheException {
+        return const Left(CacheFailure('No cached prescriptions available'));
+      }
+    } catch (e) {
+      return Left(ServerFailure('An unexpected error occurred'));
+    }
   }
 
+  @override
   Future<Either<Failure, List<Prescription>>> getPrescriptionsForFarm(String farmId) async {
     try {
       if (await networkInfo.isConnected) {

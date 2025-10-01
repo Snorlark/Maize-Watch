@@ -192,12 +192,12 @@ class _AccountScreenState extends State<AccountScreen> {
                         }
                         
                         return _buildOptionItem(
-                          title: 'Language',
+                          title: S.of(context).language,
                           currentValue: displayLanguage,
                           icon: Icons.language,
                           onTap: () {
                             print('🔧 AccountScreen: Language dialog opened, current language: $displayLanguage');
-                            _showOptionDialog('Language Settings', LanguageSettingsWidget(
+                            _showOptionDialog(S.of(context).language_settings, LanguageSettingsWidget(
                               currentLanguage: languageCode,
                               onLanguageChanged: (language) {
                                 print('🔧 AccountScreen: Language change requested: $language');

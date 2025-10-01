@@ -109,7 +109,7 @@ class PrescriptiveAnalytics:
             # Add field information to each recommendation
             for rec in field_recommendations:
                 rec['field_id'] = field_name
-                rec['field_name'] = field_name  # Use the actual field name, not field_data
+                rec['field_name'] = field_data.get('field_name', field_name)
             
             logger.info(f"Generated {len(field_recommendations)} recommendations for field {field_name}")
             return field_recommendations

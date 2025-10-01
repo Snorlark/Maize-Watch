@@ -177,7 +177,8 @@ export class PythonAnalyticsService {
           },
           body: JSON.stringify({
             descriptive_data: descriptiveData.data,
-            predictive_data: predictiveData.data
+            predictive_data: predictiveData.data,
+            field_id: fieldId
           })
         });
         

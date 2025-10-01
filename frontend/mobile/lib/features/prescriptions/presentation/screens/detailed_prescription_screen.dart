@@ -6,6 +6,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/completion_status_manager.dart';
 import '../../../../core/services/prescription_id_mapper.dart';
+import '../../../../core/services/prescription_translation_service.dart';
 import '../../../../features/prescriptions/presentation/bloc/prescription_bloc.dart';
 import '../../../../features/prescriptions/presentation/bloc/prescription_event.dart';
 import '../../../../features/authentication/presentation/bloc/authentication_bloc.dart';
@@ -297,12 +298,18 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
               ),
             ),
           ],
-          Text(
-            title, 
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              decoration: _isCompleted ? TextDecoration.lineThrough : null,
-              color: _isCompleted ? Colors.green[700] : null,
-            ),
+          FutureBuilder<String>(
+            future: PrescriptionTranslationService.translatePrescriptionTitle(title),
+            builder: (context, snapshot) {
+              final translatedTitle = snapshot.data ?? title;
+              return Text(
+                translatedTitle, 
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  decoration: _isCompleted ? TextDecoration.lineThrough : null,
+                  color: _isCompleted ? Colors.green[700] : null,
+                ),
+              );
+            },
           ),
           verticalSpace(kAppSmallGap),
               Row(children: [
@@ -343,11 +350,17 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                            
               
               // Description
-              _buildMenuItem(
-                title: 'Description',
-                subtitle: description,
-                icon: Icons.description,
-                isFullWidth: true,
+              FutureBuilder<String>(
+                future: PrescriptionTranslationService.translatePrescriptionDescription(description),
+                builder: (context, snapshot) {
+                  final translatedDescription = snapshot.data ?? description;
+                  return _buildMenuItem(
+                    title: 'Description',
+                    subtitle: translatedDescription,
+                    icon: Icons.description,
+                    isFullWidth: true,
+                  );
+                },
               ),
               verticalSpace(kAppSmallGap),
                             
@@ -574,7 +587,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                 side: BorderSide(color: Colors.grey[400]!),
             ),
             child: Text(
-                'Back',
+                S.of(context).back,
               style: TextStyle(
                   color: Colors.grey[600],
                 fontSize: 16.sp,
@@ -679,7 +692,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    _isCompleted ? 'Completed' : 'Mark Complete',
+                    _isCompleted ? S.of(context).completed : S.of(context).mark_complete,
               style: TextStyle(
                 fontSize: 16.sp,
                       fontWeight: FontWeight.w600,

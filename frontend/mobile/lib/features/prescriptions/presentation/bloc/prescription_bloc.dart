@@ -10,6 +10,7 @@ import 'package:mobile/features/prescriptions/domain/usecases/delete_completed_p
 import 'package:mobile/features/prescriptions/domain/usecases/delete_prescription.dart'
     as usecase;
 import 'package:mobile/features/prescriptions/domain/usecases/get_prescriptions.dart';
+import 'package:mobile/features/prescriptions/domain/usecases/get_prescriptions_for_farm.dart';
 import 'package:mobile/features/prescriptions/domain/usecases/mark_all_as_completed.dart'
     as usecase;
 import 'package:mobile/features/prescriptions/domain/usecases/update_prescription_status.dart'
@@ -22,6 +23,7 @@ import '../../../../core/usecases/usecase.dart';
 
 class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
   final GetPrescriptions getPrescriptions;
+  final GetPrescriptionsForFarm getPrescriptionsForFarm;
   final usecase.UpdatePrescriptionStatus updatePrescriptionStatus;
   final usecase.DeletePrescription deletePrescription;
   final usecase.MarkAllAsCompleted markAllAsCompleted;
@@ -33,6 +35,7 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
   _prescriptionSubscription;
   PrescriptionBloc({
     required this.getPrescriptions,
+    required this.getPrescriptionsForFarm,
     required this.updatePrescriptionStatus,
     required this.deletePrescription,
     required this.markAllAsCompleted,
@@ -41,6 +44,7 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     required this.syncAnalyticsPrescriptions,
   }) : super(const PrescriptionInitial()) {
     on<LoadPrescriptions>(_onLoadPrescriptions);
+    on<LoadPrescriptionsForFarm>(_onLoadPrescriptionsForFarm);
     on<UpdatePrescriptionStatus>(_onUpdatePrescriptionStatus);
     on<DeletePrescription>(_onDeletePrescription);
     on<MarkAllAsCompleted>(_onMarkAllAsCompleted);
@@ -60,6 +64,40 @@ class PrescriptionBloc extends Bloc<PrescriptionEvent, PrescriptionState> {
     
     try {
       final failureOrPrescriptions = await getPrescriptions(NoParams());
+      
+      failureOrPrescriptions.fold(
+        (failure) {
+          emit(state.copyWith(
+            isLoading: false,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (prescriptions) {
+          emit(state.copyWith(
+            prescriptions: prescriptions,
+            isLoading: false,
+            errorMessage: null,
+          ));
+        },
+      );
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        errorMessage: 'Failed to load prescriptions: $e',
+      ));
+    }
+  }
+
+  void _onLoadPrescriptionsForFarm(
+    LoadPrescriptionsForFarm event,
+    Emitter<PrescriptionState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+
+    _prescriptionSubscription?.cancel();
+    
+    try {
+      final failureOrPrescriptions = await getPrescriptionsForFarm(event.farmId);
       
       failureOrPrescriptions.fold(
         (failure) {

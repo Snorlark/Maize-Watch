@@ -170,9 +170,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "clear_all": MessageLookupByLibrary.simpleMessage("Clear All"),
     "close": MessageLookupByLibrary.simpleMessage("Close"),
     "cloudy": MessageLookupByLibrary.simpleMessage("Cloudy"),
-    "cloudy_description": MessageLookupByLibrary.simpleMessage(
-      "Cloudy weather conditions",
-    ),
     "completed": MessageLookupByLibrary.simpleMessage("Completed"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Confirm Password",
@@ -303,7 +300,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "dialog_delete_prescription_confirm": m6,
     "dim": MessageLookupByLibrary.simpleMessage("Dim"),
     "dismiss": MessageLookupByLibrary.simpleMessage("Dismiss"),
-    "done": MessageLookupByLibrary.simpleMessage("Done"),
+    "done": MessageLookupByLibrary.simpleMessage("DONE"),
     "dry": MessageLookupByLibrary.simpleMessage("Dry"),
     "edit": MessageLookupByLibrary.simpleMessage("Edit"),
     "edit_settings": MessageLookupByLibrary.simpleMessage("Edit Settings"),
@@ -583,6 +580,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "language": MessageLookupByLibrary.simpleMessage("Language"),
     "language_changed_to": m13,
+    "language_settings": MessageLookupByLibrary.simpleMessage(
+      "Language Settings",
+    ),
     "last_month": MessageLookupByLibrary.simpleMessage("Last month"),
     "last_name": MessageLookupByLibrary.simpleMessage("Last Name"),
     "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
@@ -828,9 +828,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "okay": MessageLookupByLibrary.simpleMessage("Okay"),
     "on": MessageLookupByLibrary.simpleMessage("On"),
     "overcast": MessageLookupByLibrary.simpleMessage("Overcast"),
-    "overcast_description": MessageLookupByLibrary.simpleMessage(
-      "Overcast weather conditions",
-    ),
     "overdue": MessageLookupByLibrary.simpleMessage("Overdue"),
     "parameter_humidity": MessageLookupByLibrary.simpleMessage("Humidity"),
     "parameter_light_intensity": MessageLookupByLibrary.simpleMessage(
@@ -1026,9 +1023,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "r6_mature": MessageLookupByLibrary.simpleMessage("Mature (R6)"),
     "rainfall": MessageLookupByLibrary.simpleMessage("Rainfall"),
     "rainy": MessageLookupByLibrary.simpleMessage("Rainy"),
-    "rainy_description": MessageLookupByLibrary.simpleMessage(
-      "Rainy weather conditions",
-    ),
     "rapid_growth": MessageLookupByLibrary.simpleMessage(
       "Rapid growth detected!",
     ),
@@ -1117,6 +1111,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select your barangay",
     ),
     "select_date": MessageLookupByLibrary.simpleMessage("Select Date"),
+    "select_language": MessageLookupByLibrary.simpleMessage("Select Language"),
     "select_municipality": MessageLookupByLibrary.simpleMessage(
       "Select your municipality",
     ),
@@ -1240,9 +1235,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "submit_button": MessageLookupByLibrary.simpleMessage("Submit"),
     "sunday": MessageLookupByLibrary.simpleMessage("Sunday"),
     "sunny": MessageLookupByLibrary.simpleMessage("Sunny"),
-    "sunny_description": MessageLookupByLibrary.simpleMessage(
-      "Sunny weather conditions",
-    ),
     "tap_to_view": MessageLookupByLibrary.simpleMessage("Tap to view"),
     "tasseling_stage": m23,
     "tassels_appearing": MessageLookupByLibrary.simpleMessage(
@@ -1409,6 +1401,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "variety_yellow_dent": MessageLookupByLibrary.simpleMessage("Yellow Dent"),
     "ve_emergence": MessageLookupByLibrary.simpleMessage("Emergence (VE)"),
+    "ve_stage": MessageLookupByLibrary.simpleMessage("VE"),
     "verification_code": MessageLookupByLibrary.simpleMessage(
       "Verification Code",
     ),
