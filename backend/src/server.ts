@@ -8,7 +8,7 @@ import compression from 'compression';
 import { createServer } from 'http';
 
 // Import configurations and utilities
-import connectDB from './config/database';
+import connectDB, { getConnectionStatus } from './config/database';
 import { logger } from './utils/logger';
 import { initializeSocket } from './sockets/index';
 
@@ -70,6 +70,39 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ==========================================
+// HEALTH CHECK ENDPOINT (REQUIRED!)
+// ==========================================
+app.get('/health', (req, res) => {
+  // Check if server is responding
+  const healthcheck = {
+    uptime: process.uptime(),
+    message: 'Backend is healthy',
+    timestamp: Date.now(),
+    service: 'backend-api',
+    environment: process.env.NODE_ENV || 'development',
+    database: getConnectionStatus(),
+    memory: {
+      rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`,
+      heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+      heapTotal: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+    }
+  };
+  
+  try {
+    // You can add more checks here:
+    // - Database connection
+    // - Redis connection
+    // - External API availability
+    
+    res.status(200).json(healthcheck);
+  } catch (error) {
+    healthcheck.message = error instanceof Error ? error.message : 'Unknown error';
+    (healthcheck as any).error = true;
+    res.status(503).json(healthcheck);
+  }
+});
+
 // API routes
 app.use('/api', apiRoutes);
 
@@ -77,8 +110,10 @@ app.use('/api', apiRoutes);
 app.use(notFound);
 app.use(globalErrorHandler);
 
-// Server startup
-const PORT = process.env.PORT || 8080;
+// ==========================================
+// PORT CONFIGURATION (UPDATED!)
+// ==========================================
+const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   try {
@@ -87,9 +122,10 @@ async function startServer() {
     logger.info('Database connected successfully');
 
     // Start server
-    server.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    server.listen(Number(PORT), '0.0.0.0', () => {
+      logger.info(`🟢 Backend API listening on port ${PORT}`);
+      logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`⚡ Ready to accept connections`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);

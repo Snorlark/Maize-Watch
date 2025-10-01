@@ -124,32 +124,126 @@ export class PythonAnalyticsService {
       await syncService.syncFarmData(farm._id.toString());
       logger.info(`ThingSpeak sync completed for farm ${farm._id}`);
       
-      const args = fieldId ? [farmerId, fieldId] : [farmerId];
-      const output = await this.executePythonScript('run_complete_system.py', args);
-      logger.info(`Python script output for farm ${farm._id}: ${output}`);
+      // Call analytics service via HTTP instead of executing Python scripts
+      const analyticsServiceUrl = process.env.ANALYTICS_SERVICE_URL || 'http://localhost:8000';
       
-      const results = this.parseAnalyticsResults(output);
-      logger.info(`Parsed analytics results for farm ${farm._id}: ${JSON.stringify(results, null, 2)}`);
-      
-      // Cache results
-      const { CacheService } = require('./cacheService');
-      await CacheService.cacheFarmAnalytics(farm._id.toString(), results);
-      
-      logger.info(`Analytics_v2 completed successfully for farm ${farm._id}`);
-      
-      // Emit real-time analytics update via Socket.IO
-      const { getIO } = require('../sockets/index');
-      const io = getIO();
-      if (io) {
-        io.emit('analytics:updated', {
-          farmId: farm._id.toString(),
-          analytics: results,
-          timestamp: new Date().toISOString()
+      try {
+        // Call descriptive analytics
+        const descriptiveResponse = await fetch(`${analyticsServiceUrl}/analytics/descriptive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            farmer_id: farmerId,
+            field_id: fieldId,
+            use_today: true
+          })
         });
-        logger.info(`Emitted analytics update for farm ${farm._id}`);
+        
+        if (!descriptiveResponse.ok) {
+          throw new Error(`Descriptive analytics failed: ${descriptiveResponse.statusText}`);
+        }
+        
+        const descriptiveData = await descriptiveResponse.json() as { data: any };
+        logger.info(`Descriptive analytics completed for farm ${farm._id}`);
+        
+        // Call predictive analytics
+        const predictiveResponse = await fetch(`${analyticsServiceUrl}/analytics/predictive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            descriptive_data: descriptiveData.data
+          })
+        });
+        
+        if (!predictiveResponse.ok) {
+          throw new Error(`Predictive analytics failed: ${predictiveResponse.statusText}`);
+        }
+        
+        const predictiveData = await predictiveResponse.json() as { data: any };
+        logger.info(`Predictive analytics completed for farm ${farm._id}`);
+        
+        // Call prescriptive analytics
+        const prescriptiveResponse = await fetch(`${analyticsServiceUrl}/analytics/prescriptive`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            descriptive_data: descriptiveData.data,
+            predictive_data: predictiveData.data
+          })
+        });
+        
+        if (!prescriptiveResponse.ok) {
+          throw new Error(`Prescriptive analytics failed: ${prescriptiveResponse.statusText}`);
+        }
+        
+        const prescriptiveData = await prescriptiveResponse.json() as { data: any };
+        logger.info(`Prescriptive analytics completed for farm ${farm._id}`);
+        
+        // Combine results
+        const results: AnalyticsV2Results = {
+          descriptive: descriptiveData.data,
+          predictive: predictiveData.data,
+          prescriptive: prescriptiveData.data
+        };
+        
+        logger.info(`Analytics_v2 completed successfully for farm ${farm._id}`);
+        
+        // Cache results
+        const { CacheService } = require('./cacheService');
+        await CacheService.cacheFarmAnalytics(farm._id.toString(), results);
+        
+        // Emit real-time analytics update via Socket.IO
+        const { getIO } = require('../sockets/index');
+        const io = getIO();
+        if (io) {
+          io.emit('analytics:updated', {
+            farmId: farm._id.toString(),
+            analytics: results,
+            timestamp: new Date().toISOString()
+          });
+          logger.info(`Emitted analytics update for farm ${farm._id}`);
+        }
+        
+        return results;
+        
+      } catch (httpError) {
+        logger.warn(`HTTP analytics service failed, falling back to Python script: ${httpError}`);
+        
+        // Fallback to original Python script execution
+        const args = fieldId ? [farmerId, fieldId] : [farmerId];
+        const output = await this.executePythonScript('run_complete_system.py', args);
+        logger.info(`Python script output for farm ${farm._id}: ${output}`);
+        
+        const results = this.parseAnalyticsResults(output);
+        logger.info(`Parsed analytics results for farm ${farm._id}: ${JSON.stringify(results, null, 2)}`);
+        
+        // Cache results
+        const { CacheService } = require('./cacheService');
+        await CacheService.cacheFarmAnalytics(farm._id.toString(), results);
+        
+        logger.info(`Analytics_v2 completed successfully for farm ${farm._id}`);
+        
+        // Emit real-time analytics update via Socket.IO
+        const { getIO } = require('../sockets/index');
+        const io = getIO();
+        if (io) {
+          io.emit('analytics:updated', {
+            farmId: farm._id.toString(),
+            analytics: results,
+            timestamp: new Date().toISOString()
+          });
+          logger.info(`Emitted analytics update for farm ${farm._id}`);
+        }
+        
+        return results;
       }
       
-      return results;
     } catch (error) {
       logger.error(`Analytics_v2 failed for farm ${farm._id}: ${(error as Error).message}`);
       // Don't use fallback data - throw the error so the client knows it failed
