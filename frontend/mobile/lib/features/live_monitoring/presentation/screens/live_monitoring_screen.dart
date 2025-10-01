@@ -1706,7 +1706,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
      
                       Text(
-                            'Soil Type: ${field.soilType}',
+                            '${S.of(context).soil_type}: ${field.soilType}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(                          
                           
                           color: MAIZE_ACCENT,

@@ -189,6 +189,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
               
               final prescriptions = snapshot.data!;
               
+              // Sync with backend only once when data is first loaded
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _syncPrescriptionsWithBackend(prescriptions);
+              });
+              
               return Column(
                 children: [
                   // Fixed header section
@@ -756,7 +761,13 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
     // Cache prescriptions for refresh functionality
     _cachedPrescriptions = prescriptions;
 
-    // Sync analytics prescriptions with backend
+    // Note: Sync with backend is now handled separately to prevent infinite loops
+
+    return prescriptions;
+  }
+
+  // Separate method to sync prescriptions with backend (called only when needed)
+  Future<void> _syncPrescriptionsWithBackend(List<Map<String, dynamic>> prescriptions) async {
     try {
       final farmState = context.read<FarmBloc>().state;
       if (farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
@@ -769,23 +780,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
               prescriptions: prescriptions,
             ),
           );
-          
-          // Map analytics IDs to MongoDB IDs after syncing
-          // Note: This would ideally be done in the PrescriptionBloc after successful sync
-          // For now, we'll map them here as a placeholder
-          for (final prescription in prescriptions) {
-            final analyticsId = prescription['id'] as String;
-            // The MongoDB ID would be returned from the sync response
-            // For now, we'll use the analytics ID as fallback
-            await PrescriptionIdMapper.mapPrescriptionId(analyticsId, analyticsId);
-          }
         }
       }
     } catch (e) {
       print('⚠️ Error syncing analytics prescriptions: $e');
     }
-
-    return prescriptions;
   }
 
   String _mapUrgencyToPriority(String urgency) {

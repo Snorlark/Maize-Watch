@@ -6,6 +6,9 @@ abstract class PrescriptionRepository {
   // Get all prescriptions
   Future<Either<Failure, List<Prescription>>> getPrescriptions();
   
+  // Get prescriptions for a specific farm
+  Future<Either<Failure, List<Prescription>>> getPrescriptionsForFarm(String farmId);
+  
   // Get a single prescription by ID
   Future<Either<Failure, Prescription>> getPrescription(String id);
   
