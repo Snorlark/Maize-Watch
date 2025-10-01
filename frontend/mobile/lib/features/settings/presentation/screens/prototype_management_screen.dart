@@ -115,7 +115,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
         if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(S.of(context).prototype_unsynced),
+                content: Text(S.of(context).prototype_unsynced),
               backgroundColor: Colors.green,
             ),
           );
@@ -156,7 +156,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          S.of(context).unsync_prototype,
+          'Unsync Prototype',
           style: textTheme.headlineSmall?.copyWith(
             color: MAIZE_ACCENT,
             fontWeight: FontWeight.bold,
@@ -203,14 +203,14 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                           ),
                           SizedBox(height: kAppMediumPadding.h),
                           Text(
-                            S.of(context).no_prototypes_found,
+                            'No prototypes found',
                             style: textTheme.headlineSmall?.copyWith(
                               color: MAIZE_ACCENT.withOpacity(0.7),
                             ),
                           ),
                           SizedBox(height: kAppSmallPadding.h),
                           Text(
-                            S.of(context).no_prototypes_registered,
+                            'No prototypes are currently registered',
                             style: textTheme.bodyMedium?.copyWith(
                               color: MAIZE_ACCENT.withOpacity(0.5),
                             ),
@@ -245,7 +245,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                               ),
                             ),
                             title: Text(
-                              '${S.of(context).prototype_id} $prototypeId',
+                              'Prototype ID: $prototypeId',
                               style: textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -264,7 +264,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                                     ),
                                     SizedBox(width: 4.w),
                                     Text(
-                                      isActive ? S.of(context).active : S.of(context).inactive,
+                                      isActive ? 'Active' : 'Inactive',
                                       style: textTheme.bodySmall?.copyWith(
                                         color: isActive ? Colors.green : Colors.red,
                                         fontWeight: FontWeight.w500,

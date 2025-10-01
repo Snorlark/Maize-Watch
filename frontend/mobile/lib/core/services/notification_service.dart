@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:mobile/generated/l10n.dart';
 import 'package:mobile/core/services/prescription_translation_service.dart';
 
@@ -522,8 +524,9 @@ class NotificationService {
         9999, // Background check ID
         'Background Check',
         'Checking for new prescriptions...',
-        scheduledDate,
+        tz.TZDateTime.from(scheduledDate, tz.getLocation('UTC')),
         details,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
       
     } catch (e) {

@@ -16,6 +16,7 @@ import 'package:mobile/features/settings/presentation/widgets/language_settings_
 import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 
 import '../../../../generated/l10n.dart';
+import 'prototype_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -156,13 +157,30 @@ class _AccountScreenState extends State<AccountScreen> {
                   title: 'Settings',
                   children: [
                     _buildMenuItem(
-                      title: 'Sensor Status',
-                      subtitle: 'Monitor the condition of your sensors',
+                      title: S.of(context).sensor_status,
+                      subtitle: S.of(context).monitor_sensor_condition,
                       icon: Icons.sensors,
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const SensorStatusScreen()),
+                        );
+                      },
+                      
+                    ),
+
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                    SizedBox(height: kAppMediumPadding),
+
+                                        _buildMenuItem(
+                      title: 'Prototype Management',
+                      subtitle: 'Manage and unsync prototypes from fields',
+                      icon: Icons.device_hub,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PrototypeManagementScreen()),
                         );
                       },
                       

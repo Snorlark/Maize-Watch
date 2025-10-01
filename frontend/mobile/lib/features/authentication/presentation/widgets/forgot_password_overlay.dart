@@ -15,6 +15,7 @@ class ForgotPasswordOverlay extends StatefulWidget {
 
 class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -25,9 +26,11 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
   bool _codeSent = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _contactNumberController.dispose();
     _codeController.dispose();
     _newPasswordController.dispose();
@@ -42,7 +45,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
       _isLoading = true;
     });
 
-    final result = await _twoFactorService.sendPasswordResetCode(_contactNumberController.text);
+    final result = await _twoFactorService.sendPasswordResetCode(_usernameController.text);
 
     if (mounted) {
       setState(() {
@@ -50,6 +53,11 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
       });
 
       if (result['success'] == true) {
+        // Store the phone number for display
+        if (result['phoneNumber'] != null) {
+          _contactNumberController.text = result['phoneNumber'];
+        }
+        
         setState(() {
           _codeSent = true;
         });
@@ -87,7 +95,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
     });
 
     final result = await _twoFactorService.resetPasswordWithCode(
-      contactNumber: _contactNumberController.text,
+      username: _usernameController.text,
       code: _codeController.text,
       newPassword: _newPasswordController.text,
     );
@@ -164,9 +172,9 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                 SizedBox(height: kAppLargePadding.h),
 
                 if (!_codeSent) ...[
-                  // Contact Number Input
+                  // Username Input
                   Text(
-                    S.of(context).contact_number,
+                    S.of(context).username,
                     style: textTheme.bodyMedium?.copyWith(
                       color: MAIZE_ACCENT,
                       fontWeight: FontWeight.w600,
@@ -174,8 +182,8 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                   ),
                   SizedBox(height: kAppSmallPadding.h),
                   TextFormField(
-                    controller: _contactNumberController,
-                    keyboardType: TextInputType.phone,
+                    controller: _usernameController,
+                    keyboardType: TextInputType.text,
                     style: textTheme.bodyMedium?.copyWith(color: MAIZE_ACCENT),
                     decoration: InputDecoration(
                       filled: true,
@@ -187,14 +195,14 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                         horizontal: kAppMediumPadding.w,
                         vertical: kAppSmallPadding.h,
                       ),
-                      hintText: 'Enter your username',
+                      hintText: S.of(context).enter_username,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Username is required';
+                        return S.of(context).username_required;
                       }
                       if (value.length < 3) {
-                        return 'Username must be at least 3 characters';
+                        return S.of(context).username_must_be_at_least_3_characters;
                       }
                       return null;
                     },
@@ -221,7 +229,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                             ),
                           )
                         : Text(
-                            textTranslation.send_verification_code,
+                            S.of(context).send_verification_code,
                             style: textTheme.bodyLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: MAIZE_PRIMARY_LIGHT,
@@ -229,9 +237,39 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                           ),
                   ),
                 ] else ...[
+                  // Show contact number where OTP was sent
+                  Container(
+                    padding: EdgeInsets.all(kAppMediumPadding.w),
+                    decoration: BoxDecoration(
+                      color: MAIZE_PRIMARY.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(kAppMediumPadding.r),
+                      border: Border.all(color: MAIZE_PRIMARY.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          color: MAIZE_PRIMARY,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: kAppSmallPadding.w),
+                        Expanded(
+                          child: Text(
+                            'Verification code sent to: ${_contactNumberController.text}',
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: MAIZE_ACCENT,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: kAppMediumPadding.h),
+                  
                   // Verification Code Input
                   Text(
-                    textTranslation.verification_code,
+                    S.of(context).verification_code,
                     style: textTheme.bodyMedium?.copyWith(
                       color: MAIZE_ACCENT,
                       fontWeight: FontWeight.w600,
@@ -252,14 +290,14 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                         horizontal: kAppMediumPadding.w,
                         vertical: kAppSmallPadding.h,
                       ),
-                      hintText: 'Enter 6-digit code',
+                      hintText: S.of(context).enter_6_digit_code,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return textTranslation.verification_code_required;
                       }
                       if (value.length != 6) {
-                        return textTranslation.verification_code_invalid;
+                        return S.of(context).invalid_verification_code_format;
                       }
                       return null;
                     },
@@ -303,10 +341,10 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return textTranslation.new_password_required;
+                        return 'New password is required';
                       }
                       if (value.length < 6) {
-                        return textTranslation.password_min_length;
+                        return 'Password must be at least 6 characters';
                       }
                       if (value.length > 50) {
                         return 'Password must be less than 50 characters';
@@ -357,7 +395,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return textTranslation.confirm_password_required;
+                        return 'Please confirm your password';
                       }
                       if (value != _newPasswordController.text) {
                         return textTranslation.passwords_do_not_match;

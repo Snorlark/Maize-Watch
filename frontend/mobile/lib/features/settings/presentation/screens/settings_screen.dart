@@ -96,12 +96,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Settings',
+                    S.of(context).settings,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
                   SizedBox(height: kAppSmallGap),
                   Text(
-                    'Manage your app preferences',
+                    S.of(context).manage_your_app_preferences,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
                   ),                  
                 ],
@@ -182,8 +182,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SizedBox(height: kAppMediumPadding),
 
                     _buildMenuItem(
-                      title: 'Unsync Prototype',
-                      subtitle: 'Manage and unsync prototypes from fields',
+                      title: S.of(context).unsync_prototype,
+                      subtitle: S.of(context).manage_and_unsync_prototypes,
                       icon: Icons.device_hub,
                       onTap: () {
                         Navigator.push(
@@ -198,15 +198,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // App Settings Section
                 _buildSectionCard(
-                  title: 'App Settings',
+                  title: S.of(context).app_settings,
                   children: [
                     _buildOptionItem(
-                      title: 'Language',
-                      currentValue: 'English',
+                      title: S.of(context).language,
+                      currentValue: S.of(context).english,
                       icon: Icons.language,
                       onTap: () {
-                        _showOptionDialog('Language Settings', LanguageSettingsWidget(
-                          currentLanguage: 'English',
+                        _showOptionDialog(S.of(context).language_settings, LanguageSettingsWidget(
+                          currentLanguage: S.of(context).english,
                           onLanguageChanged: (language) {
                             // Handle language change
                           },
@@ -219,11 +219,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SizedBox(height: kAppMediumPadding),
 
                     _buildOptionItem(
-                      title: 'Notifications',
-                      currentValue: 'On',
+                      title: S.of(context).notifications,
+                      currentValue: S.of(context).on,
                       icon: Icons.notifications,
                       onTap: () {
-                        _showOptionDialog('Notification Settings', NotificationSettingsWidget(
+                        _showOptionDialog(S.of(context).notification_settings, NotificationSettingsWidget(
                           isNotificationsEnabled: true,
                           isVibrationOnly: false,
                           onNotificationToggled: (enabled) {
@@ -241,11 +241,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // Support Section
                 _buildSectionCard(
-                  title: 'Support',
+                  title: S.of(context).support,
                   children: [
                     _buildMenuItem(
-                      title: 'Help & FAQ',
-                      subtitle: 'Get help and find answers to common questions',
+                      title: S.of(context).help_faq,
+                      subtitle: S.of(context).get_help_and_find_answers,
                       icon: Icons.help_outline,
                       onTap: () {
                         _showHelpDialog();
@@ -257,8 +257,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     SizedBox(height: kAppMediumPadding),
 
                     _buildMenuItem(
-                      title: 'Contact Support',
-                      subtitle: 'Get in touch with our support team',
+                      title: S.of(context).contact_support,
+                      subtitle: S.of(context).get_in_touch_with_support_team,
                       icon: Icons.support_agent,
                       onTap: () {
                         _showContactDialog();
@@ -473,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Help & FAQ',
+                S.of(context).help_faq,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: kAppMediumPadding),
@@ -501,7 +501,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Contact Support',
+                S.of(context).contact_support,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: kAppMediumPadding),

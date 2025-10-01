@@ -20,1493 +20,1590 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'tl';
 
-  static String m0(category) => "Kategorya: ${category}";
+  static String m0(category) => "Category: ${category}";
 
   static String m1(fieldName, farmName) =>
-      "Congratulations! Ang inyong taniman na \"${fieldName}\" sa bukid na \"${farmName}\" ay matagumpay na na-register.";
+      "Congratulations! Your field \"${fieldName}\" in farm \"${farmName}\" has been successfully registered.";
 
-  static String m2(days) => "${days} araw na lang";
+  static String m2(days) => "${days}d left";
 
-  static String m3(days, rate) =>
-      "${days} araw hanggang susunod na yugto (${rate}/araw)";
+  static String m3(days, rate) => "${days} days to next stage (${rate}/day)";
 
   static String m4(deadline) => "Deadline: ${deadline}";
 
   static String m5(count) =>
-      "${Intl.plural(count, zero: 'Walang na-register na device', one: '1 Device na Na-register', other: '${count} Devices na Na-register')}";
+      "${Intl.plural(count, zero: 'No devices registered', one: '1 Device Registered', other: '${count} Devices Registered')}";
 
   static String m6(parameter) =>
-      "Sigurado ka bang gusto mong tanggalin ang reseta sa ${parameter}?";
+      "Are you sure you want to delete this ${parameter} prescription?";
 
-  static String m7(days) => "V8 - Yugto ng Ikawalong Dahon (${days} araw)";
+  static String m7(days) => "V8 - Eighth Leaf Stage (${days} days)";
 
-  static String m8(days) => "VE - Yugto ng Paglitaw (${days} araw)";
+  static String m8(days) => "VE - Emergence Stage (${days} days)";
 
-  static String m9(filter) => "Walang nakitang reseta para sa \"${filter}\"";
+  static String m9(filter) => "No prescriptions found for \"${filter}\"";
 
-  static String m10(error) => "Hindi ma-update ang profile: ${error}";
+  static String m10(error) => "Failed to update profile: ${error}";
 
-  static String m11(filters) => "Na-filter ayon sa: ${filters}";
+  static String m11(filters) => "Filtered by: ${filters}";
 
-  static String m12(hours) => "${hours} oras na lang";
+  static String m12(hours) => "${hours}h left";
 
-  static String m13(language) => "Nabago ang wika sa ${language}";
+  static String m13(language) => "Language changed to ${language}";
 
-  static String m14(days) => "R6 - Yugto ng Pagkahinog (${days} araw)";
+  static String m14(days) => "R6 - Maturity Stage (${days} days)";
 
-  static String m15(count) =>
-      "Mayroon kayong ${count} na bagong gawain sa bukid na kailangang tapusin";
+  static String m15(count) => "You have ${count} new farm tasks to complete";
 
   static String m16(error) =>
-      "Nabigo ang pag-update ng mga setting ng notipikasyon: ${error}";
+      "Failed to update notification settings: ${error}";
 
-  static String m17(enabled) => "Paganahin ang notipikasyon: ${enabled}";
+  static String m17(enabled) => "Notifications enabled: ${enabled}";
 
-  static String m18(status) => "Notipikasyon ${status}";
+  static String m18(status) => "Notifications ${status}";
 
-  static String m19(sensorName) =>
-      "Ang ${sensorName} sensor ay offline na ng mahigit 30 minuto.";
+  static String m19(seconds) => "Resend in ${seconds} seconds";
 
   static String m20(sensorName) =>
-      "Ang ${sensorName} sensor ay offline na ng mahigit 30 minuto.";
+      "${sensorName} sensor has been offline for more than 30 minutes.";
 
-  static String m21(days) => "R1 - Yugto ng Pagkabuhok ng Bulak (${days} araw)";
+  static String m21(sensorName) =>
+      "${sensorName} sensor has been offline for more than 30 minutes.";
 
-  static String m22(count) => "Mga Hakbang na Tagubilin (${count} hakbang)";
+  static String m22(days) => "R1 - Silking Stage (${days} days)";
 
-  static String m23(days) => "VT - Yugto ng Pagkabuhok (${days} araw)";
+  static String m23(count) => "Step-by-Step Instructions (${count} steps)";
 
-  static String m24(days) => "V3 - Yugto ng Ikatlong Dahon (${days} araw)";
+  static String m24(days) => "VT - Tasseling Stage (${days} days)";
 
-  static String m25(timeline) => "Timeline: ${timeline}";
+  static String m25(days) => "V3 - Third Leaf Stage (${days} days)";
 
-  static String m26(urgency) => "Pagkakailangan: ${urgency}";
+  static String m26(timeline) => "Timeline: ${timeline}";
 
-  static String m27(status) => "Vibration only ${status}";
+  static String m27(urgency) => "Urgency: ${urgency}";
 
-  static String m28(count) =>
-      "Mayroon kang ${count} na bagong gawain sa bukid na dapat tapusin";
+  static String m28(phoneNumber) =>
+      "We\'ve sent a 6-digit verification code to ${phoneNumber}. Please enter it below to continue.";
+
+  static String m29(status) => "Vibration only ${status}";
+
+  static String m30(count) => "You have ${count} new farm tasks to complete";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
-    "about": MessageLookupByLibrary.simpleMessage("Tungkol"),
+    "about": MessageLookupByLibrary.simpleMessage("About"),
     "aboutApp": MessageLookupByLibrary.simpleMessage(
-      "Ang Maize Watch ay isang crop monitoring application na tumutulong sa mga magsasaka na subaybayan ang paglago ng mais at agad na matukoy ang mga problema.",
+      "Maize Watch is a crop monitoring application designed to help farmers keep track of maize growth and identify issues quickly.",
     ),
     "about_app": MessageLookupByLibrary.simpleMessage(
-      "Ang maize-watch app ay isang IoT-driven na sistema na may prescriptive analytics para sa pag-monitor ng mais.",
+      "The maize-watch mobile app proposes an innovative, IoT-driven corn monitoring system enhanced by prescriptive analytics. This system will not only provide real-time data on crop health and environmental conditions but also use these data to offer practical advice, further optimizing maize quality and yield.",
     ),
-    "about_user": MessageLookupByLibrary.simpleMessage("Tungkol sa User"),
-    "account": MessageLookupByLibrary.simpleMessage("Akunta"),
-    "action_check_all": MessageLookupByLibrary.simpleMessage("I-check Lahat"),
-    "action_delete": MessageLookupByLibrary.simpleMessage("Tanggalin"),
-    "action_delete_all": MessageLookupByLibrary.simpleMessage(
-      "Tanggalin Lahat",
-    ),
+    "about_user": MessageLookupByLibrary.simpleMessage("About User"),
+    "account": MessageLookupByLibrary.simpleMessage("Account"),
+    "action_check_all": MessageLookupByLibrary.simpleMessage("Check All"),
+    "action_delete": MessageLookupByLibrary.simpleMessage("Delete"),
+    "action_delete_all": MessageLookupByLibrary.simpleMessage("Delete All"),
     "action_delete_completed": MessageLookupByLibrary.simpleMessage(
-      "Tanggalin ang Tapos Na",
+      "Delete Completed",
     ),
-    "action_uncheck_all": MessageLookupByLibrary.simpleMessage(
-      "I-uncheck Lahat",
-    ),
-    "add_field": MessageLookupByLibrary.simpleMessage("Magdagdag ng Taniman"),
-    "address": MessageLookupByLibrary.simpleMessage("Tirahan"),
+    "action_uncheck_all": MessageLookupByLibrary.simpleMessage("Uncheck All"),
+    "active": MessageLookupByLibrary.simpleMessage("Active"),
+    "add_field": MessageLookupByLibrary.simpleMessage("Add Field"),
+    "address": MessageLookupByLibrary.simpleMessage("Address"),
     "address_invalid_characters": MessageLookupByLibrary.simpleMessage(
-      "Ang address ay may hindi wastong karakter",
+      "Address contains invalid characters",
     ),
     "address_needs_alphanumeric": MessageLookupByLibrary.simpleMessage(
-      "Ang address ay dapat may hindi bababa sa isang titik o numero",
+      "Address must contain at least one letter or number",
     ),
     "address_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang address",
+      "Address is required",
     ),
     "address_too_long": MessageLookupByLibrary.simpleMessage(
-      "Ang address ay hindi dapat lumampas sa 200 karakter",
+      "Address must not exceed 200 characters",
     ),
     "address_too_short": MessageLookupByLibrary.simpleMessage(
-      "Ang address ay dapat may hindi bababa sa 10 karakter",
+      "Address must be at least 10 characters long",
     ),
     "agreement_prefix": MessageLookupByLibrary.simpleMessage(
-      "Sa pag-login, sumasang-ayon ka sa aming ",
+      "By logging in, you agree to our ",
     ),
     "agreement_suffix": MessageLookupByLibrary.simpleMessage("."),
-    "all": MessageLookupByLibrary.simpleMessage("Lahat"),
+    "all": MessageLookupByLibrary.simpleMessage("All"),
     "all_fields_required": MessageLookupByLibrary.simpleMessage(
-      "Kinakailangang punan ang lahat ng mga patlang.",
+      "All fields are required.",
     ),
-    "and": MessageLookupByLibrary.simpleMessage(" at "),
+    "and": MessageLookupByLibrary.simpleMessage(" and "),
     "appName": MessageLookupByLibrary.simpleMessage("Maize Watch"),
-    "apply": MessageLookupByLibrary.simpleMessage("Ilapat"),
-    "apr": MessageLookupByLibrary.simpleMessage("Abr"),
-    "april": MessageLookupByLibrary.simpleMessage("Abr"),
+    "app_settings": MessageLookupByLibrary.simpleMessage("App Settings"),
+    "apply": MessageLookupByLibrary.simpleMessage("Apply"),
+    "apr": MessageLookupByLibrary.simpleMessage("Apr"),
+    "april": MessageLookupByLibrary.simpleMessage("Apr"),
     "asap": MessageLookupByLibrary.simpleMessage("ASAP"),
-    "aug": MessageLookupByLibrary.simpleMessage("Ago"),
-    "august": MessageLookupByLibrary.simpleMessage("Ago"),
-    "back": MessageLookupByLibrary.simpleMessage("Bumalik"),
-    "back_button": MessageLookupByLibrary.simpleMessage("Bumalik"),
-    "back_online": MessageLookupByLibrary.simpleMessage("Bumalik Online"),
+    "aug": MessageLookupByLibrary.simpleMessage("Aug"),
+    "august": MessageLookupByLibrary.simpleMessage("Aug"),
+    "authentication_required": MessageLookupByLibrary.simpleMessage(
+      "Authentication required",
+    ),
+    "available": MessageLookupByLibrary.simpleMessage("Available"),
+    "back": MessageLookupByLibrary.simpleMessage("Back"),
+    "back_button": MessageLookupByLibrary.simpleMessage("Back"),
+    "back_online": MessageLookupByLibrary.simpleMessage("Back Online"),
     "back_to_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Bumalik sa mga Reseta",
+      "Back to Prescriptions",
     ),
     "barangay": MessageLookupByLibrary.simpleMessage("Barangay"),
     "barangay_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang barangay",
+      "Barangay is required",
     ),
-    "bright": MessageLookupByLibrary.simpleMessage("Maliwanag"),
-    "button_retry": MessageLookupByLibrary.simpleMessage("Subukang Muli"),
-    "cancel": MessageLookupByLibrary.simpleMessage("Kanselahin"),
-    "category": MessageLookupByLibrary.simpleMessage("Kategorya"),
+    "bright": MessageLookupByLibrary.simpleMessage("Bright"),
+    "button_retry": MessageLookupByLibrary.simpleMessage("Retry"),
+    "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "category": MessageLookupByLibrary.simpleMessage("Category"),
     "category_filter": m0,
     "category_humidity_management": MessageLookupByLibrary.simpleMessage(
-      "Pamamahala ng Halumigmig",
+      "Humidity Management",
     ),
-    "category_irrigation": MessageLookupByLibrary.simpleMessage("Patubig"),
+    "category_irrigation": MessageLookupByLibrary.simpleMessage("Irrigation"),
     "category_light_management": MessageLookupByLibrary.simpleMessage(
-      "Pamamahala ng Liwanag",
+      "Light Management",
     ),
     "category_soil_treatment": MessageLookupByLibrary.simpleMessage(
-      "Paggamot sa Lupa",
+      "Soil Treatment",
     ),
     "category_temperature_management": MessageLookupByLibrary.simpleMessage(
-      "Pamamahala ng Temperatura",
+      "Temperature Management",
     ),
-    "check_farm": MessageLookupByLibrary.simpleMessage("Suriin ang Bukid"),
+    "check_farm": MessageLookupByLibrary.simpleMessage("Check Farm"),
     "check_notification_status": MessageLookupByLibrary.simpleMessage(
-      "Suriin ang Status ng Notipikasyon",
+      "Check Notification Status",
     ),
-    "clear_all": MessageLookupByLibrary.simpleMessage("Tanggalin Lahat"),
-    "close": MessageLookupByLibrary.simpleMessage("Isara"),
-    "cloudy": MessageLookupByLibrary.simpleMessage("Maulap"),
-    "completed": MessageLookupByLibrary.simpleMessage("Tapos Na"),
+    "clear_all": MessageLookupByLibrary.simpleMessage("Clear All"),
+    "close": MessageLookupByLibrary.simpleMessage("Close"),
+    "cloudy": MessageLookupByLibrary.simpleMessage("Cloudy"),
+    "completed": MessageLookupByLibrary.simpleMessage("Completed"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
-      "Kumpirmahin ang Password",
+      "Confirm Password",
     ),
     "confirm_password_required": MessageLookupByLibrary.simpleMessage(
-      "Mangyaring i-confirm ang inyong password",
+      "Please confirm your password",
     ),
+    "confirm_unsync": MessageLookupByLibrary.simpleMessage("Confirm Unsync"),
     "congratulations_field_registered": m1,
     "connection_error": MessageLookupByLibrary.simpleMessage(
-      "May problema sa koneksyon. Pakisuri ang iyong internet at subukang muli.",
+      "Connection error. Please check your internet and try again.",
     ),
-    "contactUs": MessageLookupByLibrary.simpleMessage(
-      "Makipag-ugnayan sa amin sa:",
-    ),
+    "contactUs": MessageLookupByLibrary.simpleMessage("Contact us at:"),
     "contact_information_coming_soon": MessageLookupByLibrary.simpleMessage(
-      "Ang contact information ay darating na!",
+      "Contact information coming soon!",
     ),
-    "contact_number": MessageLookupByLibrary.simpleMessage(
-      "10-digit Numero ng Telepono",
-    ),
+    "contact_number": MessageLookupByLibrary.simpleMessage("Contact Number"),
     "contact_number_invalid_format": MessageLookupByLibrary.simpleMessage(
-      "Ang numero ng telepono ay dapat magsimula sa 9",
+      "Ang contact number ay dapat nasa format na 09xxxxxxxxx (hal., 09194022808)",
     ),
     "contact_number_invalid_length": MessageLookupByLibrary.simpleMessage(
-      "Ang numero ng telepono ay dapat eksaktong 10 digits (walang +63)",
+      "Contact number must be exactly 10 digits (without +63)",
     ),
     "contact_number_invalid_prefix": MessageLookupByLibrary.simpleMessage(
-      "Hindi wastong Philippine mobile number prefix",
+      "Invalid Philippine mobile number prefix",
     ),
     "contact_number_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang numero ng telepono",
+      "Contact number is required",
+    ),
+    "contact_support": MessageLookupByLibrary.simpleMessage(
+      "Makipag-ugnayan sa Suporta",
     ),
     "continue_to_dashboard": MessageLookupByLibrary.simpleMessage(
-      "Magpatuloy sa Dashboard",
+      "Continue to Dashboard",
     ),
     "continue_to_field_registration": MessageLookupByLibrary.simpleMessage(
-      "Magpatuloy sa Field Registration",
+      "Continue to Field Registration",
     ),
-    "corn": MessageLookupByLibrary.simpleMessage("Mais"),
+    "continue_to_registration": MessageLookupByLibrary.simpleMessage(
+      "Continue to Registration",
+    ),
+    "corn": MessageLookupByLibrary.simpleMessage("Corn"),
     "corn_age_title": MessageLookupByLibrary.simpleMessage(
-      "Ilang taon na ang iyong pananim na mais?",
+      "How old is your corn crop?",
     ),
-    "corn_growth": MessageLookupByLibrary.simpleMessage("Paglago ng Mais"),
+    "corn_growth": MessageLookupByLibrary.simpleMessage("Corn Growth"),
     "corn_registration": MessageLookupByLibrary.simpleMessage(
-      "Rehistrasyon ng Mais",
+      "Corn Registration",
     ),
-    "corn_variety": MessageLookupByLibrary.simpleMessage("Uri ng Mais"),
+    "corn_variety": MessageLookupByLibrary.simpleMessage("Corn Variety"),
+    "corn_variety_required": MessageLookupByLibrary.simpleMessage(
+      "Corn variety is required",
+    ),
     "corn_variety_title": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang nais mong uri ng mais",
+      "Choose your preferred corn variety",
     ),
-    "critical": MessageLookupByLibrary.simpleMessage("Kritikal"),
+    "critical": MessageLookupByLibrary.simpleMessage("Critical"),
     "crop_condition_critical_stress": MessageLookupByLibrary.simpleMessage(
-      "Kritikal na stress",
+      "Critical stress",
     ),
-    "crop_condition_healthy": MessageLookupByLibrary.simpleMessage("Malusog"),
+    "crop_condition_healthy": MessageLookupByLibrary.simpleMessage("Healthy"),
     "crop_condition_high_stress": MessageLookupByLibrary.simpleMessage(
-      "Mataas na stress",
+      "High stress",
     ),
     "crop_condition_moderate_stress": MessageLookupByLibrary.simpleMessage(
-      "Katamtamang stress",
+      "Moderate stress",
     ),
     "crop_condition_subtitle": MessageLookupByLibrary.simpleMessage(
-      "Tingnan ang kasalukuyang kondisyon ng iyong mais at tumanggap ng rekomendasyon.",
+      "Check the current status of your maize crop and get personalized recommendations.",
     ),
     "crop_condition_title": MessageLookupByLibrary.simpleMessage(
-      "Kondisyon ng Pananim",
+      "Crop Condition",
     ),
     "crop_excellent": MessageLookupByLibrary.simpleMessage(
-      "Napakahusay ng kondisyon ng iyong mga pananim.",
+      "Your crops are in excellent condition.",
     ),
-    "crop_health": MessageLookupByLibrary.simpleMessage("Kalusugan ng Pananim"),
+    "crop_health": MessageLookupByLibrary.simpleMessage("Crop Health"),
+    "crop_health_status": MessageLookupByLibrary.simpleMessage(
+      "Kalagayan ng Kalusugan ng Tanim",
+    ),
     "crop_okay": MessageLookupByLibrary.simpleMessage(
-      "Maayos ang pananim. Bantayan pa rin.",
+      "Your crops are doing okay. Monitor closely.",
     ),
     "crop_risk": MessageLookupByLibrary.simpleMessage(
-      "Nasa panganib ang pananim! Agarang aksyon ang kailangan.",
+      "Crops are at risk! Immediate action needed.",
     ),
     "current_growth_stage": MessageLookupByLibrary.simpleMessage(
-      "Kasalukuyang Yugto ng Paglaki",
+      "Current Growth Stage",
     ),
     "dashboard_title": MessageLookupByLibrary.simpleMessage("Dashboard"),
-    "days": MessageLookupByLibrary.simpleMessage("araw"),
-    "days_ago": MessageLookupByLibrary.simpleMessage("araw ang nakalipas"),
+    "days": MessageLookupByLibrary.simpleMessage("days"),
+    "days_ago": MessageLookupByLibrary.simpleMessage("days ago"),
     "days_left": m2,
     "days_since_planting": MessageLookupByLibrary.simpleMessage(
-      "Mga Araw Mula Nang Itanim",
+      "Days Since Planting",
     ),
     "days_to_next_stage": m3,
-    "deadline": MessageLookupByLibrary.simpleMessage("Takdang Oras"),
+    "deadline": MessageLookupByLibrary.simpleMessage("Deadline"),
     "deadline_colon": m4,
-    "debug_section": MessageLookupByLibrary.simpleMessage("Seksyon ng Debug"),
-    "dec": MessageLookupByLibrary.simpleMessage("Dis"),
-    "december": MessageLookupByLibrary.simpleMessage("Dis"),
-    "declining": MessageLookupByLibrary.simpleMessage("Humihina ang paglago"),
-    "default_farm": MessageLookupByLibrary.simpleMessage("Default na Bukid"),
-    "default_user": MessageLookupByLibrary.simpleMessage("magsasaka"),
-    "delete": MessageLookupByLibrary.simpleMessage("Tanggalin"),
+    "debug_data_view": MessageLookupByLibrary.simpleMessage("Debug Data View"),
+    "debug_section": MessageLookupByLibrary.simpleMessage("Debug Section"),
+    "dec": MessageLookupByLibrary.simpleMessage("Dec"),
+    "december": MessageLookupByLibrary.simpleMessage("Dec"),
+    "declining": MessageLookupByLibrary.simpleMessage("Growth is declining"),
+    "default_farm": MessageLookupByLibrary.simpleMessage("Default Farm"),
+    "default_user": MessageLookupByLibrary.simpleMessage("farmer"),
+    "delete": MessageLookupByLibrary.simpleMessage("Delete"),
     "delete_prescription": MessageLookupByLibrary.simpleMessage(
-      "Burahin ang Reseta",
+      "Delete Prescription",
     ),
     "delete_prescription_confirmation": MessageLookupByLibrary.simpleMessage(
-      "Sigurado ka bang gusto mong burahin ang natapos na reseta na ito? Hindi na ito maibabalik.",
+      "Are you sure you want to delete this completed prescription? This action cannot be undone.",
     ),
     "description": MessageLookupByLibrary.simpleMessage(
-      "Palaguin ang ani, bawasan ang alalahanin.",
+      "Maximize your yields, minimize your worries.",
     ),
     "device_registration": MessageLookupByLibrary.simpleMessage(
-      "Pagrehistro ng Device",
+      "Device Registration",
     ),
-    "device_settings": MessageLookupByLibrary.simpleMessage(
-      "Mga Setting ng Device",
-    ),
+    "device_settings": MessageLookupByLibrary.simpleMessage("Device Settings"),
     "devices_registered": m5,
     "dialog_delete_all_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Tanggalin Lahat ng Reseta",
+      "Delete All Prescriptions",
     ),
     "dialog_delete_all_prescriptions_confirm": MessageLookupByLibrary.simpleMessage(
-      "Sigurado ka bang gusto mong tanggalin ang LAHAT ng reseta? Hindi na maibabalik ang aksyong ito.",
+      "Are you sure you want to delete ALL prescriptions? This action cannot be undone.",
     ),
     "dialog_delete_completed_prescriptions":
-        MessageLookupByLibrary.simpleMessage(
-          "Tanggalin ang Lahat ng Tapos Nang Reseta",
-        ),
+        MessageLookupByLibrary.simpleMessage("Delete Completed Prescriptions"),
     "dialog_delete_completed_prescriptions_confirm":
         MessageLookupByLibrary.simpleMessage(
-          "Sigurado ka bang gusto mong tanggalin ang lahat ng tapos nang reseta?",
+          "Are you sure you want to delete all completed prescriptions?",
         ),
     "dialog_delete_prescription": MessageLookupByLibrary.simpleMessage(
-      "Tanggalin ang Reseta",
+      "Delete Prescription",
     ),
     "dialog_delete_prescription_confirm": m6,
-    "dim": MessageLookupByLibrary.simpleMessage("Maliwanag"),
-    "dismiss": MessageLookupByLibrary.simpleMessage("Tanggalin"),
-    "done": MessageLookupByLibrary.simpleMessage("TAPOS"),
-    "dry": MessageLookupByLibrary.simpleMessage("Tuyo"),
-    "edit": MessageLookupByLibrary.simpleMessage("I-edit"),
-    "edit_settings": MessageLookupByLibrary.simpleMessage(
-      "I-edit ang mga Setting",
-    ),
+    "dim": MessageLookupByLibrary.simpleMessage("Dim"),
+    "dismiss": MessageLookupByLibrary.simpleMessage("Dismiss"),
+    "done": MessageLookupByLibrary.simpleMessage("DONE"),
+    "dry": MessageLookupByLibrary.simpleMessage("Dry"),
+    "edit": MessageLookupByLibrary.simpleMessage("Edit"),
+    "edit_settings": MessageLookupByLibrary.simpleMessage("Edit Settings"),
     "eighth_leaf_stage": m7,
     "emergence_stage": m8,
     "empty_no_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Walang nakitang reseta",
+      "No prescriptions found",
     ),
     "empty_no_prescriptions_filter": m9,
-    "enable": MessageLookupByLibrary.simpleMessage("Paganahin"),
+    "enable": MessageLookupByLibrary.simpleMessage("Enable"),
     "enableNotifications": MessageLookupByLibrary.simpleMessage(
-      "Paganahin ang Abiso",
+      "Enable Notifications",
     ),
     "enable_notifications": MessageLookupByLibrary.simpleMessage(
-      "Paganahin ang mga Notification",
+      "Enable Notifications",
     ),
-    "enter_barangay": MessageLookupByLibrary.simpleMessage(
-      "Maglagay ng Barangay",
+    "english": MessageLookupByLibrary.simpleMessage("English"),
+    "enter_6_digit_code": MessageLookupByLibrary.simpleMessage(
+      "Ilagay ang 6-digit code",
+    ),
+    "enter_barangay": MessageLookupByLibrary.simpleMessage("Enter Barangay"),
+    "enter_username": MessageLookupByLibrary.simpleMessage(
+      "Ilagay ang inyong username",
     ),
     "error": MessageLookupByLibrary.simpleMessage("Error"),
     "error_delete_prescription": MessageLookupByLibrary.simpleMessage(
-      "Error sa pag-delete ng reseta",
+      "Error deleting prescription",
     ),
     "error_delete_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Error sa pag-delete ng mga reseta",
+      "Error deleting prescriptions",
     ),
     "error_deleting_prescription": MessageLookupByLibrary.simpleMessage(
-      "May error sa pagbura ng reseta",
+      "Error deleting prescription",
     ),
     "error_invalid_credentials": MessageLookupByLibrary.simpleMessage(
-      "Mali ang username o password. Pakisuri ang iyong credentials at subukang muli.",
+      "Wrong username or password. Please check your credentials and try again.",
     ),
     "error_load_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Hindi ma-load ang mga reseta",
+      "Failed to load prescriptions",
     ),
     "error_loading_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Error sa pag-load ng mga reseta",
+      "Error loading prescriptions",
+    ),
+    "error_loading_prototypes": MessageLookupByLibrary.simpleMessage(
+      "Error loading prototypes",
     ),
     "error_marking_complete": MessageLookupByLibrary.simpleMessage(
-      "May error sa pagmarka ng reseta bilang tapos na",
+      "Error marking prescription as complete",
     ),
     "error_marking_incomplete": MessageLookupByLibrary.simpleMessage(
-      "May error sa pagmarka ng reseta bilang hindi pa tapos",
+      "Error marking prescription as incomplete",
     ),
     "error_no_internet": MessageLookupByLibrary.simpleMessage(
-      "Walang internet connection. Pakisuri ang iyong connection at subukang muli.",
+      "No internet connection. Please check your connection and try again.",
     ),
     "error_server": MessageLookupByLibrary.simpleMessage(
-      "May problema sa server. Pakisubukan muli mamaya.",
+      "There was a problem with the server. Please try again later.",
     ),
     "error_timeout": MessageLookupByLibrary.simpleMessage(
-      "Mabagal ang server. Pakisubukan muli mamaya.",
+      "The server is taking too long to respond. Please try again later.",
     ),
     "error_unknown": MessageLookupByLibrary.simpleMessage(
-      "May hindi inaasahang error. Pakisubukan muli.",
+      "An unexpected error occurred. Please try again.",
+    ),
+    "error_unsyncing_prototype": MessageLookupByLibrary.simpleMessage(
+      "Error unsyncing prototype",
     ),
     "error_update_prescription": MessageLookupByLibrary.simpleMessage(
-      "Error sa pag-update ng reseta",
+      "Error updating prescription",
     ),
     "estimated_duration": MessageLookupByLibrary.simpleMessage(
-      "Tinatayang Tagal",
+      "Estimated Duration",
     ),
     "estimated_growth_stage": MessageLookupByLibrary.simpleMessage(
-      "Tinatayang Yugto ng Paglago",
+      "Estimated Growth Stage",
     ),
-    "excellent": MessageLookupByLibrary.simpleMessage("Napakahusay"),
+    "excellent": MessageLookupByLibrary.simpleMessage("Excellent"),
     "exit_app_message": MessageLookupByLibrary.simpleMessage(
-      "Sigurado ka bang gusto mong lumabas ng application?",
+      "Are you sure you want to exit the application?",
     ),
-    "exit_app_title": MessageLookupByLibrary.simpleMessage("Lumabas ng App"),
+    "exit_app_title": MessageLookupByLibrary.simpleMessage("Exit Application"),
+    "failed_to_unsync_prototype": MessageLookupByLibrary.simpleMessage(
+      "Failed to unsync prototype",
+    ),
     "failed_to_update_profile": m10,
-    "fair": MessageLookupByLibrary.simpleMessage("Katamtaman"),
+    "fair": MessageLookupByLibrary.simpleMessage("Fair"),
     "faqA1": MessageLookupByLibrary.simpleMessage(
-      "Pumunta sa mga setting at i-toggle ang switch.",
+      "Go to settings and toggle the switch.",
     ),
     "faqA2": MessageLookupByLibrary.simpleMessage(
-      "I-click ang \'Nakalimutan ang Password\' sa login screen.",
+      "Click \'Forgot Password\' on the login screen.",
     ),
     "faqQ1": MessageLookupByLibrary.simpleMessage(
-      "Paano ko i-on ang mga notipikasyon?",
+      "How do I enable notifications?",
     ),
-    "faqQ2": MessageLookupByLibrary.simpleMessage(
-      "Paano i-reset ang aking password?",
-    ),
-    "faqTitle": MessageLookupByLibrary.simpleMessage("Mga Madalas Itanong"),
+    "faqQ2": MessageLookupByLibrary.simpleMessage("How to reset my password?"),
+    "faqTitle": MessageLookupByLibrary.simpleMessage("FAQs"),
     "faq_a1": MessageLookupByLibrary.simpleMessage(
-      "Ang berde ay nangangahulugang maayos ang sensor, habang ang pula ay maaaring may problema.",
+      "Green indicates the sensor is working properly, while red means there may be an issue.",
     ),
     "faq_a2": MessageLookupByLibrary.simpleMessage(
-      "Ina-update ang datos bawat 5 segundo.",
+      "Sensor data is updated every 5 seconds automatically.",
+    ),
+    "faq_add_sensor_answer": MessageLookupByLibrary.simpleMessage(
+      "Pumunta sa Farm Management section at i-tap ang \"Add Sensor\". Sundin ang setup instructions para ma-connect ang sensor sa app.",
+    ),
+    "faq_add_sensor_question": MessageLookupByLibrary.simpleMessage(
+      "Paano magdagdag ng bagong sensor?",
+    ),
+    "faq_change_farm_settings_answer": MessageLookupByLibrary.simpleMessage(
+      "Pumunta sa Settings > Farm Management para i-update ang farm information, field details, at sensor configurations.",
+    ),
+    "faq_change_farm_settings_question": MessageLookupByLibrary.simpleMessage(
+      "Paano baguhin ang farm settings?",
+    ),
+    "faq_check_farm_data_answer": MessageLookupByLibrary.simpleMessage(
+      "Inirerekomenda naming i-check ang farm data kahit isang beses sa isang araw. Magse-send ang app ng notifications para sa urgent issues.",
+    ),
+    "faq_check_farm_data_question": MessageLookupByLibrary.simpleMessage(
+      "Gaano kadalas dapat i-check ang farm data?",
+    ),
+    "faq_offline_usage_answer": MessageLookupByLibrary.simpleMessage(
+      "Oo, pwede gamitin ang app offline para sa pagtingin ng cached data. Pero ang real-time updates ay nangangailangan ng internet connection.",
+    ),
+    "faq_offline_usage_question": MessageLookupByLibrary.simpleMessage(
+      "Pwede bang gamitin ang app offline?",
     ),
     "faq_q1": MessageLookupByLibrary.simpleMessage(
-      "Ano ang ibig sabihin ng mga indicator ng sensor?",
+      "What do the sensor indicators mean?",
     ),
     "faq_q2": MessageLookupByLibrary.simpleMessage(
-      "Gaano kadalas ina-update ang datos ng sensor?",
+      "How often does the app update sensor data?",
+    ),
+    "faq_sensor_disconnected_answer": MessageLookupByLibrary.simpleMessage(
+      "I-check ang internet connection at siguraduhing naka-power on ang sensor. Subukan i-restart ang sensor at i-refresh ang app.",
+    ),
+    "faq_sensor_disconnected_question": MessageLookupByLibrary.simpleMessage(
+      "Bakit naka-disconnect ang sensor ko?",
     ),
     "faq_title": MessageLookupByLibrary.simpleMessage("FAQs"),
-    "farm_alert": MessageLookupByLibrary.simpleMessage("Alerto ng Bukid"),
-    "farm_alerts": MessageLookupByLibrary.simpleMessage("Mga Alerto ng Bukid"),
+    "farm_alert": MessageLookupByLibrary.simpleMessage("Farm Alert"),
+    "farm_alerts": MessageLookupByLibrary.simpleMessage("Farm Alerts"),
     "farm_alerts_description": MessageLookupByLibrary.simpleMessage(
-      "Mga babala ng panahon, alerto ng patubig, at mga update sa kalusugan ng pananim",
+      "Weather warnings, irrigation alerts, and crop health updates",
     ),
     "farm_prescription": MessageLookupByLibrary.simpleMessage(
-      "Reseta ng Bukid",
+      "Farm Prescription",
     ),
     "farm_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Mga Reseta sa Bukid",
+      "Farm Prescriptions",
     ),
     "farm_registration_successful": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na Na-register ang Bukid!",
+      "Farm Registration Successful!",
     ),
-    "farm_task": MessageLookupByLibrary.simpleMessage("Gawain sa Bukid"),
+    "farm_task": MessageLookupByLibrary.simpleMessage("Farm Task"),
     "farm_task_requires_attention": MessageLookupByLibrary.simpleMessage(
-      "Ang gawain sa bukid ay nangangailangan ng atensyon",
+      "Farm task requires attention",
     ),
-    "feb": MessageLookupByLibrary.simpleMessage("Peb"),
-    "february": MessageLookupByLibrary.simpleMessage("Peb"),
-    "fertilization": MessageLookupByLibrary.simpleMessage("Pagtatanim"),
-    "field": MessageLookupByLibrary.simpleMessage("Lupa"),
+    "feb": MessageLookupByLibrary.simpleMessage("Feb"),
+    "february": MessageLookupByLibrary.simpleMessage("Feb"),
+    "fertilization": MessageLookupByLibrary.simpleMessage("Fertilization"),
+    "field": MessageLookupByLibrary.simpleMessage("Field"),
+    "field_colon": MessageLookupByLibrary.simpleMessage("Field:"),
     "field_information": MessageLookupByLibrary.simpleMessage(
-      "Impormasyon ng Bukid",
+      "Field Information",
     ),
-    "field_name": MessageLookupByLibrary.simpleMessage("Pangalan ng Taniman"),
+    "field_name": MessageLookupByLibrary.simpleMessage("Field Name"),
     "field_name_hint": MessageLookupByLibrary.simpleMessage(
-      "Taniman A, Hilagang Taniman, Pangunahing Plot",
+      "Field A, North Field, Main Plot",
     ),
-    "field_name_label": MessageLookupByLibrary.simpleMessage(
-      "Pangalan ng Bukirin",
-    ),
+    "field_name_label": MessageLookupByLibrary.simpleMessage("Field Name"),
     "field_name_required": MessageLookupByLibrary.simpleMessage(
-      "Kinakailangan ang pangalan ng bukid",
+      "Field name is required",
     ),
-    "filter_done": MessageLookupByLibrary.simpleMessage("Tapos Na"),
-    "filter_newest": MessageLookupByLibrary.simpleMessage("Pinakabago Muna"),
-    "filter_not_done": MessageLookupByLibrary.simpleMessage("Hindi Pa Tapos"),
-    "filter_oldest": MessageLookupByLibrary.simpleMessage("Pinakaluma Muna"),
+    "filter_done": MessageLookupByLibrary.simpleMessage("Done"),
+    "filter_newest": MessageLookupByLibrary.simpleMessage("Newest First"),
+    "filter_not_done": MessageLookupByLibrary.simpleMessage("Not Yet Done"),
+    "filter_oldest": MessageLookupByLibrary.simpleMessage("Oldest First"),
     "filter_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "I-filter ang mga Reseta",
+      "Filter Prescriptions",
     ),
-    "filter_view_all": MessageLookupByLibrary.simpleMessage("Tingnan Lahat"),
+    "filter_view_all": MessageLookupByLibrary.simpleMessage("View All"),
     "filtered_by": m11,
-    "first_name": MessageLookupByLibrary.simpleMessage("Pangalan"),
+    "first_name": MessageLookupByLibrary.simpleMessage("First Name"),
     "first_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
-      "Ang unang pangalan ay hindi dapat may magkakasunod na espesyal na karakter",
+      "First name cannot have consecutive special characters",
     ),
     "first_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
-      "Ang unang pangalan ay pwedeng may mga titik, espasyo, gitling, kudlit, at tuldok lamang",
+      "First name can only contain letters, spaces, hyphens, apostrophes, and periods",
     ),
     "first_name_invalid_format": MessageLookupByLibrary.simpleMessage(
-      "Ang unang pangalan ay hindi dapat magsimula o magtapos sa mga espesyal na karakter",
+      "First name cannot start or end with special characters",
     ),
     "first_name_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang pangalan",
+      "First name is required",
     ),
     "first_name_too_long": MessageLookupByLibrary.simpleMessage(
-      "Ang unang pangalan ay hindi dapat lumampas sa 50 titik",
+      "First name must not exceed 50 characters",
     ),
     "first_name_too_short": MessageLookupByLibrary.simpleMessage(
-      "Ang unang pangalan ay dapat may hindi bababa sa 2 titik",
+      "First name must be at least 2 characters long",
     ),
     "follow_recommended_actions": MessageLookupByLibrary.simpleMessage(
-      "Sundin ang mga inirerekomendang aksyon",
+      "Follow recommended actions",
     ),
-    "forgot_password": MessageLookupByLibrary.simpleMessage(
-      "Nakalimutan ang Password?",
+    "forgot_password": MessageLookupByLibrary.simpleMessage("Forgot Password?"),
+    "frequently_asked_questions": MessageLookupByLibrary.simpleMessage(
+      "Mga Madalas na Tanong",
     ),
-    "friday": MessageLookupByLibrary.simpleMessage("Biyernes"),
-    "from": MessageLookupByLibrary.simpleMessage("Mula"),
+    "friday": MessageLookupByLibrary.simpleMessage("Friday"),
+    "from": MessageLookupByLibrary.simpleMessage("From"),
     "fully_developed_corn": MessageLookupByLibrary.simpleMessage(
-      "Ganap nang mais",
+      "Fully developed corn",
     ),
-    "general": MessageLookupByLibrary.simpleMessage("Pangkalahatan"),
+    "general": MessageLookupByLibrary.simpleMessage("General"),
+    "get_help_and_find_answers": MessageLookupByLibrary.simpleMessage(
+      "Kumuha ng tulong at makahanap ng mga sagot sa mga karaniwang tanong",
+    ),
+    "get_in_touch_with_support_team": MessageLookupByLibrary.simpleMessage(
+      "Makipag-ugnayan sa aming support team",
+    ),
     "get_real_time_analytics": MessageLookupByLibrary.simpleMessage(
-      "Kumuha ng real-time analytics at insights",
+      "Get real-time analytics and insights",
     ),
     "give_field_unique_name": MessageLookupByLibrary.simpleMessage(
-      "Bigyan ng natatanging pangalan ang inyong taniman upang matulungan kayong makilala ito sa inyong bukid",
+      "Give your field a unique name to help you identify it in your farm",
     ),
-    "go_to_settings": MessageLookupByLibrary.simpleMessage(
-      "Pumunta sa Settings",
-    ),
-    "good": MessageLookupByLibrary.simpleMessage("Maganda"),
+    "go_to_settings": MessageLookupByLibrary.simpleMessage("Go to Settings"),
+    "good": MessageLookupByLibrary.simpleMessage("Good"),
     "greeting_afternoon": MessageLookupByLibrary.simpleMessage(
-      "Magandang Hapon",
+      "Good Afternoon",
     ),
-    "greeting_evening": MessageLookupByLibrary.simpleMessage("Magandang Gabi"),
-    "greeting_morning": MessageLookupByLibrary.simpleMessage("Magandang Umaga"),
-    "growth_stage": MessageLookupByLibrary.simpleMessage("Yugto ng Paglago"),
+    "greeting_evening": MessageLookupByLibrary.simpleMessage("Good Evening"),
+    "greeting_morning": MessageLookupByLibrary.simpleMessage("Good Morning"),
+    "growth_stage": MessageLookupByLibrary.simpleMessage("Growth Stage"),
     "growth_stage_calculated": MessageLookupByLibrary.simpleMessage(
-      "Ang yugto ng paglago ay awtomatikong kinakalkula batay sa inyong petsa ng pagtatanim upang magbigay ng tumpak na pagsubaybay.",
+      "The growth stage is automatically calculated based on your planting date to provide accurate monitoring.",
     ),
     "growth_stage_early_vegetative": MessageLookupByLibrary.simpleMessage(
-      "Maagang Paglaki",
+      "Early Vegetative",
     ),
-    "growth_stage_emergence": MessageLookupByLibrary.simpleMessage("Paglitaw"),
-    "growth_stage_maturing": MessageLookupByLibrary.simpleMessage("Paghihinog"),
+    "growth_stage_emergence": MessageLookupByLibrary.simpleMessage("Emergence"),
+    "growth_stage_maturing": MessageLookupByLibrary.simpleMessage("Maturing"),
     "growth_stage_maturity_harvest": MessageLookupByLibrary.simpleMessage(
-      "Hinog/Ani",
+      "Maturity/Harvest",
     ),
     "growth_stage_mid_vegetative": MessageLookupByLibrary.simpleMessage(
-      "Gitnang Paglaki",
+      "Mid Vegetative",
     ),
-    "growth_stage_r1": MessageLookupByLibrary.simpleMessage(
-      "Paglabas ng Buhok",
-    ),
+    "growth_stage_r1": MessageLookupByLibrary.simpleMessage("Silking"),
     "growth_stage_r1_desc": MessageLookupByLibrary.simpleMessage(
-      "May buhok na sa tenga",
+      "Silks emerging from ears",
     ),
-    "growth_stage_r6": MessageLookupByLibrary.simpleMessage("Ganap na Hinog"),
+    "growth_stage_r6": MessageLookupByLibrary.simpleMessage("Mature"),
     "growth_stage_r6_desc": MessageLookupByLibrary.simpleMessage(
-      "Lubos nang hinog ang mais",
+      "Fully developed corn",
     ),
     "growth_stage_reproductive": MessageLookupByLibrary.simpleMessage(
       "Reproductive",
     ),
-    "growth_stage_v3": MessageLookupByLibrary.simpleMessage("Maagang Paglago"),
+    "growth_stage_required": MessageLookupByLibrary.simpleMessage(
+      "Growth stage is required",
+    ),
+    "growth_stage_v3": MessageLookupByLibrary.simpleMessage("Early Growth"),
     "growth_stage_v3_desc": MessageLookupByLibrary.simpleMessage(
-      "May 3-5 dahon na",
+      "3-5 leaves developed",
     ),
-    "growth_stage_v8": MessageLookupByLibrary.simpleMessage("Gitnang Paglago"),
+    "growth_stage_v8": MessageLookupByLibrary.simpleMessage("Mid Growth"),
     "growth_stage_v8_desc": MessageLookupByLibrary.simpleMessage(
-      "8-10 dahon, tumataas",
+      "8-10 leaves, growing taller",
     ),
-    "growth_stage_ve": MessageLookupByLibrary.simpleMessage("Pag-usbong"),
+    "growth_stage_ve": MessageLookupByLibrary.simpleMessage("Emergence"),
     "growth_stage_ve_desc": MessageLookupByLibrary.simpleMessage(
-      "Kakauusbong mula sa lupa",
+      "Just sprouting from soil",
     ),
-    "growth_stage_vt": MessageLookupByLibrary.simpleMessage(
-      "Paglabas ng Bulaklak",
-    ),
+    "growth_stage_vt": MessageLookupByLibrary.simpleMessage("Tasseling"),
     "growth_stage_vt_desc": MessageLookupByLibrary.simpleMessage(
-      "May bulaklak na sa tuktok",
+      "Tassels appearing at top",
     ),
-    "growth_timeline": MessageLookupByLibrary.simpleMessage("Takbo ng Paglaki"),
-    "harvest": MessageLookupByLibrary.simpleMessage("Ani"),
+    "growth_timeline": MessageLookupByLibrary.simpleMessage("Growth Timeline"),
+    "harvest": MessageLookupByLibrary.simpleMessage("Harvest"),
     "healthy_growth": MessageLookupByLibrary.simpleMessage(
-      "Malusog ang bilis ng paglago",
+      "Healthy growth rate",
     ),
     "helpDescription": MessageLookupByLibrary.simpleMessage(
-      "Narito ang ilang kapaki-pakinabang na impormasyon.",
+      "Here\'s some helpful info.",
     ),
-    "helpTitle": MessageLookupByLibrary.simpleMessage("Tulong"),
+    "helpTitle": MessageLookupByLibrary.simpleMessage("Help"),
     "help_content_coming_soon": MessageLookupByLibrary.simpleMessage(
-      "Ang help content ay darating na!",
+      "Help content coming soon!",
     ),
     "help_description": MessageLookupByLibrary.simpleMessage(
-      "Nagbibigay ang seksyong ito ng impormasyon upang matulungan ang mga user na maunawaan ang mga tampok at paggamit ng app.",
+      "This section provides information to help users understand the app features and usage. Learn how to monitor your plants, configure settings, and interpret sensor data.",
     ),
-    "help_title": MessageLookupByLibrary.simpleMessage("Tulong"),
-    "high": MessageLookupByLibrary.simpleMessage("Mataas"),
-    "high_priority": MessageLookupByLibrary.simpleMessage(
-      "Mataas na Prioridad",
-    ),
-    "hours_ago": MessageLookupByLibrary.simpleMessage("oras ang nakalipas"),
+    "help_faq": MessageLookupByLibrary.simpleMessage("Tulong at FAQ"),
+    "help_title": MessageLookupByLibrary.simpleMessage("Help"),
+    "high": MessageLookupByLibrary.simpleMessage("High"),
+    "high_priority": MessageLookupByLibrary.simpleMessage("High Priority"),
+    "hours_ago": MessageLookupByLibrary.simpleMessage("hours ago"),
     "hours_left": m12,
     "humidity": MessageLookupByLibrary.simpleMessage("Halumigmig"),
     "humidity_moderate": MessageLookupByLibrary.simpleMessage(
-      "Katamtamang halumigmig ng hangin.",
+      "The air has moderate humidity, comfortable for plant transpiration.",
     ),
     "humidity_quite_humid": MessageLookupByLibrary.simpleMessage(
-      "Medyo mahalumigmig ang hangin.",
+      "The air is quite humid, often associated with moist environments.",
     ),
-    "humidity_title": MessageLookupByLibrary.simpleMessage("Halumigmig"),
+    "humidity_title": MessageLookupByLibrary.simpleMessage("Humidity"),
     "humidity_very_dry": MessageLookupByLibrary.simpleMessage(
-      "Sobrang tuyo ng hangin.",
+      "The air is very dry, typical of arid environments.",
     ),
     "humidity_very_humid": MessageLookupByLibrary.simpleMessage(
-      "Sobrang mahalumigmig ng hangin.",
+      "The air is very humid, common before rainfall or in tropical climates.",
     ),
-    "immediate": MessageLookupByLibrary.simpleMessage("Agad"),
-    "in_progress": MessageLookupByLibrary.simpleMessage("Ginagawa"),
-    "instructions": MessageLookupByLibrary.simpleMessage("Mga Tagubilin"),
+    "immediate": MessageLookupByLibrary.simpleMessage("Immediate"),
+    "in_progress": MessageLookupByLibrary.simpleMessage("In Progress"),
+    "inactive": MessageLookupByLibrary.simpleMessage("Inactive"),
+    "instructions": MessageLookupByLibrary.simpleMessage("Instructions"),
     "invalid_credentials": MessageLookupByLibrary.simpleMessage(
-      "Di-wastong username o password",
+      "Invalid username or password",
     ),
     "invalid_prototype_id": MessageLookupByLibrary.simpleMessage(
-      "Hindi wastong Prototype ID",
+      "Invalid prototype ID",
     ),
-    "irrigation": MessageLookupByLibrary.simpleMessage("Patubig"),
-    "jan": MessageLookupByLibrary.simpleMessage("Ene"),
-    "january": MessageLookupByLibrary.simpleMessage("Ene"),
-    "jul": MessageLookupByLibrary.simpleMessage("Hul"),
-    "july": MessageLookupByLibrary.simpleMessage("Hul"),
-    "jun": MessageLookupByLibrary.simpleMessage("Hun"),
-    "june": MessageLookupByLibrary.simpleMessage("Hun"),
-    "just_now": MessageLookupByLibrary.simpleMessage("Ngayon lang"),
+    "invalid_verification_code_format": MessageLookupByLibrary.simpleMessage(
+      "Hindi wastong format ng verification code",
+    ),
+    "irrigation": MessageLookupByLibrary.simpleMessage("Irrigation"),
+    "jan": MessageLookupByLibrary.simpleMessage("Jan"),
+    "january": MessageLookupByLibrary.simpleMessage("Jan"),
+    "jul": MessageLookupByLibrary.simpleMessage("Jul"),
+    "july": MessageLookupByLibrary.simpleMessage("Jul"),
+    "jun": MessageLookupByLibrary.simpleMessage("Jun"),
+    "june": MessageLookupByLibrary.simpleMessage("Jun"),
+    "just_now": MessageLookupByLibrary.simpleMessage("Just now"),
     "just_sprouting_from_soil": MessageLookupByLibrary.simpleMessage(
-      "Sumisilang pa lang mula sa lupa",
+      "Just sprouting from soil",
     ),
-    "language": MessageLookupByLibrary.simpleMessage("Wika"),
+    "language": MessageLookupByLibrary.simpleMessage("Language"),
     "language_changed_to": m13,
     "language_settings": MessageLookupByLibrary.simpleMessage(
-      "Mga Setting ng Wika",
+      "Language Settings",
     ),
-    "last_month": MessageLookupByLibrary.simpleMessage("Nakaraang buwan"),
-    "last_name": MessageLookupByLibrary.simpleMessage("Apelyido"),
+    "last_month": MessageLookupByLibrary.simpleMessage("Last month"),
+    "last_name": MessageLookupByLibrary.simpleMessage("Last Name"),
     "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
-      "Ang apelyido ay hindi dapat may magkakasunod na espesyal na karakter",
+      "Last name cannot have consecutive special characters",
     ),
     "last_name_invalid_characters": MessageLookupByLibrary.simpleMessage(
-      "Ang apelyido ay pwedeng may mga titik, espasyo, gitling, kudlit, at tuldok lamang",
+      "Last name can only contain letters, spaces, hyphens, apostrophes, and periods",
     ),
     "last_name_invalid_format": MessageLookupByLibrary.simpleMessage(
-      "Ang apelyido ay hindi dapat magsimula o magtapos sa mga espesyal na karakter",
+      "Last name cannot start or end with special characters",
     ),
     "last_name_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang apelyido",
+      "Last name is required",
     ),
     "last_name_too_long": MessageLookupByLibrary.simpleMessage(
-      "Ang apelyido ay hindi dapat lumampas sa 50 titik",
+      "Last name must not exceed 50 characters",
     ),
     "last_name_too_short": MessageLookupByLibrary.simpleMessage(
-      "Ang apelyido ay dapat may hindi bababa sa 2 titik",
+      "Last name must be at least 2 characters long",
     ),
-    "last_updated": MessageLookupByLibrary.simpleMessage("Huling na-update"),
-    "last_week": MessageLookupByLibrary.simpleMessage("Nakaraang linggo"),
+    "last_updated": MessageLookupByLibrary.simpleMessage("Last updated"),
+    "last_week": MessageLookupByLibrary.simpleMessage("Last week"),
     "ldrSensor": MessageLookupByLibrary.simpleMessage("LDR Sensor"),
-    "ldr_sensor": MessageLookupByLibrary.simpleMessage("Sensor ng Liwanag"),
+    "ldr_sensor": MessageLookupByLibrary.simpleMessage(
+      "Light Dependent Resistor",
+    ),
     "learn_how_to_use_maize_watch": MessageLookupByLibrary.simpleMessage(
-      "Matuto kung paano gamitin ang Maize Watch app",
+      "Learn how to use the Maize Watch app",
     ),
     "learn_more_about_maize_watch": MessageLookupByLibrary.simpleMessage(
-      "Matuto pa tungkol sa Maize Watch",
+      "Learn more about Maize Watch",
     ),
     "leaves_3_5_developed": MessageLookupByLibrary.simpleMessage(
-      "May 3-5 dahon na",
+      "3-5 leaves developed",
     ),
     "leaves_8_10_developed": MessageLookupByLibrary.simpleMessage(
-      "May 8-10 dahon, lumalaki na",
+      "8-10 leaves, growing taller",
     ),
-    "light_intensity": MessageLookupByLibrary.simpleMessage("Liwanag"),
+    "light": MessageLookupByLibrary.simpleMessage("Liwanag"),
+    "light_intensity": MessageLookupByLibrary.simpleMessage("Light Intensity"),
     "light_intensity_bright": MessageLookupByLibrary.simpleMessage(
-      "Maliwanag ang kapaligiran.",
+      "The light intensity is bright, close to clear daytime conditions.",
     ),
     "light_intensity_moderate": MessageLookupByLibrary.simpleMessage(
-      "Katamtamang liwanag.",
+      "The light intensity is moderate, similar to cloudy daylight.",
     ),
-    "light_intensity_title": MessageLookupByLibrary.simpleMessage("Liwanag"),
+    "light_intensity_title": MessageLookupByLibrary.simpleMessage(
+      "Light Intensity",
+    ),
     "light_intensity_very_low": MessageLookupByLibrary.simpleMessage(
-      "Sobrang hina ng liwanag.",
+      "The light intensity is very low, resembling evening or dense shade.",
     ),
     "light_intensity_very_strong": MessageLookupByLibrary.simpleMessage(
-      "Napakaliwanag gaya ng tanghaling tapat.",
+      "The light intensity is very strong, similar to direct midday sunlight.",
     ),
     "live": MessageLookupByLibrary.simpleMessage("ONLINE"),
     "loading_farm_tasks": MessageLookupByLibrary.simpleMessage(
-      "Naglo-load ng mga gawain sa bukid...",
+      "Loading farm tasks...",
     ),
     "loading_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Nilo-load ang mga reseta...",
+      "Loading prescriptions...",
     ),
-    "location": MessageLookupByLibrary.simpleMessage("Lokasyon"),
+    "location": MessageLookupByLibrary.simpleMessage("Location"),
     "location_default": MessageLookupByLibrary.simpleMessage(
       "Default: Amadeo, Cavite",
     ),
-    "location_label": MessageLookupByLibrary.simpleMessage("Lokasyon"),
+    "location_label": MessageLookupByLibrary.simpleMessage("Location"),
     "location_not_specified": MessageLookupByLibrary.simpleMessage(
-      "Hindi tinukoy ang lokasyon",
+      "Location not specified",
     ),
-    "login": MessageLookupByLibrary.simpleMessage("Mag-login"),
-    "login_error": MessageLookupByLibrary.simpleMessage("Error sa Pag-login"),
+    "login": MessageLookupByLibrary.simpleMessage("Log In"),
+    "login_error": MessageLookupByLibrary.simpleMessage("Login Error"),
     "login_failed": MessageLookupByLibrary.simpleMessage(
-      "Hindi matagumpay ang pag-login. Mangyaring mag-login ng manu-mano.",
+      "Login failed. Please log in manually.",
     ),
-    "logout": MessageLookupByLibrary.simpleMessage("Mag-logout"),
+    "logout": MessageLookupByLibrary.simpleMessage("Log out"),
     "logout_error": MessageLookupByLibrary.simpleMessage(
-      "Nagkaroon ng problema sa pag-logout. Pakisubukang muli.",
+      "There was a problem logging out. Please try again.",
     ),
     "logout_message": MessageLookupByLibrary.simpleMessage(
-      "Sigurado ka bang gusto mong mag-logout?",
+      "Are you sure you want to logout from your account?",
     ),
-    "logout_title": MessageLookupByLibrary.simpleMessage(
-      "Kumpirmasyon ng Logout",
-    ),
-    "low": MessageLookupByLibrary.simpleMessage("Mababa"),
-    "low_light": MessageLookupByLibrary.simpleMessage("Mahinang Liwanag"),
-    "low_priority": MessageLookupByLibrary.simpleMessage("Mababang Prioridad"),
+    "logout_title": MessageLookupByLibrary.simpleMessage("Logout Confirmation"),
+    "low": MessageLookupByLibrary.simpleMessage("Low"),
+    "low_light": MessageLookupByLibrary.simpleMessage("Low Light"),
+    "low_priority": MessageLookupByLibrary.simpleMessage("Low Priority"),
     "maize_watch_notifications": MessageLookupByLibrary.simpleMessage(
       "Maize Watch Notifications",
+    ),
+    "manage_and_unsync_prototypes": MessageLookupByLibrary.simpleMessage(
+      "Pamahalaan at i-unsync ang mga prototype sa mga field",
+    ),
+    "manage_your_app_preferences": MessageLookupByLibrary.simpleMessage(
+      "Pamahalaan ang mga kagustuhan ng app",
     ),
     "mar": MessageLookupByLibrary.simpleMessage("Mar"),
     "march": MessageLookupByLibrary.simpleMessage("Mar"),
     "mark_as_complete": MessageLookupByLibrary.simpleMessage(
-      "Markahan bilang Tapos",
+      "Mark as Complete",
     ),
-    "mark_complete": MessageLookupByLibrary.simpleMessage(
-      "Markahan bilang Tapos",
-    ),
+    "mark_complete": MessageLookupByLibrary.simpleMessage("Mark Complete"),
     "marked_as_completed": MessageLookupByLibrary.simpleMessage(
-      "Nakamarkang natapos!",
+      "Marked as completed!",
     ),
     "marked_as_pending": MessageLookupByLibrary.simpleMessage(
-      "Nakamarkang pending",
+      "Marked as pending",
     ),
     "materials_needed": MessageLookupByLibrary.simpleMessage(
-      "Mga Materyales na Kailangan",
+      "Materials Needed",
     ),
     "maturity_stage": m14,
     "may": MessageLookupByLibrary.simpleMessage("May"),
-    "medium": MessageLookupByLibrary.simpleMessage("Katamtaman"),
-    "medium_priority": MessageLookupByLibrary.simpleMessage(
-      "Katamtamang Prioridad",
-    ),
-    "minutes_ago": MessageLookupByLibrary.simpleMessage("minuto ang nakalipas"),
-    "moist": MessageLookupByLibrary.simpleMessage("Basa"),
+    "medium": MessageLookupByLibrary.simpleMessage("Medium"),
+    "medium_priority": MessageLookupByLibrary.simpleMessage("Medium Priority"),
+    "minutes_ago": MessageLookupByLibrary.simpleMessage("minutes ago"),
+    "moist": MessageLookupByLibrary.simpleMessage("Moist"),
     "moisture_fairly_moist": MessageLookupByLibrary.simpleMessage(
-      "Medyo basa ang lupa. Bantayan laban sa sobrang tubig.",
+      "The soil is fairly moist. Monitor for potential overwatering.",
     ),
     "moisture_low": MessageLookupByLibrary.simpleMessage(
-      "Mababa ang halumigmig ng lupa. Magdilig sa lalong madaling panahon.",
+      "The soil moisture is low. Consider watering soon to maintain healthy growth.",
     ),
     "moisture_optimal": MessageLookupByLibrary.simpleMessage(
-      "Tamang-tama ang halumigmig ng lupa. Maayos ang kondisyon.",
+      "The soil moisture is at an optimal level. Plants are in good condition.",
     ),
     "moisture_too_dry": MessageLookupByLibrary.simpleMessage(
-      "Sobrang tuyo ng lupa. Kailangan ng irigasyon.",
+      "The soil is too dry. Irrigation is highly recommended to prevent plant stress.",
     ),
     "moisture_too_wet": MessageLookupByLibrary.simpleMessage(
-      "Sobrang basa ng lupa. Panganib ng pagkabulok ng ugat.",
+      "The soil is too wet. Risk of root rot and fungal diseases is high.",
     ),
-    "monday": MessageLookupByLibrary.simpleMessage("Lunes"),
+    "monday": MessageLookupByLibrary.simpleMessage("Monday"),
     "monitor_crop_health": MessageLookupByLibrary.simpleMessage(
-      "Subaybayan ang kalusugan ng inyong pananim gamit ang IoT sensors",
+      "Monitor your crop health with IoT sensors",
     ),
     "monitor_sensor_condition": MessageLookupByLibrary.simpleMessage(
-      "Subaybayan ang kalagayan ng inyong mga sensor",
+      "Monitor the condition of your sensors",
     ),
     "multiple_fields_info": MessageLookupByLibrary.simpleMessage(
-      "Maaari kayong magkaroon ng maraming taniman sa inyong bukid. Bawat taniman ay maaaring may iba\'t ibang uri ng lupa, petsa ng pagtatanim, at mga sensor.",
+      "You can have multiple fields in your farm. Each field can have different soil types, planting dates, and sensors.",
     ),
-    "municipality": MessageLookupByLibrary.simpleMessage("Bayan"),
+    "municipality": MessageLookupByLibrary.simpleMessage("Municipality"),
     "municipality_amadeo": MessageLookupByLibrary.simpleMessage("Amadeo"),
     "municipality_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang bayan",
+      "Municipality is required",
     ),
-    "my_farm": MessageLookupByLibrary.simpleMessage("Aking Bukid"),
-    "name_your_field": MessageLookupByLibrary.simpleMessage(
-      "Pangalanan ang Inyong Taniman",
-    ),
+    "my_farm": MessageLookupByLibrary.simpleMessage("My Farm"),
+    "name_your_field": MessageLookupByLibrary.simpleMessage("Name Your Field"),
     "network_error": MessageLookupByLibrary.simpleMessage(
-      "Error sa network. Pakisuri ang inyong koneksyon.",
+      "Network error. Please check your connection.",
     ),
     "new_farm_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Mga Bagong Reseta sa Bukid",
+      "New Farm Prescriptions",
     ),
     "new_farm_tasks_message": m15,
-    "new_password": MessageLookupByLibrary.simpleMessage("Bagong Password"),
+    "new_password": MessageLookupByLibrary.simpleMessage("New Password"),
     "new_password_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang bagong password",
+      "New password is required",
     ),
     "new_prescription_available": MessageLookupByLibrary.simpleMessage(
-      "May bagong reseta na available",
+      "New prescription available",
     ),
-    "next": MessageLookupByLibrary.simpleMessage("Susunod"),
-    "next_button": MessageLookupByLibrary.simpleMessage("Susunod"),
-    "no": MessageLookupByLibrary.simpleMessage("Hindi"),
+    "next": MessageLookupByLibrary.simpleMessage("Next"),
+    "next_button": MessageLookupByLibrary.simpleMessage("Next"),
+    "no": MessageLookupByLibrary.simpleMessage("No"),
     "no_corn_fields": MessageLookupByLibrary.simpleMessage(
-      "Walang natagpuang taniman ng mais",
+      "No corn fields found",
     ),
-    "no_data": MessageLookupByLibrary.simpleMessage("Walang Datos"),
+    "no_data": MessageLookupByLibrary.simpleMessage("No Data"),
     "no_details_available": MessageLookupByLibrary.simpleMessage(
-      "Walang available na detalye",
+      "No details available",
     ),
     "no_farm_tasks_available": MessageLookupByLibrary.simpleMessage(
-      "Walang available na gawain sa bukid",
+      "No farm tasks available",
     ),
-    "no_field": MessageLookupByLibrary.simpleMessage("Walang taniman"),
+    "no_field": MessageLookupByLibrary.simpleMessage("No field"),
     "no_pending_tasks_found": MessageLookupByLibrary.simpleMessage(
-      "Walang nakitang pending na gawain",
+      "No pending tasks found",
     ),
     "no_prescriptions_found": MessageLookupByLibrary.simpleMessage(
-      "Walang nahanap na reseta",
+      "No prescriptions found",
+    ),
+    "no_prototypes_found": MessageLookupByLibrary.simpleMessage(
+      "No prototypes found",
+    ),
+    "no_prototypes_registered": MessageLookupByLibrary.simpleMessage(
+      "You haven\'t registered any prototypes yet.",
+    ),
+    "no_sensor_data_available": MessageLookupByLibrary.simpleMessage(
+      "Walang available na sensor data",
     ),
     "no_urgent_tasks_found": MessageLookupByLibrary.simpleMessage(
-      "Walang nakitang urgent na gawain",
+      "No urgent tasks found",
     ),
-    "none": MessageLookupByLibrary.simpleMessage("Wala"),
+    "none": MessageLookupByLibrary.simpleMessage("None"),
     "normal": MessageLookupByLibrary.simpleMessage("Normal"),
-    "not_now": MessageLookupByLibrary.simpleMessage("Hindi Muna"),
-    "not_started": MessageLookupByLibrary.simpleMessage("Hindi Pa Sinimulan"),
+    "not_now": MessageLookupByLibrary.simpleMessage("Not Now"),
+    "not_started": MessageLookupByLibrary.simpleMessage("Not Started"),
     "notification_badge": MessageLookupByLibrary.simpleMessage(
-      "Badge ng Notipikasyon",
+      "Notification Badge",
     ),
     "notification_description": MessageLookupByLibrary.simpleMessage(
-      "Makatanggap ng mga alerto para sa mga update ng bukid, babala ng panahon, at mga isyu sa sensor",
+      "Get alerts for farm updates, weather warnings, and sensor issues",
     ),
     "notification_permission_message": MessageLookupByLibrary.simpleMessage(
-      "Gusto ng Maize Watch na magpadala ng mga notification tungkol sa:\n\n• Mga bagong reseta ng bukid\n• Mga alert ng sensor\n• Mahahalagang update\n\nTumutulong ito na maging updated ka sa kalusugan ng iyong bukid.",
+      "Maize Watch would like to send you notifications about:\n\n• New farm prescriptions\n• Sensor alerts\n• Important updates\n\nThis helps you stay informed about your farm\'s health.",
     ),
     "notification_permission_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang pahintulot ng notipikasyon para makatanggap ng mga alerto",
+      "Notification permission is required to receive alerts",
     ),
     "notification_settings": MessageLookupByLibrary.simpleMessage(
-      "Mga Setting ng Notipikasyon",
+      "Notification Settings",
     ),
     "notification_settings_failed": m16,
     "notification_settings_updated": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na na-update ang mga setting ng notipikasyon!",
+      "Notification settings updated successfully!",
     ),
     "notification_sound": MessageLookupByLibrary.simpleMessage(
-      "Tunog ng Notipikasyon",
+      "Notification Sound",
     ),
     "notification_test_failed": MessageLookupByLibrary.simpleMessage(
-      "Nabigo ang test ng notipikasyon",
+      "Notification test failed",
     ),
     "notification_test_successful": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay ang test ng notipikasyon!",
+      "Notification test successful!",
     ),
     "notification_types": MessageLookupByLibrary.simpleMessage(
-      "Mga Uri ng Notipikasyon",
+      "Notification Types",
     ),
     "notification_vibration": MessageLookupByLibrary.simpleMessage(
-      "Vibration ng Notipikasyon",
+      "Notification Vibration",
     ),
-    "notifications": MessageLookupByLibrary.simpleMessage("Mga Notipikasyon"),
+    "notifications": MessageLookupByLibrary.simpleMessage("Notifications"),
     "notifications_channel_description": MessageLookupByLibrary.simpleMessage(
-      "Mga notification para sa pag-monitor ng farm at alerts",
+      "Notifications for farm monitoring and alerts",
     ),
     "notifications_disabled_message": MessageLookupByLibrary.simpleMessage(
-      "Na-disable ang mga notification. Maaari mo itong i-enable sa settings.",
+      "Notifications disabled. You can enable them in settings.",
     ),
     "notifications_enabled": m17,
     "notifications_enabled_disabled": m18,
     "notifications_enabled_message": MessageLookupByLibrary.simpleMessage(
-      "Na-enable ang mga notification! Makakatanggap ka ng mga update tungkol sa bukid.",
+      "Notifications enabled! You\'ll receive farm updates.",
     ),
     "notifications_for_farm_monitoring": MessageLookupByLibrary.simpleMessage(
-      "Mga notipikasyon para sa pagsubaybay sa bukid at mga alerto",
+      "Notifications for farm monitoring and alerts",
     ),
-    "nov": MessageLookupByLibrary.simpleMessage("Nob"),
-    "november": MessageLookupByLibrary.simpleMessage("Nob"),
-    "now": MessageLookupByLibrary.simpleMessage("Ngayon"),
-    "oct": MessageLookupByLibrary.simpleMessage("Okt"),
-    "october": MessageLookupByLibrary.simpleMessage("Okt"),
-    "off": MessageLookupByLibrary.simpleMessage("Patay"),
+    "nov": MessageLookupByLibrary.simpleMessage("Nov"),
+    "november": MessageLookupByLibrary.simpleMessage("Nov"),
+    "now": MessageLookupByLibrary.simpleMessage("Now"),
+    "null_value": MessageLookupByLibrary.simpleMessage("NULL"),
+    "oct": MessageLookupByLibrary.simpleMessage("Oct"),
+    "october": MessageLookupByLibrary.simpleMessage("Oct"),
+    "off": MessageLookupByLibrary.simpleMessage("Off"),
     "offline": MessageLookupByLibrary.simpleMessage("Offline"),
     "offline_mode_cached_data": MessageLookupByLibrary.simpleMessage(
-      "Offline Mode - Naka-cache na Data",
+      "Offline Mode - Cached Data",
     ),
     "ok": MessageLookupByLibrary.simpleMessage("OK"),
     "okay": MessageLookupByLibrary.simpleMessage("Okay"),
-    "on": MessageLookupByLibrary.simpleMessage("Bukas"),
-    "overcast": MessageLookupByLibrary.simpleMessage("Napakaulap"),
-    "overdue": MessageLookupByLibrary.simpleMessage("Nalampasan na"),
-    "parameter_humidity": MessageLookupByLibrary.simpleMessage("Halumigmig"),
+    "on": MessageLookupByLibrary.simpleMessage("On"),
+    "overcast": MessageLookupByLibrary.simpleMessage("Overcast"),
+    "overdue": MessageLookupByLibrary.simpleMessage("Overdue"),
+    "parameter_humidity": MessageLookupByLibrary.simpleMessage("Humidity"),
     "parameter_light_intensity": MessageLookupByLibrary.simpleMessage(
-      "Lakas ng Liwanag",
+      "Light Intensity",
     ),
     "parameter_soil_moisture": MessageLookupByLibrary.simpleMessage(
-      "Halumigmig ng Lupa",
+      "Soil Moisture",
     ),
-    "parameter_soil_ph": MessageLookupByLibrary.simpleMessage(
-      "Antas ng pH ng Lupa",
-    ),
+    "parameter_soil_ph": MessageLookupByLibrary.simpleMessage("Soil pH"),
     "parameter_temperature": MessageLookupByLibrary.simpleMessage(
-      "Temperatura",
+      "Temperature",
     ),
-    "partly_cloudy": MessageLookupByLibrary.simpleMessage("Medyo Maulap"),
+    "partly_cloudy": MessageLookupByLibrary.simpleMessage("Partly Cloudy"),
     "partly_cloudy_description": MessageLookupByLibrary.simpleMessage(
-      "Medyo maulap",
+      "Partly cloudy",
     ),
     "partly_cloudy_weather": MessageLookupByLibrary.simpleMessage(
-      "Medyo Maulap",
+      "Partly Cloudy",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Password"),
     "password_min_length": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat na hindi bababa sa 6 na karakter",
+      "Password must be at least 6 characters",
     ),
     "password_needs_lowercase": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat may hindi bababa sa isang maliit na titik",
+      "Password must contain at least one lowercase letter",
     ),
     "password_needs_number": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat may hindi bababa sa isang numero",
+      "Password must contain at least one number",
     ),
     "password_needs_special": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat may hindi bababa sa isang espesyal na karakter (!@#\$%^&*)",
+      "Password must contain at least one special character (!@#\$%^&*)",
     ),
     "password_needs_uppercase": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat may hindi bababa sa isang malaking titik",
+      "Password must contain at least one uppercase letter",
     ),
     "password_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang password",
+      "Password is required",
     ),
     "password_reset_successful": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na na-reset ang password!",
+      "Password reset successfully!",
     ),
     "password_too_common": MessageLookupByLibrary.simpleMessage(
-      "Ang password na ito ay masyadong common. Mangyaring pumili ng mas malakas na password",
+      "This password is too common. Please choose a stronger password",
     ),
     "password_too_long": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay hindi dapat lumampas sa 128 karakter",
+      "Password must not exceed 128 characters",
     ),
     "password_too_short": MessageLookupByLibrary.simpleMessage(
-      "Ang password ay dapat may hindi bababa sa 6 na karakter",
+      "Password must be at least 6 characters",
     ),
     "passwords_do_not_match": MessageLookupByLibrary.simpleMessage(
-      "Hindi magkatugma ang mga password",
+      "Passwords do not match",
     ),
     "passwords_dont_match": MessageLookupByLibrary.simpleMessage(
-      "Hindi magkatugma ang mga password",
+      "Passwords do not match",
     ),
-    "pending": MessageLookupByLibrary.simpleMessage("Hindi Pa Tapos"),
+    "pending": MessageLookupByLibrary.simpleMessage("Pending"),
     "permission_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang Pahintulot",
+      "Permission Required",
     ),
-    "pest_control": MessageLookupByLibrary.simpleMessage("Kontrol sa Peste"),
-    "phSensor": MessageLookupByLibrary.simpleMessage("Sensor ng Antas ng pH"),
-    "ph_sensor": MessageLookupByLibrary.simpleMessage("PH Antas ng Lupa"),
-    "phone_number": MessageLookupByLibrary.simpleMessage("Numero ng Telepono"),
+    "pest_control": MessageLookupByLibrary.simpleMessage("Pest Control"),
+    "phSensor": MessageLookupByLibrary.simpleMessage("pH Level Sensor"),
+    "ph_sensor": MessageLookupByLibrary.simpleMessage("PH Level of Soil"),
+    "phone_number": MessageLookupByLibrary.simpleMessage("Phone Number"),
     "phone_number_invalid": MessageLookupByLibrary.simpleMessage(
-      "Maglagay ng wastong numero ng telepono",
+      "Please enter a valid phone number",
     ),
     "phone_number_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang numero ng telepono",
+      "Phone number is required",
     ),
-    "planting_date": MessageLookupByLibrary.simpleMessage(
-      "Petsa ng Pagtatanim",
+    "phone_verification_description": MessageLookupByLibrary.simpleMessage(
+      "Please verify your phone number to complete your registration.",
+    ),
+    "phone_verification_required": MessageLookupByLibrary.simpleMessage(
+      "Phone Verification Required",
+    ),
+    "planting_date": MessageLookupByLibrary.simpleMessage("Planting Date"),
+    "planting_date_required": MessageLookupByLibrary.simpleMessage(
+      "Planting date is required",
     ),
     "planting_season_description": MessageLookupByLibrary.simpleMessage(
-      "Piliin and petsa ng pagtatanim ng mais.",
+      "Select the date you planted your corn",
     ),
     "planting_season_title": MessageLookupByLibrary.simpleMessage(
-      "Kailan ka nagtanim?",
+      "When did you plant?",
     ),
     "please_complete_device_info": MessageLookupByLibrary.simpleMessage(
-      "Pakisuyo kumpletuhin ang lahat ng impormasyon ng device",
+      "Please complete all device information",
     ),
     "please_enter_field_name": MessageLookupByLibrary.simpleMessage(
-      "Pakipasok ang pangalan ng taniman",
+      "Please enter a field name",
     ),
     "please_log_in_continue": MessageLookupByLibrary.simpleMessage(
-      "Pakipasok muna upang magpatuloy.",
+      "Please log in to continue.",
     ),
     "please_register_device": MessageLookupByLibrary.simpleMessage(
-      "Pakirehistro ang hindi bababa sa isang device upang magpatuloy",
+      "Please register at least one device to continue",
     ),
     "please_select_planting_date": MessageLookupByLibrary.simpleMessage(
-      "Pakisuyo piliin ang petsa ng pagtatanim",
+      "Please select a planting date",
     ),
     "please_validate_prototype_id": MessageLookupByLibrary.simpleMessage(
-      "Pakisuri muna ang prototype ID bago mag-submit",
+      "Please validate the prototype ID before submitting",
     ),
-    "poor": MessageLookupByLibrary.simpleMessage("Mahina"),
+    "poor": MessageLookupByLibrary.simpleMessage("Poor"),
     "prescription_alert": MessageLookupByLibrary.simpleMessage(
-      "Alerto ng Reseta",
+      "Prescription Alert",
     ),
     "prescription_deleted_successfully": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na nabura ang reseta",
+      "Prescription deleted successfully",
     ),
     "prescription_details": MessageLookupByLibrary.simpleMessage(
-      "Detalye ng Reseta",
+      "Prescription Details",
     ),
     "prescription_marked_complete": MessageLookupByLibrary.simpleMessage(
-      "Nakamarkang tapos na ang reseta",
+      "Prescription marked as complete",
     ),
     "prescription_marked_incomplete": MessageLookupByLibrary.simpleMessage(
-      "Nakamarkang hindi pa tapos ang reseta",
+      "Prescription marked as incomplete",
     ),
     "prescription_updates": MessageLookupByLibrary.simpleMessage(
-      "Mga Update ng Reseta",
+      "Prescription Updates",
     ),
     "prescription_updates_description": MessageLookupByLibrary.simpleMessage(
-      "Mga bagong rekomendasyon sa bukid at mga mungkahi sa paggamot",
+      "New farm recommendations and treatment suggestions",
     ),
     "prescriptions_subtitle": MessageLookupByLibrary.simpleMessage(
-      "Pamahalaan ang iyong mga reseta",
+      "Manage your prescriptions",
     ),
-    "prescriptions_title": MessageLookupByLibrary.simpleMessage("Mga Reseta"),
-    "priority": MessageLookupByLibrary.simpleMessage("Prioridad"),
+    "prescriptions_title": MessageLookupByLibrary.simpleMessage(
+      "Prescriptions",
+    ),
+    "priority": MessageLookupByLibrary.simpleMessage("Priority"),
     "privacy_info_intro": MessageLookupByLibrary.simpleMessage(
-      "Sa Maize Watch, kami ay nakatuon sa pagprotekta sa pagkapribado ng aming mga gumagamit, lalo na ang mga magsasaka ng mais na nagtitiwala sa amin ng kanilang mahalagang datos sa agrikultura. Ang Impormasyon sa Pagkapribado na ito ay nagbabalangkas kung paano namin kinokolekta, ginagamit, at pinoprotektahan ang iyong impormasyon kapag ginamit mo ang aming platform.",
+      "At Maize Watch, we are committed to protecting the privacy of our users, particularly corn farmers who entrust us with their valuable agricultural data. This Privacy Information outlines how we collect, use, and protect your information when you use our platform.",
     ),
     "privacy_info_section1_content": MessageLookupByLibrary.simpleMessage(
-      "Upang bigyan ka ng mga insight na batay sa datos at i-optimize ang iyong ani ng mais, kinokolekta ng Maize Watch ang mga sumusunod na uri ng impormasyon:\n\nDatos na Partikular sa Bukid: Lokasyon (mga coordinate ng GPS ng mga bukid), laki at mga hangganan ng bukid, iba\'t ibang pananim, mga petsa ng pagtatanim/pag-aani, at datos ng ani.\nDatos ng Sensor: Antas ng kahalumigmigan/sustansya ng lupa, temperatura (lupa/kapaligiran), humidity, intensity ng liwanag, at iba pang may-katuturang datos sa kapaligiran.\nImpormasyon sa Account: Ang iyong pangalan, impormasyon sa pakikipag-ugnayan, pangalan/ID ng bukid, at mga kredensyal sa pag-login (naka-encrypt).\nDatos ng Paggamit: Mga feature na na-access, oras na ginugol, mga ulat na nabuo, at hindi nagpapakilalang impormasyon ng device.",
+      "To provide you with data-driven insights and optimize your corn yields, Maize Watch collects the following types of information:\n\nFarm-Specific Data: Location (GPS coordinates of fields), field size and boundaries, crop variety, planting/harvesting dates, and yield data.\nSensor Data: Soil moisture/nutrient levels, temperature (soil/ambient), humidity, light intensity, and other relevant environmental data.\nAccount Information: Your name, contact info, farm name/ID, and login credentials (encrypted).\nUsage Data: Features accessed, time spent, reports generated, and anonymized device info.",
     ),
     "privacy_info_section1_title": MessageLookupByLibrary.simpleMessage(
-      "1. Impormasyong Kinokolekta Namin:",
+      "1. Information We Collect:",
     ),
     "privacy_info_section2_content": MessageLookupByLibrary.simpleMessage(
-      "Upang Magbigay ng Pangunahing Serbisyo: I-visualize ang pagganap ng bukid, suriin ang mga kondisyon, mag-alok ng mga rekomendasyon, at subaybayan ang pag-unlad.\nUpang Pagbutihin ang Maize Watch: Pagandahin ang mga feature, bumuo ng mga bagong tool, at pagbutihin ang mga modelo (madalas gamit ang hindi nagpapakilala datos).\nPara sa Komunikasyon: Magpadala ng mga update, alerto, at tumugon sa mga katanungan.\nPara sa Seguridad: Tiyakin ang integridad ng platform, pigilan ang pandaraya, at sumunod sa mga legal na tungkulin.",
+      "To Provide Core Services: Visualize farm performance, analyze conditions, offer recommendations, and track progress.\nTo Improve Maize Watch: Enhance features, develop new tools, and improve models (often using anonymized data).\nFor Communication: Send updates, alerts, and respond to inquiries.\nFor Security: Ensure platform integrity, prevent fraud, and comply with legal duties.",
     ),
     "privacy_info_section2_title": MessageLookupByLibrary.simpleMessage(
-      "2. Paano Namin Ginagamit ang Iyong Impormasyon:",
+      "2. How We Use Your Information:",
     ),
     "privacy_info_section3_content": MessageLookupByLibrary.simpleMessage(
-      "Sa Iyong Pahintulot: Ang datos ay ibinabahagi lamang sa mga partido na iyong inaprubahan (hal., mga consultant).\nMga Tagapagbigay ng Serbisyo: Mga pinagkakatiwalaang tagapagbigay lamang sa ilalim ng mahigpit na kasunduan.\nPinagsama-sama/Hindi Nagpapakilalang Datos: Ginagamit para sa pananaliksik o benchmarking nang hindi ibinubunyag ang mga pagkakakilanlan.\nMga Legal na Kinakailangan: Ibinubunyag lamang kapag legal na kinakailangan.",
+      "With Your Consent: Data is shared only with parties you approve (e.g., consultants).\nService Providers: Only trusted providers under strict agreements.\nAggregated/Anonymized Data: Used for research or benchmarking without revealing identities.\nLegal Requirements: Disclosed only when legally necessary.",
     ),
     "privacy_info_section3_title": MessageLookupByLibrary.simpleMessage(
-      "3. Pagbabahagi at Pagbubunyag ng Datos:",
+      "3. Data Sharing and Disclosure:",
     ),
     "privacy_info_section4_content": MessageLookupByLibrary.simpleMessage(
-      "Pag-encrypt (sa transit at sa pahinga)\nMahigpit na mga kontrol sa pag-access\nPamamaraan ng mga regular na pag-audit sa seguridad\nMga secure na backup ng datos",
+      "Encryption (in transit & at rest)\nStrict access controls\nRegular security audits\nSecure data backups",
     ),
     "privacy_info_section4_title": MessageLookupByLibrary.simpleMessage(
-      "4. Seguridad ng Datos:",
+      "4. Data Security:",
     ),
     "privacy_info_section5_content": MessageLookupByLibrary.simpleMessage(
-      "I-access, i-update, o itama ang iyong datos anumang orasHumiling ng kopya ng iyong datos (data portability)\nHumiling ng pagtanggal ng datos (napapailalim sa legal na pagpapanatili)\nMag-opt-out sa mga hindi mahahalagang komunikasyon",
+      "Access, update, or correct your data anytime\nRequest a copy of your data (data portability)\nRequest data deletion (subject to legal retention)\nOpt-out of non-essential communications",
     ),
     "privacy_info_section5_title": MessageLookupByLibrary.simpleMessage(
-      "5. Ang Iyong mga Pagpipilian at Karapatan:",
+      "5. Your Choices and Rights:",
     ),
     "privacy_info_section6_content": MessageLookupByLibrary.simpleMessage(
-      "Ang iyong datos ay pinananatili habang aktibo ang iyong account at para sa isang makatwirang panahon pagkatapos upang sumunod sa mga obligasyon at tiyakin ang pagpapatuloy.",
+      "Your data is retained while your account is active and for a reasonable period afterward to comply with obligations and ensure continuity.",
     ),
     "privacy_info_section6_title": MessageLookupByLibrary.simpleMessage(
-      "6. Pagpapanatili ng Datos:",
+      "6. Data Retention:",
     ),
     "privacy_info_section7_content": MessageLookupByLibrary.simpleMessage(
-      "Ang mga update sa Impormasyon sa Pagkapribado na ito ay ipo-post sa aming website o ipapaalam nang naaangkop. Mangyaring suriin ito nang pana-panahon.",
+      "Updates to this Privacy Information will be posted on our website or communicated appropriately. Please review it periodically.",
     ),
     "privacy_info_section7_title": MessageLookupByLibrary.simpleMessage(
-      "7. Mga Pagbabago sa Impormasyon sa Pagkapribado na Ito:",
+      "7. Changes to This Privacy Information:",
     ),
     "privacy_info_title": MessageLookupByLibrary.simpleMessage(
-      "Impormasyon sa Pagkapribado ng Maize Watch",
+      "Maize Watch Privacy Information",
     ),
-    "privacy_policy": MessageLookupByLibrary.simpleMessage(
-      "Patakaran sa Pagkapribado",
-    ),
+    "privacy_policy": MessageLookupByLibrary.simpleMessage("Privacy Policy"),
     "profile_update_in_progress": MessageLookupByLibrary.simpleMessage(
-      "Ang profile update ay kasalukuyang ginagawa. Pakihintay.",
+      "Profile update already in progress. Please wait.",
     ),
     "profile_updated_successfully": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na na-update ang profile!",
+      "Profile updated successfully!",
     ),
+    "prototype_id": MessageLookupByLibrary.simpleMessage("Prototype"),
     "prototype_id_not_found": MessageLookupByLibrary.simpleMessage(
-      "Hindi nahanap ang Prototype ID",
+      "Prototype ID not found",
     ),
-    "province": MessageLookupByLibrary.simpleMessage("Lalawigan"),
+    "prototype_unsynced": MessageLookupByLibrary.simpleMessage(
+      "Prototype unsynced successfully",
+    ),
+    "province": MessageLookupByLibrary.simpleMessage("Province"),
     "province_cavite": MessageLookupByLibrary.simpleMessage("Cavite"),
     "province_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang lalawigan",
+      "Province is required",
     ),
-    "quiet_hours": MessageLookupByLibrary.simpleMessage("Tahimik na Oras"),
-    "r1_silking": MessageLookupByLibrary.simpleMessage("Pagsilk (R1)"),
-    "r6_mature": MessageLookupByLibrary.simpleMessage("Ganap na Mais (R6)"),
-    "rainfall": MessageLookupByLibrary.simpleMessage("Ulan"),
-    "rainy": MessageLookupByLibrary.simpleMessage("Umuulan"),
+    "quiet_hours": MessageLookupByLibrary.simpleMessage("Quiet Hours"),
+    "r1_silking": MessageLookupByLibrary.simpleMessage("Silking (R1)"),
+    "r6_mature": MessageLookupByLibrary.simpleMessage("Mature (R6)"),
+    "rainfall": MessageLookupByLibrary.simpleMessage("Rainfall"),
+    "rainy": MessageLookupByLibrary.simpleMessage("Rainy"),
     "rapid_growth": MessageLookupByLibrary.simpleMessage(
-      "Mabilis ang paglago!",
+      "Rapid growth detected!",
     ),
     "receive_alerts_recommendations": MessageLookupByLibrary.simpleMessage(
-      "Tumanggap ng mga alert at rekomendasyon",
+      "Receive alerts and recommendations",
     ),
     "recommendation_apply_fertilizer": MessageLookupByLibrary.simpleMessage(
-      "Maglagay ng pataba ayon sa rekomendasyon para sa pinakamainam na paglago",
+      "Apply fertilizer as recommended for optimal growth",
     ),
     "recommendation_light": MessageLookupByLibrary.simpleMessage(
-      "Siguraduhing may tamang liwanag para sa malusog na paglago",
+      "Ensure proper light exposure for healthy growth",
     ),
     "recommendation_soil_ph": MessageLookupByLibrary.simpleMessage(
-      "I-adjust ang antas ng pH ng lupa sa rekomendadong antas",
+      "Adjust soil pH to recommended levels",
     ),
     "recommendation_temperature": MessageLookupByLibrary.simpleMessage(
-      "Subaybayan at panatilihin ang pinakamainam na kondisyon ng temperatura",
+      "Monitor and maintain optimal temperature conditions",
     ),
     "recommendation_title": MessageLookupByLibrary.simpleMessage(
-      "Mga Rekomendasyon",
+      "Recommendations",
     ),
     "recommendation_water": MessageLookupByLibrary.simpleMessage(
-      "I-adjust ang iskedyul ng patubig batay sa antas ng halumigmig ng lupa",
+      "Adjust irrigation schedule based on soil moisture levels",
     ),
-    "refresh": MessageLookupByLibrary.simpleMessage("I-refresh"),
-    "region": MessageLookupByLibrary.simpleMessage("Rehiyon"),
+    "refresh": MessageLookupByLibrary.simpleMessage("Refresh"),
+    "refresh_auth": MessageLookupByLibrary.simpleMessage("I-refresh ang Auth"),
+    "refresh_farm_data": MessageLookupByLibrary.simpleMessage(
+      "I-refresh ang Farm Data",
+    ),
+    "region": MessageLookupByLibrary.simpleMessage("Region"),
     "region_calabarzon": MessageLookupByLibrary.simpleMessage(
-      "CALABARZON (Rehiyon IV-A)",
+      "CALABARZON (Region IV-A)",
     ),
     "region_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang rehiyon",
+      "Region is required",
     ),
-    "register": MessageLookupByLibrary.simpleMessage("Magrehistro"),
+    "register": MessageLookupByLibrary.simpleMessage("Register"),
     "register_corn_button": MessageLookupByLibrary.simpleMessage(
-      "Magrehistro ng Mais",
+      "Register Corn",
     ),
     "register_corn_field_prompt": MessageLookupByLibrary.simpleMessage(
-      "Mangyaring magrehistro ng taniman ng mais upang masimulan ang pagsubaybay.",
+      "Please register a corn field to start tracking progress.",
     ),
     "register_corn_next": MessageLookupByLibrary.simpleMessage(
-      "I-rehistro ang mais",
+      "Register your corn next",
     ),
     "register_monitoring_devices": MessageLookupByLibrary.simpleMessage(
-      "Magrehistro ng mga monitoring device para sa inyong taniman (Hindi bababa sa isang device ang kailangan)",
+      "Register monitoring devices for your field (At least one device required)",
     ),
     "register_page1_description": MessageLookupByLibrary.simpleMessage(
-      "Gumawa ng inyong account sa pamamagitan ng pagbibigay ng inyong personal na impormasyon sa ibaba.",
+      "Create your account by providing your personal information below.",
     ),
     "register_page1_title": MessageLookupByLibrary.simpleMessage(
-      "Umpisahan na natin",
+      "Let\'s get you started",
     ),
     "register_page2_description": MessageLookupByLibrary.simpleMessage(
-      "Ngayon naman ay mag-setup tayo ng inyong login credentials para ma-secure ang inyong account.",
+      "Now let\'s set up your login credentials to secure your account.",
     ),
-    "register_page2_title": MessageLookupByLibrary.simpleMessage("Kamusta, "),
+    "register_page2_title": MessageLookupByLibrary.simpleMessage("Hi, "),
     "registration_failed": MessageLookupByLibrary.simpleMessage(
-      "Hindi matagumpay ang pagpaparehistro. Pakisubukang muli.",
+      "Registration failed. Please try again.",
     ),
     "registration_successful": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay ang pagpaparehistro! Mangyaring mag-lagay ng impormasyon tungkol sa mais.",
+      "Registration successful! Please input your corn information.",
     ),
     "registration_timeout": MessageLookupByLibrary.simpleMessage(
-      "Masyado nang matagal ang paghihintay sa server. Maaaring nalikha na ang iyong account. Subukang mag-login.",
+      "The server is taking too long to respond. Your account may have been created. Please try logging in.",
     ),
     "request_timed_out": MessageLookupByLibrary.simpleMessage(
-      "Ang request ay na-timeout. Pakisuri ang inyong koneksyon at subukan muli.",
+      "Request timed out. Please check your connection and try again.",
     ),
-    "reset_password": MessageLookupByLibrary.simpleMessage(
-      "I-reset ang Password",
+    "resend_code": MessageLookupByLibrary.simpleMessage(
+      "Ipadala ulit ang Code",
     ),
-    "retry": MessageLookupByLibrary.simpleMessage("Subukan Muli"),
+    "resend_in_seconds": m19,
+    "resending": MessageLookupByLibrary.simpleMessage("Resending..."),
+    "reset_password": MessageLookupByLibrary.simpleMessage("Reset Password"),
+    "retry": MessageLookupByLibrary.simpleMessage("Retry"),
     "review_and_submit": MessageLookupByLibrary.simpleMessage(
-      "Suriin at Isumite",
+      "Review and Submit",
     ),
-    "saturday": MessageLookupByLibrary.simpleMessage("Sabado"),
-    "save": MessageLookupByLibrary.simpleMessage("I-save"),
-    "saving": MessageLookupByLibrary.simpleMessage("Sinasave..."),
-    "season_both": MessageLookupByLibrary.simpleMessage("Parehong Panahon"),
+    "saturday": MessageLookupByLibrary.simpleMessage("Saturday"),
+    "save": MessageLookupByLibrary.simpleMessage("Save"),
+    "saving": MessageLookupByLibrary.simpleMessage("Saving..."),
+    "season_both": MessageLookupByLibrary.simpleMessage("Both Seasons"),
     "season_dry": MessageLookupByLibrary.simpleMessage(
-      "Panahong Tag-init (Disyembre hanggang Mayo)",
+      "Dry Season (December to May)",
     ),
     "season_wet": MessageLookupByLibrary.simpleMessage(
-      "Panahong Tag-ulan (Hunyo hanggang Nobyembre)",
+      "Wet Season (June to November)",
     ),
-    "seconds_ago": MessageLookupByLibrary.simpleMessage(
-      "segundo ang nakalipas",
-    ),
-    "see_more": MessageLookupByLibrary.simpleMessage("Tingnan Pa"),
+    "seconds_ago": MessageLookupByLibrary.simpleMessage("seconds ago"),
+    "see_more": MessageLookupByLibrary.simpleMessage("See More"),
     "select_barangay": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang inyong barangay",
+      "Select your barangay",
     ),
-    "select_date": MessageLookupByLibrary.simpleMessage("Pumili ng Petsa"),
-    "select_language": MessageLookupByLibrary.simpleMessage("Piliin ang Wika"),
+    "select_date": MessageLookupByLibrary.simpleMessage("Select Date"),
+    "select_language": MessageLookupByLibrary.simpleMessage("Select Language"),
     "select_municipality": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang inyong bayan",
+      "Select your municipality",
     ),
     "select_planting_date": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang petsa ng pagtatanim",
+      "Select planting date",
     ),
     "select_province": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang inyong lalawigan",
+      "Select your province",
     ),
-    "select_region": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang inyong rehiyon",
-    ),
+    "select_region": MessageLookupByLibrary.simpleMessage("Select your region"),
     "send_verification_code": MessageLookupByLibrary.simpleMessage(
-      "Ipadala ang Kodigo ng Pagpapatunay",
+      "Send Verification Code",
     ),
-    "sensor_alert": MessageLookupByLibrary.simpleMessage("Alerto ng Sensor"),
+    "sending": MessageLookupByLibrary.simpleMessage("Sending..."),
+    "sensor_alert": MessageLookupByLibrary.simpleMessage("Sensor Alert"),
     "sensor_offline": MessageLookupByLibrary.simpleMessage("Sensor Offline"),
     "sensor_offline_alert": MessageLookupByLibrary.simpleMessage(
-      "Alerto ng sensor na offline",
+      "Sensor offline alert",
     ),
-    "sensor_offline_description": m19,
-    "sensor_offline_message": m20,
+    "sensor_offline_description": m20,
+    "sensor_offline_message": m21,
     "sensor_sleep_description": MessageLookupByLibrary.simpleMessage(
-      "Ang inyong mga sensor ay natutulog na mula 8pm hanggang 3am PH time. Gising sila sa 3am.",
+      "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
     ),
     "sensor_sleep_mode": MessageLookupByLibrary.simpleMessage(
-      "Mga Sensor sa Sleep Mode",
+      "Sensors in Sleep Mode",
     ),
     "sensor_sleep_mode_alert": MessageLookupByLibrary.simpleMessage(
-      "Mga sensor sa sleep mode",
+      "Sensors in sleep mode",
     ),
-    "sensor_status": MessageLookupByLibrary.simpleMessage("Status ng Sensor"),
+    "sensor_status": MessageLookupByLibrary.simpleMessage("Sensor Status"),
     "sensor_status_description": MessageLookupByLibrary.simpleMessage(
-      "Mga alerto kapag ang mga sensor ay offline o nangangailangan ng maintenance",
+      "Alerts when sensors go offline or need maintenance",
     ),
-    "sensors": MessageLookupByLibrary.simpleMessage("Mga Sensor"),
+    "sensors": MessageLookupByLibrary.simpleMessage("Sensors"),
     "sensors_in_sleep_mode": MessageLookupByLibrary.simpleMessage(
-      "Mga Sensor sa Sleep Mode",
+      "Sensors in Sleep Mode",
     ),
     "sensors_sleep_mode_message": MessageLookupByLibrary.simpleMessage(
-      "Ang inyong mga sensor ay natutulog na mula 8pm hanggang 3am PH time. Gising sila sa 3am.",
+      "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
     ),
-    "sent": MessageLookupByLibrary.simpleMessage("Naipadala"),
-    "sep": MessageLookupByLibrary.simpleMessage("Set"),
-    "september": MessageLookupByLibrary.simpleMessage("Set"),
+    "sent": MessageLookupByLibrary.simpleMessage("Sent"),
+    "sep": MessageLookupByLibrary.simpleMessage("Sep"),
+    "september": MessageLookupByLibrary.simpleMessage("Sep"),
+    "session_expired": MessageLookupByLibrary.simpleMessage(
+      "Your session has expired. Please log in again.",
+    ),
     "settings": MessageLookupByLibrary.simpleMessage("Mga Setting"),
     "setup_farm_data_message": MessageLookupByLibrary.simpleMessage(
-      "Ngayon ay mag-setup tayo ng iyong farm data para simulan ang pag-monitor ng iyong mga corn crops.",
+      "Now let\'s set up your farm data to start monitoring your corn crops.",
     ),
-    "silking_stage": m21,
+    "silking_stage": m22,
     "silks_emerging": MessageLookupByLibrary.simpleMessage(
-      "Lumalabas na ang silk mula sa tainga",
+      "Silks emerging from ears",
     ),
     "soilMoistureSensor": MessageLookupByLibrary.simpleMessage(
-      "Sensor ng Halumigmig ng Lupa",
+      "Soil Moisture Sensor",
     ),
-    "soil_clay": MessageLookupByLibrary.simpleMessage("Luwad"),
+    "soil_clay": MessageLookupByLibrary.simpleMessage("Clay"),
     "soil_clay_desc": MessageLookupByLibrary.simpleMessage(
-      "Mabigat, humahawak ng tubig",
+      "Heavy, holds water",
     ),
     "soil_loam": MessageLookupByLibrary.simpleMessage("Loam"),
-    "soil_loamy": MessageLookupByLibrary.simpleMessage("Loam"),
+    "soil_loamy": MessageLookupByLibrary.simpleMessage("Loamy"),
     "soil_loamy_desc": MessageLookupByLibrary.simpleMessage(
-      "Halo ng buhangin, lamo, luwad",
+      "Mix of sand, silt, clay",
     ),
-    "soil_moisture": MessageLookupByLibrary.simpleMessage("Halumigmig ng Lupa"),
+    "soil_moisture": MessageLookupByLibrary.simpleMessage(
+      "Kahalumigmigan ng Lupa",
+    ),
     "soil_moisture_sensor": MessageLookupByLibrary.simpleMessage(
-      "Halumigmig ng Lupa",
+      "Soil Moisture",
     ),
-    "soil_peaty": MessageLookupByLibrary.simpleMessage("Pit"),
-    "soil_saline": MessageLookupByLibrary.simpleMessage("Alat"),
-    "soil_sandy": MessageLookupByLibrary.simpleMessage("Mabuhangin"),
+    "soil_peaty": MessageLookupByLibrary.simpleMessage("Peaty"),
+    "soil_saline": MessageLookupByLibrary.simpleMessage("Saline"),
+    "soil_sandy": MessageLookupByLibrary.simpleMessage("Sandy"),
     "soil_sandy_desc": MessageLookupByLibrary.simpleMessage(
-      "Magaan, mabilis ang daloy ng tubig",
+      "Light, drains quickly",
     ),
-    "soil_silt": MessageLookupByLibrary.simpleMessage("Lamo"),
-    "soil_silty": MessageLookupByLibrary.simpleMessage("Lamo"),
+    "soil_silt": MessageLookupByLibrary.simpleMessage("Silt"),
+    "soil_silty": MessageLookupByLibrary.simpleMessage("Silty"),
     "soil_silty_desc": MessageLookupByLibrary.simpleMessage(
-      "Makinis, humahawak ng moisture",
+      "Smooth, holds moisture",
     ),
-    "soil_type": MessageLookupByLibrary.simpleMessage("Uri ng Lupa"),
+    "soil_type": MessageLookupByLibrary.simpleMessage("Soil Type"),
     "soil_type_required": MessageLookupByLibrary.simpleMessage(
-      "Kinakailangan ang uri ng lupa",
+      "Soil type is required",
     ),
     "soil_type_title": MessageLookupByLibrary.simpleMessage(
-      "Piliin ang uri ng lupa ng iyong bukirin",
+      "Choose your field\'s soil type",
     ),
-    "soundAndVibrate": MessageLookupByLibrary.simpleMessage("Tunog at Vibrate"),
+    "soundAndVibrate": MessageLookupByLibrary.simpleMessage("Sound & Vibrate"),
     "sound_and_vibrate": MessageLookupByLibrary.simpleMessage(
-      "Tunog at Panginginig",
+      "Sound & Vibrate",
     ),
-    "stable": MessageLookupByLibrary.simpleMessage("Matatag ang paglago"),
+    "stable": MessageLookupByLibrary.simpleMessage("Growth is stable"),
     "status": MessageLookupByLibrary.simpleMessage("Status"),
     "status_all_completed_deleted": MessageLookupByLibrary.simpleMessage(
-      "Lahat ng tapos nang reseta ay nai-delete na",
+      "All completed prescriptions deleted",
     ),
     "status_all_deleted": MessageLookupByLibrary.simpleMessage(
-      "Lahat ng reseta ay nai-delete na",
+      "All prescriptions deleted",
     ),
-    "status_completed": MessageLookupByLibrary.simpleMessage("NATAPOS"),
+    "status_completed": MessageLookupByLibrary.simpleMessage("COMPLETED"),
     "status_prescription_completed": MessageLookupByLibrary.simpleMessage(
-      "Minarkahan bilang tapos na ang reseta",
+      "Prescription marked as completed",
     ),
     "status_prescription_deleted": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na nai-delete ang reseta",
+      "Prescription deleted successfully",
     ),
     "status_prescription_pending": MessageLookupByLibrary.simpleMessage(
-      "Minarkahan bilang hindi pa tapos ang reseta",
+      "Prescription marked as pending",
     ),
     "stay_updated": MessageLookupByLibrary.simpleMessage(
-      "Manatiling updated sa iyong sakahan!",
+      "Stay updated with your farm!",
     ),
-    "step1_title": MessageLookupByLibrary.simpleMessage("Bukirin"),
-    "step2_title": MessageLookupByLibrary.simpleMessage("Lupa"),
-    "step3_title": MessageLookupByLibrary.simpleMessage("Mais"),
-    "step4_title": MessageLookupByLibrary.simpleMessage("Panahon"),
-    "step5_title": MessageLookupByLibrary.simpleMessage("Edad"),
-    "step_by_step_instructions": m22,
-    "submit": MessageLookupByLibrary.simpleMessage("I-submit"),
-    "submit_button": MessageLookupByLibrary.simpleMessage("Isumite"),
-    "sunday": MessageLookupByLibrary.simpleMessage("Linggo"),
-    "sunny": MessageLookupByLibrary.simpleMessage("Mainit"),
-    "tap_to_view": MessageLookupByLibrary.simpleMessage("I-tap para makita"),
-    "tasseling_stage": m23,
+    "step1_title": MessageLookupByLibrary.simpleMessage("Field"),
+    "step2_title": MessageLookupByLibrary.simpleMessage("Soil"),
+    "step3_title": MessageLookupByLibrary.simpleMessage("Corn"),
+    "step4_title": MessageLookupByLibrary.simpleMessage("Season"),
+    "step5_title": MessageLookupByLibrary.simpleMessage("Age"),
+    "step_by_step_instructions": m23,
+    "submit": MessageLookupByLibrary.simpleMessage("Submit"),
+    "submit_button": MessageLookupByLibrary.simpleMessage("Submit"),
+    "sunday": MessageLookupByLibrary.simpleMessage("Sunday"),
+    "sunny": MessageLookupByLibrary.simpleMessage("Sunny"),
+    "support": MessageLookupByLibrary.simpleMessage("Suporta"),
+    "tap_to_view": MessageLookupByLibrary.simpleMessage("Tap to view"),
+    "tasseling_stage": m24,
     "tassels_appearing": MessageLookupByLibrary.simpleMessage(
-      "Lumalabas na ang mga bulaklak sa tuktok",
+      "Tassels appearing at top",
     ),
     "tempHumidSensor": MessageLookupByLibrary.simpleMessage(
-      "Sensor ng Temperatura at Humidity",
+      "Temperature & Humidity Sensor",
     ),
     "temp_humid_sensor": MessageLookupByLibrary.simpleMessage(
-      "Temperatura at Humidity",
+      "Temperature and Humidity",
     ),
     "temperature": MessageLookupByLibrary.simpleMessage("Temperatura"),
     "terms_intro": MessageLookupByLibrary.simpleMessage(
-      "Maligayang pagdating sa Maize Watch. Sa pamamagitan ng pag-access o paggamit ng aming platform, mga serbisyo, at mga kaugnay na tool, sumasang-ayon kang sumunod at mapailalim sa Mga Tuntunin ng Paggamit na ito. Kung hindi ka sumasang-ayon sa anumang bahagi ng mga tuntuning ito, mangyaring huwag gamitin ang Maize Watch.",
+      "Welcome to Maize Watch. By accessing or using our platform, services, and related tools, you agree to comply with and be bound by these Terms of Use. If you do not agree with any part of these terms, please do not use Maize Watch.",
     ),
     "terms_of_service": MessageLookupByLibrary.simpleMessage(
-      "Mga Tuntunin ng Serbisyo",
+      "Terms of Service",
     ),
-    "terms_of_use": MessageLookupByLibrary.simpleMessage(
-      "Mga Tuntunin ng Paggamit",
-    ),
+    "terms_of_use": MessageLookupByLibrary.simpleMessage("Terms of Use"),
     "terms_section1_content": MessageLookupByLibrary.simpleMessage(
-      "Maaari mo lamang gamitin ang Maize Watch para sa mga legal na layunin at alinsunod sa mga tuntuning ito.\nResponsibilidad mong panatilihing kumpidensyal ang iyong mga kredensyal sa account at lahat ng aktibidad sa ilalim ng iyong account.\nSumasang-ayon kang hindi gagamitin nang mali ang platform, makialam sa seguridad o pag-andar nito, o tangkaing hindi awtorisadong pag-access sa anumang bahagi ng system.",
+      "You may only use Maize Watch for lawful purposes and in accordance with these terms.\nYou are responsible for maintaining the confidentiality of your account credentials and all activities under your account.\nYou agree not to misuse the platform, interfere with its security or functionality, or attempt unauthorized access to any part of the system.",
     ),
     "terms_section1_title": MessageLookupByLibrary.simpleMessage(
-      "1. Paggamit ng Platform:",
+      "1. Use of the Platform:",
     ),
     "terms_section2_content": MessageLookupByLibrary.simpleMessage(
-      "Pinapanatili mo ang ganap na pagmamay-ari ng iyong datos ng bukid at impormasyon ng sensor.\nSa pamamagitan ng paggamit ng Maize Watch, binibigyan mo kami ng pahintulot na suriin ang iyong datos upang magbigay ng mga personalized na insight at pagbutihin ang pagganap ng platform.\nHindi namin ibabahagi ang iyong nakakapagpakilalang datos nang wala ang iyong malinaw na pahintulot, gaya ng nakabalangkas sa aming Patakaran sa Pagkapribado.",
+      "You retain full ownership of your farm data and sensor information.\nBy using Maize Watch, you grant us permission to analyze your data to provide personalized insights and improve platform performance.\nWe will not share your identifiable data without your explicit consent, as outlined in our Privacy Policy.",
     ),
     "terms_section2_title": MessageLookupByLibrary.simpleMessage(
-      "2. Pagmamay-ari at Paggamit ng Datos:",
+      "2. Data Ownership and Usage:",
     ),
     "terms_section3_content": MessageLookupByLibrary.simpleMessage(
-      "Ang lahat ng nilalaman sa Maize Watch, kabilang ang mga visualization, software, text, graphics, at logo, ay pag-aari ng Maize Watch o ng mga naglilisensya nito.\nHindi mo maaaring kopyahin, ipamahagi, baguhin, o lumikha ng mga gawaing hango nang wala ang aming nakasulat na pahintulot.",
+      "All content on Maize Watch, including visualizations, software, text, graphics, and logos, is the property of Maize Watch or its licensors.\nYou may not reproduce, distribute, modify, or create derivative works without our written permission.",
     ),
     "terms_section3_title": MessageLookupByLibrary.simpleMessage(
-      "3. Intelektwal na Ari-arian:",
+      "3. Intellectual Property:",
     ),
     "terms_section4_content": MessageLookupByLibrary.simpleMessage(
-      "Taglay namin ang karapatang suspindihin o wakasan ang iyong pag-access sa Maize Watch anumang oras kung lalabag ka sa mga tuntuning ito, aabusuhin ang platform, o makisali sa anumang pag-uugali na nakakaabala sa serbisyo para sa ibang mga gumagamit.",
+      "We reserve the right to suspend or terminate your access to Maize Watch at any time if you violate these terms, abuse the platform, or engage in any behavior that disrupts service for other users.",
     ),
     "terms_section4_title": MessageLookupByLibrary.simpleMessage(
-      "4. Pagwawakas ng Account:",
+      "4. Account Termination:",
     ),
     "terms_section5_content": MessageLookupByLibrary.simpleMessage(
-      "Nagbibigay ang Maize Watch ng mga insight na batay sa datos upang suportahan ang mga desisyon sa agrikultura. Ang mga huling desisyon tungkol sa mga kasanayan sa pagsasaka ay nananatiling iyong responsibilidad.\nHindi namin ginagarantiya ang mga partikular na resulta ng ani o kakayahang kumita dahil ang tagumpay sa agrikultura ay nakasalalay sa maraming hindi makontrol na mga kadahilanan.\nAng platform ay ibinibigay nang “as-is” at “as available” nang walang anumang uri ng mga garantiya.",
+      "Maize Watch provides data-based insights to support agricultural decisions. Final decisions regarding farming practices remain your responsibility.\nWe do not guarantee specific yield outcomes or profitability as agricultural success depends on many uncontrollable factors.\nThe platform is provided “as-is” and “as available” without warranties of any kind.",
     ),
     "terms_section5_title": MessageLookupByLibrary.simpleMessage(
-      "5. Mga Disclaimer:",
+      "5. Disclaimers:",
     ),
     "terms_section6_content": MessageLookupByLibrary.simpleMessage(
-      "Sa lawak na pinahihintulutan ng batas, ang Maize Watch ay hindi mananagot para sa anumang hindi direkta, incidental, o kinahihinatnang mga pinsala na nagmumula sa iyong paggamit ng platform, kabilang ang pagkawala ng datos, pagkawala ng ani, o mga desisyon na may kaugnayan sa bukid na ginawa batay sa aming analytics.",
+      "To the extent permitted by law, Maize Watch shall not be liable for any indirect, incidental, or consequential damages arising from your use of the platform, including data loss, yield loss, or farm-related decisions made based on our analytics.",
     ),
     "terms_section6_title": MessageLookupByLibrary.simpleMessage(
-      "6. Limitasyon ng Pananagutan:",
+      "6. Limitation of Liability:",
     ),
     "terms_section7_content": MessageLookupByLibrary.simpleMessage(
-      "Maaari naming i-update ang Mga Tuntunin ng Paggamit na ito paminsan-minsan. Ang mga materyal na pagbabago ay ipapaalam sa pamamagitan ng aming website o sa pamamagitan ng email. Ang iyong patuloy na paggamit ng Maize Watch pagkatapos ng mga pagbabago ay ituturing na pagtanggap sa mga bagong tuntunin.",
+      "We may update these Terms of Use from time to time. Material changes will be communicated through our platform or via email. Continued use of Maize Watch means you accept the updated terms.",
     ),
     "terms_section7_title": MessageLookupByLibrary.simpleMessage(
-      "7. Mga Update sa Mga Tuntunin:",
+      "7. Updates to the Terms:",
     ),
     "test_notification": MessageLookupByLibrary.simpleMessage(
-      "Test na Notipikasyon",
+      "Test Notification",
     ),
-    "textSizeLabel": MessageLookupByLibrary.simpleMessage("Laki ng Teksto"),
-    "third_leaf_stage": m24,
-    "this_month": MessageLookupByLibrary.simpleMessage("Sa buwang ito"),
-    "this_week": MessageLookupByLibrary.simpleMessage("Sa linggong ito"),
-    "thursday": MessageLookupByLibrary.simpleMessage("Huwebes"),
+    "textSizeLabel": MessageLookupByLibrary.simpleMessage("Text Size"),
+    "third_leaf_stage": m25,
+    "this_month": MessageLookupByLibrary.simpleMessage("This month"),
+    "this_week": MessageLookupByLibrary.simpleMessage("This week"),
+    "thursday": MessageLookupByLibrary.simpleMessage("Thursday"),
     "timeline": MessageLookupByLibrary.simpleMessage("Timeline"),
-    "timeline_filter": m25,
-    "timeline_next_week": MessageLookupByLibrary.simpleMessage(
-      "Sa susunod na linggo",
-    ),
-    "timeline_this_week": MessageLookupByLibrary.simpleMessage(
-      "Sa linggong ito",
-    ),
-    "timeline_today": MessageLookupByLibrary.simpleMessage("Ngayon"),
-    "to": MessageLookupByLibrary.simpleMessage("Hanggang"),
-    "today": MessageLookupByLibrary.simpleMessage("Ngayon"),
+    "timeline_filter": m26,
+    "timeline_next_week": MessageLookupByLibrary.simpleMessage("Next Week"),
+    "timeline_this_week": MessageLookupByLibrary.simpleMessage("This Week"),
+    "timeline_today": MessageLookupByLibrary.simpleMessage("Today"),
+    "to": MessageLookupByLibrary.simpleMessage("To"),
+    "today": MessageLookupByLibrary.simpleMessage("Today"),
     "tooltip_delete_prescription": MessageLookupByLibrary.simpleMessage(
-      "Tanggalin ang reseta",
+      "Delete prescription",
     ),
     "tooltip_refresh_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "I-refresh ang mga reseta",
+      "Refresh prescriptions",
     ),
-    "translate": MessageLookupByLibrary.simpleMessage("Isalin"),
-    "try_again": MessageLookupByLibrary.simpleMessage("Subukang Muli"),
-    "tuesday": MessageLookupByLibrary.simpleMessage("Martes"),
+    "translate": MessageLookupByLibrary.simpleMessage("Translate"),
+    "try_again": MessageLookupByLibrary.simpleMessage("Try Again"),
+    "tuesday": MessageLookupByLibrary.simpleMessage("Tuesday"),
     "unable_to_update_prescription_status":
         MessageLookupByLibrary.simpleMessage(
-          "Hindi ma-update ang status ng reseta",
+          "Unable to update prescription status",
         ),
-    "undo_complete": MessageLookupByLibrary.simpleMessage("Bawiin ang Tapos"),
-    "unknown": MessageLookupByLibrary.simpleMessage("Hindi Kilala"),
-    "unknown_field": MessageLookupByLibrary.simpleMessage(
-      "Hindi Kilalang Taniman",
+    "undo_complete": MessageLookupByLibrary.simpleMessage("Undo Complete"),
+    "unknown": MessageLookupByLibrary.simpleMessage("Unknown"),
+    "unknown_field": MessageLookupByLibrary.simpleMessage("Unknown Field"),
+    "unknown_sensor": MessageLookupByLibrary.simpleMessage("Unknown Sensor"),
+    "unsync_prototype": MessageLookupByLibrary.simpleMessage(
+      "Unsync Prototype",
     ),
-    "unknown_sensor": MessageLookupByLibrary.simpleMessage(
-      "Hindi kilalang Sensor",
+    "unsync_prototype_confirmation": MessageLookupByLibrary.simpleMessage(
+      "Are you sure you want to unsync this prototype from the field? This action cannot be undone.",
     ),
     "urgency": MessageLookupByLibrary.simpleMessage("Urgency"),
-    "urgency_filter": m26,
-    "urgency_high": MessageLookupByLibrary.simpleMessage("MATAAS"),
-    "urgency_low": MessageLookupByLibrary.simpleMessage("MABABA"),
-    "urgency_medium": MessageLookupByLibrary.simpleMessage("KATAMTAMAN"),
-    "urgency_urgent": MessageLookupByLibrary.simpleMessage("MADALI"),
+    "urgency_filter": m27,
+    "urgency_high": MessageLookupByLibrary.simpleMessage("HIGH"),
+    "urgency_low": MessageLookupByLibrary.simpleMessage("LOW"),
+    "urgency_medium": MessageLookupByLibrary.simpleMessage("MEDIUM"),
+    "urgency_urgent": MessageLookupByLibrary.simpleMessage("URGENT"),
     "urgent": MessageLookupByLibrary.simpleMessage("Urgent"),
     "user_id_not_found": MessageLookupByLibrary.simpleMessage(
-      "Hindi mahanap ang iyong User ID",
+      "User ID not found",
     ),
     "user_not_authenticated": MessageLookupByLibrary.simpleMessage(
-      "Hindi nakikilala ang user",
+      "User not authenticated",
     ),
     "user_registration_successful": MessageLookupByLibrary.simpleMessage(
-      "Matagumpay na Pagpaparehistro ng User!",
+      "User Registration Successful!",
     ),
-    "username": MessageLookupByLibrary.simpleMessage("Pangalan ng Gamit"),
+    "username": MessageLookupByLibrary.simpleMessage("Username"),
     "username_already_exists": MessageLookupByLibrary.simpleMessage(
-      "Ginagamit na ang username. Pakisubukang muli gamit ang ibang username.",
+      "Username already exists. Please try another one.",
     ),
     "username_consecutive_special": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay hindi dapat may magkakasunod na tuldok o underscore",
+      "Username cannot have consecutive periods or underscores",
     ),
     "username_invalid_characters": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay pwedeng may mga titik, numero, underscore, at tuldok lamang",
+      "Username can only contain letters, numbers, underscores, and periods",
     ),
     "username_invalid_end": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay dapat magtapos sa titik o numero",
+      "Username must end with a letter or number",
     ),
     "username_invalid_start": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay dapat magsimula sa titik o numero",
+      "Username must start with a letter or number",
     ),
+    "username_must_be_at_least_3_characters":
+        MessageLookupByLibrary.simpleMessage(
+          "Ang username ay dapat hindi bababa sa 3 na character",
+        ),
     "username_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang username",
+      "Username is required",
     ),
     "username_too_long": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay hindi dapat lumampas sa 20 karakter",
+      "Username must not exceed 20 characters",
     ),
     "username_too_short": MessageLookupByLibrary.simpleMessage(
-      "Ang username ay dapat may hindi bababa sa 3 karakter",
+      "Username must be at least 3 characters",
     ),
     "v3_early_growth": MessageLookupByLibrary.simpleMessage(
-      "Unang Paglago (V3)",
+      "Early Growth (V3)",
     ),
-    "v8_mid_growth": MessageLookupByLibrary.simpleMessage(
-      "Gitnang Paglago (V8)",
-    ),
+    "v8_mid_growth": MessageLookupByLibrary.simpleMessage("Mid Growth (V8)"),
     "valid_ph_number_required": MessageLookupByLibrary.simpleMessage(
-      "Maglagay ng wastong numero ng telepono sa Pilipinas",
+      "Enter a valid Philippine mobile number",
     ),
-    "variety_field_corn": MessageLookupByLibrary.simpleMessage(
-      "Pang-maisang Bukid",
-    ),
+    "variety_field_corn": MessageLookupByLibrary.simpleMessage("Field Corn"),
     "variety_field_corn_desc": MessageLookupByLibrary.simpleMessage(
-      "Para sa hayop o ethanol",
+      "For animal feed, ethanol",
     ),
     "variety_flint": MessageLookupByLibrary.simpleMessage("Flint"),
-    "variety_flint_corn": MessageLookupByLibrary.simpleMessage(
-      "Makintab na Mais",
-    ),
+    "variety_flint_corn": MessageLookupByLibrary.simpleMessage("Flint Corn"),
     "variety_flint_corn_desc": MessageLookupByLibrary.simpleMessage(
-      "Makukulay, palamuti",
+      "Colorful, decorative",
     ),
-    "variety_glutinous": MessageLookupByLibrary.simpleMessage("Malagkit"),
+    "variety_glutinous": MessageLookupByLibrary.simpleMessage(
+      "Glutinous (Malagkit)",
+    ),
     "variety_popcorn": MessageLookupByLibrary.simpleMessage("Popcorn"),
-    "variety_popcorn_desc": MessageLookupByLibrary.simpleMessage(
-      "Para sa popcorn",
-    ),
-    "variety_purple": MessageLookupByLibrary.simpleMessage("Ube"),
-    "variety_sweet": MessageLookupByLibrary.simpleMessage("Matamis"),
-    "variety_sweet_corn": MessageLookupByLibrary.simpleMessage(
-      "Matamis na Mais",
-    ),
+    "variety_popcorn_desc": MessageLookupByLibrary.simpleMessage("For popping"),
+    "variety_purple": MessageLookupByLibrary.simpleMessage("Purple"),
+    "variety_sweet": MessageLookupByLibrary.simpleMessage("Sweet"),
+    "variety_sweet_corn": MessageLookupByLibrary.simpleMessage("Sweet Corn"),
     "variety_sweet_corn_desc": MessageLookupByLibrary.simpleMessage(
-      "Para sa pagkain ng tao",
+      "For human consumption",
     ),
     "variety_white_fodder": MessageLookupByLibrary.simpleMessage(
-      "Puting Fodder",
+      "White Fodder",
     ),
-    "variety_yellow_dent": MessageLookupByLibrary.simpleMessage(
-      "Dilaw na Dent",
-    ),
-    "ve_emergence": MessageLookupByLibrary.simpleMessage("Pagsibol (VE)"),
+    "variety_yellow_dent": MessageLookupByLibrary.simpleMessage("Yellow Dent"),
+    "ve_emergence": MessageLookupByLibrary.simpleMessage("Emergence (VE)"),
     "ve_stage": MessageLookupByLibrary.simpleMessage("VE"),
     "verification_code": MessageLookupByLibrary.simpleMessage(
-      "Kodigo ng Pagpapatunay",
+      "Verification Code",
     ),
+    "verification_code_description": m28,
     "verification_code_invalid": MessageLookupByLibrary.simpleMessage(
-      "Maglagay ng wastong 6-digit na kodigo",
+      "Please enter a valid 6-digit code",
+    ),
+    "verification_code_invalid_format": MessageLookupByLibrary.simpleMessage(
+      "Verification code must contain only numbers",
+    ),
+    "verification_code_invalid_length": MessageLookupByLibrary.simpleMessage(
+      "Verification code must be 6 digits",
     ),
     "verification_code_required": MessageLookupByLibrary.simpleMessage(
-      "Kailangan ang kodigo ng pagpapatunay",
+      "Verification code is required",
+    ),
+    "verification_code_resent": MessageLookupByLibrary.simpleMessage(
+      "Verification code resent successfully",
     ),
     "verification_code_sent": MessageLookupByLibrary.simpleMessage(
-      "Naipadala ang verification code sa inyong phone number",
+      "Verification Code Sent",
     ),
-    "versionInfo": MessageLookupByLibrary.simpleMessage("bersyon 1.0.0"),
-    "very_bright": MessageLookupByLibrary.simpleMessage("Napakaliwanag"),
-    "very_dry": MessageLookupByLibrary.simpleMessage("Sobrang Tuyo"),
-    "very_high": MessageLookupByLibrary.simpleMessage("Napakataas"),
-    "vibrate": MessageLookupByLibrary.simpleMessage("Panginginig"),
-    "vibrationOnly": MessageLookupByLibrary.simpleMessage("Vibrasyon Lamang"),
-    "vibration_only": MessageLookupByLibrary.simpleMessage("Vibration Lamang"),
+    "verification_failed": MessageLookupByLibrary.simpleMessage(
+      "Verification Failed",
+    ),
+    "verification_help_text": MessageLookupByLibrary.simpleMessage(
+      "Didn\'t receive the code? Check your SMS messages or try resending.",
+    ),
+    "verify": MessageLookupByLibrary.simpleMessage("Verify"),
+    "verify_phone_number": MessageLookupByLibrary.simpleMessage(
+      "Verify Phone Number",
+    ),
+    "verifying": MessageLookupByLibrary.simpleMessage("Verifying..."),
+    "versionInfo": MessageLookupByLibrary.simpleMessage("version 1.0.0"),
+    "very_bright": MessageLookupByLibrary.simpleMessage("Very Bright"),
+    "very_dry": MessageLookupByLibrary.simpleMessage("Very Dry"),
+    "very_high": MessageLookupByLibrary.simpleMessage("Very High"),
+    "vibrate": MessageLookupByLibrary.simpleMessage("Vibrate"),
+    "vibrationOnly": MessageLookupByLibrary.simpleMessage("Vibration Only"),
+    "vibration_only": MessageLookupByLibrary.simpleMessage("Vibration Only"),
     "vibration_only_description": MessageLookupByLibrary.simpleMessage(
-      "Tahimik na notipikasyon na may vibration lamang",
+      "Silent notifications with vibration only",
     ),
-    "vibration_only_enabled_disabled": m27,
-    "view_all": MessageLookupByLibrary.simpleMessage("Tingnan Lahat"),
+    "vibration_only_enabled_disabled": m29,
+    "view_all": MessageLookupByLibrary.simpleMessage("View All"),
     "view_complete_prescriptions": MessageLookupByLibrary.simpleMessage(
-      "Tingnan at tapusin ang inyong mga reseta sa bukid",
+      "View and complete your farm prescriptions",
     ),
-    "view_details": MessageLookupByLibrary.simpleMessage("Tingnan ang Detalye"),
+    "view_details": MessageLookupByLibrary.simpleMessage("View Details"),
     "view_more_details": MessageLookupByLibrary.simpleMessage(
-      "Tingnan ang karagdagang detalye",
+      "View more details",
     ),
-    "vt_tasseling": MessageLookupByLibrary.simpleMessage("Pagbubulaklak (VT)"),
-    "wednesday": MessageLookupByLibrary.simpleMessage("Miyerkules"),
-    "welcome": MessageLookupByLibrary.simpleMessage(
-      "Maligayang pagdating sa Maize Watch",
-    ),
-    "wet": MessageLookupByLibrary.simpleMessage("Basang-basa"),
+    "vt_tasseling": MessageLookupByLibrary.simpleMessage("Tasseling (VT)"),
+    "wednesday": MessageLookupByLibrary.simpleMessage("Wednesday"),
+    "welcome": MessageLookupByLibrary.simpleMessage("Welcome to Maize Watch"),
+    "wet": MessageLookupByLibrary.simpleMessage("Wet"),
     "when_did_you_plant": MessageLookupByLibrary.simpleMessage(
-      "Kailan ninyo itinanim ang inyong mais? Tumutulong ito sa amin na matukoy ang kasalukuyang yugto ng paglago.",
+      "When did you plant your corn? This helps us determine the current growth stage.",
     ),
-    "yes": MessageLookupByLibrary.simpleMessage("Oo"),
-    "yesterday": MessageLookupByLibrary.simpleMessage("Kahapon"),
-    "you_have_new_farm_tasks": m28,
+    "yes": MessageLookupByLibrary.simpleMessage("Yes"),
+    "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
+    "you_have_new_farm_tasks": m30,
     "your_personal_information": MessageLookupByLibrary.simpleMessage(
-      "Ang Inyong Personal na Impormasyon",
+      "Your Personal Information",
     ),
     "zip_code": MessageLookupByLibrary.simpleMessage("Zip Code"),
     "zip_code_invalid": MessageLookupByLibrary.simpleMessage(
-      "Mangyaring maglagay ng wastong zip code",
+      "Please enter a valid zip code",
     ),
     "zip_code_optional": MessageLookupByLibrary.simpleMessage(
-      "Zip Code (Opsyonal)",
+      "Zip Code (Optional)",
     ),
   };
 }

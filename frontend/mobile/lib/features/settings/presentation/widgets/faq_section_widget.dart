@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
+import 'package:mobile/generated/l10n.dart';
 
 class FAQSectionWidget extends StatefulWidget {
   final bool isExpanded;
@@ -20,24 +21,24 @@ class FAQSectionWidget extends StatefulWidget {
 class _FAQSectionWidgetState extends State<FAQSectionWidget> {
   final List<Map<String, String>> faqs = [
     {
-      'question': 'How do I add a new sensor?',
-      'answer': 'Go to the Farm Management section and tap "Add Sensor". Follow the setup instructions to connect your sensor to the app.',
+      'question': 'faq_add_sensor_question',
+      'answer': 'faq_add_sensor_answer',
     },
     {
-      'question': 'Why is my sensor showing as disconnected?',
-      'answer': 'Check your internet connection and ensure the sensor is properly powered. Try restarting the sensor and refreshing the app.',
+      'question': 'faq_sensor_disconnected_question',
+      'answer': 'faq_sensor_disconnected_answer',
     },
     {
-      'question': 'How often should I check my farm data?',
-      'answer': 'We recommend checking your farm data at least once daily. The app will send notifications for urgent issues.',
+      'question': 'faq_check_farm_data_question',
+      'answer': 'faq_check_farm_data_answer',
     },
     {
-      'question': 'Can I use the app offline?',
-      'answer': 'Yes, the app can work offline for viewing cached data. However, real-time updates require an internet connection.',
+      'question': 'faq_offline_usage_question',
+      'answer': 'faq_offline_usage_answer',
     },
     {
-      'question': 'How do I change my farm settings?',
-      'answer': 'Go to Settings > Farm Management to update your farm information, field details, and sensor configurations.',
+      'question': 'faq_change_farm_settings_question',
+      'answer': 'faq_change_farm_settings_answer',
     },
   ];
 
@@ -70,7 +71,7 @@ class _FAQSectionWidgetState extends State<FAQSectionWidget> {
                   ),
                   SizedBox(width: kAppSmallGap),
                   Text(
-                    'Frequently Asked Questions',
+                    S.of(context).frequently_asked_questions,
                     style: TextStyle(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
@@ -95,7 +96,7 @@ class _FAQSectionWidgetState extends State<FAQSectionWidget> {
                 children: faqs.asMap().entries.map((entry) {
                   final index = entry.key;
                   final faq = entry.value;
-                  return _buildFAQItem(faq['question']!, faq['answer']!, index);
+                  return _buildFAQItem(context, faq['question']!, faq['answer']!, index);
                 }).toList(),
               ),
             ),
@@ -105,7 +106,10 @@ class _FAQSectionWidgetState extends State<FAQSectionWidget> {
     );
   }
 
-  Widget _buildFAQItem(String question, String answer, int index) {
+  Widget _buildFAQItem(BuildContext context, String questionKey, String answerKey, int index) {
+    final l10n = S.of(context);
+    final question = _getTranslatedText(l10n, questionKey);
+    final answer = _getTranslatedText(l10n, answerKey);
     return Container(
       margin: EdgeInsets.only(bottom: kAppSmallPadding),
       padding: EdgeInsets.all(kAppSmallPadding),
@@ -165,5 +169,32 @@ class _FAQSectionWidgetState extends State<FAQSectionWidget> {
         ],
       ),
     );
+  }
+
+  String _getTranslatedText(S l10n, String key) {
+    switch (key) {
+      case 'faq_add_sensor_question':
+        return l10n.faq_add_sensor_question;
+      case 'faq_add_sensor_answer':
+        return l10n.faq_add_sensor_answer;
+      case 'faq_sensor_disconnected_question':
+        return l10n.faq_sensor_disconnected_question;
+      case 'faq_sensor_disconnected_answer':
+        return l10n.faq_sensor_disconnected_answer;
+      case 'faq_check_farm_data_question':
+        return l10n.faq_check_farm_data_question;
+      case 'faq_check_farm_data_answer':
+        return l10n.faq_check_farm_data_answer;
+      case 'faq_offline_usage_question':
+        return l10n.faq_offline_usage_question;
+      case 'faq_offline_usage_answer':
+        return l10n.faq_offline_usage_answer;
+      case 'faq_change_farm_settings_question':
+        return l10n.faq_change_farm_settings_question;
+      case 'faq_change_farm_settings_answer':
+        return l10n.faq_change_farm_settings_answer;
+      default:
+        return key;
+    }
   }
 }
