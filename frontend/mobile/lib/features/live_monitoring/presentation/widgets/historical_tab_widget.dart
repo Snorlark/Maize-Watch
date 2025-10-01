@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../generated/l10n.dart';
 import '../bloc/monitoring_bloc.dart';
 import 'parameter_widget.dart';
 import '../../domain/entities/analytics_entities.dart';
@@ -344,7 +345,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                       foregroundColor: Colors.white,
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                     ),
-                    child: Text('Retry', style: TextStyle(fontSize: 12.sp)),
+                    child: Text(S.current.retry, style: TextStyle(fontSize: 12.sp)),
                   ),
                   SizedBox(width: 12.w),
                   OutlinedButton(
@@ -355,7 +356,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                     style: OutlinedButton.styleFrom(
                       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                     ),
-                    child: Text('Cancel', style: TextStyle(fontSize: 12.sp)),
+                    child: Text(S.current.cancel, style: TextStyle(fontSize: 12.sp)),
                   ),
                 ],
               ),

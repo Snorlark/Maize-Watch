@@ -15,6 +15,8 @@ import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/features/settings/presentation/widgets/language_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 
+import '../../../../generated/l10n.dart';
+
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
@@ -202,7 +204,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 context.read<SettingsBloc>().add(UpdateLanguage(language));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Language changed to ${language == 'tl' ? 'Filipino' : 'English'}'),
+                                    content: Text(S.current.language_changed_to(language == 'tl' ? 'Filipino' : 'English')),
                                     backgroundColor: MAIZE_ACCENT,
                                   ),
                                 );
@@ -253,7 +255,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 ));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Notifications ${enabled ? 'enabled' : 'disabled'}'),
+                                    content: Text(S.current.notifications_enabled_disabled(enabled ? 'enabled' : 'disabled')),
                                     backgroundColor: MAIZE_ACCENT,
                                   ),
                                 );
@@ -266,7 +268,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 ));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Vibration only ${vibrationOnly ? 'enabled' : 'disabled'}'),
+                                    content: Text(S.current.vibration_only_enabled_disabled(vibrationOnly ? 'enabled' : 'disabled')),
                                     backgroundColor: MAIZE_ACCENT,
                                   ),
                                 );

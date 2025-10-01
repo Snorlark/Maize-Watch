@@ -19,10 +19,13 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-dev \
+    python3-venv \
     nginx \
     supervisor \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && python3 --version
 
 # ==========================================
 # SECTION 4: Install Node.js
@@ -50,13 +53,16 @@ RUN cd backend && npm ci
 # SECTION 8: Install Python Dependencies
 # ==========================================
 COPY analytics_v2/requirements.txt ./analytics_v2/
-RUN cd analytics_v2 && pip3 install --no-cache-dir -r requirements.txt
+RUN cd analytics_v2 && pip3 install --no-cache-dir -r requirements.txt && pip3 install gunicorn
 
 # ==========================================
 # SECTION 9: Copy Application Code
 # ==========================================
 COPY backend/ ./backend/
 COPY analytics_v2/ ./analytics_v2/
+
+# Make Python scripts executable
+RUN chmod +x /app/analytics_v2/*.py
 COPY nginx/ ./nginx/
 COPY scripts/ ./scripts/
 

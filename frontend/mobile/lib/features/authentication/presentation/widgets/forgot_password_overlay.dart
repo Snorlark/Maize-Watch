@@ -63,7 +63,7 @@ class _ForgotPasswordOverlayState extends State<ForgotPasswordOverlay> {
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Verification code sent to your phone number'),
+            content: Text(S.current.verification_code_sent),
             backgroundColor: Colors.green,
           ),
         );

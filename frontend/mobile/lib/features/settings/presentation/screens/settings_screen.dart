@@ -10,6 +10,8 @@ import 'package:mobile/features/settings/presentation/widgets/language_settings_
 import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/screens/sensor_status_screen.dart';
 
+import '../../../../generated/l10n.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -148,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () {
                         context.read<SettingsBloc>().add(const RefreshSettings());
                       },
-                      child: const Text('Retry'),
+                      child: Text(S.current.retry),
                     ),
                   ],
                 ),
@@ -160,11 +162,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 // Device Settings Section
                 _buildSectionCard(
-                  title: 'Device Settings',
+                  title: S.current.device_settings,
                   children: [
                     _buildMenuItem(
-                      title: 'Sensor Status',
-                      subtitle: 'Monitor the condition of your sensors',
+                      title: S.current.sensor_status,
+                      subtitle: S.current.monitor_sensor_condition,
                       icon: Icons.sensors,
                       onTap: () {
                         Navigator.push(
@@ -458,11 +460,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: kAppMediumPadding),
-              Text('Help content coming soon!'),
+              Text(S.current.help_content_coming_soon),
               SizedBox(height: kAppMediumPadding),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Close'),
+                child: Text(S.current.close),
               ),
             ],
           ),
@@ -486,11 +488,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: kAppMediumPadding),
-              Text('Contact information coming soon!'),
+              Text(S.current.contact_information_coming_soon),
               SizedBox(height: kAppMediumPadding),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Close'),
+                child: Text(S.current.close),
               ),
             ],
           ),

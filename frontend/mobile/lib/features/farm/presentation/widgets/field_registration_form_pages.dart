@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/prototype_service.dart';
+import '../../../../generated/l10n.dart';
 import '../screens/field_registration_screen.dart';
 
 // Field Name Input Page
@@ -644,7 +645,7 @@ class _DeviceRegistrationFormPageState
                       children: [
                         Icon(Icons.edit, size: 18.sp),
                         SizedBox(width: 8.w),
-                        Text('Edit'),
+                        Text(S.current.edit),
                       ],
                     ),
                   ),
@@ -654,7 +655,7 @@ class _DeviceRegistrationFormPageState
                       children: [
                         Icon(Icons.delete, size: 18.sp, color: Colors.red),
                         SizedBox(width: 8.w),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
+                        Text(S.current.delete, style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
@@ -714,7 +715,7 @@ class _DeviceRegistrationFormPageState
                   widget.controllers.removeDevice(index);
                 });
               },
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text(S.current.delete, style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -1269,7 +1270,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
       if (!_isPrototypeValid) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please validate the prototype ID before submitting'),
+            content: Text(S.current.please_validate_prototype_id),
             backgroundColor: Colors.red,
           ),
         );

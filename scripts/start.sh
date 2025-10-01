@@ -16,7 +16,15 @@ echo "Time: $(date)"
 echo "================================================"
 
 # ==========================================
-# SECTION 2: Start Nginx
+# SECTION 2: Test Python Environment
+# ==========================================
+echo "Testing Python environment..."
+cd /app/analytics_v2
+python3 test_python.py
+echo "✅ Python environment test completed"
+
+# ==========================================
+# SECTION 3: Start Nginx
 # ==========================================
 echo "Starting Nginx reverse proxy..."
 
@@ -32,7 +40,7 @@ sleep 3
 echo "Nginx is ready on port 10000"
 
 # ==========================================
-# SECTION 3: Create PM2 Configuration
+# SECTION 4: Create PM2 Configuration
 # ==========================================
 echo "Creating PM2 ecosystem configuration..."
 
@@ -86,13 +94,13 @@ module.exports = {
 EOF
 
 # ==========================================
-# SECTION 4: Create Logs Directory
+# SECTION 5: Create Logs Directory
 # ==========================================
 mkdir -p /app/logs
 echo "📁 Logs directory created"
 
 # ==========================================
-# SECTION 5: Start Services with PM2
+# SECTION 6: Start Services with PM2
 # ==========================================
 echo "Starting backend and analytics services..."
 echo "================================================"
@@ -107,7 +115,7 @@ pm2 start ecosystem.config.js
 sleep 5
 
 # ==========================================
-# SECTION 6: Display Status
+# SECTION 7: Display Status
 # ==========================================
 echo "================================================"
 echo "📊 Service Status:"
@@ -115,7 +123,7 @@ echo "================================================"
 pm2 list
 
 # ==========================================
-# SECTION 7: Keep Container Running
+# SECTION 8: Keep Container Running
 # ==========================================
 echo "================================================"
 echo "✅ All services started successfully!"

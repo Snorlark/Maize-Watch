@@ -27,39 +27,44 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m2(days, rate) =>
       "${days} araw hanggang susunod na yugto (${rate}/araw)";
 
-  static String m3(parameter) =>
+  static String m3(deadline) => "Deadline: ${deadline}";
+
+  static String m4(parameter) =>
       "Sigurado ka bang gusto mong tanggalin ang reseta sa ${parameter}?";
 
-  static String m4(filter) => "Walang nakitang reseta para sa \"${filter}\"";
+  static String m5(filter) => "Walang nakitang reseta para sa \"${filter}\"";
 
-  static String m5(filters) => "Na-filter ayon sa: ${filters}";
+  static String m6(filters) => "Na-filter ayon sa: ${filters}";
 
-  static String m6(hours) => "${hours} oras na lang";
+  static String m7(hours) => "${hours} oras na lang";
 
-  static String m7(count) =>
+  static String m8(language) => "Nabago ang wika sa ${language}";
+
+  static String m9(count) =>
       "Mayroon kayong ${count} na bagong gawain sa bukid na kailangang tapusin";
 
-  static String m8(error) =>
+  static String m10(error) =>
       "Nabigo ang pag-update ng mga setting ng notipikasyon: ${error}";
 
-  static String m9(enabled) => "Paganahin ang notipikasyon: ${enabled}";
+  static String m11(enabled) => "Paganahin ang notipikasyon: ${enabled}";
 
-  static String m10(sensorName) =>
+  static String m12(status) => "Notipikasyon ${status}";
+
+  static String m13(sensorName) =>
       "Ang ${sensorName} sensor ay offline na ng mahigit 30 minuto.";
 
-  static String m11(sensorName) =>
+  static String m14(sensorName) =>
       "Ang ${sensorName} sensor ay offline na ng mahigit 30 minuto.";
 
-  static String m12(count) => "Mga Hakbang na Tagubilin (${count} hakbang)";
+  static String m15(count) => "Mga Hakbang na Tagubilin (${count} hakbang)";
 
-  static String m13(timeline) => "Timeline: ${timeline}";
+  static String m16(timeline) => "Timeline: ${timeline}";
 
-  static String m14(urgency) => "Pagkakailangan: ${urgency}";
+  static String m17(urgency) => "Pagkakailangan: ${urgency}";
 
-  static String m15(phoneNumber) =>
-      "Naipadala ang kodigo ng pagpapatunay sa ${phoneNumber}";
+  static String m18(status) => "Vibration only ${status}";
 
-  static String m16(count) =>
+  static String m19(count) =>
       "Mayroon kang ${count} na bagong gawain sa bukid na dapat tapusin";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -150,6 +155,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Suriin ang Status ng Notipikasyon",
     ),
     "clear_all": MessageLookupByLibrary.simpleMessage("Tanggalin Lahat"),
+    "close": MessageLookupByLibrary.simpleMessage("Isara"),
     "cloudy": MessageLookupByLibrary.simpleMessage("Maulap"),
     "completed": MessageLookupByLibrary.simpleMessage("Tapos Na"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
@@ -163,6 +169,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "contactUs": MessageLookupByLibrary.simpleMessage(
       "Makipag-ugnayan sa amin sa:",
+    ),
+    "contact_information_coming_soon": MessageLookupByLibrary.simpleMessage(
+      "Ang contact information ay darating na!",
     ),
     "contact_number": MessageLookupByLibrary.simpleMessage(
       "10-digit Numero ng Telepono",
@@ -220,13 +229,14 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "days_to_next_stage": m2,
     "deadline": MessageLookupByLibrary.simpleMessage("Takdang Oras"),
+    "deadline_colon": m3,
     "debug_section": MessageLookupByLibrary.simpleMessage("Seksyon ng Debug"),
     "dec": MessageLookupByLibrary.simpleMessage("Dis"),
     "december": MessageLookupByLibrary.simpleMessage("Dis"),
     "declining": MessageLookupByLibrary.simpleMessage("Humihina ang paglago"),
     "default_farm": MessageLookupByLibrary.simpleMessage("Default na Bukid"),
     "default_user": MessageLookupByLibrary.simpleMessage("magsasaka"),
-    "delete": MessageLookupByLibrary.simpleMessage("Burahin"),
+    "delete": MessageLookupByLibrary.simpleMessage("Tanggalin"),
     "delete_prescription": MessageLookupByLibrary.simpleMessage(
       "Burahin ang Reseta",
     ),
@@ -235,6 +245,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "description": MessageLookupByLibrary.simpleMessage(
       "Palaguin ang ani, bawasan ang alalahanin.",
+    ),
+    "device_settings": MessageLookupByLibrary.simpleMessage(
+      "Mga Setting ng Device",
     ),
     "dialog_delete_all_prescriptions": MessageLookupByLibrary.simpleMessage(
       "Tanggalin Lahat ng Reseta",
@@ -253,18 +266,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "dialog_delete_prescription": MessageLookupByLibrary.simpleMessage(
       "Tanggalin ang Reseta",
     ),
-    "dialog_delete_prescription_confirm": m3,
+    "dialog_delete_prescription_confirm": m4,
     "dim": MessageLookupByLibrary.simpleMessage("Maliwanag"),
     "dismiss": MessageLookupByLibrary.simpleMessage("Tanggalin"),
     "done": MessageLookupByLibrary.simpleMessage("Tapos na"),
     "dry": MessageLookupByLibrary.simpleMessage("Tuyo"),
+    "edit": MessageLookupByLibrary.simpleMessage("I-edit"),
     "edit_settings": MessageLookupByLibrary.simpleMessage(
       "I-edit ang mga Setting",
     ),
     "empty_no_prescriptions": MessageLookupByLibrary.simpleMessage(
       "Walang nakitang reseta",
     ),
-    "empty_no_prescriptions_filter": m4,
+    "empty_no_prescriptions_filter": m5,
     "enable": MessageLookupByLibrary.simpleMessage("Paganahin"),
     "enableNotifications": MessageLookupByLibrary.simpleMessage(
       "Paganahin ang Abiso",
@@ -362,6 +376,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Mga Reseta sa Bukid",
     ),
     "farm_task": MessageLookupByLibrary.simpleMessage("Gawain sa Bukid"),
+    "farm_task_requires_attention": MessageLookupByLibrary.simpleMessage(
+      "Ang gawain sa bukid ay nangangailangan ng atensyon",
+    ),
     "feb": MessageLookupByLibrary.simpleMessage("Peb"),
     "february": MessageLookupByLibrary.simpleMessage("Peb"),
     "fertilization": MessageLookupByLibrary.simpleMessage("Pagtatanim"),
@@ -384,7 +401,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "I-filter ang mga Reseta",
     ),
     "filter_view_all": MessageLookupByLibrary.simpleMessage("Tingnan Lahat"),
-    "filtered_by": m5,
+    "filtered_by": m6,
     "first_name": MessageLookupByLibrary.simpleMessage("Pangalan"),
     "first_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
       "Ang unang pangalan ay hindi dapat may magkakasunod na espesyal na karakter",
@@ -463,6 +480,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Narito ang ilang kapaki-pakinabang na impormasyon.",
     ),
     "helpTitle": MessageLookupByLibrary.simpleMessage("Tulong"),
+    "help_content_coming_soon": MessageLookupByLibrary.simpleMessage(
+      "Ang help content ay darating na!",
+    ),
     "help_description": MessageLookupByLibrary.simpleMessage(
       "Nagbibigay ang seksyong ito ng impormasyon upang matulungan ang mga user na maunawaan ang mga tampok at paggamit ng app.",
     ),
@@ -472,7 +492,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Mataas na Prioridad",
     ),
     "hours_ago": MessageLookupByLibrary.simpleMessage("oras ang nakalipas"),
-    "hours_left": m6,
+    "hours_left": m7,
     "humidity": MessageLookupByLibrary.simpleMessage("Halumigmig"),
     "humidity_moderate": MessageLookupByLibrary.simpleMessage(
       "Katamtamang halumigmig ng hangin.",
@@ -505,6 +525,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sumisilang pa lang mula sa lupa",
     ),
     "language": MessageLookupByLibrary.simpleMessage("Wika"),
+    "language_changed_to": m8,
     "last_month": MessageLookupByLibrary.simpleMessage("Nakaraang buwan"),
     "last_name": MessageLookupByLibrary.simpleMessage("Apelyido"),
     "last_name_consecutive_special": MessageLookupByLibrary.simpleMessage(
@@ -587,6 +608,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "mark_as_complete": MessageLookupByLibrary.simpleMessage(
       "Markahan bilang Tapos",
     ),
+    "mark_complete": MessageLookupByLibrary.simpleMessage(
+      "Markahan bilang Tapos",
+    ),
     "materials_needed": MessageLookupByLibrary.simpleMessage(
       "Mga Materyales na Kailangan",
     ),
@@ -613,6 +637,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sobrang basa ng lupa. Panganib ng pagkabulok ng ugat.",
     ),
     "monday": MessageLookupByLibrary.simpleMessage("Lunes"),
+    "monitor_sensor_condition": MessageLookupByLibrary.simpleMessage(
+      "Subaybayan ang kalagayan ng inyong mga sensor",
+    ),
     "municipality": MessageLookupByLibrary.simpleMessage("Bayan"),
     "municipality_amadeo": MessageLookupByLibrary.simpleMessage("Amadeo"),
     "municipality_required": MessageLookupByLibrary.simpleMessage(
@@ -625,7 +652,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "new_farm_prescriptions": MessageLookupByLibrary.simpleMessage(
       "Mga Bagong Reseta sa Bukid",
     ),
-    "new_farm_tasks_message": m7,
+    "new_farm_tasks_message": m9,
     "new_password": MessageLookupByLibrary.simpleMessage("Bagong Password"),
     "new_password_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang bagong password",
@@ -675,7 +702,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "notification_settings": MessageLookupByLibrary.simpleMessage(
       "Mga Setting ng Notipikasyon",
     ),
-    "notification_settings_failed": m8,
+    "notification_settings_failed": m10,
     "notification_settings_updated": MessageLookupByLibrary.simpleMessage(
       "Matagumpay na na-update ang mga setting ng notipikasyon!",
     ),
@@ -698,7 +725,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "notifications_disabled_message": MessageLookupByLibrary.simpleMessage(
       "Na-disable ang mga notification. Maaari mo itong i-enable sa settings.",
     ),
-    "notifications_enabled": m9,
+    "notifications_enabled": m11,
+    "notifications_enabled_disabled": m12,
     "notifications_enabled_message": MessageLookupByLibrary.simpleMessage(
       "Na-enable ang mga notification! Makakatanggap ka ng mga update tungkol sa bukid.",
     ),
@@ -799,6 +827,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "planting_season_title": MessageLookupByLibrary.simpleMessage(
       "Kailan ka nagtanim?",
+    ),
+    "please_validate_prototype_id": MessageLookupByLibrary.simpleMessage(
+      "Pakisuri muna ang prototype ID bago mag-submit",
     ),
     "poor": MessageLookupByLibrary.simpleMessage("Mahina"),
     "prescription_alert": MessageLookupByLibrary.simpleMessage(
@@ -949,6 +980,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "reset_password": MessageLookupByLibrary.simpleMessage(
       "I-reset ang Password",
     ),
+    "retry": MessageLookupByLibrary.simpleMessage("Subukan Muli"),
     "review_and_submit": MessageLookupByLibrary.simpleMessage(
       "Suriin at Isumite",
     ),
@@ -987,8 +1019,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "sensor_offline_alert": MessageLookupByLibrary.simpleMessage(
       "Alerto ng sensor na offline",
     ),
-    "sensor_offline_description": m10,
-    "sensor_offline_message": m11,
+    "sensor_offline_description": m13,
+    "sensor_offline_message": m14,
     "sensor_sleep_description": MessageLookupByLibrary.simpleMessage(
       "Ang inyong mga sensor ay natutulog na mula 8pm hanggang 3am PH time. Gising sila sa 3am.",
     ),
@@ -1079,7 +1111,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "step3_title": MessageLookupByLibrary.simpleMessage("Mais"),
     "step4_title": MessageLookupByLibrary.simpleMessage("Panahon"),
     "step5_title": MessageLookupByLibrary.simpleMessage("Edad"),
-    "step_by_step_instructions": m12,
+    "step_by_step_instructions": m15,
     "submit": MessageLookupByLibrary.simpleMessage("Isumite"),
     "submit_button": MessageLookupByLibrary.simpleMessage("Isumite"),
     "sunday": MessageLookupByLibrary.simpleMessage("Linggo"),
@@ -1154,7 +1186,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "this_week": MessageLookupByLibrary.simpleMessage("Sa linggong ito"),
     "thursday": MessageLookupByLibrary.simpleMessage("Huwebes"),
     "timeline": MessageLookupByLibrary.simpleMessage("Timeline"),
-    "timeline_filter": m13,
+    "timeline_filter": m16,
     "timeline_next_week": MessageLookupByLibrary.simpleMessage(
       "Sa susunod na linggo",
     ),
@@ -1173,6 +1205,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "translate": MessageLookupByLibrary.simpleMessage("Isalin"),
     "try_again": MessageLookupByLibrary.simpleMessage("Subukang Muli"),
     "tuesday": MessageLookupByLibrary.simpleMessage("Martes"),
+    "unable_to_update_prescription_status":
+        MessageLookupByLibrary.simpleMessage(
+          "Hindi ma-update ang status ng reseta",
+        ),
+    "undo_complete": MessageLookupByLibrary.simpleMessage("Bawiin ang Tapos"),
     "unknown": MessageLookupByLibrary.simpleMessage("Hindi Kilala"),
     "unknown_field": MessageLookupByLibrary.simpleMessage(
       "Hindi Kilalang Taniman",
@@ -1181,7 +1218,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Hindi Kilalang Sensor",
     ),
     "urgency": MessageLookupByLibrary.simpleMessage("Urgency"),
-    "urgency_filter": m14,
+    "urgency_filter": m17,
     "urgency_high": MessageLookupByLibrary.simpleMessage("Mataas"),
     "urgency_low": MessageLookupByLibrary.simpleMessage("Mababa"),
     "urgency_medium": MessageLookupByLibrary.simpleMessage("Katamtaman"),
@@ -1266,7 +1303,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "verification_code_required": MessageLookupByLibrary.simpleMessage(
       "Kailangan ang kodigo ng pagpapatunay",
     ),
-    "verification_code_sent": m15,
+    "verification_code_sent": MessageLookupByLibrary.simpleMessage(
+      "Naipadala ang verification code sa inyong phone number",
+    ),
     "versionInfo": MessageLookupByLibrary.simpleMessage("bersyon 1.0.0"),
     "very_bright": MessageLookupByLibrary.simpleMessage("Napakaliwanag"),
     "very_dry": MessageLookupByLibrary.simpleMessage("Sobrang Tuyo"),
@@ -1277,6 +1316,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "vibration_only_description": MessageLookupByLibrary.simpleMessage(
       "Tahimik na notipikasyon na may vibration lamang",
     ),
+    "vibration_only_enabled_disabled": m18,
     "view_all": MessageLookupByLibrary.simpleMessage("Tingnan Lahat"),
     "view_complete_prescriptions": MessageLookupByLibrary.simpleMessage(
       "Tingnan at tapusin ang inyong mga reseta sa bukid",
@@ -1293,7 +1333,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wet": MessageLookupByLibrary.simpleMessage("Basang-basa"),
     "yes": MessageLookupByLibrary.simpleMessage("Oo"),
     "yesterday": MessageLookupByLibrary.simpleMessage("Kahapon"),
-    "you_have_new_farm_tasks": m16,
+    "you_have_new_farm_tasks": m19,
     "zip_code": MessageLookupByLibrary.simpleMessage("Zip Code"),
     "zip_code_invalid": MessageLookupByLibrary.simpleMessage(
       "Mangyaring maglagay ng wastong zip code",

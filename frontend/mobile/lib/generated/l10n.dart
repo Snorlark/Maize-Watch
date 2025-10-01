@@ -3474,13 +3474,13 @@ class S {
     );
   }
 
-  /// `Verification code sent to {phoneNumber}`
-  String verification_code_sent(Object phoneNumber) {
+  /// `Verification code sent to your phone number`
+  String get verification_code_sent {
     return Intl.message(
-      'Verification code sent to $phoneNumber',
+      'Verification code sent to your phone number',
       name: 'verification_code_sent',
       desc: '',
-      args: [phoneNumber],
+      args: [],
     );
   }
 
@@ -4986,6 +4986,151 @@ class S {
       name: 'sensor_offline_message',
       desc: '',
       args: [sensorName],
+    );
+  }
+
+  /// `Retry`
+  String get retry {
+    return Intl.message('Retry', name: 'retry', desc: '', args: []);
+  }
+
+  /// `Unable to update prescription status`
+  String get unable_to_update_prescription_status {
+    return Intl.message(
+      'Unable to update prescription status',
+      name: 'unable_to_update_prescription_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deadline: {deadline}`
+  String deadline_colon(Object deadline) {
+    return Intl.message(
+      'Deadline: $deadline',
+      name: 'deadline_colon',
+      desc: '',
+      args: [deadline],
+    );
+  }
+
+  /// `Edit`
+  String get edit {
+    return Intl.message('Edit', name: 'edit', desc: '', args: []);
+  }
+
+  /// `Please validate the prototype ID before submitting`
+  String get please_validate_prototype_id {
+    return Intl.message(
+      'Please validate the prototype ID before submitting',
+      name: 'please_validate_prototype_id',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Help content coming soon!`
+  String get help_content_coming_soon {
+    return Intl.message(
+      'Help content coming soon!',
+      name: 'help_content_coming_soon',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Close`
+  String get close {
+    return Intl.message('Close', name: 'close', desc: '', args: []);
+  }
+
+  /// `Contact information coming soon!`
+  String get contact_information_coming_soon {
+    return Intl.message(
+      'Contact information coming soon!',
+      name: 'contact_information_coming_soon',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Language changed to {language}`
+  String language_changed_to(Object language) {
+    return Intl.message(
+      'Language changed to $language',
+      name: 'language_changed_to',
+      desc: '',
+      args: [language],
+    );
+  }
+
+  /// `Notifications {status}`
+  String notifications_enabled_disabled(Object status) {
+    return Intl.message(
+      'Notifications $status',
+      name: 'notifications_enabled_disabled',
+      desc: '',
+      args: [status],
+    );
+  }
+
+  /// `Vibration only {status}`
+  String vibration_only_enabled_disabled(Object status) {
+    return Intl.message(
+      'Vibration only $status',
+      name: 'vibration_only_enabled_disabled',
+      desc: '',
+      args: [status],
+    );
+  }
+
+  /// `Farm task requires attention`
+  String get farm_task_requires_attention {
+    return Intl.message(
+      'Farm task requires attention',
+      name: 'farm_task_requires_attention',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device Settings`
+  String get device_settings {
+    return Intl.message(
+      'Device Settings',
+      name: 'device_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Monitor the condition of your sensors`
+  String get monitor_sensor_condition {
+    return Intl.message(
+      'Monitor the condition of your sensors',
+      name: 'monitor_sensor_condition',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mark Complete`
+  String get mark_complete {
+    return Intl.message(
+      'Mark Complete',
+      name: 'mark_complete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Undo Complete`
+  String get undo_complete {
+    return Intl.message(
+      'Undo Complete',
+      name: 'undo_complete',
+      desc: '',
+      args: [],
     );
   }
 }

@@ -408,17 +408,35 @@ export class PythonAnalyticsService {
     return new Promise((resolve, reject) => {
       const scriptPath = path.join(this.config.analyticsPath, scriptName);
       
-      // Check if Python executable exists
+      // Check if Python executable exists - try multiple paths
       const fs = require('fs');
-      if (!fs.existsSync(this.config.pythonPath)) {
-        logger.error(`Python executable not found at ${this.config.pythonPath}`);
+      const possiblePythonPaths = [
+        this.config.pythonPath,
+        '/usr/bin/python3',
+        '/usr/bin/python',
+        'python3',
+        'python'
+      ];
+      
+      let pythonExecutable = null;
+      for (const pythonPath of possiblePythonPaths) {
+        if (fs.existsSync(pythonPath) || pythonPath === 'python3' || pythonPath === 'python') {
+          pythonExecutable = pythonPath;
+          break;
+        }
+      }
+      
+      if (!pythonExecutable) {
+        logger.error(`Python executable not found. Tried: ${possiblePythonPaths.join(', ')}`);
         logger.error(`Analytics path: ${this.config.analyticsPath}`);
         logger.error(`Current working directory: ${process.cwd()}`);
-        reject(new Error(`Python executable not found at ${this.config.pythonPath}`));
+        reject(new Error(`Python executable not found. Tried: ${possiblePythonPaths.join(', ')}`));
         return;
       }
+      
+      logger.info(`Using Python executable: ${pythonExecutable}`);
 
-      const pythonProcess = spawn(this.config.pythonPath, [scriptPath, ...args], {
+      const pythonProcess = spawn(pythonExecutable, [scriptPath, ...args], {
         cwd: this.config.analyticsPath,
         env: { 
           ...process.env,

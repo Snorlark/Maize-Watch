@@ -816,6 +816,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: MAIZE_PRIMARY,
@@ -2072,7 +2073,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         
         _notificationService.showPrescriptionAlertNotification(
           title: '$action - $fieldName',
-          message: details.isNotEmpty ? details : 'Farm task requires attention',
+          message: details.isNotEmpty ? details : S.current.farm_task_requires_attention,
           priority: urgency,
           notificationId: prescriptionId.hashCode.abs(), // Use unique ID based on prescription
         );
