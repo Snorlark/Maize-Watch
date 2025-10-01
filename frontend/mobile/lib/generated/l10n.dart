@@ -4609,6 +4609,46 @@ class S {
     );
   }
 
+  /// `Sunny weather conditions`
+  String get sunny_description {
+    return Intl.message(
+      'Sunny weather conditions',
+      name: 'sunny_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cloudy weather conditions`
+  String get cloudy_description {
+    return Intl.message(
+      'Cloudy weather conditions',
+      name: 'cloudy_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rainy weather conditions`
+  String get rainy_description {
+    return Intl.message(
+      'Rainy weather conditions',
+      name: 'rainy_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Overcast weather conditions`
+  String get overcast_description {
+    return Intl.message(
+      'Overcast weather conditions',
+      name: 'overcast_description',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `My Farm`
   String get my_farm {
     return Intl.message('My Farm', name: 'my_farm', desc: '', args: []);

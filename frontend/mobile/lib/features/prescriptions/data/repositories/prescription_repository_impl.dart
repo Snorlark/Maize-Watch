@@ -85,10 +85,15 @@ class PrescriptionRepositoryImpl implements PrescriptionRepository {
 
   @override
   Future<Either<Failure, List<Prescription>>> getPrescriptions() async {
+    // This method is deprecated - use getPrescriptionsForFarm() instead
+    throw UnimplementedError('getPrescriptions() requires farmId parameter - use getPrescriptionsForFarm() instead');
+  }
+
+  Future<Either<Failure, List<Prescription>>> getPrescriptionsForFarm(String farmId) async {
     try {
       if (await networkInfo.isConnected) {
         try {
-          final remotePrescriptions = await remoteDataSource.getPrescriptions();
+          final remotePrescriptions = await remoteDataSource.getPrescriptionsForFarm(farmId);
           await localDataSource.cachePrescriptions(remotePrescriptions);
           return Right(remotePrescriptions);
         } on ServerException catch (e) {

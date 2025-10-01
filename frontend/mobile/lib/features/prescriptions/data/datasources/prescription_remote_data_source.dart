@@ -5,6 +5,7 @@ import 'package:mobile/features/prescriptions/domain/entities/prescription.dart'
 
 abstract class PrescriptionRemoteDataSource {
   Future<List<Prescription>> getPrescriptions();
+  Future<List<Prescription>> getPrescriptionsForFarm(String farmId);
   Future<Prescription> getPrescription(String id);
   Future<void> updatePrescriptionStatus({
     required String fieldId,
@@ -29,9 +30,13 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
 
   @override
   Future<List<Prescription>> getPrescriptions() async {
+    // This method is deprecated - use getPrescriptionsForFarm() instead
+    throw UnimplementedError('getPrescriptions() requires farmId parameter - use getPrescriptionsForFarm() instead');
+  }
+
+  @override
+  Future<List<Prescription>> getPrescriptionsForFarm(String farmId) async {
     try {
-      // Use a hardcoded farm ID for now - in production this should come from user context
-      const farmId = '68cec5d8c98d501ce6ee6ede';
       final response = await httpClient.get('/prescriptions/farm/$farmId');
       
       if (response.statusCode == 200) {

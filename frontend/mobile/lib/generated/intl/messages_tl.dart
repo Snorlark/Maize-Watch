@@ -177,6 +177,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "clear_all": MessageLookupByLibrary.simpleMessage("Tanggalin Lahat"),
     "close": MessageLookupByLibrary.simpleMessage("Isara"),
     "cloudy": MessageLookupByLibrary.simpleMessage("Maulap"),
+    "cloudy_description": MessageLookupByLibrary.simpleMessage(
+      "Maulap na panahon",
+    ),
     "completed": MessageLookupByLibrary.simpleMessage("Tapos Na"),
     "confirm_password": MessageLookupByLibrary.simpleMessage(
       "Kumpirmahin ang Password",
@@ -854,6 +857,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "okay": MessageLookupByLibrary.simpleMessage("Okay"),
     "on": MessageLookupByLibrary.simpleMessage("Bukas"),
     "overcast": MessageLookupByLibrary.simpleMessage("Napakaulap"),
+    "overcast_description": MessageLookupByLibrary.simpleMessage(
+      "Makulimlim na panahon",
+    ),
     "overdue": MessageLookupByLibrary.simpleMessage("Nalampasan na"),
     "parameter_humidity": MessageLookupByLibrary.simpleMessage("Halumigmig"),
     "parameter_light_intensity": MessageLookupByLibrary.simpleMessage(
@@ -1050,6 +1056,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "r6_mature": MessageLookupByLibrary.simpleMessage("Ganap na Mais (R6)"),
     "rainfall": MessageLookupByLibrary.simpleMessage("Ulan"),
     "rainy": MessageLookupByLibrary.simpleMessage("Umuulan"),
+    "rainy_description": MessageLookupByLibrary.simpleMessage(
+      "Maulan na panahon",
+    ),
     "rapid_growth": MessageLookupByLibrary.simpleMessage(
       "Mabilis ang paglago!",
     ),
@@ -1264,6 +1273,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "submit_button": MessageLookupByLibrary.simpleMessage("Isumite"),
     "sunday": MessageLookupByLibrary.simpleMessage("Linggo"),
     "sunny": MessageLookupByLibrary.simpleMessage("Mainit"),
+    "sunny_description": MessageLookupByLibrary.simpleMessage(
+      "Mainit na panahon",
+    ),
     "tap_to_view": MessageLookupByLibrary.simpleMessage("I-tap para makita"),
     "tasseling_stage": m23,
     "tassels_appearing": MessageLookupByLibrary.simpleMessage(
