@@ -46,8 +46,11 @@ export class PythonAnalyticsService {
   private executionQueue: Map<string, Promise<any>> = new Map();
 
   constructor() {
-    const analyticsPath = process.env.ANALYTICS_V2_PATH || path.resolve(process.cwd(), '../analytics_v2');
-    const pythonPath = process.env.PYTHON_PATH || path.resolve(analyticsPath, 'venv/bin/python');
+    const analyticsPath = process.env.ANALYTICS_V2_PATH || 
+      (process.env.NODE_ENV === 'production' ? '/app/analytics_v2' : path.resolve(process.cwd(), '../analytics_v2'));
+    // Use system Python in Docker container, local venv in development
+    const pythonPath = process.env.PYTHON_PATH || 
+      (process.env.NODE_ENV === 'production' ? 'python3' : path.resolve(analyticsPath, 'venv/bin/python'));
     
     this.config = {
       pythonPath,

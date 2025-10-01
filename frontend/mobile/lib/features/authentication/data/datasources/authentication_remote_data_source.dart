@@ -17,7 +17,6 @@ abstract class AuthenticationRemoteDataSource {
 class AuthenticationRemoteDataSourceImpl
     implements AuthenticationRemoteDataSource {
   final Dio client;
-  final String baseUrl = AppConfig.baseUrl;
 
   AuthenticationRemoteDataSourceImpl({
     required this.client,
@@ -28,7 +27,7 @@ class AuthenticationRemoteDataSourceImpl
   Future<UserModel> login(String username, String password) async {
     try {
       print("🔐 Frontend: Attempting login with username: $username");
-      print("🔐 Frontend: Sending request to: $baseUrl/api/auth/login");
+      print("🔐 Frontend: Sending request to: /auth/login");
       
       final requestData = {
         "username": username, // Use username for mobile farmers
@@ -197,7 +196,7 @@ class AuthenticationRemoteDataSourceImpl
   Future<UserModel> updateProfile(String userId, Map<String, dynamic> userData) async {
     try {
       print("🔐 Frontend: Attempting to update profile for user: $userId");
-      print("🔐 Frontend: Sending request to: $baseUrl/api/users/$userId");
+      print("🔐 Frontend: Sending request to: /users/$userId");
       
       // Get the access token
       final accessToken = await SecureStorage.getToken();
