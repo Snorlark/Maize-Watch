@@ -5,6 +5,8 @@ import 'package:mobile/features/farm/presentation/widgets/field_registration_pro
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/widgets/custom_snackbar.dart';
+import '../../../../core/services/prototype_service.dart';
+import '../../../../core/storage/secure_storage.dart';
 import '../../../../generated/l10n.dart';
 import '../../domain/entities/farm.dart';
 import '../bloc/farm_bloc.dart';
@@ -92,6 +94,9 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     return BlocListener<FarmBloc, FarmState>(
       listener: (context, state) {
         if (state is FarmCreated) {
+          // Register prototype IDs after successful farm creation
+          _registerPrototypeIds();
+          
           // Navigate to congratulatory screen
           Navigator.pushReplacement(
             context,
@@ -405,6 +410,9 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                   'lightIntensity': 0,
                   'soilPh': 0,
                 },
+                'prototypeId': device.prototypeId,
+                'prototypeChannelId': device.prototypeChannelId,
+                'prototypeApiKey': device.prototypeApiKey,
               },
             )
             .toList();
@@ -454,6 +462,9 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                             readings: SensorReadings.fromJson(
                               sensorJson['readings'] as Map<String, dynamic>,
                             ),
+                            prototypeId: sensorJson['prototypeId'] as String?,
+                            prototypeChannelId: sensorJson['prototypeChannelId'] as String?,
+                            prototypeApiKey: sensorJson['prototypeApiKey'] as String?,
                           ),
                         )
                         .toList(),
@@ -498,6 +509,42 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
     // Use the new farm structure
     context.read<FarmBloc>().add(CreateFarmEvent(farm: farmData));
+  }
+
+  Future<void> _registerPrototypeIds() async {
+    try {
+      print('🔧 Registering prototype IDs...');
+      
+      // Get the access token from secure storage
+      final token = await SecureStorage.getToken();
+      if (token == null) {
+        print('❌ No access token found, skipping prototype registration');
+        return;
+      }
+      
+      for (final device in _formControllers.devices) {
+        if (device.prototypeId.isNotEmpty && device.isPrototypeValid) {
+          print('🔧 Registering prototype ID: ${device.prototypeId}');
+          
+          final result = await PrototypeService.registerPrototype(
+            device.prototypeId, 
+            token
+          );
+          
+          if (result['success'] == true) {
+            print('✅ Successfully registered prototype ID: ${device.prototypeId}');
+          } else {
+            print('❌ Failed to register prototype ID: ${device.prototypeId} - ${result['message']}');
+          }
+        }
+      }
+      
+      print('🔧 Prototype ID registration completed');
+    } catch (e) {
+      print('❌ Error registering prototype IDs: $e');
+      // Don't show error to user as farm creation was successful
+      // Prototype registration is not critical for farm creation
+    }
   }
 
   @override
@@ -546,9 +593,17 @@ class DeviceInfo {
   String deviceType = 'Multi_Sensor'; // Default sensor type
   String description = '';
   String soilType = 'loamy'; // Default soil type
+  String prototypeId = ''; // Prototype ID for validation
+  bool isPrototypeValid = false; // Validation status
+  String? prototypeValidationError; // Error message if validation fails
+  String? prototypeChannelId; // Channel ID from prototype validation
+  String? prototypeApiKey; // API key from prototype validation
 
   bool get isValid =>
-      deviceId.trim().isNotEmpty && deviceName.trim().isNotEmpty;
+      deviceId.trim().isNotEmpty && 
+      deviceName.trim().isNotEmpty && 
+      prototypeId.trim().isNotEmpty && 
+      isPrototypeValid;
 
   Map<String, dynamic> toJson() {
     return {

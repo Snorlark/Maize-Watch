@@ -45,13 +45,14 @@ class ThingSpeakService {
   /**
    * Fetches the latest data entry from a specific ThingSpeak channel
    */
-  async fetchLatestDataFromThingSpeakChannel(channelId: string) {
+  async fetchLatestDataFromThingSpeakChannel(channelId: string, apiKey?: string) {
     try {
       logger.info(`Fetching latest data from ThingSpeak channel ${channelId}...`);
+      logger.info(`API Key provided: ${apiKey}, Using: ${apiKey || this.readApiKey}`);
       
       const response = await axios.get(`${this.baseUrl}/channels/${channelId}/feeds.json`, {
         params: {
-          api_key: this.readApiKey,
+          api_key: apiKey || this.readApiKey,
           results: 1
         },
         timeout: 10000
@@ -339,12 +340,12 @@ class ThingSpeakService {
   /**
    * Gets the latest sensor data from MongoDB
    */
-  async getLatestData(channelId?: string) {
+  async getLatestData(channelId?: string, apiKey?: string) {
     try {
       // If a specific channel ID is provided, try to get data from that channel
       if (channelId) {
         try {
-          const channelData = await this.fetchLatestDataFromThingSpeakChannel(channelId);
+          const channelData = await this.fetchLatestDataFromThingSpeakChannel(channelId, apiKey);
           if (channelData) {
             return channelData;
           }

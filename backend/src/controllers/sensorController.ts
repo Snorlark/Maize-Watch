@@ -350,3 +350,26 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
     data: { readings }
   });
 });
+
+export const getHistoricalReadingsByFarm = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const { days = 7 } = req.query;
+  const currentUser = (req as any).user;
+
+  // Verify user owns the farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId._id.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  // For now, return the same data as latest readings since we don't have historical data
+  // In a real implementation, this would fetch data from the past N days
+  const readings = await sensorService.getLatestReadingsByFarm(farmId);
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { readings }
+  });
+});

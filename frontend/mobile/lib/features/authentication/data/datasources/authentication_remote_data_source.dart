@@ -149,8 +149,20 @@ class AuthenticationRemoteDataSourceImpl
 
           if (data != null && data['user'] != null) {
             // Save tokens if they exist (like in login)
-            if (data['accessToken'] != null) {
-              await SecureStorage.storeTokens(data['accessToken'], data['refreshToken']);
+            print("🔐 AuthDataSource: Checking for tokens in response...");
+            print("🔐 AuthDataSource: data['accessToken'] exists: ${data['accessToken'] != null}");
+            print("🔐 AuthDataSource: data['refreshToken'] exists: ${data['refreshToken'] != null}");
+            
+            if (data['accessToken'] != null && data['refreshToken'] != null) {
+              print("🔐 AuthDataSource: Storing tokens...");
+              await SecureStorage.storeTokens(
+                data['accessToken'], 
+                data['refreshToken']
+              );
+              print("🔐 AuthDataSource: Tokens stored successfully from registration");
+            } else {
+              print("⚠️ AuthDataSource: No tokens found in registration response");
+              print("⚠️ AuthDataSource: Response structure: ${data.keys.toList()}");
             }
 
             print("📥 User data found: ${data['user']}");

@@ -6,9 +6,12 @@ import pythonAnalyticsService from '../services/pythonAnalyticsService';
 import thingSpeakService from '../services/thingspeakService';
 import sensorService from '../services/sensorService';
 import syncService from '../services/syncService';
+import CacheService from '../services/cacheService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
+import mongoose from 'mongoose';
+import SensorReading from '../models/SensorReading';
 
 /**
  * @desc    Get aggregated sensor data
@@ -690,10 +693,10 @@ export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
     // First, sync latest data from ThingSpeak
     await syncService.syncFarmData(farmId);
     
-    // Get latest sensor data from MongoDB
-    const latestReadings = await sensorService.getLatestReadingsByFarm(farmId);
+    // Get field-specific sensor data from IoT database
+    const fieldSensorData = await syncService.getSensorDataForAnalytics(farmId);
     
-    if (!latestReadings || latestReadings.length === 0) {
+    if (!fieldSensorData) {
       // Try to get data from ThingSpeak as fallback
       const thingSpeakData = await thingSpeakService.getLatestData();
       if (thingSpeakData) {
@@ -774,13 +777,13 @@ export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
       });
     }
 
-    // Calculate averages from latest readings
-    const readings = latestReadings.map(r => r.data);
-    const temperature = readings.reduce((sum, r) => sum + (r.temperature || 0), 0) / readings.length;
-    const humidity = readings.reduce((sum, r) => sum + (r.humidity || 0), 0) / readings.length;
-    const soilMoisture = readings.reduce((sum, r) => sum + (r.soilMoisture || 0), 0) / readings.length;
-    const soilPh = readings.reduce((sum, r) => sum + (r.pH || 0), 0) / readings.length;
-    const lightIntensity = readings.reduce((sum, r) => sum + (r.lightIntensity || 0), 0) / readings.length;
+    // Calculate averages from field-specific sensor data
+    const fieldDataArray = Object.values(fieldSensorData);
+    const temperature = fieldDataArray.reduce((sum, r) => sum + (r.temperature || 0), 0) / fieldDataArray.length;
+    const humidity = fieldDataArray.reduce((sum, r) => sum + (r.humidity || 0), 0) / fieldDataArray.length;
+    const soilMoisture = fieldDataArray.reduce((sum, r) => sum + (r.soilMoisture || 0), 0) / fieldDataArray.length;
+    const soilPh = fieldDataArray.reduce((sum, r) => sum + (r.soilPh || 0), 0) / fieldDataArray.length;
+    const lightIntensity = fieldDataArray.reduce((sum, r) => sum + (r.lightIntensity || 0), 0) / fieldDataArray.length;
 
     // Determine crop status based on sensor readings
     let status = 'NORMAL';
@@ -1024,53 +1027,106 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       });
     }
     
-    // First, sync historical data from ThingSpeak
-    await syncService.syncHistoricalData(farmId, 7);
-    
-    // Get historical data for the past 7 days from MongoDB
+    // Check cache first
+    const cacheKey = `weekly_data_${farmId}_${fieldId || 'all'}`;
+    const cached = await CacheService.get(cacheKey);
+    if (cached) {
+      logger.info(`Cache hit for weekly data: ${cacheKey}`);
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: cached
+      });
+    }
+
+    // Get historical data for the past 7 days from MongoDB using aggregation
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
     
     // Get all sensors for the farm first
     const sensors = await sensorService.getSensorsByFarm(farmId);
-    const allReadings = [];
+    const sensorIds = sensors.map(s => (s as any)._id);
     
-    // Get readings for each sensor
-    for (const sensor of sensors) {
-      const readings = await sensorService.getSensorReadings(
-        (sensor as any)._id.toString(),
-        1, // page
-        100, // limit per sensor
-        startDate,
-        endDate
-      );
-      allReadings.push(...readings.readings);
-    }
+    // Use MongoDB aggregation for efficient data processing
+    const aggregationPipeline = [
+      {
+        $match: {
+          sensor: { $in: sensorIds },
+          timestamp: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$timestamp' },
+            month: { $month: '$timestamp' },
+            day: { $dayOfMonth: '$timestamp' }
+          },
+          temperature: { $avg: '$data.temperature' },
+          humidity: { $avg: '$data.humidity' },
+          soilMoisture: { $avg: '$data.soilMoisture' },
+          soilPh: { $avg: '$data.pH' },
+          lightIntensity: { $avg: '$data.lightIntensity' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': 1 as 1, '_id.month': 1 as 1, '_id.day': 1 as 1 }
+      }
+    ];
+
+    const aggregatedData = await SensorReading.aggregate(aggregationPipeline);
     
     // If no readings from MongoDB, try to get from ThingSpeak
-    if (allReadings.length === 0) {
+    let historicalData = [];
+    if (aggregatedData.length === 0) {
+      logger.info('No MongoDB data found, fetching from ThingSpeak...');
       const thingSpeakData = await thingSpeakService.getHistoricalData(7 * 24 * 60); // 7 days in minutes
       if (thingSpeakData && thingSpeakData.length > 0) {
-        // Convert ThingSpeak data to sensor reading format
+        // Convert ThingSpeak data to daily format
+        const thingSpeakByDay: { [key: string]: { temperature: number[], humidity: number[], soilMoisture: number[], soilPh: number[], lightIntensity: number[] } } = {};
         for (const dataPoint of thingSpeakData) {
-          allReadings.push({
-            data: {
-              temperature: dataPoint.temperature,
-              humidity: dataPoint.humidity,
-              soilMoisture: dataPoint.soilMoisture,
-              pH: dataPoint.soilPh,
-              lightIntensity: dataPoint.lightIntensity,
-            },
-            timestamp: dataPoint.timestamp
+          const date = new Date(dataPoint.timestamp);
+          const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+          
+          if (!thingSpeakByDay[dayKey]) {
+            thingSpeakByDay[dayKey] = {
+              temperature: [],
+              humidity: [],
+              soilMoisture: [],
+              soilPh: [],
+              lightIntensity: []
+            };
+          }
+          
+          thingSpeakByDay[dayKey].temperature.push(dataPoint.temperature);
+          thingSpeakByDay[dayKey].humidity.push(dataPoint.humidity);
+          thingSpeakByDay[dayKey].soilMoisture.push(dataPoint.soilMoisture);
+          thingSpeakByDay[dayKey].soilPh.push(dataPoint.soilPh);
+          thingSpeakByDay[dayKey].lightIntensity.push(dataPoint.lightIntensity);
+        }
+        
+        // Convert to aggregated format
+        for (const [dayKey, values] of Object.entries(thingSpeakByDay)) {
+          const [year, month, day] = dayKey.split('-').map(Number);
+          const typedValues = values as { temperature: number[], humidity: number[], soilMoisture: number[], soilPh: number[], lightIntensity: number[] };
+          aggregatedData.push({
+            _id: { year, month, day },
+            temperature: typedValues.temperature.reduce((a: number, b: number) => a + b, 0) / typedValues.temperature.length,
+            humidity: typedValues.humidity.reduce((a: number, b: number) => a + b, 0) / typedValues.humidity.length,
+            soilMoisture: typedValues.soilMoisture.reduce((a: number, b: number) => a + b, 0) / typedValues.soilMoisture.length,
+            soilPh: typedValues.soilPh.reduce((a: number, b: number) => a + b, 0) / typedValues.soilPh.length,
+            lightIntensity: typedValues.lightIntensity.reduce((a: number, b: number) => a + b, 0) / typedValues.lightIntensity.length,
+            count: typedValues.temperature.length
           });
         }
       }
     }
     
-    const historicalData = allReadings;
-    
-    // Group data by day and calculate daily averages
+    // Generate daily data for the week using aggregated data
     const dailyData = [];
     const now = new Date();
     
@@ -1079,51 +1135,67 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       date.setDate(date.getDate() - i);
       date.setHours(0, 0, 0, 0);
       
-      const nextDate = new Date(date);
-      nextDate.setDate(nextDate.getDate() + 1);
+      const dayData = aggregatedData.find(d => 
+        d._id.year === date.getFullYear() && 
+        d._id.month === date.getMonth() + 1 && 
+        d._id.day === date.getDate()
+      );
       
-      const dayData = historicalData.filter(data => {
-        const dataDate = new Date(data.timestamp);
-        return dataDate >= date && dataDate < nextDate;
-      });
-      
-      if (dayData.length > 0) {
-        const avgTemp = dayData.reduce((sum, d) => sum + (d.data.temperature || 0), 0) / dayData.length;
-        const avgHumidity = dayData.reduce((sum, d) => sum + (d.data.humidity || 0), 0) / dayData.length;
-        const avgSoilMoisture = dayData.reduce((sum, d) => sum + (d.data.soilMoisture || 0), 0) / dayData.length;
-        const avgSoilPh = dayData.reduce((sum, d) => sum + (d.data.pH || 0), 0) / dayData.length;
-        const avgLightIntensity = dayData.reduce((sum, d) => sum + (d.data.lightIntensity || 0), 0) / dayData.length;
-        
+      if (dayData && dayData.count > 0) {
         dailyData.push({
           date: date.toISOString().split('T')[0],
-          temperature: Math.round(avgTemp * 100) / 100,
-          humidity: Math.round(avgHumidity * 100) / 100,
-          soilMoisture: Math.round(avgSoilMoisture * 100) / 100,
-          soilPh: Math.round(avgSoilPh * 100) / 100,
-          lightIntensity: Math.round(avgLightIntensity * 100) / 100,
+          temperature: Math.round(dayData.temperature * 100) / 100,
+          humidity: Math.round(dayData.humidity * 100) / 100,
+          soilMoisture: Math.round(dayData.soilMoisture * 100) / 100,
+          soilPh: Math.round(dayData.soilPh * 100) / 100,
+          lightIntensity: Math.round(dayData.lightIntensity * 100) / 100,
+          readingCount: dayData.count
         });
       } else {
         // Add empty data for days with no readings
         dailyData.push({
           date: date.toISOString().split('T')[0],
-          temperature: 0,
-          humidity: 0,
-          soilMoisture: 0,
-          soilPh: 0,
-          lightIntensity: 0,
+          temperature: null,
+          humidity: null,
+          soilMoisture: null,
+          soilPh: null,
+          lightIntensity: null,
+          readingCount: 0
         });
       }
     }
     
+    // Calculate 7-day averages
+    const validDays = dailyData.filter(day => day.readingCount > 0);
+    const averages = {
+      temperature: validDays.length > 0 ? 
+        Math.round(validDays.reduce((sum, day) => sum + (day.temperature || 0), 0) / validDays.length * 100) / 100 : null,
+      humidity: validDays.length > 0 ? 
+        Math.round(validDays.reduce((sum, day) => sum + (day.humidity || 0), 0) / validDays.length * 100) / 100 : null,
+      soilMoisture: validDays.length > 0 ? 
+        Math.round(validDays.reduce((sum, day) => sum + (day.soilMoisture || 0), 0) / validDays.length * 100) / 100 : null,
+      soilPh: validDays.length > 0 ? 
+        Math.round(validDays.reduce((sum, day) => sum + (day.soilPh || 0), 0) / validDays.length * 100) / 100 : null,
+      lightIntensity: validDays.length > 0 ? 
+        Math.round(validDays.reduce((sum, day) => sum + (day.lightIntensity || 0), 0) / validDays.length * 100) / 100 : null
+    };
+    
+    const result = {
+      dailyData,
+      averages,
+      summary: {
+        totalDays: 7,
+        dataPoints: aggregatedData.length,
+        validDays: validDays.length
+      }
+    };
+    
+    // Cache the result for 5 minutes
+    await CacheService.set(cacheKey, result, 300);
+    
     res.status(HTTP_STATUS.OK).json({
       success: true,
-      data: {
-        dailyData,
-        summary: {
-          totalDays: 7,
-          dataPoints: historicalData.length
-        }
-      }
+      data: result
     });
   } catch (error) {
     logger.error('Error getting weekly data:', error);

@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
 import Prescription from '../models/Prescription';
 import mongoose from 'mongoose';
+import PrescriptionSyncService from '../services/prescriptionSyncService';
 
 /**
  * @desc    Get prescriptions for a farm
@@ -204,13 +205,51 @@ function _getInstructionsForCategory(category: string, details: string): string[
 }
 
 /**
+ * @desc    Sync analytics prescriptions with database
+ * @route   POST /api/prescriptions/sync-analytics
+ * @access  Private
+ */
+export const syncAnalyticsPrescriptions = catchAsync(async (req: Request, res: Response) => {
+  const { farmId, prescriptions } = req.body;
+  const currentUser = (req as any).user;
+
+  try {
+    console.log('🔄 Syncing analytics prescriptions for farm:', farmId);
+    console.log('📊 Received prescriptions:', prescriptions.length);
+
+    // Sync analytics prescriptions with database
+    const syncedPrescriptions = await PrescriptionSyncService.syncAnalyticsPrescriptions(
+      farmId,
+      prescriptions
+    );
+
+    logger.info(`Synced ${syncedPrescriptions.length} analytics prescriptions for farm ${farmId}`);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Analytics prescriptions synced successfully',
+      data: {
+        prescriptions: syncedPrescriptions,
+        count: syncedPrescriptions.length
+      }
+    });
+  } catch (error) {
+    logger.error('Error syncing analytics prescriptions:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Failed to sync analytics prescriptions'
+    });
+  }
+});
+
+/**
  * @desc    Update prescription status
  * @route   PUT /api/prescriptions/:id/status
  * @access  Private
  */
 export const updatePrescriptionStatus = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, fieldId } = req.body;
   const currentUser = (req as any).user;
 
   try {

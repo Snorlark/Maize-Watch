@@ -281,6 +281,31 @@ export class CacheService {
   }
 
   /**
+   * Generic get method for any cache key
+   */
+  static async get(key: string): Promise<any | null> {
+    try {
+      const cached = await redisUtils.get(key);
+      return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+      logger.error('Cache get error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generic set method for any cache key with TTL
+   */
+  static async set(key: string, data: any, ttlSeconds: number = 300): Promise<void> {
+    try {
+      await redisUtils.setWithExpiry(key, JSON.stringify(data), ttlSeconds);
+      logger.debug(`Cached data for key ${key}`);
+    } catch (error) {
+      logger.error('Cache set error:', error);
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   static async getCacheStats(): Promise<any> {

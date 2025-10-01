@@ -26,6 +26,18 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().initialize();
+  
+  // Request notification permissions at app start
+  try {
+    final notificationService = NotificationService();
+    final hasPermissions = await notificationService.arePermissionsGranted();
+    if (!hasPermissions) {
+      print('🔔 Requesting notification permissions at app start');
+      await notificationService.requestPermissions();
+    }
+  } catch (e) {
+    print('⚠️ Error requesting notification permissions at app start: $e');
+  }
 
     // Initialize background notification service
     try {

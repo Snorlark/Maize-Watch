@@ -64,6 +64,26 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     });
   }
 
+  @override
+  void didUpdateWidget(FarmDetailWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if the selected field has changed
+    if (oldWidget.selectedField?.fieldName != widget.selectedField?.fieldName) {
+      print('🔍 Field changed from ${oldWidget.selectedField?.fieldName} to ${widget.selectedField?.fieldName}');
+      
+      // Clear current metrics to force reload
+      setState(() {
+        _currentMetrics = null;
+        _cropCondition = null;
+        _stressAnalysis = null;
+      });
+      
+      // Reload analytics data for the new field
+      _loadAnalyticsData();
+    }
+  }
+
   void _loadFieldData() {
     // Load sensor readings for the selected field
     if (widget.selectedField != null && widget.farm.id != null) {
@@ -214,7 +234,41 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           print('🔍 Parsed growth stage from analytics: ${_growthStageAnalysis?.currentStage}');
         }
         
-        // Parse stress_analysis to create current_metrics if not available
+        // Parse field-specific data to create current_metrics (PRIORITY)
+        final fieldAnalyses = descriptive['field_analyses'] as Map<String, dynamic>?;
+        if (fieldAnalyses != null) {
+          // Get the selected field name
+          final selectedFieldName = widget.selectedField?.fieldName ?? 
+              (widget.farm.fields.isNotEmpty ? widget.farm.fields.first.fieldName : null);
+          
+          print('🔍 Looking for field-specific data for: $selectedFieldName');
+          print('🔍 Available fields in analytics: ${fieldAnalyses.keys.toList()}');
+          
+          if (selectedFieldName != null && fieldAnalyses.containsKey(selectedFieldName)) {
+            final fieldData = fieldAnalyses[selectedFieldName] as Map<String, dynamic>;
+            final weatherSummary = fieldData['weather_summary'] as Map<String, dynamic>?;
+            
+            if (weatherSummary != null) {
+              _currentMetrics = MetricsModel(
+                soilPh: (weatherSummary['avg_soil_ph'] as num?)?.toDouble() ?? 0.0,
+                soilMoisture: (weatherSummary['avg_soil_moisture'] as num?)?.toDouble() ?? 0.0,
+                temperature: (weatherSummary['avg_temp'] as num?)?.toDouble() ?? 0.0,
+                humidity: (weatherSummary['avg_humidity'] as num?)?.toDouble() ?? 0.0,
+                lightIntensity: (weatherSummary['avg_light_intensity'] as num?)?.toDouble() ?? 0.0,
+                timestamp: DateTime.now(),
+              );
+              print('🔍 ✅ Created metrics from field-specific data for $selectedFieldName: ${_currentMetrics?.temperature}°C, ${_currentMetrics?.humidity}%, ${_currentMetrics?.soilMoisture}%');
+            } else {
+              print('🔍 ❌ No weather summary found for field $selectedFieldName');
+            }
+          } else {
+            print('🔍 ❌ Field $selectedFieldName not found in field analyses');
+          }
+        } else {
+          print('🔍 ❌ No field analyses found in analytics data');
+        }
+        
+        // Fallback to overall stress analysis if field-specific data not available
         if (_currentMetrics == null) {
           final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
           if (stressAnalysis != null) {
@@ -229,18 +283,37 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           }
         }
         
-        // Fallback: Create crop condition from stress analysis if available
+        // Parse field-specific stress analysis for crop condition
+        if (_cropCondition == null && fieldAnalyses != null) {
+          final selectedFieldName = widget.selectedField?.fieldName ?? 
+              (widget.farm.fields.isNotEmpty ? widget.farm.fields.first.fieldName : null);
+          
+          if (selectedFieldName != null && fieldAnalyses.containsKey(selectedFieldName)) {
+            final fieldData = fieldAnalyses[selectedFieldName] as Map<String, dynamic>;
+            final fieldStressAnalysis = fieldData['stress_analysis'] as Map<String, dynamic>?;
+            
+            if (fieldStressAnalysis != null) {
+              print('🔍 Using field-specific stress analysis for $selectedFieldName');
+              _stressAnalysis = fieldStressAnalysis;
+              _cropCondition = _createCropConditionFromStressAnalysis(fieldStressAnalysis);
+              print('🔍 Created crop condition from field-specific stress analysis: ${_cropCondition?.status}');
+            }
+          }
+        }
+        
+        // Fallback: Create crop condition from overall stress analysis if available
         if (_cropCondition == null) {
           final overallStress = descriptive['overall_stress'] as String?;
           print('🔍 Overall stress level: $overallStress');
           if (overallStress != null && overallStress.toLowerCase() != 'unknown') {
             _cropCondition = _createCropConditionFromStress(overallStress);
-            print('🔍 Created crop condition from stress analysis: ${_cropCondition?.status}');
+            print('🔍 Created crop condition from overall stress analysis: ${_cropCondition?.status}');
           } else {
             // If overall_stress is unknown, analyze individual stress levels
             final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
             if (stressAnalysis != null) {
               print('🔍 Analyzing individual stress levels: ${stressAnalysis.keys.toList()}');
+              _stressAnalysis = stressAnalysis;
               _cropCondition = _createCropConditionFromStressAnalysis(stressAnalysis);
               print('🔍 Created crop condition from individual stress levels: ${_cropCondition?.status}');
             } else {
@@ -268,27 +341,13 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   GrowthStageAnalysisModel _createGrowthStageFromField(Field field) {
     final growthStage = field.growthStage;
     final plantingDate = field.plantingDate;
+    final now = DateTime.now();
     
-    // Calculate progress percentage based on growth stage
-    final growthPercentages = {
-      'VE': 5,
-      'V2': 15,
-      'V3': 25,
-      'V4': 35,
-      'V5': 45,
-      'V6': 55,
-      'V7': 65,
-      'V8': 70,
-      'VT': 75,
-      'R1': 80,
-      'R2': 85,
-      'R3': 90,
-      'R4': 92,
-      'R5': 95,
-      'R6': 100,
-    };
-
-    final progressPercentage = growthPercentages[growthStage] ?? 10;
+    // Calculate days since planting
+    final daysSincePlanting = now.difference(plantingDate).inDays;
+    
+    // Calculate progress percentage based on actual days and growth stage
+    final progressPercentage = _calculateProgressPercentage(daysSincePlanting, growthStage);
     
     // Calculate expected harvest (roughly 90-120 days from planting)
     final expectedHarvest = plantingDate.add(Duration(days: 100));
@@ -300,6 +359,52 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       stageInfo: _getGrowthStageInfoList(),
       expectedHarvest: expectedHarvest,
     );
+  }
+
+  int _calculateProgressPercentage(int daysSincePlanting, String currentStage) {
+    // Corn growth stages with typical day ranges
+    final stageRanges = {
+      'VE': {'start': 0, 'end': 7, 'base': 0},
+      'V2': {'start': 7, 'end': 14, 'base': 5},
+      'V3': {'start': 14, 'end': 21, 'base': 15},
+      'V4': {'start': 21, 'end': 28, 'base': 25},
+      'V5': {'start': 28, 'end': 35, 'base': 35},
+      'V6': {'start': 35, 'end': 42, 'base': 45},
+      'V7': {'start': 42, 'end': 49, 'base': 55},
+      'V8': {'start': 49, 'end': 56, 'base': 65},
+      'VT': {'start': 56, 'end': 63, 'base': 75},
+      'R1': {'start': 63, 'end': 70, 'base': 80},
+      'R2': {'start': 70, 'end': 77, 'base': 85},
+      'R3': {'start': 77, 'end': 84, 'base': 90},
+      'R4': {'start': 84, 'end': 91, 'base': 92},
+      'R5': {'start': 91, 'end': 98, 'base': 95},
+      'R6': {'start': 98, 'end': 105, 'base': 100},
+    };
+
+    // Find the current stage range
+    final stageRange = stageRanges[currentStage];
+    if (stageRange == null) {
+      // Fallback: calculate based on days since planting
+      return (daysSincePlanting / 105 * 100).clamp(0, 100).round();
+    }
+
+    // Calculate progress within the current stage
+    final stageStart = stageRange['start']!;
+    final stageEnd = stageRange['end']!;
+    final basePercentage = stageRange['base']!;
+    
+    if (daysSincePlanting < stageStart) {
+      return basePercentage;
+    } else if (daysSincePlanting >= stageEnd) {
+      // Move to next stage or max out
+      final nextStagePercentage = basePercentage + 10;
+      return nextStagePercentage.clamp(0, 100);
+    } else {
+      // Calculate progress within current stage
+      final stageProgress = (daysSincePlanting - stageStart) / (stageEnd - stageStart);
+      final stageIncrement = 10 * stageProgress; // 10% increment per stage
+      return (basePercentage + stageIncrement).clamp(0, 100).round();
+    }
   }
 
   String _getGrowthStageDescription(String stage) {
@@ -1051,9 +1156,9 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withOpacity(0.3)),
+       border: Border.all(color: Colors.white),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1305,7 +1410,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
         boxShadow: [
@@ -1455,6 +1560,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         // Handle back navigation if needed
       },
       currentMetrics: _currentMetrics, // Pass current metrics
+      analyticsData: _stressAnalysis, // Pass stress analysis data
     );
   }
 

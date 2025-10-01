@@ -6,7 +6,7 @@ import 'package:mobile/core/network/network_info.dart';
 import 'package:mobile/features/prescriptions/data/datasources/prescription_local_data_source.dart';
 import 'package:mobile/features/prescriptions/data/datasources/prescription_remote_data_source.dart';
 import 'package:mobile/features/prescriptions/domain/entities/prescription.dart'
-    show Prescription, PrescriptionStatus;
+    show Prescription;
 import 'package:mobile/features/prescriptions/domain/repositories/prescription_repository.dart';
 import 'package:mobile/features/prescriptions/data/models/prescription_model.dart';
 import 'package:mobile/core/services/socket_service.dart';
@@ -352,6 +352,25 @@ class PrescriptionRepositoryImpl implements PrescriptionRepository {
 
     // Then emit updates from the stream
     yield* _controller.stream;
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> syncAnalyticsPrescriptions(
+    String farmId,
+    List<Map<String, dynamic>> prescriptions,
+  ) async {
+    try {
+      if (await networkInfo.isConnected) {
+        final result = await remoteDataSource.syncAnalyticsPrescriptions(farmId, prescriptions);
+        return Right(result);
+      } else {
+        return const Left(NetworkFailure('No internet connection'));
+      }
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Unexpected error: $e'));
+    }
   }
 
   // Clean up resources

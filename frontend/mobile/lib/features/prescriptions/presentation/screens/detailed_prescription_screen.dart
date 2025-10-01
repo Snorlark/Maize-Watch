@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
+import '../../../../core/services/completion_status_manager.dart';
+import '../../../../core/services/prescription_id_mapper.dart';
+import '../../../../features/prescriptions/presentation/bloc/prescription_bloc.dart';
+import '../../../../features/prescriptions/presentation/bloc/prescription_event.dart';
+import '../../../../features/authentication/presentation/bloc/authentication_bloc.dart';
+import '../../../../generated/l10n.dart';
 
 class DetailedPrescriptionScreen extends StatefulWidget {
   const DetailedPrescriptionScreen({super.key});
@@ -12,21 +20,122 @@ class DetailedPrescriptionScreen extends StatefulWidget {
 
 class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen> {
   bool _isCompleted = false;
+  bool _isInitialized = false;
   Map<String, bool> _expandedInstructions = {}; // Track which instructions are expanded
+  
+  @override
+  void initState() {
+    super.initState();
+    // Load completion status when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prescriptionData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+      final prescriptionId = prescriptionData['id'] as String? ?? '';
+      if (prescriptionId.isNotEmpty) {
+        _loadCompletionStatus(prescriptionId);
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh completion status when screen becomes visible
+    final prescriptionData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+    final prescriptionId = prescriptionData['id'] as String? ?? '';
+    if (prescriptionId.isNotEmpty) {
+      _loadCompletionStatus(prescriptionId);
+    }
+  }
+
+  // Store completion status for a prescription
+  Future<void> _storeCompletionStatus(String prescriptionId, bool isCompleted) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('prescription_completed_$prescriptionId', isCompleted);
+      print('🔧 Stored completion status for $prescriptionId: $isCompleted');
+    } catch (e) {
+      print('🔧 Error storing completion status: $e');
+    }
+  }
+
+  // Retrieve completion status for a prescription
+  Future<bool> _getCompletionStatus(String prescriptionId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('prescription_completed_$prescriptionId') ?? false;
+    } catch (e) {
+      print('🔧 Error retrieving completion status: $e');
+      return false;
+    }
+  }
+
+  // Load completion status and update UI
+  Future<void> _loadCompletionStatus(String prescriptionId) async {
+    try {
+      // Check both completion status sources
+      final staticStatus = await CompletionStatusManager.getCompletionStatus(prescriptionId);
+      final storedStatus = await _getCompletionStatus(prescriptionId);
+      
+      // Use the most recent status (prefer static status as it's more current)
+      final finalStatus = staticStatus || storedStatus;
+      
+      print('🔧 Loading completion status for $prescriptionId: static=$staticStatus, stored=$storedStatus, final=$finalStatus, current=$_isCompleted');
+      
+      if (finalStatus != _isCompleted) {
+        setState(() {
+          _isCompleted = finalStatus;
+        });
+        print('🔧 Updated completion status to: $finalStatus');
+      }
+    } catch (e) {
+      print('🔧 Error loading completion status: $e');
+    }
+  }
+
+  // Notify that completion status has changed
+  void _notifyCompletionStatusChanged() {
+    // This could be used to trigger a refresh in parent screens
+    // For now, we'll just print a debug message
+    print('🔧 Completion status changed for prescription, parent screens should refresh');
+  }
 
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> prescriptionData =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
 
-    final String title = prescriptionData['title'] ?? 'Farm Prescription';
-    final String description = prescriptionData['description'] ?? 'No details available';
-    final String fieldName = prescriptionData['fieldName'] ?? 'Unknown Field';
-    final String soilType = prescriptionData['soilType'] ?? 'Unknown';
-    final String growthStage = prescriptionData['growthStage'] ?? 'Unknown';
+    print('🔧 Prescription Data Received:');
+    print('🔧 Full prescriptionData: $prescriptionData');
+    print('🔧 ID: ${prescriptionData['id']}');
+    print('🔧 Field ID: ${prescriptionData['fieldId']}');
+    print('🔧 Is Completed: ${prescriptionData['isCompleted']}');
+
+    final String title = prescriptionData['title'] ?? S.of(context).farm_prescription;
+    final String description = prescriptionData['description'] ?? S.of(context).no_details_available;
+    final String fieldName = prescriptionData['fieldName'] ?? S.of(context).unknown_field;
+    final String soilType = prescriptionData['soilType'] ?? S.of(context).unknown;
+    final String growthStage = prescriptionData['growthStage'] ?? S.of(context).unknown;
     final String urgency = prescriptionData['urgency'] ?? 'MEDIUM';
-    final String timeline = prescriptionData['timeline'] ?? 'Today';
-    final DateTime? createdAt = prescriptionData['createdAt'] as DateTime?;
+    final String timeline = prescriptionData['timeline'] ?? S.of(context).today;
+    final String? createdAtString = prescriptionData['createdAt'] as String?;
+    final DateTime? createdAt = createdAtString != null ? DateTime.tryParse(createdAtString) : null;
+    final bool isCompleted = prescriptionData['isCompleted'] as bool? ?? false;
+
+    // Initialize completion state from prescription data only once
+    if (!_isInitialized) {
+      print('🔧 Initializing completion state: $isCompleted');
+      _isCompleted = isCompleted;
+      _isInitialized = true;
+      
+      // Check for stored completion status
+      final prescriptionId = prescriptionData['id'] as String? ?? '';
+      if (prescriptionId.isNotEmpty) {
+        // Load completion status and update UI
+        _loadCompletionStatus(prescriptionId);
+      }
+    } else {
+      print('🔧 State already initialized, current _isCompleted: $_isCompleted');
+    }
 
     // Calculate send time and deadline
     final sendTime = _formatSendTime(createdAt);
@@ -42,25 +151,98 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
           onPressed: () => Navigator.pop(context),
           icon: Icon(Icons.arrow_back, color: MAIZE_ACCENT),
         ),
-        title: Text(fieldName, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+              fieldName, 
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,            
+                  color: _isCompleted ? Colors.green[700] : null,
+                ),
+              ),
+            ),
+          ],
+        ),
         
         actions: [
           // Mark as completed toggle in header
           TextButton(
-            onPressed: () {
-              setState(() {
-                _isCompleted = !_isCompleted;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
-                  backgroundColor: _isCompleted ? Colors.green : Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+              onPressed: () async {
+                final Map<String, dynamic> prescriptionData =
+                    ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+                final prescriptionId = prescriptionData['id'] as String? ?? '';
+                final fieldId = prescriptionData['fieldId'] as String? ?? '';
+                
+                print('🔧 Mark Complete Button Pressed (Header)');
+                print('🔧 Current _isCompleted: $_isCompleted');
+                print('🔧 Prescription ID: $prescriptionId');
+                print('🔧 Field ID: $fieldId');
+                
+                if (prescriptionId.isNotEmpty && fieldId.isNotEmpty) {
+                  // Update local state first for immediate UI feedback
+                  setState(() {
+                    _isCompleted = !_isCompleted;
+                  });
+                  
+                  print('🔧 Updated _isCompleted to: $_isCompleted');
+                  
+                  // Store completion status locally
+                  _storeCompletionStatus(prescriptionId, _isCompleted);
+                  // Update completion status directly in SharedPreferences
+                  print('🔧 DETAILED SCREEN: About to update completion status for $prescriptionId to $_isCompleted');
+                  final prefs = await SharedPreferences.getInstance();
+                  // Get user ID from authentication context
+                  final authState = context.read<AuthenticationBloc>().state;
+                  final userId = authState.user?.id ?? 'unknown';
+                  final completionKey = 'completion_${userId}_$prescriptionId';
+                  print('🔧 DETAILED SCREEN: Saving completion status with key: $completionKey, value: $_isCompleted');
+                  await prefs.setBool(completionKey, _isCompleted);
+                  print('🔧 DETAILED SCREEN: Completion status updated successfully with key: $completionKey');
+                  
+                  // Debug: Verify the save worked
+                  final savedValue = prefs.getBool(completionKey);
+                  print('🔧 DETAILED SCREEN: Verification - saved value for $completionKey: $savedValue');
+                  
+                  // Verify the status was saved
+                  final savedStatus = prefs.getBool(completionKey) ?? false;
+                  print('🔧 DETAILED SCREEN: Verified saved status for $prescriptionId: $savedStatus');
+                  
+                  // Get MongoDB prescription ID for backend update
+                  final mongoId = await PrescriptionIdMapper.getMongoId(prescriptionId);
+                  final backendPrescriptionId = mongoId ?? prescriptionId;
+                  
+                  // Then update backend
+                  context.read<PrescriptionBloc>().add(
+                    UpdatePrescriptionStatus(
+                      fieldId: fieldId,
+                      prescriptionId: backendPrescriptionId,
+                      isCompleted: _isCompleted,
+                    ),
+                  );
+                  
+                  // Notify that completion status has changed
+                  _notifyCompletionStatusChanged();
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
+                    backgroundColor: _isCompleted ? Colors.green : Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
                   ),
-                ),
-              );
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Unable to update prescription status'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
             child: Text(_isCompleted ? 'Undo Complete' : 'Mark Complete', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
           ),
@@ -86,8 +268,43 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-              Text(title, style: Theme.of(context).textTheme.headlineMedium),
-              verticalSpace(kAppSmallGap),
+          // Completion status indicator
+          if (_isCompleted) ...[
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(12.w),
+              margin: EdgeInsets.only(bottom: 16.h),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green[600], size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      'This prescription has been completed successfully!',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          Text(
+            title, 
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              decoration: _isCompleted ? TextDecoration.lineThrough : null,
+              color: _isCompleted ? Colors.green[700] : null,
+            ),
+          ),
+          verticalSpace(kAppSmallGap),
               Row(children: [
                  Container(
                   padding: EdgeInsets.symmetric(horizontal: kAppSmallPadding, vertical: kAppSmallPadding),
@@ -369,11 +586,63 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
           SizedBox(width: kAppSmallGap),
           Expanded(
             child: ElevatedButton(
-            onPressed: () {
-                setState(() {
-                  _isCompleted = !_isCompleted;
-                });
-              ScaffoldMessenger.of(context).showSnackBar(
+                    onPressed: () async {
+                      final Map<String, dynamic> prescriptionData =
+                          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+                      final prescriptionId = prescriptionData['id'] as String? ?? '';
+                      final fieldId = prescriptionData['fieldId'] as String? ?? '';
+                      
+                      print('🔧 Mark Complete Button Pressed (Bottom)');
+                      print('🔧 Current _isCompleted: $_isCompleted');
+                      print('🔧 Prescription ID: $prescriptionId');
+                      print('🔧 Field ID: $fieldId');
+                      
+                      if (prescriptionId.isNotEmpty && fieldId.isNotEmpty) {
+                        // Update local state first for immediate UI feedback
+                        setState(() {
+                          _isCompleted = !_isCompleted;
+                        });
+                        
+                        print('🔧 Updated _isCompleted to: $_isCompleted');
+                        
+                        // Store completion status locally
+                        _storeCompletionStatus(prescriptionId, _isCompleted);
+                        // Update completion status directly in SharedPreferences
+                        print('🔧 DETAILED SCREEN (BOTTOM): About to update completion status for $prescriptionId to $_isCompleted');
+                        final prefs = await SharedPreferences.getInstance();
+                        // Get user ID from authentication context
+                        final authState = context.read<AuthenticationBloc>().state;
+                        final userId = authState.user?.id ?? 'unknown';
+                        final completionKey = 'completion_${userId}_$prescriptionId';
+                        print('🔧 DETAILED SCREEN (BOTTOM): Saving completion status with key: $completionKey, value: $_isCompleted');
+                        await prefs.setBool(completionKey, _isCompleted);
+                        print('🔧 DETAILED SCREEN (BOTTOM): Completion status updated successfully with key: $completionKey');
+                        
+                        // Debug: Verify the save worked
+                        final savedValue = prefs.getBool(completionKey);
+                        print('🔧 DETAILED SCREEN (BOTTOM): Verification - saved value for $completionKey: $savedValue');
+                        
+                        // Verify the status was saved
+                        final savedStatus = prefs.getBool(completionKey) ?? false;
+                        print('🔧 DETAILED SCREEN (BOTTOM): Verified saved status for $prescriptionId: $savedStatus');
+                        
+                        // Get MongoDB prescription ID for backend update
+                        final mongoId = await PrescriptionIdMapper.getMongoId(prescriptionId);
+                        final backendPrescriptionId = mongoId ?? prescriptionId;
+                        
+                        // Then update backend
+                        context.read<PrescriptionBloc>().add(
+                          UpdatePrescriptionStatus(
+                            fieldId: fieldId,
+                            prescriptionId: backendPrescriptionId,
+                            isCompleted: _isCompleted,
+                          ),
+                        );
+                        
+                        // Notify that completion status has changed
+                        _notifyCompletionStatusChanged();
+                
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(_isCompleted ? 'Marked as completed!' : 'Marked as pending'),
                     backgroundColor: _isCompleted ? Colors.green : Colors.orange,
@@ -383,7 +652,16 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                     ),
                   ),
                 );
-              },
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Unable to update prescription status'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isCompleted ? Colors.green : MAIZE_PRIMARY,
                 foregroundColor: Colors.white,

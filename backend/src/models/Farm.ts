@@ -16,6 +16,9 @@ interface ISensor {
   description: string;
   soilType: 'loamy' | 'sandy' | 'clay' | 'silty';
   readings: ISensorReadings;
+  prototypeId?: string;
+  prototypeChannelId?: string;
+  prototypeApiKey?: string;
 }
 
 // Interface for field
@@ -124,6 +127,18 @@ const farmSchema = new Schema<IFarm>(
                 type: Number,
                 default: 0
               }
+            },
+            prototypeId: {
+              type: String,
+              required: false
+            },
+            prototypeChannelId: {
+              type: String,
+              required: false
+            },
+            prototypeApiKey: {
+              type: String,
+              required: false
             }
           }
         ]

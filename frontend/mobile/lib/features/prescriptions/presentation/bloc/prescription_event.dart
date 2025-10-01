@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:mobile/features/prescriptions/domain/entities/prescription.dart';
 
 abstract class PrescriptionEvent extends Equatable {
   const PrescriptionEvent();
@@ -55,4 +54,17 @@ class DeleteAllPrescriptions extends PrescriptionEvent {
 
 class CheckForNewPrescriptions extends PrescriptionEvent {
   const CheckForNewPrescriptions();
+}
+
+class SyncAnalyticsPrescriptions extends PrescriptionEvent {
+  final String farmId;
+  final List<Map<String, dynamic>> prescriptions;
+
+  const SyncAnalyticsPrescriptions({
+    required this.farmId,
+    required this.prescriptions,
+  });
+
+  @override
+  List<Object?> get props => [farmId, prescriptions];
 }

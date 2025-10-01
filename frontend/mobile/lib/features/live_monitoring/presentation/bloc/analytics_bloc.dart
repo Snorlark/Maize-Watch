@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'dart:convert';
+import '../../../../core/services/cache_service.dart';
 import '../../domain/repositories/analytics_repository.dart';
 import '../../domain/entities/analytics_entities.dart';
 import '../../../../core/error/failures.dart';
@@ -90,6 +91,9 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     LoadAnalyticsData event,
     Emitter<AnalyticsState> emit,
   ) async {
+    // Get current user ID for cache isolation
+    final currentUserId = await CacheService.getCurrentUserId();
+    
     // Emit cached data first if available to avoid blank UI
     final cacheKey = _buildCacheKey(event.farmId, event.fieldId);
     try {
@@ -119,6 +123,18 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     }
 
     try {
+      // Check if we have recent cached data to avoid unnecessary API calls
+      final cacheKey = _buildCacheKey(event.farmId, event.fieldId);
+      final cachedJson = await SecureStorage.read(key: cacheKey);
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        final cached = jsonDecode(cachedJson) as Map<String, dynamic>;
+        final lastUpdate = DateTime.tryParse(cached['lastUpdate'] as String? ?? '');
+        if (lastUpdate != null && DateTime.now().difference(lastUpdate).inMinutes < 5) {
+          print('📊 Using cached analytics data (less than 5 minutes old)');
+          return; // Use the already emitted cached data
+        }
+      }
+      
       // Use the complete analytics endpoint that includes prescriptive data
       final completeAnalytics = await repository.getCompleteAnalytics(event.farmId, fieldId: event.fieldId);
       
@@ -127,17 +143,18 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
       final predictive = completeAnalytics['predictive'] as Map<String, dynamic>?;
       // Note: prescriptive data is available but not used in this bloc
       
-      // Create crop condition from descriptive analytics
-      final cropCondition = _createCropConditionFromAnalytics(descriptive);
+      // Create analytics data in parallel for better performance
+      final futures = await Future.wait([
+        Future.value(_createCropConditionFromAnalytics(descriptive)),
+        Future.value(_createMetricsFromAnalytics(descriptive)),
+        Future.value(_createWeeklyDataFromAnalytics(descriptive)),
+        Future.value(_createGrowthStageFromAnalytics(predictive, descriptive)),
+      ]);
       
-      // Create metrics from descriptive analytics
-      final currentMetrics = _createMetricsFromAnalytics(descriptive);
-      
-      // Create weekly data from descriptive analytics (simplified)
-      final weeklyData = _createWeeklyDataFromAnalytics(descriptive);
-      
-      // Create growth stage analysis from predictive analytics
-      final growthStageAnalysis = _createGrowthStageFromAnalytics(predictive, descriptive);
+      final cropCondition = futures[0] as CropConditionModel?;
+      final currentMetrics = futures[1] as MetricsModel?;
+      final weeklyData = futures[2] as WeeklyDataModel?;
+      final growthStageAnalysis = futures[3] as GrowthStageAnalysisModel?;
 
       final loaded = AnalyticsLoaded(
         cropCondition: cropCondition ?? CropConditionModel(
@@ -169,11 +186,15 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
       // Persist cache for next open
       try {
         final cachePayload = _buildCachePayload(loaded);
+        cachePayload['lastUpdate'] = DateTime.now().toIso8601String();
         await SecureStorage.write(
           key: cacheKey,
           value: jsonEncode(cachePayload),
         );
-      } catch (_) {}
+        print('📊 Analytics data cached successfully');
+      } catch (e) {
+        print('⚠️ Failed to cache analytics data: $e');
+      }
 
       emit(loaded);
     } on ServerFailure catch (e) {
@@ -262,7 +283,28 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
   WeeklyDataModel? _createWeeklyDataFromAnalytics(Map<String, dynamic>? descriptive) {
     if (descriptive == null) return null;
     
-    // Create simplified weekly data from current metrics
+    // Try to get actual weekly data from analytics first
+    final weeklyData = descriptive['weekly_data'] as Map<String, dynamic>?;
+    if (weeklyData != null && weeklyData['dailyData'] != null) {
+      final dailyDataList = weeklyData['dailyData'] as List<dynamic>? ?? [];
+      final dailyData = dailyDataList.map((dayJson) {
+        return DailyDataModel(
+          date: DateTime.parse(dayJson['date'] as String),
+          temperature: (dayJson['temperature'] as num?)?.toDouble() ?? 0.0,
+          humidity: (dayJson['humidity'] as num?)?.toDouble() ?? 0.0,
+          soilMoisture: (dayJson['soilMoisture'] as num?)?.toDouble() ?? 0.0,
+          soilPh: (dayJson['soilPh'] as num?)?.toDouble() ?? 0.0,
+          lightIntensity: (dayJson['lightIntensity'] as num?)?.toDouble() ?? 0.0,
+        );
+      }).toList();
+      
+      return WeeklyDataModel(
+        dailyData: dailyData,
+        summary: weeklyData['summary'] as Map<String, dynamic>? ?? {},
+      );
+    }
+    
+    // Fallback: Create simplified weekly data from current metrics
     final weatherSummary = descriptive['weather_summary'] as Map<String, dynamic>? ?? {};
     final avgTemp = weatherSummary['avg_temp']?.toDouble() ?? 25.0;
     final avgHumidity = weatherSummary['avg_humidity']?.toDouble() ?? 60.0;
@@ -306,9 +348,8 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
                         descriptive['growth_stage'] as String? ?? 'VE';
     final daysSincePlanting = descriptive['daysSincePlanting'] as int? ?? 0;
     
-    // Calculate progress percentage
-    final totalDays = 120; // Approximate total growing period
-    final progressPercentage = ((daysSincePlanting / totalDays) * 100).clamp(0, 100).round();
+    // Calculate progress percentage based on actual growth stage and days
+    final progressPercentage = _calculateProgressPercentage(daysSincePlanting, currentStage);
     
     // Create stage info
     final stageInfo = [
@@ -356,6 +397,52 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     );
   }
   
+  int _calculateProgressPercentage(int daysSincePlanting, String currentStage) {
+    // Corn growth stages with typical day ranges
+    final stageRanges = {
+      'VE': {'start': 0, 'end': 7, 'base': 0},
+      'V2': {'start': 7, 'end': 14, 'base': 5},
+      'V3': {'start': 14, 'end': 21, 'base': 15},
+      'V4': {'start': 21, 'end': 28, 'base': 25},
+      'V5': {'start': 28, 'end': 35, 'base': 35},
+      'V6': {'start': 35, 'end': 42, 'base': 45},
+      'V7': {'start': 42, 'end': 49, 'base': 55},
+      'V8': {'start': 49, 'end': 56, 'base': 65},
+      'VT': {'start': 56, 'end': 63, 'base': 75},
+      'R1': {'start': 63, 'end': 70, 'base': 80},
+      'R2': {'start': 70, 'end': 77, 'base': 85},
+      'R3': {'start': 77, 'end': 84, 'base': 90},
+      'R4': {'start': 84, 'end': 91, 'base': 92},
+      'R5': {'start': 91, 'end': 98, 'base': 95},
+      'R6': {'start': 98, 'end': 105, 'base': 100},
+    };
+
+    // Find the current stage range
+    final stageRange = stageRanges[currentStage];
+    if (stageRange == null) {
+      // Fallback: calculate based on days since planting
+      return (daysSincePlanting / 105 * 100).clamp(0, 100).round();
+    }
+
+    // Calculate progress within the current stage
+    final stageStart = stageRange['start']!;
+    final stageEnd = stageRange['end']!;
+    final basePercentage = stageRange['base']!;
+    
+    if (daysSincePlanting < stageStart) {
+      return basePercentage;
+    } else if (daysSincePlanting >= stageEnd) {
+      // Move to next stage or max out
+      final nextStagePercentage = basePercentage + 10;
+      return nextStagePercentage.clamp(0, 100);
+    } else {
+      // Calculate progress within current stage
+      final stageProgress = (daysSincePlanting - stageStart) / (stageEnd - stageStart);
+      final stageIncrement = 10 * stageProgress; // 10% increment per stage
+      return (basePercentage + stageIncrement).clamp(0, 100).round();
+    }
+  }
+
   String _getStageDescription(String stage) {
     switch (stage) {
       case 'VE':

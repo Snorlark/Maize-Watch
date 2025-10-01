@@ -227,8 +227,8 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'maize_watch_channel',
-      'Maize Watch Notifications',
-      channelDescription: 'Notifications for farm monitoring and alerts',
+      'Maize Watch Notifications', // This will be translated in the actual notification
+      channelDescription: 'Notifications for farm monitoring and alerts', // This will be translated in the actual notification
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:mobile/core/error/exceptions.dart';
 import 'package:mobile/features/prescriptions/data/models/prescription_model.dart';
@@ -17,6 +16,10 @@ abstract class PrescriptionRemoteDataSource {
   Future<void> deleteCompletedPrescriptions();
   Future<void> deleteAllPrescriptions();
   Future<Map<String, dynamic>> checkForNewPrescriptions();
+  Future<Map<String, dynamic>> syncAnalyticsPrescriptions(
+    String farmId,
+    List<Map<String, dynamic>> prescriptions,
+  );
 }
 
 class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
@@ -170,6 +173,35 @@ class PrescriptionRemoteDataSourceImpl implements PrescriptionRemoteDataSource {
         throw ConnectionTimeoutException();
       } else {
         throw ServerException('Network error while checking for new prescriptions: ${e.message} (${e.response?.statusCode})');
+      }
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> syncAnalyticsPrescriptions(
+    String farmId,
+    List<Map<String, dynamic>> prescriptions,
+  ) async {
+    try {
+      final response = await httpClient.post(
+        '/api/prescriptions/sync-analytics',
+        data: {
+          'farmId': farmId,
+          'prescriptions': prescriptions,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data['data'] ?? {};
+      } else {
+        throw ServerException('Failed to sync analytics prescriptions: ${response.statusCode} - ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw ConnectionTimeoutException();
+      } else {
+        throw ServerException('Network error while syncing analytics prescriptions: ${e.message} (${e.response?.statusCode})');
       }
     }
   }

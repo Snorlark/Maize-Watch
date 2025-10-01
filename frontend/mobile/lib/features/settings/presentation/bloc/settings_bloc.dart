@@ -6,6 +6,7 @@ import 'package:mobile/features/settings/domain/usecases/get_sensor_status.dart'
 import 'package:mobile/features/settings/domain/usecases/update_settings.dart' as update_usecases;
 import 'package:mobile/features/settings/presentation/bloc/settings_event.dart';
 import 'package:mobile/features/settings/presentation/bloc/settings_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final GetSettings getSettings;
@@ -73,6 +74,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     if (state is SettingsLoaded) {
       final currentState = state as SettingsLoaded;
+      
+      // Update SharedPreferences immediately for instant effect
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('notifications_enabled', event.enabled);
+      await prefs.setBool('vibration_only', event.vibrationOnly);
+      print("🔧 SettingsBloc: Updated SharedPreferences - enabled: ${event.enabled}, vibration: ${event.vibrationOnly}");
       
       // Update immediately for instant response
       final updatedSettings = currentState.settings.copyWith(

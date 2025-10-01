@@ -13,6 +13,7 @@ class HistoricalTabWidget extends StatefulWidget {
   final String? fieldId;
   final VoidCallback? onBack;
   final MetricsModel? currentMetrics; // Add current metrics parameter
+  final Map<String, dynamic>? analyticsData; // Add analytics data parameter
 
   const HistoricalTabWidget({
     super.key,
@@ -20,6 +21,7 @@ class HistoricalTabWidget extends StatefulWidget {
     this.fieldId,
     this.onBack,
     this.currentMetrics, // Add current metrics parameter
+    this.analyticsData, // Add analytics data parameter
   });
 
   @override
@@ -93,6 +95,81 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
         weekOffset: currentWeekOffset,
       ),
     );
+  }
+
+  String _getOptimalRange(String parameter) {
+    // Get optimal ranges from analytics data if available
+    if (widget.analyticsData != null) {
+      // Try different possible locations for optimal ranges
+      final stressAnalysis = widget.analyticsData!['stress_analysis'] as Map<String, dynamic>?;
+      final recommendations = widget.analyticsData!['recommendations'] as List<dynamic>?;
+      final prescriptive = widget.analyticsData!['prescriptive'] as Map<String, dynamic>?;
+      
+      // Check stress analysis first
+      if (stressAnalysis != null) {
+        final paramData = stressAnalysis[parameter] as Map<String, dynamic>?;
+        if (paramData != null) {
+          final optimalRange = paramData['optimal_range'] as List<dynamic>?;
+          if (optimalRange != null && optimalRange.length >= 2) {
+            final min = optimalRange[0];
+            final max = optimalRange[1];
+            if (min != null && max != null) {
+              return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
+            }
+          }
+        }
+      }
+      
+      // Check prescriptive data for optimal ranges
+      if (prescriptive != null) {
+        final optimalRanges = prescriptive['optimal_ranges'] as Map<String, dynamic>?;
+        if (optimalRanges != null) {
+          final range = optimalRanges[parameter] as Map<String, dynamic>?;
+          if (range != null) {
+            final min = range['min'] as num?;
+            final max = range['max'] as num?;
+            if (min != null && max != null) {
+              return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
+            }
+          }
+        }
+      }
+      
+      // Check recommendations for parameter-specific optimal ranges
+      if (recommendations != null) {
+        for (final rec in recommendations) {
+          if (rec is Map<String, dynamic>) {
+            final recParam = rec['parameter'] as String?;
+            if (recParam == parameter) {
+              final optimalRange = rec['optimal_range'] as Map<String, dynamic>?;
+              if (optimalRange != null) {
+                final min = optimalRange['min'] as num?;
+                final max = optimalRange['max'] as num?;
+                if (min != null && max != null) {
+                  return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback to default ranges
+    switch (parameter) {
+      case 'temperature':
+        return '20-30°C';
+      case 'humidity':
+        return '40-80%';
+      case 'soilMoisture':
+        return '30-70%';
+      case 'soilPh':
+        return '6.0-7.5';
+      case 'lightIntensity':
+        return '400-800';
+      default:
+        return 'N/A';
+    }
   }
 
   bool _canNavigateNext() {
@@ -348,7 +425,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.orange,
                 data: weeklyData,
                 parameter: 'temperature',
-                optimalRange: '20-30°C',
+                optimalRange: _getOptimalRange('temperature'),
                 weekOffset: currentWeekOffset,
                 currentValue: widget.currentMetrics?.temperature,
               ),
@@ -362,7 +439,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.blue,
                 data: weeklyData,
                 parameter: 'humidity',
-                optimalRange: '60-80%',
+                optimalRange: _getOptimalRange('humidity'),
                 weekOffset: currentWeekOffset,
                 currentValue: widget.currentMetrics?.humidity,
               ),
@@ -376,7 +453,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.green,
                 data: weeklyData,
                 parameter: 'soilMoisture',
-                optimalRange: '40-70%',
+                optimalRange: _getOptimalRange('soilMoisture'),
                 weekOffset: currentWeekOffset,
                 currentValue: widget.currentMetrics?.soilMoisture,
               ),
@@ -390,7 +467,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.lightBlue,
                 data: weeklyData,
                 parameter: 'soilPh',
-                optimalRange: '6.0-7.0',
+                optimalRange: _getOptimalRange('soilPh'),
                 weekOffset: currentWeekOffset,
                 currentValue: widget.currentMetrics?.soilPh,
               ),
@@ -404,7 +481,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                 color: Colors.amber,
                 data: weeklyData,
                 parameter: 'lightIntensity',
-                optimalRange: '5000-10000',
+                optimalRange: _getOptimalRange('lightIntensity'),
                 weekOffset: currentWeekOffset,
                 currentValue: widget.currentMetrics?.lightIntensity,
               ),

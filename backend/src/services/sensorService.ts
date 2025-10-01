@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Sensor, { ISensor } from '../models/Sensor';
 import SensorReading, { ISensorReading } from '../models/SensorReading';
 import Farm from '../models/Farm';
@@ -7,6 +8,7 @@ import { getThingSpeakService, SensorData } from '../config/thingspeak';
 import getIotSensorReadingModel from '../models/IotSensorReading';
 import { DEFAULT_THRESHOLDS, ALERT_SEVERITY } from '../utils/constants';
 import CacheService from './cacheService';
+import farmService from './farmService';
 // Lazy import to prevent startup connection
 const getEmailService = () => import('../utils/emailService').then(m => m.default);
 
@@ -321,52 +323,72 @@ class SensorService {
    */
   async getLatestReadingsByFarm(farmId: string): Promise<ISensorReading[]> {
     try {
-      // Use the new sensor_readings collection
-      const SensorReading = require('../models/SensorReading').default;
-      const readings = await SensorReading.find({ farm: farmId })
-        .sort({ timestamp: -1 })
-        .limit(10);
+      // Get the farm to find its registered prototypes
+      const farm = await farmService.getFarmById(farmId);
+      if (!farm) {
+        throw new AppError('Farm not found', 404);
+      }
+
+      // Get all prototypes registered by this farm's user
+      const Prototype = require('../models/Prototype').default;
+      const prototypes = await Prototype.find({ registeredBy: farm.userId });
       
-      if (readings && readings.length > 0) {
-        return readings.map((reading: any) => ({
-          sensor: reading.sensor,
-          farm: reading.farm,
-          timestamp: reading.timestamp,
-          data: {
-            temperature: reading.data.temperature,
-            humidity: reading.data.humidity,
-            soilMoisture: reading.data.soilMoisture,
-            lightIntensity: reading.data.lightIntensity,
-            pH: reading.data.pH,
-          },
-          metadata: reading.metadata || { source: 'sensor', quality: 'good', processed: false },
-          createdAt: reading.timestamp,
-          updatedAt: reading.timestamp,
-        })) as any;
+      if (!prototypes || prototypes.length === 0) {
+        logger.warn(`No prototypes found for farm ${farmId}`);
+        return [];
       }
 
-      // Fallback to IoT DB if configured via MONGO_IOT_URI
-      const IotModel = await getIotSensorReadingModel();
-      if (IotModel) {
-        const docs = await IotModel.find({}).sort({ timestamp: -1 }).limit(4);
-        return docs.map((d: any) => ({
-          sensor: undefined as any,
-          farm: undefined as any,
-          timestamp: d.timestamp,
-          data: {
-            temperature: d.measurements.temperature,
-            humidity: d.measurements.humidity,
-            soilMoisture: normalizeSoilMoisture(d.measurements.soil_moisture),
-            lightIntensity: d.measurements.light_intensity,
-            pH: d.measurements.soil_ph,
-          },
-          metadata: { source: 'thingspeak', quality: 'good', processed: false },
-          createdAt: d.timestamp,
-          updatedAt: d.timestamp,
-        })) as any;
+      // Get latest readings for each prototype from IoT database
+      const allReadings: ISensorReading[] = [];
+
+      for (const prototype of prototypes) {
+        // Connect to IoT database directly
+        const iotConnection = mongoose.createConnection(process.env.MONGODB_IOT_URI || 'mongodb://localhost:27017/iot_data');
+        const iotSensorReadingSchema = new mongoose.Schema({
+          prototype_id: String,
+          timestamp: Date,
+          temperature: Number,
+          humidity: Number,
+          soilMoisture: Number,
+          soilPh: Number,
+          lightIntensity: Number,
+          metadata: Object
+        }, { collection: 'sensor_readings' });
+        
+        const IotSensorReading = iotConnection.model('IotSensorReading', iotSensorReadingSchema);
+        
+        const readings = await IotSensorReading.find({ prototype_id: prototype.prototype_id })
+          .sort({ timestamp: -1 })
+          .limit(1);
+        
+        if (readings && readings.length > 0) {
+          const reading = readings[0];
+          allReadings.push({
+            sensor: undefined as any,
+            farm: farmId as any,
+            timestamp: reading.timestamp,
+            data: {
+              temperature: reading.temperature,
+              humidity: reading.humidity,
+              soilMoisture: reading.soilMoisture,
+              lightIntensity: reading.lightIntensity,
+              pH: reading.soilPh,
+            },
+            metadata: reading.metadata || { source: 'thingspeak', quality: 'good', processed: false },
+            createdAt: reading.timestamp,
+            updatedAt: reading.timestamp,
+          } as any);
+        }
+        
+        // Close the connection
+        await iotConnection.close();
       }
 
-      // Fallback to primary DB if IoT not configured
+      if (allReadings.length > 0) {
+        return allReadings;
+      }
+
+      // Fallback to primary DB if no IoT readings found
       const cached = await CacheService.getFarmSensors(farmId);
       if (cached) {
         logger.debug(`Cache hit for farm sensors: ${farmId}`);

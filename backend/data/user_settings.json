@@ -1,6 +1,6 @@
 {
   "68c6d5d29563ef4e7fce1735": {
-    "notificationsEnabled": false,
+    "notificationsEnabled": true,
     "vibrationOnly": false,
     "language": "en",
     "sensorStatus": {
@@ -17,6 +17,22 @@
   },
   "68d5893735083cdabb3a7e16": {
     "notificationsEnabled": false,
+    "vibrationOnly": false,
+    "language": "tl",
+    "sensorStatus": {
+      "ldr": false,
+      "ph": false,
+      "dht": false,
+      "soil": false
+    },
+    "darkMode": false,
+    "autoSync": true,
+    "syncInterval": 30,
+    "dataCollectionEnabled": true,
+    "analyticsEnabled": true
+  },
+  "68dc356d2e6a45784cf3fd1d": {
+    "notificationsEnabled": true,
     "vibrationOnly": false,
     "language": "tl",
     "sensorStatus": {

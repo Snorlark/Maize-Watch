@@ -11,7 +11,8 @@ import {
   calibrateSensor,
   getSensorsNeedingMaintenance,
   getSensorStats,
-  getLatestReadingsByFarm
+  getLatestReadingsByFarm,
+  getHistoricalReadingsByFarm
 } from '../controllers/sensorController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -60,6 +61,9 @@ router.post('/:id/calibrate', validateObjectId, calibrateSensor);
 
 // Get latest readings for farm (mobile compatibility)
 router.get('/farms/:farmId/readings/latest', validateObjectId('farmId'), getLatestReadingsByFarm);
+
+// Get historical readings for farm (mobile compatibility)
+router.get('/farms/:farmId/readings/historical', validateObjectId('farmId'), getHistoricalReadingsByFarm);
 
 // Backward-compat path expected by mobile client
 router.get('/readings/latest/:farmId', validateObjectId('farmId'), getLatestReadingsByFarm);

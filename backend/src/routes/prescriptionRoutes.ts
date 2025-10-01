@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { authenticate } from '../middleware/auth';
 import {
   getPrescriptions,
+  syncAnalyticsPrescriptions,
   updatePrescriptionStatus,
   deletePrescription,
   markAllAsCompleted,
@@ -17,6 +18,12 @@ router.use(authenticate);
 
 // Get prescriptions for a farm
 router.get('/farm/:farmId', getPrescriptions);
+
+// Sync analytics prescriptions with database
+router.post('/sync-analytics', [
+  body('farmId').isMongoId().withMessage('Valid farm ID is required'),
+  body('prescriptions').isArray().withMessage('Prescriptions must be an array')
+], syncAnalyticsPrescriptions);
 
 // Update prescription status
 router.put('/:id/status', [

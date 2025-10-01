@@ -35,24 +35,50 @@ class SyncService {
    */
   async syncFarmData(farmId: string): Promise<void> {
     try {
+      logger.info(`Starting sync for farm ${farmId}`);
       const farm = await farmService.getFarmById(farmId);
       if (!farm) {
         throw new Error(`Farm ${farmId} not found`);
       }
 
-      // Get latest data from ThingSpeak
-      const thingSpeakData = await thingSpeakService.getLatestData();
+      logger.info(`Found farm: ${farm.farmName} for user: ${farm.userId}`);
+
+      // Get prototype data for this farm
+      const Prototype = require('../models/Prototype').default;
+      const prototypes = await Prototype.find({ registeredBy: farm.userId });
+      logger.info(`Found ${prototypes.length} prototypes for user ${farm.userId}`);
       
-      if (!thingSpeakData) {
-        logger.warn(`No ThingSpeak data available for farm ${farmId}`);
+      if (!prototypes || prototypes.length === 0) {
+        logger.warn(`No prototypes found for farm ${farmId}`);
         return;
       }
 
-      // Update sensor readings for each field's sensors
+      // Update sensor readings for each field's sensors using prototype data
       let totalSensors = 0;
       for (const field of farm.fields) {
         for (const sensor of field.sensors) {
           totalSensors++;
+          
+          // Debug logging
+          logger.info(`Processing sensor: ${sensor.deviceID}, prototypeId: ${sensor.prototypeId}, type: ${typeof sensor.prototypeId}`);
+          logger.info(`Available prototypes: ${prototypes.map((p: any) => p.prototype_id).join(', ')}`);
+          
+          // Find the prototype for this sensor (assuming sensor has prototypeId)
+          const prototype = prototypes.find((p: any) => p.prototype_id === sensor.prototypeId);
+          if (!prototype) {
+            logger.warn(`No prototype found for sensor ${(sensor as any)._id} with prototypeId ${sensor.prototypeId}`);
+            continue;
+          }
+
+          // Get data from the specific prototype's channel
+          logger.info(`Fetching data for prototype ${prototype.prototype_id} with channel ${prototype.channel_id} and API key ${prototype.api_key}`);
+          const thingSpeakData = await thingSpeakService.getLatestData(prototype.channel_id, prototype.api_key);
+          logger.info(`Received ThingSpeak data: ${JSON.stringify(thingSpeakData)}`);
+          
+          if (!thingSpeakData) {
+            logger.warn(`No ThingSpeak data available for prototype ${prototype.prototype_id} (channel ${prototype.channel_id})`);
+            continue;
+          }
           
           // Update the sensor readings in the Farm model
           sensor.readings = {
@@ -62,47 +88,53 @@ class SyncService {
             lightIntensity: thingSpeakData.lightIntensity,
             soilPh: thingSpeakData.soilPh
           };
+
+          // Also record readings in the SensorReading collection for analytics
+          try {
+            const SensorReading = require('../models/SensorReading').default;
+            
+            // Find the sensor associated with this prototype
+            const Sensor = require('../models/Sensor').default;
+            const sensor = await Sensor.findOne({ 
+              sensorId: prototype.prototype_id,
+              farm: farm._id 
+            });
+            
+            if (sensor) {
+              const sensorReading = new SensorReading({
+                sensor: sensor._id,
+                farm: farm._id,
+                field_id: field.fieldName,
+                timestamp: new Date(),
+                data: {
+                  temperature: thingSpeakData.temperature,
+                  humidity: thingSpeakData.humidity,
+                  soilMoisture: thingSpeakData.soilMoisture,
+                  pH: thingSpeakData.soilPh,
+                  lightIntensity: thingSpeakData.lightIntensity
+                },
+                metadata: {
+                  source: 'thingspeak',
+                  quality: 'good',
+                  processed: false,
+                  anomaly: false,
+                  calibrated: true
+                }
+              });
+              
+              await sensorReading.save();
+              logger.info(`Recorded sensor reading for prototype ${prototype.prototype_id} (channel ${prototype.channel_id}) in field ${field.fieldName}`);
+            } else {
+              logger.warn(`No sensor found for prototype ${prototype.prototype_id} in farm ${farm._id}`);
+            }
+          } catch (error) {
+            logger.warn(`Could not record reading for prototype ${prototype.prototype_id}:`, error);
+          }
         }
       }
 
       // Save the updated farm
       await farm.save();
-
-      // Also record readings in the SensorReading collection for analytics
-      for (const field of farm.fields) {
-        for (const sensor of field.sensors) {
-          try {
-            // Create a sensor reading directly in the SensorReading collection
-            const SensorReading = require('../models/SensorReading').default;
-            const sensorReading = new SensorReading({
-              sensor: new mongoose.Types.ObjectId(), // Generate a new ObjectId for the sensor
-              farm: new mongoose.Types.ObjectId(farmId),
-              timestamp: new Date(),
-                data: {
-                  temperature: thingSpeakData.temperature,
-                  humidity: thingSpeakData.humidity,
-                  soilMoisture: thingSpeakData.soilMoisture,
-                  pH: Math.min(Math.max(thingSpeakData.soilPh, 0), 14), // Clamp pH between 0-14
-                  lightIntensity: thingSpeakData.lightIntensity,
-                  batteryLevel: 0, // Battery level
-                  signalStrength: 0, // Signal strength
-                },
-              metadata: {
-                source: 'thingspeak',
-                quality: 'good',
-                processed: false,
-                anomaly: false,
-                calibrated: true
-              }
-            });
-            
-            await sensorReading.save();
-            logger.info(`Recorded sensor reading for device ${sensor.deviceID} in field ${field.fieldName}`);
-          } catch (error) {
-            logger.warn(`Could not record reading for sensor ${sensor.deviceID}:`, error);
-          }
-        }
-      }
 
       logger.info(`Successfully synced ThingSpeak data for farm ${farm.farmName} (${totalSensors} sensors updated)`);
     } catch (error) {
@@ -176,7 +208,7 @@ class SyncService {
   }
 
   /**
-   * Get sensor data for analytics
+   * Get sensor data for analytics - returns field-specific data instead of averages
    */
   async getSensorDataForAnalytics(farmId: string, fieldId?: string): Promise<any> {
     try {
@@ -185,35 +217,69 @@ class SyncService {
         throw new Error(`Farm ${farmId} not found`);
       }
 
-      // Get latest sensor readings
-      const latestReadings = await sensorService.getLatestReadingsByFarm(farmId);
+      // Get all prototypes registered by this farm's user
+      const Prototype = require('../models/Prototype').default;
+      const prototypes = await Prototype.find({ registeredBy: farm.userId });
       
-      if (!latestReadings || latestReadings.length === 0) {
-        // Fallback to ThingSpeak data
-        const thingSpeakData = await thingSpeakService.getLatestData();
-        if (thingSpeakData) {
-          return {
-            temperature: thingSpeakData.temperature,
-            humidity: thingSpeakData.humidity,
-            soilMoisture: thingSpeakData.soilMoisture,
-            soilPh: thingSpeakData.soilPh,
-            lightIntensity: thingSpeakData.lightIntensity,
-            timestamp: thingSpeakData.timestamp
-          };
-        }
+      if (!prototypes || prototypes.length === 0) {
+        logger.warn(`No prototypes found for farm ${farmId}`);
         return null;
       }
 
-      // Calculate averages from latest readings
-      const readings = latestReadings.map(r => r.data);
-      return {
-        temperature: readings.reduce((sum, r) => sum + (r.temperature || 0), 0) / readings.length,
-        humidity: readings.reduce((sum, r) => sum + (r.humidity || 0), 0) / readings.length,
-        soilMoisture: readings.reduce((sum, r) => sum + (r.soilMoisture || 0), 0) / readings.length,
-        soilPh: readings.reduce((sum, r) => sum + (r.pH || 0), 0) / readings.length,
-        lightIntensity: readings.reduce((sum, r) => sum + (r.lightIntensity || 0), 0) / readings.length,
-        timestamp: latestReadings[0].timestamp
-      };
+      // Get field-specific sensor data from IoT database
+      const fieldData: { [fieldName: string]: any } = {};
+      
+      for (const field of farm.fields) {
+        for (const sensor of field.sensors) {
+          if (sensor.prototypeId) {
+            // Find the prototype for this sensor
+            const prototype = prototypes.find((p: any) => p.prototype_id === sensor.prototypeId);
+            if (prototype) {
+              // Connect to IoT database to get the latest reading for this prototype
+              const iotConnection = mongoose.createConnection(process.env.MONGODB_IOT_URI || 'mongodb://localhost:27017/iot_data');
+              const iotSensorReadingSchema = new mongoose.Schema({
+                prototype_id: String,
+                timestamp: Date,
+                temperature: Number,
+                humidity: Number,
+                soilMoisture: Number,
+                soilPh: Number,
+                lightIntensity: Number,
+                metadata: Object
+              }, { collection: 'sensor_readings' });
+              
+              const IotSensorReading = iotConnection.model('IotSensorReading', iotSensorReadingSchema);
+              
+              const readings = await IotSensorReading.find({ prototype_id: prototype.prototype_id })
+                .sort({ timestamp: -1 })
+                .limit(1);
+              
+              if (readings && readings.length > 0) {
+                const reading = readings[0];
+                fieldData[field.fieldName] = {
+                  temperature: reading.temperature,
+                  humidity: reading.humidity,
+                  soilMoisture: reading.soilMoisture,
+                  soilPh: reading.soilPh,
+                  lightIntensity: reading.lightIntensity,
+                  timestamp: reading.timestamp
+                };
+                logger.info(`Field ${field.fieldName} data: temp=${reading.temperature}°C, humidity=${reading.humidity}%, soilMoisture=${reading.soilMoisture}%, soilPh=${reading.soilPh}, lightIntensity=${reading.lightIntensity} lux`);
+              }
+              
+              await iotConnection.close();
+            }
+          }
+        }
+      }
+
+      // If specific field requested, return that field's data
+      if (fieldId && fieldData[fieldId]) {
+        return fieldData[fieldId];
+      }
+
+      // Return all field data
+      return fieldData;
     } catch (error) {
       logger.error(`Error getting sensor data for analytics ${farmId}:`, error);
       throw error;
