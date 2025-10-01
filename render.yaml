@@ -1,0 +1,55 @@
+services:
+  # Main Application (Node.js + Python)
+  - type: web
+    name: maize-watch-app
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        fromDatabase:
+          name: maize-watch-db
+          property: connectionString
+      - key: ANALYTICS_SERVICE_URL
+        value: http://localhost:8000
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: maize-watch-redis
+          property: connectionString
+      - key: THINGSPEAK_CHANNEL_ID
+        value: 3083651
+      - key: THINGSPEAK_API_KEY
+        value: YOUR_THINGSPEAK_API_KEY
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: PYTHONUNBUFFERED
+        value: 1
+
+  # MongoDB Database
+  - type: pserv
+    name: maize-watch-db
+    env: docker
+    plan: starter
+    dockerfilePath: ./docker/mongodb.Dockerfile
+    envVars:
+      - key: MONGO_INITDB_ROOT_USERNAME
+        value: admin
+      - key: MONGO_INITDB_ROOT_PASSWORD
+        generateValue: true
+      - key: MONGO_INITDB_DATABASE
+        value: maizewatch
+
+  # Redis Cache
+  - type: redis
+    name: maize-watch-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru

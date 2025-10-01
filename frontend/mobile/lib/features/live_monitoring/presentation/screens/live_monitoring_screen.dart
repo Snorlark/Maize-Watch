@@ -1651,9 +1651,11 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,                        
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     horizontalSpace(kAppSmallGap),
-                  Container(
+                  Expanded(child: Container(
                     padding: EdgeInsets.symmetric(
                         horizontal: 8.w, vertical: 4.h
                     ),
@@ -1668,10 +1670,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         color: Colors.white,
                           fontSize: 12.sp,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
 
-                    ]),
+              )]),
 
                   
                      verticalSpace(kAppSmallGap),

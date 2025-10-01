@@ -779,11 +779,11 @@ export const getCropStatus = catchAsync(async (req: Request, res: Response) => {
 
     // Calculate averages from field-specific sensor data
     const fieldDataArray = Object.values(fieldSensorData);
-    const temperature = fieldDataArray.reduce((sum, r) => sum + (r.temperature || 0), 0) / fieldDataArray.length;
-    const humidity = fieldDataArray.reduce((sum, r) => sum + (r.humidity || 0), 0) / fieldDataArray.length;
-    const soilMoisture = fieldDataArray.reduce((sum, r) => sum + (r.soilMoisture || 0), 0) / fieldDataArray.length;
-    const soilPh = fieldDataArray.reduce((sum, r) => sum + (r.soilPh || 0), 0) / fieldDataArray.length;
-    const lightIntensity = fieldDataArray.reduce((sum, r) => sum + (r.lightIntensity || 0), 0) / fieldDataArray.length;
+    const temperature = fieldDataArray.reduce((sum, r) => sum + ((r as any)?.temperature || 0), 0) as number / fieldDataArray.length;
+    const humidity = fieldDataArray.reduce((sum, r) => sum + ((r as any)?.humidity || 0), 0) as number / fieldDataArray.length;
+    const soilMoisture = fieldDataArray.reduce((sum, r) => sum + ((r as any)?.soilMoisture || 0), 0) as number / fieldDataArray.length;
+    const soilPh = fieldDataArray.reduce((sum, r) => sum + ((r as any)?.soilPh || 0), 0) as number / fieldDataArray.length;
+    const lightIntensity = fieldDataArray.reduce((sum, r) => sum + ((r as any)?.lightIntensity || 0), 0) as number / fieldDataArray.length;
 
     // Determine crop status based on sensor readings
     let status = 'NORMAL';
