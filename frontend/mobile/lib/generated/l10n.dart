@@ -4865,7 +4865,7 @@ class S {
   }
 
   /// `You have {count} new farm tasks to complete`
-  String new_farm_tasks_message(Object count) {
+  String new_farm_tasks_message(int count) {
     return Intl.message(
       'You have $count new farm tasks to complete',
       name: 'new_farm_tasks_message',
@@ -4956,6 +4956,36 @@ class S {
       name: 'error_marking_incomplete',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Sensors in Sleep Mode`
+  String get sensors_in_sleep_mode {
+    return Intl.message(
+      'Sensors in Sleep Mode',
+      name: 'sensors_in_sleep_mode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.`
+  String get sensors_sleep_mode_message {
+    return Intl.message(
+      'Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.',
+      name: 'sensors_sleep_mode_message',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{sensorName} sensor has been offline for more than 30 minutes.`
+  String sensor_offline_message(String sensorName) {
+    return Intl.message(
+      '$sensorName sensor has been offline for more than 30 minutes.',
+      name: 'sensor_offline_message',
+      desc: '',
+      args: [sensorName],
     );
   }
 }

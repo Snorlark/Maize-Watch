@@ -12,6 +12,7 @@ import 'package:mobile/features/prescriptions/presentation/bloc/prescription_blo
 import 'package:mobile/features/prescriptions/presentation/bloc/prescription_event.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/core/services/offline_cache_service.dart';
 
 import '../../../../generated/l10n.dart';
 
@@ -648,7 +649,17 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
 
   // Convert analytics data to prescription format
   Future<List<Map<String, dynamic>>> _convertAnalyticsToPrescriptions(Map<String, dynamic>? analyticsData) async {
-    if (analyticsData == null || analyticsData['prescriptive'] == null) {
+    // Try to get cached data first if no analytics data provided
+    if (analyticsData == null) {
+      print('🔧 PRESCRIPTION SCREEN: No analytics data, trying cached data...');
+      analyticsData = await OfflineCacheService.getCachedAnalytics();
+      if (analyticsData == null) {
+        print('🔧 PRESCRIPTION SCREEN: No cached data available');
+        return [];
+      }
+    }
+    
+    if (analyticsData['prescriptive'] == null) {
       return [];
     }
 
@@ -696,13 +707,28 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
       };
     }).toList();
 
-     // Update completion status for each prescription
+     // Update completion status for each prescription and filter out deleted ones
      final authState = context.read<AuthenticationBloc>().state;
      print('🔧 PRESCRIPTION SCREEN: Auth state - status: ${authState.status}, user: ${authState.user?.id}');
      
      if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
        // Direct approach: Get completion status directly from SharedPreferences
        final prefs = await SharedPreferences.getInstance();
+       
+       // Filter out deleted prescriptions
+       final filteredPrescriptions = prescriptions.where((prescription) {
+         final prescriptionId = prescription['id'] as String;
+         final deletedKey = 'deleted_${authState.user!.id}_$prescriptionId';
+         final isDeleted = prefs.getBool(deletedKey) ?? false;
+         if (isDeleted) {
+           print('🔧 PRESCRIPTION SCREEN: Filtering out deleted prescription $prescriptionId');
+         }
+         return !isDeleted;
+       }).toList();
+       
+       // Update prescriptions list
+       prescriptions.clear();
+       prescriptions.addAll(filteredPrescriptions);
        
        for (final prescription in prescriptions) {
          final prescriptionId = prescription['id'] as String;
@@ -1118,10 +1144,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
       final authState = context.read<AuthenticationBloc>().state;
       
       if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
-        // Save completion status to SharedPreferences
+        // Save completion status to SharedPreferences and cache
         final prefs = await SharedPreferences.getInstance();
         final completionKey = 'completion_${authState.user!.id}_$prescriptionId';
         await prefs.setBool(completionKey, true);
+        await OfflineCacheService.cachePrescriptionCompletion(prescriptionId, true);
         
         // Update prescription in cached list
         final prescriptionIndex = _cachedPrescriptions.indexWhere((p) => p['id'] == prescriptionId);
@@ -1162,10 +1189,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
       final authState = context.read<AuthenticationBloc>().state;
       
       if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
-        // Save completion status to SharedPreferences
+        // Save completion status to SharedPreferences and cache
         final prefs = await SharedPreferences.getInstance();
         final completionKey = 'completion_${authState.user!.id}_$prescriptionId';
         await prefs.setBool(completionKey, false);
+        await OfflineCacheService.cachePrescriptionCompletion(prescriptionId, false);
         
         // Update prescription in cached list
         final prescriptionIndex = _cachedPrescriptions.indexWhere((p) => p['id'] == prescriptionId);
@@ -1210,6 +1238,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> with WidgetsBin
         final prefs = await SharedPreferences.getInstance();
         final completionKey = 'completion_${authState.user!.id}_$prescriptionId';
         await prefs.remove(completionKey);
+        
+        // Add to deleted prescriptions list to prevent re-showing
+        final deletedKey = 'deleted_${authState.user!.id}_$prescriptionId';
+        await prefs.setBool(deletedKey, true);
         
         // Remove from cached prescriptions
         _cachedPrescriptions.removeWhere((p) => p['id'] == prescriptionId);

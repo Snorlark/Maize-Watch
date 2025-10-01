@@ -685,5 +685,26 @@
   "prescription_marked_complete": "Prescription marked as complete",
   "error_marking_complete": "Error marking prescription as complete",
   "prescription_marked_incomplete": "Prescription marked as incomplete",
-  "error_marking_incomplete": "Error marking prescription as incomplete"
+  "error_marking_incomplete": "Error marking prescription as incomplete",
+  "sensors_in_sleep_mode": "Sensors in Sleep Mode",
+  "sensors_sleep_mode_message": "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
+  "sensor_offline": "Sensor Offline",
+  "sensor_offline_message": "{sensorName} sensor has been offline for more than 30 minutes.",
+  "@sensor_offline_message": {
+    "placeholders": {
+      "sensorName": {
+        "type": "String"
+      }
+    }
+  },
+  "new_farm_prescriptions": "New Farm Prescriptions",
+  "new_farm_tasks_message": "You have {count} new farm tasks to complete",
+  "@new_farm_tasks_message": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "overdue": "Overdue"
 }

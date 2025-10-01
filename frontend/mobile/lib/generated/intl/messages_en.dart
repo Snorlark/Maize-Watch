@@ -44,15 +44,18 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m10(sensorName) =>
       "${sensorName} sensor has been offline for more than 30 minutes.";
 
-  static String m11(count) => "Step-by-Step Instructions (${count} steps)";
+  static String m11(sensorName) =>
+      "${sensorName} sensor has been offline for more than 30 minutes.";
 
-  static String m12(timeline) => "Timeline: ${timeline}";
+  static String m12(count) => "Step-by-Step Instructions (${count} steps)";
 
-  static String m13(urgency) => "Urgency: ${urgency}";
+  static String m13(timeline) => "Timeline: ${timeline}";
 
-  static String m14(phoneNumber) => "Verification code sent to ${phoneNumber}";
+  static String m14(urgency) => "Urgency: ${urgency}";
 
-  static String m15(count) => "You have ${count} new farm tasks to complete";
+  static String m15(phoneNumber) => "Verification code sent to ${phoneNumber}";
+
+  static String m16(count) => "You have ${count} new farm tasks to complete";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -953,6 +956,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sensor offline alert",
     ),
     "sensor_offline_description": m10,
+    "sensor_offline_message": m11,
     "sensor_sleep_description": MessageLookupByLibrary.simpleMessage(
       "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
     ),
@@ -967,6 +971,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Alerts when sensors go offline or need maintenance",
     ),
     "sensors": MessageLookupByLibrary.simpleMessage("Sensors"),
+    "sensors_in_sleep_mode": MessageLookupByLibrary.simpleMessage(
+      "Sensors in Sleep Mode",
+    ),
+    "sensors_sleep_mode_message": MessageLookupByLibrary.simpleMessage(
+      "Your sensors are now sleeping from 8pm to 3am PH time. They will wake up at 3am.",
+    ),
     "sent": MessageLookupByLibrary.simpleMessage("Sent"),
     "sep": MessageLookupByLibrary.simpleMessage("Sep"),
     "september": MessageLookupByLibrary.simpleMessage("Sep"),
@@ -1040,7 +1050,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "step3_title": MessageLookupByLibrary.simpleMessage("Corn"),
     "step4_title": MessageLookupByLibrary.simpleMessage("Season"),
     "step5_title": MessageLookupByLibrary.simpleMessage("Age"),
-    "step_by_step_instructions": m11,
+    "step_by_step_instructions": m12,
     "submit": MessageLookupByLibrary.simpleMessage("Submit"),
     "submit_button": MessageLookupByLibrary.simpleMessage("Submit"),
     "sunday": MessageLookupByLibrary.simpleMessage("Sunday"),
@@ -1113,7 +1123,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "this_week": MessageLookupByLibrary.simpleMessage("This week"),
     "thursday": MessageLookupByLibrary.simpleMessage("Thursday"),
     "timeline": MessageLookupByLibrary.simpleMessage("Timeline"),
-    "timeline_filter": m12,
+    "timeline_filter": m13,
     "timeline_next_week": MessageLookupByLibrary.simpleMessage("Next Week"),
     "timeline_this_week": MessageLookupByLibrary.simpleMessage("This Week"),
     "timeline_today": MessageLookupByLibrary.simpleMessage("Today"),
@@ -1132,7 +1142,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "unknown_field": MessageLookupByLibrary.simpleMessage("Unknown Field"),
     "unknown_sensor": MessageLookupByLibrary.simpleMessage("Unknown Sensor"),
     "urgency": MessageLookupByLibrary.simpleMessage("Urgency"),
-    "urgency_filter": m13,
+    "urgency_filter": m14,
     "urgency_high": MessageLookupByLibrary.simpleMessage("High"),
     "urgency_low": MessageLookupByLibrary.simpleMessage("Low"),
     "urgency_medium": MessageLookupByLibrary.simpleMessage("Medium"),
@@ -1207,7 +1217,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "verification_code_required": MessageLookupByLibrary.simpleMessage(
       "Verification code is required",
     ),
-    "verification_code_sent": m14,
+    "verification_code_sent": m15,
     "versionInfo": MessageLookupByLibrary.simpleMessage("version 1.0.0"),
     "very_bright": MessageLookupByLibrary.simpleMessage("Very Bright"),
     "very_dry": MessageLookupByLibrary.simpleMessage("Very Dry"),
@@ -1232,7 +1242,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wet": MessageLookupByLibrary.simpleMessage("Wet"),
     "yes": MessageLookupByLibrary.simpleMessage("Yes"),
     "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
-    "you_have_new_farm_tasks": m15,
+    "you_have_new_farm_tasks": m16,
     "zip_code": MessageLookupByLibrary.simpleMessage("Zip Code"),
     "zip_code_invalid": MessageLookupByLibrary.simpleMessage(
       "Please enter a valid zip code",
