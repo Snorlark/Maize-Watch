@@ -237,14 +237,14 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Unable to update prescription status'),
+                    content: Text(S.current.unable_to_update_prescription_status),
                     backgroundColor: Colors.red,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: Text(_isCompleted ? 'Undo Complete' : 'Mark Complete', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+            child: Text(_isCompleted ? S.current.undo_complete : S.current.mark_complete, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -316,7 +316,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
             children: [
                       Icon(Icons.timelapse, color: MAIZE_ACCENT, size: 12.sp),
               SizedBox(width: kAppSmallGap),
-                      Text('Deadline: $deadline', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(S.current.deadline_colon(deadline), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -655,7 +655,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Unable to update prescription status'),
+                    content: Text(S.current.unable_to_update_prescription_status),
                     backgroundColor: Colors.red,
                     behavior: SnackBarBehavior.floating,
                   ),

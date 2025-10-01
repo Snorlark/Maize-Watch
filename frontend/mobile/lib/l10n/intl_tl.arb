@@ -708,5 +708,25 @@
       }
     }
   },
-  "overdue": "Nalampasan na"
+  "overdue": "Nalampasan na",
+  "retry": "Subukan Muli",
+  "cancel": "Kanselahin",
+  "unable_to_update_prescription_status": "Hindi ma-update ang status ng reseta",
+  "deadline_colon": "Deadline: {deadline}",
+  "edit": "I-edit",
+  "delete": "Tanggalin",
+  "please_validate_prototype_id": "Pakisuri muna ang prototype ID bago mag-submit",
+  "verification_code_sent": "Naipadala ang verification code sa inyong phone number",
+  "help_content_coming_soon": "Ang help content ay darating na!",
+  "close": "Isara",
+  "contact_information_coming_soon": "Ang contact information ay darating na!",
+  "language_changed_to": "Nabago ang wika sa {language}",
+  "notifications_enabled_disabled": "Notipikasyon {status}",
+  "vibration_only_enabled_disabled": "Vibration only {status}",
+  "farm_task_requires_attention": "Ang gawain sa bukid ay nangangailangan ng atensyon",
+  "device_settings": "Mga Setting ng Device",
+  "sensor_status": "Status ng Sensor",
+  "monitor_sensor_condition": "Subaybayan ang kalagayan ng inyong mga sensor",
+  "mark_complete": "Markahan bilang Tapos",
+  "undo_complete": "Bawiin ang Tapos"
 }

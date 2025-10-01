@@ -706,5 +706,25 @@
       }
     }
   },
-  "overdue": "Overdue"
+  "overdue": "Overdue",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "unable_to_update_prescription_status": "Unable to update prescription status",
+  "deadline_colon": "Deadline: {deadline}",
+  "edit": "Edit",
+  "delete": "Delete",
+  "please_validate_prototype_id": "Please validate the prototype ID before submitting",
+  "verification_code_sent": "Verification code sent to your phone number",
+  "help_content_coming_soon": "Help content coming soon!",
+  "close": "Close",
+  "contact_information_coming_soon": "Contact information coming soon!",
+  "language_changed_to": "Language changed to {language}",
+  "notifications_enabled_disabled": "Notifications {status}",
+  "vibration_only_enabled_disabled": "Vibration only {status}",
+  "farm_task_requires_attention": "Farm task requires attention",
+  "device_settings": "Device Settings",
+  "sensor_status": "Sensor Status",
+  "monitor_sensor_condition": "Monitor the condition of your sensors",
+  "mark_complete": "Mark Complete",
+  "undo_complete": "Undo Complete"
 }

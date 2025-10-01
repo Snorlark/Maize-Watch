@@ -23,9 +23,8 @@ module.exports = {
     {
       name: 'analytics',
       cwd: '/app/analytics_v2',
-      script: 'gunicorn',
-      args: '--bind 0.0.0.0:8000 --workers 2 --timeout 120 app:app',
-      interpreter: 'none',
+      script: 'python3',
+      args: '-m gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 app:app',
       env: {
         FLASK_ENV: 'production',
         PORT: 8000,
