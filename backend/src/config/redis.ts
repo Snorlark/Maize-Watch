@@ -53,6 +53,7 @@ if (redis) {
 
   redis.on('error', (err) => {
     logger.error('Redis client error:', err);
+    // Don't crash the app on Redis errors
   });
 
   redis.on('close', () => {
@@ -61,6 +62,11 @@ if (redis) {
 
   redis.on('reconnecting', () => {
     logger.info('Redis client reconnecting');
+  });
+
+  // Handle unhandled rejections from Redis
+  redis.on('end', () => {
+    logger.warn('Redis client connection ended');
   });
 } else {
   logger.warn('Redis client not initialized - caching and session features disabled');
