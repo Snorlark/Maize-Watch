@@ -64,6 +64,7 @@ flutter_intl:
   main_locale: en
   arb_dir: lib/l10n
   output_dir: lib/generated
+  template_arb_file: intl_en.arb
 
 flutter_launcher_icons:
   android: "launcher_icon"

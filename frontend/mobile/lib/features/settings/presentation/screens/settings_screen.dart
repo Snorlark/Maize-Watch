@@ -9,6 +9,7 @@ import 'package:mobile/features/settings/presentation/bloc/settings_state.dart';
 import 'package:mobile/features/settings/presentation/widgets/language_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/widgets/notification_settings_widget.dart';
 import 'package:mobile/features/settings/presentation/screens/sensor_status_screen.dart';
+import 'package:mobile/features/settings/presentation/screens/prototype_management_screen.dart';
 
 import '../../../../generated/l10n.dart';
 
@@ -172,6 +173,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const SensorStatusScreen()),
+                        );
+                      },
+                    ),
+
+                    SizedBox(height: kAppMediumPadding),
+                    Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
+                    SizedBox(height: kAppMediumPadding),
+
+                    _buildMenuItem(
+                      title: 'Unsync Prototype',
+                      subtitle: 'Manage and unsync prototypes from fields',
+                      icon: Icons.device_hub,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PrototypeManagementScreen()),
                         );
                       },
                     ),

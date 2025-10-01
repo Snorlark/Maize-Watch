@@ -2144,11 +2144,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         
         print('🔔 Showing notification for: $action on $fieldName');
         
-        _notificationService.showPrescriptionAlertNotification(
+        _notificationService.showPrescriptionAlertNotificationWithCaching(
           title: '$action - $fieldName',
           message: details.isNotEmpty ? details : S.current.farm_task_requires_attention,
           priority: urgency,
-          notificationId: prescriptionId.hashCode.abs(), // Use unique ID based on prescription
+          prescriptionId: prescriptionId,
+          fieldName: fieldName,
         );
         
         // Mark as notified

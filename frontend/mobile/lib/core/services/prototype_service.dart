@@ -127,4 +127,47 @@ class PrototypeService {
       throw Exception('Unexpected error: $e');
     }
   }
+
+  /// Unsync a prototype from a field
+  static Future<Map<String, dynamic>> unsyncPrototype(String prototypeId, String fieldId, String token) async {
+    try {
+      final response = await _dio.post(
+        '${AppConfig.baseUrl}/api/prototypes/unsync',
+        data: {
+          'prototype_id': prototypeId,
+          'field_id': fieldId,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to unsync prototype: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? 'Prototype unsync failed',
+        };
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else if (e.response?.statusCode == 404) {
+        return {
+          'success': false,
+          'message': 'Prototype or field not found',
+        };
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
 }
