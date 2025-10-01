@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 10000
       - key: MONGO_URI
-        value: mongodb+srv://username:password@cluster.mongodb.net/maizewatch
+        value: mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/maizewatch?retryWrites=true&w=majority
       - key: ANALYTICS_SERVICE_URL
         value: http://localhost:8000
       - key: THINGSPEAK_CHANNEL_ID
@@ -26,3 +26,5 @@ services:
         generateValue: true
       - key: PYTHONUNBUFFERED
         value: 1
+      # Note: REDIS_URL is not set, so Redis features will be disabled
+      # This prevents Redis connection errors in production

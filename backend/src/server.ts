@@ -28,6 +28,18 @@ const io = initializeSocket(server);
 import { setIO } from './sockets/index';
 setIO(io);
 
+// Handle unhandled promise rejections (like Redis connection errors)
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  // Don't exit the process, just log the error
+});
+
 // Trust proxy for real client IPs when behind reverse proxies
 app.set('trust proxy', 1);
 
