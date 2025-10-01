@@ -1,0 +1,68 @@
+# Node.js
+node_modules/
+npm-debug.log
+.npm
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Development files
+.git/
+.gitignore
+.env.local
+.env.development
+*.md
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Test files
+coverage/
+.nyc_output/
+test-results/
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+docs/
+README.md
+
+# Frontend (not needed in backend container)
+frontend/
+mobile/
+
+# Analytics specific
+analytics_v2/logs/
+analytics_v2/data/
+analytics_v2/__pycache__/
+
+# Backend specific
+backend/logs/
+backend/dist/
+backend/node_modules/
+
+# Temporary files
+*.tmp
+*.temp
