@@ -16,8 +16,8 @@ interface RedisConfig {
 const getRedisConfig = (): RedisConfig | null => {
   const redisUrl = process.env.REDIS_URL;
   
-  if (!redisUrl) {
-    logger.warn('REDIS_URL not provided, Redis features will be disabled');
+  if (!redisUrl || redisUrl.trim() === '') {
+    logger.warn('REDIS_URL not provided or empty, Redis features will be disabled');
     return null;
   }
   
@@ -41,9 +41,16 @@ const getRedisConfig = (): RedisConfig | null => {
   }
 };
 
-// Create Redis client
+// Create Redis client only if we have a valid configuration
 const config = getRedisConfig();
 export const redis = config ? new Redis(config) : null;
+
+// Log Redis status
+if (redis) {
+  logger.info('Redis client created and will attempt connection');
+} else {
+  logger.info('Redis client not created - REDIS_URL not provided or invalid');
+}
 
 // Redis event listeners (only if Redis is available)
 if (redis) {

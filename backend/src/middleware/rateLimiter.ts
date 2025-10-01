@@ -2,7 +2,6 @@ import rateLimit, { Store } from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { HTTP_STATUS, RATE_LIMITS } from '../utils/constants';
 import { logger } from '../utils/logger';
-import { redis } from '../config/redis';
 
 // Helper: allow temporary disable or IP whitelist via env
 // RATE_LIMIT_DISABLE=true will skip all rate limits
