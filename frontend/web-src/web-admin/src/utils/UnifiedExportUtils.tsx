@@ -825,7 +825,7 @@ const exportChartData = async (
 
     switch (format) {
       case 'pdf':
-        await exportToPdf(processedData, xKey, config.title, options, chartRef);
+        await exportToPdf(processedData, xKey, options, chartRef);
         break;
       case 'svg':
         if (chartRef?.current) {
@@ -1547,7 +1547,7 @@ export { exportChartData };
 
 //     switch (format) {
 //       case 'pdf':
-//         await exportToPdf(processedData, xKey, config.title, options, chartRef);
+//         await exportToPdf(processedData, xKey, options, chartRef);
 //         break;
 //       case 'svg':
 //         if (chartRef?.current) {
