@@ -5,7 +5,7 @@ import type { User } from '../api/services/authService';
 
 // Environment configuration
 const isDevelopment = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:8080/api' : 'https://maize-watch-backend.onrender.com/api');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:8080/api' : 'https://maize-watch-web-backend.onrender.com/api');
 
 console.log('Development mode:', isDevelopment);
 console.log('API Base URL:', API_BASE_URL);
