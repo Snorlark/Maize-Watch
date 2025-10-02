@@ -146,7 +146,7 @@ async function startServer() {
     // Start server
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
-      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'deployment'}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
