@@ -17,9 +17,9 @@ export default function Index() {
   }, []);
 
   const images = [
-    '/web-public/public/images/healthycorn.png',
-    '/web-public/public/images/prescriptions.png',
-    '/web-public/public/images/detailedtables.png'
+    '/images/healthycorn.png',
+    '/images/prescriptions.png',
+    '/images/detailedtables.png'
   ];
 
   const handlePrevImage = () => {
@@ -35,11 +35,11 @@ export default function Index() {
       <div className="bg-(--color-white) scroll-smooth">
         <main>
           
-        <div className="bg-[url(/web-public/public/images/background.png)] rounded-bl-[50px] rounded-br-[50px] rounded-tl-none rounded-tr-none relative h-197 bg-cover bg-center flex items-center justify-center">
+        <div className="bg-[url(/images/background.png)] rounded-bl-[50px] rounded-br-[50px] rounded-tl-none rounded-tr-none relative h-197 bg-cover bg-center flex items-center justify-center">
           <nav className="fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
             <div className="w-10 md:w-20 py-2 flex items-center">
               <img
-                src="/web-public/public/images/smalllogo.png"
+                src="/images/smalllogo.png"
                 alt="Logo"
                 className="h-14 w-14 md:h-18 md:w-18 object-cover"
               />
@@ -51,7 +51,7 @@ export default function Index() {
                 <li>
                   <button onClick={() => navigate('/header-menu')}>
                   <img
-                  src="/web-public/public/images/menu-green.png"
+                  src="/images/menu-green.png"
                   alt="Menu"
                   className="h-8 w-8 md:h-10 md:w-10 object-cover opacity-80 hover:opacity-100 duration-300"
                   />
@@ -65,7 +65,7 @@ export default function Index() {
           <div className="relative flex flex-col items-center justify-center text-white text-center space-y-4 md:space-y-6 w-full px-4">
             <div 
                 data-aos="zoom-in" className="flex flex-col items-center">
-              <img src="/web-public/public/images/mainlogo.png" alt="Maize Watch Logo" className=" w-80 md:w-100 lg:w-180 xl:w-250 m-auto rounded-full transition-all duration-300 hover:scale-105" />
+              <img src="/images/mainlogo.png" alt="Maize Watch Logo" className=" w-80 md:w-100 lg:w-180 xl:w-250 m-auto rounded-full transition-all duration-300 hover:scale-105" />
             </div>
 
             <div 
@@ -95,9 +95,9 @@ export default function Index() {
           {/* ABOUT PART */}
         <div data-aos="fade-up" data-aos-delay="200" className="relative -mt-12 pb-8 md:pb-4 ">
             <div id="about-section"  className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
-              <div onClick={() => navigate('/product')} className="bg-[url(/web-public/public/images/container2.png)] bg-cover bg-center text-white rounded-31 p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-maize-llgreen cursor-pointer">
+              <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-31 p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-maize-llgreen cursor-pointer">
                 <div  className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
-                  <img src="/web-public/public/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
+                  <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
                   <div>
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">
                       Maximize your yields,<br />minimize your worries.
@@ -119,7 +119,7 @@ export default function Index() {
               <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
                 <div data-aos="fade-up" data-aos-delay="300">
-                <div className="bg-[url(/web-public/public/images/cmission.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+                <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
                   <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
                   <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-40 lg:mr-10 ml-2 md:ml-8">
                     <p className="text-sm md:text-base">
@@ -131,7 +131,7 @@ export default function Index() {
                 </div>
 
                 <div data-aos="fade-up" data-aos-delay="600" > 
-                <div className="bg-[url(/web-public/public/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+                <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
                   <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
                   <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-45 lg:mr-10 ml-2 md:ml-8">
                     <p className="text-sm md:text-base">
@@ -143,7 +143,7 @@ export default function Index() {
                 </div>
 
                 <div data-aos="fade-up" data-aos-delay="900">
-                <div className="bg-[url(/web-public/public/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+                <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
                   <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
                   <div className="flex items-start gap-4 mt-4 md:mt-8 mr-35 mb-3 md:mr-45 lg:mr-10 ml-2 md:ml-8">
                     <p className="text-sm md:text-base">
@@ -167,7 +167,7 @@ export default function Index() {
                 <div className=" ml-10  space-y-6">
                   <div className="flex items-center gap-3">
                     <div data-aos="fade-down" data-aos-delay="400" className="p-2 ">
-                      <img src="/web-public/public/images/header.png" alt="Brain Icon" className="w-full h-full" />
+                      <img src="/images/header.png" alt="Brain Icon" className="w-full h-full" />
                     </div>
                   </div>
 
@@ -217,7 +217,7 @@ export default function Index() {
 <br /><br />
 
           {/* TECHNOLOGY PART */}
-            <div className="bg-[url(/web-public/public/images/background2.png)] rounded-tr-[50px] rounded-tl-[50px] rounded-bl-none relative min-h-screen bg-cover bg-center flex items-center justify-center py-8 md:py-20">
+            <div className="bg-[url(/images/background2.png)] rounded-tr-[50px] rounded-tl-[50px] rounded-bl-none relative min-h-screen bg-cover bg-center flex items-center justify-center py-8 md:py-20">
                  <div  className="container px-4 md:px-16">
                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-4 lg:gap-0">
                     
@@ -278,20 +278,20 @@ export default function Index() {
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
-                     <img src="/web-public/public/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                     <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
                      <div className="ml-7 flex gap-3">
                        
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                         <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5" />
+                         <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                         <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5" />
+                         <img src="/images/x.png" alt="X" className="h-5 w-5" />
                        </a>
                      </div>
                    </div>
@@ -345,7 +345,7 @@ export default function Index() {
           <div className="flex items-center gap-2 mb-4">
             <div className="rounded-full">
               <img 
-                src="/web-public/public/maizewatchlogo.png" 
+                src="/maizewatchlogo.png" 
                 alt="Maize Watch Icon" 
                 className="h-10 w-10"
                 onError={(e) => {
@@ -386,7 +386,7 @@ export default function Index() {
           <div className="flex items-center gap-2 mb-4">
             <div className="rounded-full">
               <img 
-                src="/web-public/public/maizewatchlogo.png" 
+                src="/maizewatchlogo.png" 
                 alt="Maize Watch Icon" 
                 className="h-10 w-10"
                 onError={(e) => {
@@ -498,7 +498,7 @@ export default function Index() {
             <div className="flex items-center gap-2 mb-4">
               <div className="rounded-full">
                 <img 
-                  src="/web-public/public/maizewatchlogo.png" 
+                  src="/maizewatchlogo.png" 
                   alt="Maize Watch Icon" 
                   className="h-10 w-10"
                   onError={(e) => {

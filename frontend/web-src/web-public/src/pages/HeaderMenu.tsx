@@ -72,16 +72,16 @@ export default function HeaderMenuPage() {
                   <div className="mt-10 flex gap-4">
   
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5  md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5  md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/github.png" alt="GitHub" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/x.png" alt="X" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                   </div>
                 </div>
