@@ -5,7 +5,9 @@ import type { User } from '../api/services/authService';
 
 // Environment configuration
 const isDevelopment = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_URL || (isDevelopment ? 'http://localhost:8080/api' : 'https://maize-watch-web-backend.onrender.com');
+// Build RAW base without '/api', then append '/api' exactly once
+const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (isDevelopment ? 'http://localhost:8080' : 'https://maize-watch-web-backend.onrender.com');
+const API_BASE_URL = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
 console.log('Development mode:', isDevelopment);
 console.log('API Base URL:', API_BASE_URL);
@@ -22,6 +24,11 @@ const apiClient = axios.create({
 // Add auth token to requests if available
 apiClient.interceptors.request.use(
   (config) => {
+    // Normalize path: remove any leading '/api' because baseURL already ends with '/api'
+    if (typeof config.url === 'string') {
+      config.url = config.url.replace(/^\/api(\/|$)/, '/');
+    }
+
     // Get token directly from localStorage to avoid circular imports
     const token = localStorage.getItem('token');
     console.log('🔍 Request interceptor debug:', {
@@ -105,7 +112,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.get('/api/users', {
+      const response = await apiClient.get('/users', {
         params: {
           limit: 1000, // Get all users, increase limit to avoid pagination issues
           page: 1
@@ -144,7 +151,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.get(`/api/users/${id}`);
+      const response = await apiClient.get(`/users/${id}`);
       
       // Handle backend response format
       if (response.data?.success && response.data?.data?.user) {
@@ -165,7 +172,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.post('/api/users', userData);
+      const response = await apiClient.post('/users', userData);
       
       // Handle backend response format
       if (response.data?.success && response.data?.data?.user) {
@@ -186,7 +193,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.put(`/api/users/${id}`, userData);
+      const response = await apiClient.put(`/users/${id}`, userData);
       
       // Handle backend response format
       if (response.data?.success && response.data?.data?.user) {
@@ -207,7 +214,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      const response = await apiClient.get('/api/profile');
+      const response = await apiClient.get('/profile');
       
       // Update stored user data
       if (response.data) {
@@ -229,7 +236,7 @@ export const userService = {
       }
       
       // Use the auth profile update endpoint
-      const response = await apiClient.put('/api/auth/me', userData);
+      const response = await apiClient.put('/auth/me', userData);
       
       // Update stored user data
       if (response.data?.data) {
@@ -254,7 +261,7 @@ export const userService = {
         throw new Error('Authentication required');
       }
       
-      await apiClient.delete(`/api/users/${id}`);
+      await apiClient.delete(`/users/${id}`);
     } catch (error: any) {
       console.error(`Error deleting user ${id}:`, error);
       throw error;
@@ -282,7 +289,7 @@ export const activityLogAPI = {
         }
       });
 
-      const response = await apiClient.get('/api/activity-logs', { params });
+      const response = await apiClient.get('/activity-logs', { params });
       return {
         success: true,
         data: response.data,
@@ -308,7 +315,7 @@ export const activityLogAPI = {
       if (dateRange.startDate) params.startDate = dateRange.startDate;
       if (dateRange.endDate) params.endDate = dateRange.endDate;
 
-      const response = await apiClient.get('/api/activity-logs', { params });
+      const response = await apiClient.get('/activity-logs', { params });
       return {
         success: true,
         data: response.data,
