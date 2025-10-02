@@ -144,28 +144,23 @@ export const userService = {
     }
   },
 
-  getTotalUsers: async (): Promise<number> => {
+getTotalUsers: async (): Promise<number> => {
   try {
     if (!authService.isAuthenticated()) {
       throw new Error('Authentication required');
     }
     
-    const response = await apiClient.get('/users/count');
+    const response = await apiClient.get('/users/stats');
     
-    // Handle different response formats from backend
-    if (response.data?.success && response.data?.data?.count !== undefined) {
-      return response.data.data.count;
-    } else if (response.data?.count !== undefined) {
-      return response.data.count;
-    } else if (response.data?.total !== undefined) {
-      return response.data.total;
-    } else {
-      console.warn('Unexpected response format for user count:', response.data);
-      return 0;
+    // Extract total from stats endpoint
+    if (response.data?.success && response.data?.data?.overview?.totalUsers !== undefined) {
+      return response.data.data.overview.totalUsers;
     }
+    
+    console.warn('Unexpected response format for user stats:', response.data);
+    return 0;
   } catch (error: any) {
     console.error('Error getting total users:', error);
-    // Return 0 instead of throwing to prevent dashboard from breaking
     return 0;
   }
 },
