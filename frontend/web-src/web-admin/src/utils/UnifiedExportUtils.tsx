@@ -358,7 +358,7 @@ const fetchCustomRangeData = async (
 const exportToPdf = async (
   chartData: ChartDataPoint[],
   xKey: string,
-  title: string,
+  _title: string,
   options: ExportOptions,
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
