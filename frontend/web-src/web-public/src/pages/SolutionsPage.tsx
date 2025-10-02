@@ -28,7 +28,7 @@ export default function SolutionsPage() {
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   onClick={() => navigate('/')}
-                  src="/web-public/public/images/smalllogo.png"
+                  src="/images/smalllogo.png"
                   alt="Logo"
                   className="h-14 w-14 md:h-18 md:w-18 object-cover cursor-pointer ease-in-out duration-250 hover:scale-110"
                 />
@@ -39,7 +39,7 @@ export default function SolutionsPage() {
                   <li><button>
                     <img
                       onClick={() => navigate('/header-menu')}
-                      src="/web-public/public/images/menu-green.png"
+                      src="/images/menu-green.png"
                       alt="Logo"
                       className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
                     />
@@ -55,7 +55,7 @@ export default function SolutionsPage() {
                 <div className=" space-y-6">
                   <div className="flex items-center gap-3">
                     <div data-aos="zoom-in" className="p-2 ">
-                      <img src="/web-public/public/images/header-solutions.png" alt="Brain Icon" className="w-full h-full" />
+                      <img src="/images/header-solutions.png" alt="Brain Icon" className="w-full h-full" />
                     </div>
                   </div>
                   <p data-aos="fade-up" data-aos-delay="200" className="pt-5">
@@ -73,11 +73,11 @@ export default function SolutionsPage() {
               <div className="space-y-6">
                 <div className="inline-block items-center gap-3">
                   <div className="pb-5">
-                    <img src="/web-public/public/images/header-solutions-2.png" alt="Brain Icon" className="w-full h-full" />
+                    <img src="/images/header-solutions-2.png" alt="Brain Icon" className="w-full h-full" />
                   </div>
                   
                   <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
-                    <div className="bg-[url('/web-public/public/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Mission.</h1>
                       <p className="text-sm md:text-base leading-relaxed">
                         Maize Watch is committed to redefining corn farming through the fusion of technology and agriculture. Our mission is to empower farmers—especially in rural and underserved regions—by giving them access to real-time insights and actionable guidance. Through IoT-powered environmental monitoring and AI-driven prescriptive analytics, we aim to turn raw field data into smart, data-backed decisions that boost yield, minimize waste, and conserve resources.
@@ -85,7 +85,7 @@ export default function SolutionsPage() {
                     </div>
                   </div>
                   <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
-                    <div className="bg-[url('/web-public/public/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Principles.</h1>
                       <p className="text-sm md:text-base leading-relaxed list-disc">
                         <li><span className="font-bold">Precision Agriculture </span> – Optimize every farming decision using real-time environmental data and analytics.</li>
@@ -95,7 +95,7 @@ export default function SolutionsPage() {
                     </div>
                   </div>
                   <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
-                    <div className="bg-[url('/web-public/public/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
                       <h1 className="text-2xl md:text-4xl font-bold mb-4">Our Vision.</h1>
                       <p className="text-sm md:text-base leading-relaxed list-disc">
                         <li> <span className="font-bold">Innovation </span>– We continuously embrace emerging technologies to improve farming efficiency.</li>
@@ -121,7 +121,7 @@ export default function SolutionsPage() {
               </div>
               <div data-aos="fade-left" data-aos-delay="400" className="flex justify-center">
                 <img
-                  src="/web-public/public/images/farmer.png" 
+                  src="/images/farmer.png" 
                   alt="Farmer inspecting corn"
                   className="rounded-xl shadow-md w-full max-w-md object-cover"
                 />
@@ -136,20 +136,20 @@ export default function SolutionsPage() {
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
-                     <img src="/web-public/public/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                     <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
                      <div className="ml-7 flex gap-3">
                        
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                         <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5" />
+                         <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                         <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5" />
+                         <img src="/images/x.png" alt="X" className="h-5 w-5" />
                        </a>
                      </div>
                    </div>

@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import AOS from 'aos';
 import { useState } from 'react';
 import { X } from "lucide-react";
 
@@ -16,15 +15,13 @@ export default function ProductPage() {
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
 
    useEffect(() => {
-      AOS.init({ duration: 1000, once: true });
     }, []);
-
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
       
       const images = [
-          '/web-public/public/images/Phealthycorn.png',
-          '/web-public/public/images/Pdetailedtables.png'
+          '/images/Phealthycorn.png',
+          '/images/Pdetailedtables.png'
       ];
   
       const handlePrevImage = () => {
@@ -48,7 +45,7 @@ export default function ProductPage() {
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   onClick={() => navigate('/')}
-                  src="/web-public/public/images/smalllogo.png"
+                  src="/images/smalllogo.png"
                   alt="Logo"
                   className="h-14 w-14 md:h-18 md:w-18 object-cover cursor-pointer ease-in-out duration-250 hover:scale-110"
                 />
@@ -59,7 +56,7 @@ export default function ProductPage() {
                   <li><button>
                     <img
                       onClick={() => navigate('/header-menu')}
-                      src="/web-public/public/images/menu-green.png"
+                      src="/images/menu-green.png"
                       alt="Logo"
                       className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
                     />
@@ -74,7 +71,7 @@ export default function ProductPage() {
               <div className=" space-y-6">
                 <div className="flex items-center gap-3">
                   <div data-aos="zoom-in" className="p-2 ">
-                    <img src="/web-public/public/images/header-product.png" alt="Brain Icon" className="w-full h-full" />
+                    <img src="/images/header-product.png" alt="Brain Icon" className="w-full h-full" />
                   </div>
                 </div>
                 <p data-aos="fade-up" data-aos-delay="200" className="py-5 xl:py-10  xl:text-lg">
@@ -252,20 +249,20 @@ export default function ProductPage() {
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
-                     <img src="/web-public/public/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                     <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
                      <div className="ml-7 flex gap-3">
                        
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                         <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5" />
+                         <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                         <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5" />
+                         <img src="/images/x.png" alt="X" className="h-5 w-5" />
                        </a>
                      </div>
                    </div>
