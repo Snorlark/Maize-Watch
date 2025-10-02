@@ -54,7 +54,8 @@ app.use(helmet({
 const allowedOrigins = [
   "http://localhost:3000", // React default
   "http://localhost:5173", // Vite default
-  "https://maize-watch-rdcy.onrender.com", // Production frontend
+  "https://maize-watch-rdcy.onrender.com",
+  "https://maize-watch-web-backend.onrender.com", // Production frontend
   process.env.FRONTEND_URL, // Environment variable for flexibility
 ].filter((origin): origin is string => Boolean(origin));
 
