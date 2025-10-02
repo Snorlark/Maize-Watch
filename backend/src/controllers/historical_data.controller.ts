@@ -15,8 +15,6 @@ export const getHistoricalData = async (
     const baseDateParam = (req.query.baseDate as string) || '';
     const baseDate = baseDateParam ? new Date(baseDateParam) : new Date();
 
-    console.log(`[CONTROLLER] Getting ${period} historical data with limit ${limit}`);
-    console.log(`[CONTROLLER] Full request query:`, req.query);
 
     // Validate period
     if (!period || !['daily', 'weekly', 'monthly'].includes(period)) {
@@ -30,9 +28,7 @@ export const getHistoricalData = async (
     }
 
     // Step 1: Check if we can connect to the database
-    console.log('[CONTROLLER] Checking database connection...');
     const dbState = mongoose.connection.readyState;
-    console.log(`[CONTROLLER] Database state: ${dbState} (1=connected, 0=disconnected)`);
     
     if (dbState !== 1) {
       return res.status(500).json({
@@ -70,7 +66,7 @@ export const getHistoricalData = async (
       endDate.setHours(23, 59, 59, 999);
     }
 
-    console.log(`[CONTROLLER] Date range (computed from baseDate=${baseDate.toISOString()}): ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
 
     // Step 3: Build aggregation pipeline based on period
     let groupBy: any = {};
@@ -94,7 +90,7 @@ export const getHistoricalData = async (
     }
 
     // Step 4: Execute aggregation pipeline
-    console.log('[CONTROLLER] Executing aggregation pipeline...');
+
     
     const aggregationPipeline = [
       {
@@ -131,7 +127,7 @@ export const getHistoricalData = async (
     ];
 
     const aggregatedData = await SensorReading.aggregate(aggregationPipeline);
-    console.log(`[CONTROLLER] Aggregated ${aggregatedData.length} data points`);
+
 
     // Utilities
     const round = (val: any, digits: number) => (typeof val === 'number' ? Math.round(val * Math.pow(10, digits)) / Math.pow(10, digits) : null);
@@ -258,7 +254,6 @@ export const getHistoricalData = async (
       }
     };
 
-    console.log(`[CONTROLLER] Returning ${formattedData.length} formatted records`);
     res.json(response);
 
   } catch (error: any) {

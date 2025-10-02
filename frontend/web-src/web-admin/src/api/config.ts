@@ -8,7 +8,7 @@ import authService from '../api/services/authService'; // Import your auth servi
 const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (import.meta.env.DEV ? "http://localhost:8080" : "https://maize-watch-web-backend.onrender.com");
 const API_BASE = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
-console.log('Dashboard API Base URL being used:', API_BASE);
+
 
 // Create axios instance with authentication (similar to client.ts)
 const dashboardApiClient = axios.create({
@@ -47,7 +47,7 @@ dashboardApiClient.interceptors.response.use(
     
     // Handle authentication errors
     if (error.response?.status === 401) {
-      console.log('Authentication error - clearing tokens');
+      
       authService.logout();
       window.dispatchEvent(new CustomEvent('auth:logout'));
     }
@@ -63,26 +63,8 @@ export const apiService = {
       const token = authService.getToken();
       const isAuth = authService.isAuthenticated();
       const user = authService.getCurrentUser();
-      
-      console.log(`[apiService] Auth Debug:`, {
-        hasToken: !!token,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-        isAuthenticated: isAuth,
-        currentUser: user
-      });
 
-      if (!isAuth) {
-        console.error('[apiService] Authentication failed - details:', {
-          tokenExists: !!token,
-          tokenValid: token ? 'checking...' : 'no token',
-          userExists: !!user
-        });
-        throw new Error('Authentication required');
-      }
-
-      console.log(`[apiService] Fetching ${period} data with limit ${limit}`);
       const baseDateParam = baseDate ? baseDate.toISOString() : undefined;
-      console.log(`[apiService] URL: ${API_BASE}/historical-data?period=${period}&limit=${limit}${baseDateParam ? `&baseDate=${baseDateParam}` : ''}`);
       
       const response = await dashboardApiClient.get(`/historical-data`, {
         params: {
@@ -92,26 +74,13 @@ export const apiService = {
         }
       });
 
-      console.log(`[apiService] Raw response:`, response.data);
-
       const rawData = response.data?.data || [];
-      console.log(`[apiService] Raw data length:`, rawData.length);
 
-      if (rawData.length === 0) {
-        console.warn(`[apiService] No data returned for ${period} period`);
-        return {
-          success: true,
-          data: [],
-          rawData: [],
-          message: `No ${period} data available`
-        };
-      }
 
       // ✅ Normalize data here
       const normalizedData = rawData.map((item: any, index: number) => {
         let label = "";
         
-        console.log(`[apiService] Processing item ${index}:`, item);
         
         if (period === "daily" && item.date) {
           label = format(new Date(item.date), "MMM d");
@@ -130,7 +99,6 @@ export const apiService = {
         };
       });
 
-      console.log(`[apiService] Normalized data:`, normalizedData);
 
       return {
         success: true,
@@ -139,7 +107,6 @@ export const apiService = {
         message: `Successfully fetched ${normalizedData.length} ${period} records`
       };
     } catch (error: any) {
-      console.error(`[apiService] Error fetching ${period} data:`, error);
       
       // Provide more detailed error information
       let errorMessage = 'Failed to fetch historical data';
@@ -178,12 +145,10 @@ export const sensorService = {
         throw new Error('Authentication required');
       }
 
-      console.log('[sensorService] Fetching raw sensor readings...');
       
       // Use the existing endpoint that gets latest readings by farm
       const response = await dashboardApiClient.get(`/farms/${farmId}/readings/latest`);
 
-      console.log('[sensorService] Raw sensor data:', response.data);
       return {
         success: true,
         data: response.data
@@ -203,27 +168,22 @@ export const sensorService = {
         throw new Error('Authentication required');
       }
 
-      console.log('[sensorService] Fetching latest sensor data...', { farmId });
       
       let response;
       
       // Try farm-specific endpoint first if farmId is provided
       if (farmId) {
         try {
-          console.log(`[sensorService] Trying farm-specific endpoint: /farms/${farmId}/readings/latest`);
           response = await dashboardApiClient.get(`/farms/${farmId}/readings/latest`);
         } catch (farmError: any) {
-          console.log('[sensorService] Farm-specific endpoint failed, trying test endpoint');
           // Skip the problematic MongoDB endpoint and go straight to test endpoint
           response = await dashboardApiClient.get('/sensors/test-simple');
         }
       } else {
         // Try test endpoint first since MongoDB endpoint is timing out
-        console.log('[sensorService] Using test endpoint (MongoDB endpoint has timeout issues)');
         response = await dashboardApiClient.get('/sensors/test-simple');
       }
 
-      console.log('[sensorService] Latest sensor data response:', response.data);
       
       if (response.data?.success) {
         // Handle different response formats
@@ -282,11 +242,9 @@ export const sensorService = {
       
       // Try MongoDB endpoint as fallback if test endpoint fails
       try {
-        console.log('[sensorService] Trying MongoDB endpoint as fallback...');
         const fallbackResponse = await dashboardApiClient.get('/sensors/latest-no-thingspeak');
         
         if (fallbackResponse.data?.success && fallbackResponse.data.temperature !== undefined) {
-          console.log('[sensorService] MongoDB fallback endpoint succeeded');
           return {
             success: true,
             data: {
@@ -333,14 +291,8 @@ export const sensorService = {
     try {
       if (!authService.isAuthenticated()) {
         throw new Error('Authentication required');
-      }
-
-      console.log('[sensorService] Fetching live data from ThingSpeak...');
-      
+      }  
       const response = await dashboardApiClient.get('/sensors/thingspeak/live');
-      
-      console.log('[sensorService] ThingSpeak live data response:', response.data);
-      
       if (response.data?.success && response.data.data) {
         return {
           success: true,
@@ -367,14 +319,10 @@ export const sensorService = {
       if (!authService.isAuthenticated()) {
         throw new Error('Authentication required');
       }
-
-      console.log(`[sensorService] Fetching ${results} historical readings from ThingSpeak (last ${hours} hours)...`);
       
       const response = await dashboardApiClient.get('/sensors/thingspeak/historical', {
         params: { results, hours }
       });
-      
-      console.log('[sensorService] ThingSpeak historical data response:', response.data);
       
       if (response.data?.success) {
         return {
