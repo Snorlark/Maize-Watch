@@ -1,7 +1,9 @@
 import axios from "axios";
 import authService from "./authService";
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "https://maize-watch-web-backend.onrender.com/api");
+// Normalize API base: compute RAW base without '/api', then append '/api' exactly once
+const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (import.meta.env.DEV ? "http://localhost:8080" : "https://maize-watch-web-backend.onrender.com");
+const API_BASE = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
 export interface Sensor {
   _id: string;
