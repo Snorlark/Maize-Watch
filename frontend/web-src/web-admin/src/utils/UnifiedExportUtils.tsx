@@ -351,6 +351,7 @@ const fetchCustomRangeData = async (
     console.error("Failed to fetch custom range data:", err);
     return [];
   }
+};
 /**
  * Export to PDF with professional formatting
  */
@@ -361,7 +362,7 @@ const exportToPdf = async (
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -626,7 +627,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
  */
 const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
     // Determine xKey based on current overview
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -800,7 +801,7 @@ const exportChartData = async (
     console.log('Export Options:', options);
     console.log('Original Chart Data:', chartData);
     
-    const config = CHART_CONFIGS[options.chartType];
+    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -846,7 +847,7 @@ const exportChartData = async (
   }
 };
 
-export type { ChartDataPoint, DateRange, ExportOptions };
+export type { ChartDataPoint, ExportOptions };
 export { exportChartData };
 
 // import React from "react";
@@ -1081,7 +1082,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const pdf = new jsPDF("portrait", "mm", "a4");
 //     const pageWidth = pdf.internal.pageSize.getWidth();
 //     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -1346,7 +1347,7 @@ export { exportChartData };
 //  */
 // const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 //   try {
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
 //     // Determine xKey based on current overview
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -1534,7 +1535,7 @@ export { exportChartData };
 //     console.log('Export Options:', options);
 //     console.log('Original Chart Data:', chartData);
     
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
 //                  options.currentOverview === 'daily' ? 'day' : 
 //                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -1568,7 +1569,7 @@ export { exportChartData };
 //   }
 // };
 
-// export type { ChartDataPoint, DateRange, ExportOptions };
+// export type { ChartDataPoint, ExportOptions };
 // export { exportChartData };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1842,7 +1843,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const pdf = new jsPDF("portrait", "mm", "a4");
 //     const pageWidth = pdf.internal.pageSize.getWidth();
 //     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -2118,7 +2119,7 @@ export { exportChartData };
 //  */
 // const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 //   try {
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
 //     // Determine xKey based on current overview
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -2220,7 +2221,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     const config = CHART_CONFIGS[options.chartType];
+//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
 //                  options.currentOverview === 'daily' ? 'day' : 
 //                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -2265,6 +2266,5 @@ export { exportChartData };
 //   }
 // };
 
-// export type { ChartDataPoint, DateRange, ExportOptions };
+// export type { ChartDataPoint, ExportOptions };
 // export { exportChartData }; 
-}
