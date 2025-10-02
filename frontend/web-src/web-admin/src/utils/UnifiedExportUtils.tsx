@@ -2266,5 +2266,5 @@ export { exportChartData };
 //   }
 // };
 
-// export type { ChartDataPoint, ExportOptions };
-}
+export { exportChartData };
+
