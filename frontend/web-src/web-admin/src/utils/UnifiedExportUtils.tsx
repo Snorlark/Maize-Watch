@@ -358,11 +358,11 @@ const fetchCustomRangeData = async (
 const exportToPdf = async (
   chartData: ChartDataPoint[],
   xKey: string,
+  title: string,
   options: ExportOptions,
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
-  try {
-    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -627,7 +627,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
  */
 const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
   try {
-    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
     // Determine xKey based on current overview
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -801,7 +801,7 @@ const exportChartData = async (
     console.log('Export Options:', options);
     console.log('Original Chart Data:', chartData);
     
-    // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -826,7 +826,7 @@ const exportChartData = async (
 
     switch (format) {
       case 'pdf':
-        await exportToPdf(processedData, xKey, options, chartRef);
+        await exportToPdf(processedData, xKey, config.title, options, chartRef);
         break;
       case 'svg':
         if (chartRef?.current) {
@@ -1082,7 +1082,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const pdf = new jsPDF("portrait", "mm", "a4");
 //     const pageWidth = pdf.internal.pageSize.getWidth();
 //     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -1347,7 +1347,7 @@ export { exportChartData };
 //  */
 // const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 //   try {
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
 //     // Determine xKey based on current overview
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -1535,7 +1535,7 @@ export { exportChartData };
 //     console.log('Export Options:', options);
 //     console.log('Original Chart Data:', chartData);
     
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
 //                  options.currentOverview === 'daily' ? 'day' : 
 //                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -1548,7 +1548,7 @@ export { exportChartData };
 
 //     switch (format) {
 //       case 'pdf':
-//         await exportToPdf(processedData, xKey, options, chartRef);
+//         await exportToPdf(processedData, xKey, config.title, options, chartRef);
 //         break;
 //       case 'svg':
 //         if (chartRef?.current) {
@@ -1843,7 +1843,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const pdf = new jsPDF("portrait", "mm", "a4");
 //     const pageWidth = pdf.internal.pageSize.getWidth();
 //     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -2119,7 +2119,7 @@ export { exportChartData };
 //  */
 // const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
 //   try {
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
 //     // Determine xKey based on current overview
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
@@ -2221,7 +2221,7 @@ export { exportChartData };
 //   chartRef?: React.RefObject<HTMLDivElement | null>
 // ) => {
 //   try {
-//     // const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
+//     const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
 //     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
 //                  options.currentOverview === 'daily' ? 'day' : 
 //                  options.currentOverview === 'weekly' ? 'week' : 'month';
@@ -2267,4 +2267,4 @@ export { exportChartData };
 // };
 
 // export type { ChartDataPoint, ExportOptions };
-// export { exportChartData }; 
+}
