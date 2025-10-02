@@ -13,7 +13,7 @@ export default defineConfig({
     proxy: {
       // Proxy all /api requests to your live backend
       '/api': {
-        target: 'https://maize-watch.onrender.com',
+        target: 'https://maize-watch-rdcy.onrender.com',
         changeOrigin: true,
         secure: true,
       }

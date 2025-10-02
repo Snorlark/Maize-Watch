@@ -6,7 +6,7 @@ console.log('🔍 Verifying Maize-Watch Deployment...\n');
 // Test 1: Backend Health Check
 function testBackendHealth() {
   return new Promise((resolve) => {
-    const req = https.request('https://maize-watch.onrender.com/api/', (res) => {
+    const req = https.request('https://maize-watch-rdcy.onrender.com/api/', (res) => {
       console.log(`✅ Backend API: ${res.statusCode} ${res.statusMessage}`);
       resolve(res.statusCode < 400);
     });
@@ -29,7 +29,7 @@ function testBackendHealth() {
 function testCORS() {
   return new Promise((resolve) => {
     const options = {
-      hostname: 'maize-watch.onrender.com',
+      hostname: 'maize-watch-rdcy.onrender.com',
       path: '/api/auth/login',
       method: 'OPTIONS',
       headers: {
@@ -66,7 +66,7 @@ function testCORS() {
 // Test 3: Static Files
 function testStaticFiles() {
   return new Promise((resolve) => {
-    const req = https.request('https://maize-watch.onrender.com/web-public/images/smiley.png', (res) => {
+    const req = https.request('https://maize-watch-rdcy.onrender.com/web-public/images/smiley.png', (res) => {
       if (res.statusCode === 200) {
         console.log('✅ Static Files: Images accessible');
         resolve(true);
