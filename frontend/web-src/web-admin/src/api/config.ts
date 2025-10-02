@@ -59,10 +59,6 @@ dashboardApiClient.interceptors.response.use(
 export const apiService = {
   async fetchHistoricalData(period: "daily" | "weekly" | "monthly", limit: number, baseDate?: Date) {
     try {
-      // Enhanced auth debugging
-      const token = authService.getToken();
-      const isAuth = authService.isAuthenticated();
-      const user = authService.getCurrentUser();
 
       const baseDateParam = baseDate ? baseDate.toISOString() : undefined;
       
