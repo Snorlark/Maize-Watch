@@ -12,22 +12,18 @@ import GetAppPage from './pages/GetApp';
 
 const App: React.FC = () => {
   return (
-    <div>
-      <h1>Maize Watch App is Loading!</h1>
-      <img src="/images/logo.png" alt="Logo" style={{width: '200px', border: '2px solid red'}} />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/technology" element={<TechnologyPage />} />
-        <Route path="/solutions" element={<SolutionsPage />} />
-        <Route path="/product" element={<ProductPage />} />
-        <Route path="/header-menu" element={<HeaderMenuPage />} />
-        <Route path="/getapp" element={<GetAppPage />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/technology" element={<TechnologyPage />} />
+      <Route path="/solutions" element={<SolutionsPage />} />
+      <Route path="/product" element={<ProductPage />} />
+      <Route path="/header-menu" element={<HeaderMenuPage />} />
+      <Route path="/getapp" element={<GetAppPage />} />
 
-        {/* Catch-all route */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </div>
+      {/* Catch-all route */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 };
 
