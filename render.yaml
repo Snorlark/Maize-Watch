@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: maize-watch-app
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://maize-watch-rdcy.onrender.com
+    # Add your other environment variables here
+    # - key: MONGODB_URI
+    #   fromDatabase:
+    #     name: your-mongodb-database
+    #     property: connectionString

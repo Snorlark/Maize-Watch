@@ -1,0 +1,22 @@
+{
+  "name": "maize-watch-monorepo",
+  "version": "1.0.0",
+  "description": "Maize-Watch IoT Agriculture Monitoring System - Full Stack",
+  "scripts": {
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm install && npm run build",
+    "build:frontend": "cd frontend/web-src/web-public && npm install && npm run build",
+    "start": "cd backend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend/web-src/web-public && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend/web-src/web-public && npm install",
+    "postbuild": "cp -r frontend/web-src/web-public/dist/* backend/dist/ || xcopy /E /I frontend\\web-src\\web-public\\dist\\* backend\\dist\\"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
