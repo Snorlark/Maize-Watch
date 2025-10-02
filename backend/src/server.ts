@@ -78,15 +78,53 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static files from frontend public directories
-app.use('/web-public', express.static('frontend/web-src/web-public/public'));
-app.use('/web-admin', express.static('frontend/web-src/web-admin/public'));
+// Paths are relative to backend/ directory in development
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const frontendPath = isDevelopment ? '../frontend/web-src' : 'frontend/web-src';
+
+app.use('/web-public', express.static(`${frontendPath}/web-public/public`));
+app.use('/web-admin', express.static(`${frontendPath}/web-admin/public`));
 
 // Serve built web-admin dist files (for production)
-app.use('/web-admin', express.static('frontend/web-src/web-admin/dist'));
+if (!isDevelopment) {
+  app.use('/web-admin', express.static(`${frontendPath}/web-admin/dist`));
+}
 
 // Serve web-admin images and assets directly under /images path for easier access
-app.use('/images', express.static('frontend/web-src/web-admin/public/images'));
-app.use('/footer', express.static('frontend/web-src/web-admin/public/footer'));
+app.use('/images', express.static(`${frontendPath}/web-admin/public/images`));
+app.use('/footer', express.static(`${frontendPath}/web-admin/public/footer`));
+
+// Debug endpoint to check static file serving
+app.get('/debug/images', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  
+  const imagePath = path.join(__dirname, isDevelopment ? '../../frontend/web-src/web-admin/public/images' : '../frontend/web-src/web-admin/public/images');
+  
+  try {
+    const files = fs.readdirSync(imagePath);
+    res.json({
+      success: true,
+      isDevelopment,
+      frontendPath,
+      imagePath,
+      imageCount: files.length,
+      images: files.slice(0, 10), // First 10 images
+      testUrls: [
+        `${req.protocol}://${req.get('host')}/images/logo.png`,
+        `${req.protocol}://${req.get('host')}/images/background.png`
+      ]
+    });
+  } catch (error: any) {
+    res.json({
+      success: false,
+      error: error.message,
+      isDevelopment,
+      frontendPath,
+      imagePath
+    });
+  }
+});
 
 // API routes
 app.use('/api', apiRoutes);
