@@ -66,14 +66,11 @@ const LoginForm: React.FC = () => {
         if (result.requiresOTP) {
           // Admin user - proceed to OTP step
           const emailFromResponse = (result as any).data?.email || result.email || '';
-          console.log('Setting email for OTP step:', emailFromResponse);
           setEmail(emailFromResponse);
           setCurrentStep('otp');
           setCountdown(300); // 5 minutes
           setSuccess(result.message || 'Verification code sent to your email');
         } else {
-          // Regular user - complete login
-          console.log('Login successful, navigating to dashboard');
           navigate(`/${ADMIN_PATH}/dashboard`);
         }
       } else {
@@ -104,7 +101,6 @@ const LoginForm: React.FC = () => {
       const success = await verifyOTP(email, otp);
       
       if (success) {
-        console.log('OTP verification successful, navigating to dashboard');
         navigate(`/${ADMIN_PATH}/dashboard`);
       } else {
         setError('Invalid verification code. Please try again.');
