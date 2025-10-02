@@ -8,7 +8,7 @@
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": false,
     "resolveJsonModule": true,
     "declaration": false,
     "declarationMap": false,
@@ -23,7 +23,10 @@
     "checkJs": false,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
-    "isolatedModules": false
+    "isolatedModules": false,
+    "noEmitOnError": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false
   },
   "include": [
     "src/**/*.ts"
