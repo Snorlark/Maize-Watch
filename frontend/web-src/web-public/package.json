@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:quiet": "node build-quiet.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
