@@ -27,7 +27,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-100 rounded-xl">
                 <img 
-                  src="/web-admin/public/maizewatchlogo.png" 
+                  src="/maizewatchlogo.png" 
                   alt="Maize Watch Logo" 
                   className="h-20 w-20"
                   onError={(e) => {
@@ -188,28 +188,28 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                 className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 title="Instagram"
               >
-                <img src="/web-admin/public/footer/instagram.png" alt="Instagram" className="w-6 h-6" />
+                <img src="/footer/instagram.png" alt="Instagram" className="w-6 h-6" />
               </a>
               <a 
                 href="#" 
                 className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 title="GitHub"
               >
-                <img src="/web-admin/public/footer/github.png" alt="GitHub" className="w-6 h-6" />
+                <img src="/footer/github.png" alt="GitHub" className="w-6 h-6" />
               </a>
               <a 
                 href="#" 
                 className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 title="LinkedIn"
               >
-                <img src="/web-admin/public/footer/linkedin.png" alt="LinkedIn" className="w-6 h-6" />
+                <img src="/footer/linkedin.png" alt="LinkedIn" className="w-6 h-6" />
               </a>
               <a 
                 href="#" 
                 className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 title="X (Twitter)"
               >
-                <img src="/web-admin/public/footer/x.png" alt="X" className="w-5 h-5" />
+                <img src="/footer/x.png" alt="X" className="w-5 h-5" />
               </a>
             </div>
             <p className="text-center text-sm text-gray-500 mt-4">

@@ -190,7 +190,7 @@ const Sidebar: React.FC = () => {
             <div className="flex items-center justify-between">
               {!isDesktopCollapsed && (
                 <img
-                  src="/web-admin/public/maizewatch.png"
+                  src="/maizewatch.png"
                   alt="Maize Watch Logo"
                   className="h-10 w-auto max-w-full"
                 />
@@ -321,7 +321,7 @@ const Sidebar: React.FC = () => {
               {/* Mobile Header */}
               <div className="flex items-center justify-between p-4 border-b border-[#D1E7BC]">
                 <img
-                  src="/web-admin/public/maizewatch.png"
+                  src="/maizewatch.png"
                   alt="Maize Watch Logo"
                   className="h-10 w-auto max-w-[180px]"
                 />

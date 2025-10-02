@@ -6,12 +6,12 @@ const Footer = () => {
         
         {/* Logo & Socials */}
         <div>
-          <img src="/web-admin/public/maizewatch.png" alt="Maize Watch Logo" className="w-40 mb-1" />
+          <img src="/maizewatch.png" alt="Maize Watch Logo" className="w-40 mb-1" />
           <div className="flex gap-3">
-            <img src="/web-admin/public/footer/instagram.png" alt="Instagram" className="w-5 h-5 cursor-pointer" />
-            <img src="/web-admin/public/footer/github.png" alt="GitHub" className="w-5 h-5 cursor-pointer" />
-            <img src="/web-admin/public/footer/linkedin.png" alt="LinkedIn" className="w-5 h-5 cursor-pointer" />
-            <img src="/web-admin/public/footer/x.png" alt="X" className="w-4 h-4 cursor-pointer" />
+            <img src="/footer/instagram.png" alt="Instagram" className="w-5 h-5 cursor-pointer" />
+            <img src="/footer/github.png" alt="GitHub" className="w-5 h-5 cursor-pointer" />
+            <img src="/footer/linkedin.png" alt="LinkedIn" className="w-5 h-5 cursor-pointer" />
+            <img src="/footer/x.png" alt="X" className="w-4 h-4 cursor-pointer" />
           </div>
         </div>
 

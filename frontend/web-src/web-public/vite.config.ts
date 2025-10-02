@@ -15,6 +15,10 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       }
+    },
+    // Ensure static files are served correctly
+    fs: {
+      strict: false
     }
   },
   build: {

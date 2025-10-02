@@ -60,7 +60,7 @@ const loadImageAsDataUrl = async (path: string): Promise<string> => {
 const loadLogoDataUrl = async (): Promise<string | null> => {
   const candidates = [
     '/maizewatch.png',
-    '/web-admin/public/maizewatch.png',
+    '/maizewatch.png',
     'maizewatch.png'
   ];
   for (const path of candidates) {
