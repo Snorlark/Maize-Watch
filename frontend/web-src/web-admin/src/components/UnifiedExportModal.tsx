@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
-import { Download, X, Calendar } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { exportChartData, type ChartDataPoint, type ExportOptions } from "../utils/UnifiedExportUtils";
 
 interface UnifiedExportModalProps {
@@ -24,7 +24,7 @@ const UnifiedExportModal = ({
 }: UnifiedExportModalProps) => {
     const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'svg'>('csv');
     const [exportType, setExportType] = useState<'predefined' | 'custom'>('predefined');
-    const [timeFrame, setTimeFrame] = useState<'day' | 'week' | 'month' | 'year'>('week');
+    const [timeFrame] = useState<'day' | 'week' | 'month' | 'year'>('week');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
     const [isExporting, setIsExporting] = useState(false);
@@ -381,7 +381,7 @@ export default UnifiedExportModal;
 // import { useState } from "react";
 // import { Button } from "./ui/button";
 // import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-// import { Download, X, Calendar } from "lucide-react";
+// import { Download, X } from "lucide-react";
 // import { exportChartData, type ChartDataPoint, type ExportOptions } from "../utils/UnifiedExportUtils";
 
 // interface UnifiedExportModalProps {

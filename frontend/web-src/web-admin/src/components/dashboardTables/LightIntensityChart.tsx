@@ -2,15 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Download, Clock, BarChart3, Table, Sun, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Download, BarChart3, Table, Sun, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import UnifiedExportModal from '../UnifiedExportModal';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {

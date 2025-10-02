@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -36,11 +35,9 @@ import {
 import UnifiedExportModal from '../UnifiedExportModal';
 import { RefreshIndicator } from '../ui/refresh-indicator';
 import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
-import { format } from "date-fns";
 
 // Import the updated configuration
 import { apiService } from "../../api/config";
-import { dataTransformUtils } from "../../api/utils/dataTransformUtils";
 import { CHART_CONFIG } from "../../api/utils/chartConfig";
 import { dateUtils } from "../../api/utils/dateUtils";
 
