@@ -1,16 +1,50 @@
 services:
   - type: web
-    name: maize-watch-app
+    name: maize-watch-backend
     env: node
     buildCommand: npm run build
     startCommand: npm start
+    rootDir: backend
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: FRONTEND_URL
-        value: https://maize-watch-rdcy.onrender.com
-    # Add your other environment variables here
-    # - key: MONGODB_URI
-    #   fromDatabase:
-    #     name: your-mongodb-database
-    #     property: connectionString
+        value: https://maize-watch-frontend.onrender.com
+      - key: MONGODB_URI
+        fromDatabase:
+          name: your-mongodb-database
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: REDIS_URL
+        fromDatabase:
+          name: your-redis-database
+          property: connectionString
+      - key: THINGSPEAK_API_KEY
+        value: your_thingspeak_api_key
+      - key: THINGSPEAK_CHANNEL_ID
+        value: your_thingspeak_channel_id
+
+  - type: web
+    name: maize-watch-frontend
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: dist
+    rootDir: frontend/web-src/web-public
+    envVars:
+      - key: VITE_API_URL
+        value: https://maize-watch-backend.onrender.com/api
+
+  - type: web
+    name: maize-watch-admin
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: dist
+    rootDir: frontend/web-src/web-admin
+    envVars:
+      - key: VITE_API_URL
+        value: https://maize-watch-backend.onrender.com/api

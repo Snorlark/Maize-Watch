@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiService, sensorService } from './config'; // Adjust import path as needed
+import { apiService } from './config'; // Adjust import path as needed
 import authService from '../api/services/authService'; // Adjust import path as needed
 
 const DebugSensorData: React.FC = () => {
@@ -85,7 +85,7 @@ const DebugSensorData: React.FC = () => {
 
       // 6. Test Debug Endpoint
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/debug`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "https://maize-watch-backend.onrender.com/api")}/debug`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

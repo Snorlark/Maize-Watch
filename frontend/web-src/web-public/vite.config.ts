@@ -20,7 +20,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Ensure static assets are properly handled
+    // Copy public assets to dist root
+    copyPublicDir: true,
     rollupOptions: {
       output: {
         assetFileNames: 'assets/[name]-[hash][extname]',

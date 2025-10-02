@@ -3,8 +3,8 @@ import axios from "axios";
 import { format } from "date-fns";
 import authService from '../api/services/authService'; // Import your auth service
 
-// Use your local development URL (matching your current setup)
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+// Use environment variable for API URL, with fallbacks
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "https://maize-watch-backend.onrender.com/api");
 
 console.log('Dashboard API Base URL being used:', API_BASE);
 
