@@ -1,0 +1,11 @@
+# Redirect all requests to index.html for SPA routing
+/*    /index.html   200
+
+# Serve images from root
+/images/*    /images/*    200
+/*.png       /*.png       200
+/*.jpg       /*.jpg       200
+/*.jpeg      /*.jpeg      200
+/*.gif       /*.gif       200
+/*.svg       /*.svg       200
+/*.webp      /*.webp      200
