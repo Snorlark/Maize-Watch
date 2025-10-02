@@ -35,10 +35,9 @@ export default defineConfig({
               manualChunks: {
                 vendor: ['react', 'react-dom'],
                 router: ['react-router-dom'],
-                ui: ['@radix-ui/react-dropdown-menu', '@radix-ui/react-menu', '@radix-ui/react-portal'],
                 icons: ['lucide-react', 'react-icons'],
-                charts: ['recharts', 'chart.js'],
-                utils: ['axios', 'date-fns', 'clsx']
+                charts: ['recharts'],
+                utils: ['axios', 'date-fns']
               }
             }
           },
