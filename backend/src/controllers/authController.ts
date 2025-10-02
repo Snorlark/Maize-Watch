@@ -16,12 +16,10 @@ import { Action, Resource, UserRole } from '../models/activityLog.model';
  * @access  Public
  */
 export const register = catchAsync(async (req: Request, res: Response) => {
-  console.log('🚀 Registration endpoint hit!');
-  
-  console.log('📋 Checking validation...');
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    console.log('❌ Validation failed:', errors.array());
+
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
       message: 'Validation failed',
@@ -32,7 +30,7 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  console.log('✅ Validation passed, calling service...');
+
 
   const {
     username,
@@ -54,11 +52,10 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     address
   };
 
-  console.log('📝 About to call authService.register with:', registrationData);
   
   const result = await authService.register(registrationData);
   
-  console.log('✅ Registration successful:', result);
+
 
   // Set refresh token as httpOnly cookie
   res.cookie('refreshToken', result.tokens.refreshToken, {
