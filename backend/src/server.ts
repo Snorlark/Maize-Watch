@@ -81,6 +81,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/web-public', express.static('frontend/web-src/web-public/public'));
 app.use('/web-admin', express.static('frontend/web-src/web-admin/public'));
 
+// Serve built web-admin dist files (for production)
+app.use('/web-admin', express.static('frontend/web-src/web-admin/dist'));
+
+// Serve web-admin images and assets directly under /images path for easier access
+app.use('/images', express.static('frontend/web-src/web-admin/public/images'));
+app.use('/footer', express.static('frontend/web-src/web-admin/public/footer'));
+
 // API routes
 app.use('/api', apiRoutes);
 

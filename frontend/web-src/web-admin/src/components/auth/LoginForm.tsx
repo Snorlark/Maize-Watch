@@ -254,11 +254,11 @@ const LoginForm: React.FC = () => {
 
   return (
     <main className="bg-white">
-      <section className="bg-[url(/web-admin/public/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
+      <section className="bg-[url(/images/background.png)] relative min-h-screen bg-cover bg-center flex flex-col items-center justify-center px-4 md:px-10">
         <div className="mt-10 md:mt-10 flex flex-col items-center justify-center z-10 space-y-6  pt-0 pb-20">
           <div>
             <img
-              src="/web-admin/public/images/loginsignuplogo.png"
+              src="/images/loginsignuplogo.png"
               alt="Maize Watch Text"
               className="w-60 md:w-80 lg:w-160"
             />

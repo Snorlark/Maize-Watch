@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "description": "Maize-Watch IoT Agriculture Monitoring System - Full Stack",
   "scripts": {
-    "build": "npm run build:backend && npm run build:frontend",
+    "build": "npm run build:backend && npm run build:frontend && npm run build:admin",
     "build:backend": "cd backend && npm install && npm run build",
     "build:frontend": "cd frontend/web-src/web-public && npm install && npm run build",
+    "build:admin": "cd frontend/web-src/web-admin && npm install && npm run build",
     "start": "cd backend && npm start",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:admin\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend/web-src/web-public && npm run dev",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend/web-src/web-public && npm install",
-    "postbuild": "cp -r frontend/web-src/web-public/dist/* backend/dist/ || xcopy /E /I frontend\\web-src\\web-public\\dist\\* backend\\dist\\"
+    "dev:admin": "cd frontend/web-src/web-admin && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend/web-src/web-public && npm install && cd ../web-admin && npm install",
+    "postbuild": "npm run copy:frontend && npm run copy:admin",
+    "copy:frontend": "cp -r frontend/web-src/web-public/dist/* backend/dist/ || xcopy /E /I frontend\\web-src\\web-public\\dist\\* backend\\dist\\",
+    "copy:admin": "mkdir -p backend/dist/web-admin && cp -r frontend/web-src/web-admin/dist/* backend/dist/web-admin/ || (mkdir backend\\dist\\web-admin 2>nul & xcopy /E /I frontend\\web-src\\web-admin\\dist\\* backend\\dist\\web-admin\\)"
   },
   "engines": {
     "node": ">=18.0.0"
