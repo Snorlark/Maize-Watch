@@ -102,7 +102,7 @@ const LiveDataWidget: React.FC = () => {
 
       if (result.success && result.data) {
         const raw = result.data;
-        const currentTime = new Date();
+        
 
         let actualTimestamp = null;
         if (raw.created_at) {
@@ -113,9 +113,7 @@ const LiveDataWidget: React.FC = () => {
           actualTimestamp = new Date().toISOString();
         }
 
-        const dataTime = actualTimestamp ? new Date(actualTimestamp) : new Date();
-        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
-        const isDataFresh = timeDiffMinutes <= 30;
+
 
         const nextValues: Record<VariableKey, number> = {
           temperature: raw.temperature ?? 0,

@@ -3,7 +3,6 @@ import { Sprout, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, Chevro
 import { Navigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { CurrentFarm, Farm, farmService } from "../api/services/farmService";
-import authService from '../api/services/authService';
 import { useUserContext } from '../contexts/UserContext';
 import FarmReassignmentModal from '../components/FarmReassignmentModal';
 import FarmDetailsModal from '../components/FarmDetailsModal';
