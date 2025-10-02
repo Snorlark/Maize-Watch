@@ -44,19 +44,10 @@ const SOIL_MOISTURE_COLORS = {
   background: "#F0FDF4", // Green-50
   text: "#166534", // Green-800
   trend: {
-    up: "#22C55E", // Green-500
-    down: "#EF4444", // Red-500
     neutral: "#6B7280", // Gray-500
   }
 };
 
-// Add soil moisture conversion function
-const convertSoilMoistureToPercentage = (rawValue: number): number => {
-  // Convert raw sensor value to percentage (0-100%)
-  // Assuming raw value is between 0-1023 (typical for analog sensors)
-  const percentage = (rawValue / 1023) * 100;
-  return Math.round(percentage * 100) / 100; // Round to 2 decimal places
-};
 
 // Utility Functions
 const formatDateRange = (start: Date, end: Date): string => {
@@ -270,15 +261,6 @@ const getWeeksInMonth = (date: Date): number => {
   return weeks;
 };
 
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
-
 // Update the main component
 const SoilMoistureDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>('line');
@@ -289,7 +271,6 @@ const SoilMoistureDashboard = () => {
   const [dateRange, setDateRange] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const [xKey, setXKey] = useState<string>('day');
 
@@ -413,7 +394,6 @@ const SoilMoistureDashboard = () => {
   const handleOverviewChange = (newOverview: 'daily' | 'weekly' | 'monthly') => {
     setOverview(newOverview);
     fetchData(newOverview, selectedDate);
-    setIsMobileMenuOpen(false);
   };
 
   const handlePreviousPeriod = () => {
