@@ -5,6 +5,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import authService from '../api/services/authService';
+import { userService } from '../api/client';
 import TwentyFourHourOverview from '../components/widgets/TwentyFourHourOverview';
 import LiveDataWidget from '../components/widgets/LiveDataWidget';
 import RecentActivityWidget from '../components/widgets/RecentActivityWidget'; // Import the new widget
@@ -14,8 +15,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentAdmin, setCurrentAdmin] = useState<any>(null);
-
-  // User data state
+const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [totalFarms, setTotalFarms] = useState<number | null>(null);
 
   useEffect(() => {
@@ -38,6 +38,19 @@ const AdminDashboard = () => {
     };
 
     fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const count = await userService.getTotalUsers();
+        console.log("✅ Total Users from API:", count);
+        setTotalUsers(count);
+      } catch (err) {
+        console.error("❌ Error fetching users:", err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -134,7 +147,7 @@ const AdminDashboard = () => {
           {[
             { 
               label: "Total Users", 
-              value: "Loading...", 
+              value: totalUsers !== null ? totalUsers : "Loading...",
               icon: <Users className="w-6 h-6 text-blue-600" />, 
               bg: "bg-blue-50" 
             },
