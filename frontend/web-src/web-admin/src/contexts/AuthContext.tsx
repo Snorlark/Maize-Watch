@@ -167,6 +167,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.login(username, password);
       
+      if (response.success) {
+        // Check if OTP is required
+        if ((response as any).requiresOTP) {
+          
+          return {
+            success: true,
+            requiresOTP: true,
+            data: (response as any).data, 
+            message: response.message
+          };
+        }
+        
+        // Complete login (no OTP required)
+        if (response.data?.user) {
+          setUser(response.data.user);
+          startInactivityTimer();
+          return { success: true };
+        }
+      }
       
       return { 
         success: false, 
