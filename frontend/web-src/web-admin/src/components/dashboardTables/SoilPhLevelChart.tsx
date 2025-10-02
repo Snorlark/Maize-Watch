@@ -296,7 +296,7 @@ const getWeeksInMonth = (date: Date): number => {
 // Update the main component
 const SoilPhLevelDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [chartData, setChartData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
