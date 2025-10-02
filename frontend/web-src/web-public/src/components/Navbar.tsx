@@ -10,7 +10,7 @@ const Navbar: React.FC = () => {
         </Link>
         <div className="space-x-6">
           <Link to="/live-data" className="text-[#356B2C] hover:text-green-700">Live Data</Link>
-          <a href="/dashboard" className="text-[#356B2C] hover:text-green-700">Admin Dashboard</a>
+          <Link to="/dashboard" className="text-[#356B2C] hover:text-green-700">Dashboard</Link>
           <Link to="/profile" className="text-[#356B2C] hover:text-green-700">Profile</Link>
         </div>
       </div>
