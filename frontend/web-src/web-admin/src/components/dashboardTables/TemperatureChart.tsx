@@ -165,13 +165,6 @@ interface DataItem {
   timestamp?: string;
 }
 
-interface ApiResponse {
-  success: boolean;
-  data: DataItem[];
-  rawData?: any[];
-  error?: string;
-  message?: string;
-}
 
 // Use temperature configuration from the updated config
 const TEMPERATURE_CONFIG = CHART_CONFIG.temperature;

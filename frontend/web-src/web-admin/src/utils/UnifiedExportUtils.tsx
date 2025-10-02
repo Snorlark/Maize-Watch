@@ -351,15 +351,12 @@ const fetchCustomRangeData = async (
     console.error("Failed to fetch custom range data:", err);
     return [];
   }
-};
-
 /**
  * Export to PDF with professional formatting
  */
 const exportToPdf = async (
   chartData: ChartDataPoint[],
   xKey: string,
-  title: string,
   options: ExportOptions,
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {

@@ -170,7 +170,7 @@ export const apiService = {
 
 // Sensor service for live data
 export const sensorService = {
-  async getRawSensorReadings(farmId: string, limit = 10) {
+  async getRawSensorReadings(farmId: string) {
     try {
       if (!authService.isAuthenticated()) {
         throw new Error('Authentication required');

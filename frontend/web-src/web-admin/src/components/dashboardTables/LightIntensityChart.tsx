@@ -265,16 +265,7 @@ const getWeeksInMonth = (date: Date): number => {
   if (lastWeekday < firstWeekday) weeks++;
 
   return weeks;
-};
-
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
+}
 
 // Update the main component
 const LightIntensityDashboard = () => {
