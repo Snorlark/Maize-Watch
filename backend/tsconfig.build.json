@@ -23,10 +23,7 @@
     "checkJs": false,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
-    "isolatedModules": false,
-    "suppressImplicitAnyIndexErrors": true,
-    "noStrictGenericChecks": true,
-    "suppressExcessPropertyErrors": true
+    "isolatedModules": false
   },
   "include": [
     "src/**/*.ts"
