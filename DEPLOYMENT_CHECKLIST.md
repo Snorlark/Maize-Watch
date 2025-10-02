@@ -63,30 +63,13 @@ backend/
 ```
 
 ## 🧪 Testing Steps
-
 ### Test 1: CORS Fix
 Try this in browser console on your frontend:
 ```javascript
-fetch('https://maize-watch.onrender.com/api/auth/login', {
+fetch('https://maize-watch.on.render.com/api/auth/login', {
   method: 'OPTIONS'
 }).then(r => console.log('CORS headers:', r.headers));
 ```
-
-### Test 2: Static Files
-Try accessing: `https://maize-watch.onrender.com/web-public/images/smiley.png`
-
-### Test 3: API Health
-Try accessing: `https://maize-watch.onrender.com/api/` (should return some response)
-
-## 🚨 If Issues Persist
-
-### Backend Not Responding
-- Check Render logs for build/runtime errors
-- Verify PORT environment variable (should be set by Render)
-- Check if backend service is sleeping (free tier limitation)
-
-### CORS Still Failing
-- Verify the exact frontend URL matches what's in CORS config
 - Check if changes were actually deployed
 - Add wildcard temporarily for testing: `origin: "*"`
 
@@ -103,20 +86,4 @@ curl -I https://maize-watch.onrender.com/api/
 ```
 
 ### Check Static Files
-```bash
-curl -I https://maize-watch.onrender.com/web-public/images/smiley.png
-```
-
-### Check CORS Headers
-```bash
-curl -H "Origin: https://maize-watch-rdcy.onrender.com" \
-     -H "Access-Control-Request-Method: POST" \
-     -X OPTIONS \
-     https://maize-watch.onrender.com/api/auth/login
-```
-
-## 🎯 Expected Results After Fix
-- ✅ Login should work without CORS errors
-- ✅ All images should load correctly
-- ✅ API calls should succeed
 - ✅ No 404 errors for static assets

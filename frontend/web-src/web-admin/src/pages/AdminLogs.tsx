@@ -28,7 +28,7 @@ const AdminLogs: React.FC = () => {
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        const response = await axios.get('https://maize-watch.onrender.com/api/auth/check-admin', {
+        const response = await axios.get('https://maize-watch-rdcy.onrender.com/api/auth/check-admin', {
           withCredentials: true
         });
         
@@ -48,7 +48,7 @@ const AdminLogs: React.FC = () => {
     const fetchLogs = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('https://maize-watch.onrender.com/api/logs', {
+        const response = await axios.get('https://maize-watch-rdcy.onrender.com/api/logs', {
           params: filter,
           withCredentials: true
         });
