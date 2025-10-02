@@ -44,7 +44,6 @@ const [totalUsers, setTotalUsers] = useState<number | null>(null);
     const fetchUsers = async () => {
       try {
         const count = await userService.getTotalUsers();
-        console.log("✅ Total Users from API:", count);
         setTotalUsers(count);
       } catch (err) {
         console.error("❌ Error fetching users:", err);
@@ -57,7 +56,6 @@ const [totalUsers, setTotalUsers] = useState<number | null>(null);
     const fetchFarms = async () => {
       try {
         const count = await farmService.getTotalFarms();
-        console.log("✅ Total Farms from API:", count);
         setTotalFarms(count);
       } catch (err) {
         console.error("❌ Error fetching farms:", err);
