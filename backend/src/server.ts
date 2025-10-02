@@ -51,11 +51,15 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+  "http://localhost:3000", // React default
+  "http://localhost:5173", // Vite default
+  "https://maize-watch-rdcy.onrender.com", // Production frontend
+  process.env.FRONTEND_URL, // Environment variable for flexibility
+].filter((origin): origin is string => Boolean(origin));
+
 app.use(cors({
-  origin: [
-    "http://localhost:3000", // React default
-    "http://localhost:5173", // Vite default
-  ],
+  origin: allowedOrigins,
   credentials: true
 }));
 
@@ -72,6 +76,10 @@ app.use(requestLogger);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from frontend public directories
+app.use('/web-public', express.static('frontend/web-src/web-public/public'));
+app.use('/web-admin', express.static('frontend/web-src/web-admin/public'));
 
 // API routes
 app.use('/api', apiRoutes);
