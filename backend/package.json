@@ -4,7 +4,7 @@
   "description": "Backend API for Maize-Watch IoT Agriculture Monitoring System",
   "main": "dist/src/server.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json --noEmitOnError false --skipLibCheck",
+    "build": "tsc --noEmitOnError false --skipLibCheck --strict false --target ES2020 --module commonjs --outDir dist --rootDir src --esModuleInterop --allowJs --allowSyntheticDefaultImports --moduleResolution node --resolveJsonModule --skipDefaultLibCheck src/**/*.ts",
     "start": "node dist/src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "dev:watch": "nodemon --exec ts-node --transpile-only src/server.ts",
