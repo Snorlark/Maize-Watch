@@ -24,7 +24,7 @@ export default function TechnologyPage() {
                             <div className="w-16 md:w-20 py-2 flex items-center">
                                 <img
                                   onClick={() => navigate('/')}
-                                    src="/images/smalllogo.png"
+                                    src="/web-public/public/images/smalllogo.png"
                                     alt="Logo"
                                     className="h-14 w-14 md:h-18 md:w-18 object-cover cursor-pointer ease-in-out duration-250 hover:scale-110"
                                 />
@@ -35,7 +35,7 @@ export default function TechnologyPage() {
                                     <li><button>
                                         <img
                                             onClick={() => navigate('/header-menu')}
-                                            src="/images/menu-green.png"
+                                            src="/web-public/public/images/menu-green.png"
                                             alt="Logo"
                                             className="h-8 w-8 md:h-10 md:w-10 object-cover hover:opacity-80 duration-300"
                                         />
@@ -50,7 +50,7 @@ export default function TechnologyPage() {
                         <div className=" space-y-6">
                           <div className="flex items-center gap-3">
                             <div className="p-2 ">
-                              <img src="/images/header-technology.png" data-aos="zoom-in" alt="Brain Icon" className="w-full h-full" />
+                              <img src="/web-public/public/images/header-technology.png" data-aos="zoom-in" alt="Brain Icon" className="w-full h-full" />
                             </div>
                           </div >
                           <div data-aos="fade-up" data-aos-delay="200">
@@ -106,7 +106,7 @@ export default function TechnologyPage() {
                 <div data-aos="fade-right" className="relative flex pb-8 justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-50 transition-discrete ease-in-out duration-500"></div>
                     <img
-                      src="/images/IoT.png"
+                      src="/web-public/public/images/IoT.png"
                       alt="Maize Watch App Preview"
                       className="relative w-[300px] md:w-[320px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
                     />
@@ -147,7 +147,7 @@ export default function TechnologyPage() {
                   <div data-aos="fade-left" className="pt-8 relative flex justify-center items-center">
                     <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-50 transition-discrete ease-in-out duration-500"></div>
                     <img
-                      src="/images/prescriptive.png"
+                      src="/web-public/public/images/prescriptive.png"
                       alt="Maize Watch App Preview"
                       className="relative w-[300px] md:w-[320px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
                     />
@@ -162,20 +162,20 @@ export default function TechnologyPage() {
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
-                     <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
+                     <img src="/web-public/public/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
                      <div className="ml-7 flex gap-3">
                        
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
+                         <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
+                         <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
+                         <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
                        </a>
                        <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                         <img src="/images/x.png" alt="X" className="h-5 w-5" />
+                         <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5" />
                        </a>
                      </div>
                    </div>
