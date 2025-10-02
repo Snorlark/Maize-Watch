@@ -4,13 +4,15 @@ import { format } from "date-fns";
 import authService from '../api/services/authService'; // Import your auth service
 
 // Use environment variable for API URL, with fallbacks
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "https://maize-watch-web-backend.onrender.com");
+// Always compute base WITHOUT '/api', then append '/api' exactly once
+const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (import.meta.env.DEV ? "http://localhost:8080" : "https://maize-watch-web-backend.onrender.com");
+const API_BASE = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
 console.log('Dashboard API Base URL being used:', API_BASE);
 
 // Create axios instance with authentication (similar to client.ts)
 const dashboardApiClient = axios.create({
-  baseURL: API_BASE, // ✅ Use API_BASE directly - don't remove /api
+  baseURL: API_BASE, // ✅ Normalized base ends with /api exactly once
   headers: {
     'Content-Type': 'application/json',
   },
