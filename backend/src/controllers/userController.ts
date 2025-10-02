@@ -196,7 +196,7 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: currentUser.id,
       userEmail: currentUser.email || 'unknown@email.com',
-      userRole: (currentUser.role as UserRole) || 'admin',
+      userRole: (currentUser.role as UserRole) || ('admin' as UserRole),
       action: Action.CREATE,
       resource: Resource.USER,
       resourceId: user._id,
@@ -287,7 +287,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: currentUser.id,
       userEmail: currentUser.email || 'unknown@email.com',
-      userRole: (currentUser.role as UserRole) || 'admin',
+      userRole: (currentUser.role as UserRole) || ('admin' as UserRole),
       action: Action.UPDATE,
       resource: Resource.USER,
       resourceId: user._id,
@@ -352,7 +352,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: currentUser.id,
       userEmail: currentUser.email || 'unknown@email.com',
-      userRole: (currentUser.role as UserRole) || 'admin',
+      userRole: (currentUser.role as UserRole) || ('admin' as UserRole),
       action: Action.DELETE,
       resource: Resource.USER,
       resourceId: user._id,

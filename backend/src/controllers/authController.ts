@@ -79,7 +79,7 @@ export const register = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: result.user._id,
       userEmail: result.user.email,
-      userRole: (result.user.role as UserRole) || 'user',
+      userRole: (result.user.role as UserRole) || ('user' as UserRole),
       action: Action.CREATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -191,7 +191,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
           await ActivityLogService.createLog({
             userId: result.user._id,
             userEmail: result.user.email || loginIdentifier,
-            userRole: (result.user.role as UserRole) || 'user',
+            userRole: (result.user.role as UserRole) || ('user' as UserRole),
             action: Action.LOGIN,
             resource: Resource.AUTH,
             resourceId: null,
@@ -243,7 +243,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
       await ActivityLogService.createLog({
         userId: result.user._id,
         userEmail: result.user.email || loginIdentifier,
-        userRole: (result.user.role as UserRole) || 'user',
+        userRole: (result.user.role as UserRole) || ('user' as UserRole),
         action: Action.LOGIN,
         resource: Resource.AUTH,
         resourceId: null,
@@ -324,7 +324,7 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
       await ActivityLogService.createLog({
         userId,
         userEmail: (req as any).user?.email || 'unknown@email.com',
-        userRole: ((req as any).user?.role as UserRole) || 'user',
+        userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
         action: Action.LOGOUT,
         resource: Resource.AUTH,
         resourceId: null,
@@ -368,7 +368,7 @@ export const logoutAll = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.LOGOUT,
       resource: Resource.AUTH,
       resourceId: null,
@@ -421,7 +421,7 @@ export const forgotPassword = catchAsync(async (req: Request, res: Response) => 
     await ActivityLogService.createLog({
       userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
       userEmail: email,
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -473,7 +473,7 @@ export const resetPassword = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -526,7 +526,7 @@ export const changePassword = catchAsync(async (req: Request, res: Response) => 
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -570,7 +570,7 @@ export const verifyEmail = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: (req as any).user?._id || (req as any).user?.id || 'anonymous',
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -610,7 +610,7 @@ export const resendVerification = catchAsync(async (req: Request, res: Response)
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -650,7 +650,7 @@ export const setup2FA = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -707,7 +707,7 @@ export const verify2FA = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -760,7 +760,7 @@ export const disable2FA = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId,
       userEmail: (req as any).user?.email || 'unknown@email.com',
-      userRole: ((req as any).user?.role as UserRole) || 'user',
+      userRole: ((req as any).user?.role as UserRole) || ('user' as UserRole),
       action: Action.UPDATE,
       resource: Resource.AUTH,
       resourceId: null,
@@ -801,7 +801,7 @@ export const getProfile = catchAsync(async (req: Request, res: Response) => {
     await ActivityLogService.createLog({
       userId: user?._id || user?.id,
       userEmail: user?.email || 'unknown@email.com',
-      userRole: (user?.role as UserRole) || 'user',
+      userRole: (user?.role as UserRole) || ('user' as UserRole),
       action: Action.VIEW,
       resource: Resource.AUTH,
       resourceId: null,
@@ -854,7 +854,7 @@ export const updateProfile = catchAsync(async (req: Request, res: Response) => {
       await ActivityLogService.createLog({
         userId: currentUser?._id || currentUser?.id,
         userEmail: currentUser?.email || 'unknown@email.com',
-        userRole: (currentUser?.role as UserRole) || 'user',
+        userRole: (currentUser?.role as UserRole) || ('user' as UserRole),
         action: Action.UPDATE,
         resource: Resource.AUTH,
         resourceId: currentUser?.id,
@@ -944,7 +944,7 @@ export const sendLoginOTP = catchAsync(async (req: Request, res: Response) => {
       await ActivityLogService.createLog({
         userId: user._id,
         userEmail: user.email || email,
-        userRole: (user.role as UserRole) || 'user',
+        userRole: (user.role as UserRole) || ('user' as UserRole),
         action: Action.LOGIN,
         resource: Resource.AUTH,
         resourceId: null,
@@ -1095,7 +1095,7 @@ export const verifyLoginOTP = catchAsync(async (req: Request, res: Response) => 
       await ActivityLogService.createLog({
         userId: user._id,
         userEmail: user.email || email,
-        userRole: (user.role as UserRole) || 'user',
+        userRole: (user.role as UserRole) || ('user' as UserRole),
         action: Action.LOGIN,
         resource: Resource.AUTH,
         resourceId: null,
