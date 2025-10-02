@@ -220,17 +220,10 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
     if (userAgent.includes('Firefox')) return 'Firefox';
     if (userAgent.includes('Safari')) return 'Safari';
     if (userAgent.includes('Edge')) return 'Edge';
+    if (userAgent.includes('Brave')) return 'Brave';
     return 'Unknown';
   };
 
-  const getOSFromUserAgent = (userAgent: string): string => {
-    if (userAgent.includes('Windows')) return 'Windows';
-    if (userAgent.includes('Mac')) return 'macOS';
-    if (userAgent.includes('Linux')) return 'Linux';
-    if (userAgent.includes('Android')) return 'Android';
-    if (userAgent.includes('iOS')) return 'iOS';
-    return 'Unknown';
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -310,7 +303,7 @@ const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {recentActivity.map((log, index) => (
+            {recentActivity.map((log) => (
               <div key={log._id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#F9FBF7] transition-colors">
                 {/* User Avatar */}
                 <div className="flex-shrink-0">

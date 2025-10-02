@@ -1,34 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   Thermometer, 
   RefreshCw
 } from 'lucide-react';
-import apiClient from '../api/client';
 import authService from '../api/services/authService';
 import TwentyFourHourOverview from '../components/widgets/TwentyFourHourOverview';
 import LiveDataWidget from '../components/widgets/LiveDataWidget';
 import RecentActivityWidget from '../components/widgets/RecentActivityWidget'; // Import the new widget
-import { useUserContext } from '../contexts/UserContext';
 import { farmService } from "../api/services/farmService";
 
 const AdminDashboard = () => {
-  const { totalUsersCount } = useUserContext();
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentAdmin, setCurrentAdmin] = useState<any>(null);
-  const navigate = useNavigate();
 
   // User data state
-  const [users, setUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
   const [totalFarms, setTotalFarms] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        // First try to get user from authService
         let user = authService.getCurrentUser();
         
         if (!user) {
@@ -61,33 +53,12 @@ const AdminDashboard = () => {
     fetchFarms();
   }, []);
 
-  // Fetch users using the same API pattern as UserTable
-  const fetchUsers = async () => {
-    setUsersLoading(true);
-    try {
-      if (!authService.isAuthenticated()) {
-        throw new Error('Authentication required');
-      }
-      
-      const response = await apiClient.get('/api/users');
-      setUsers(response.data.users || []);
-    } catch (error: any) {
-      console.error('Error fetching users:', error);
-      setUsers([]);
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
   useEffect(() => {
     // Load dashboard data
     const loadDashboard = async () => {
       setLoading(true);
       
-      // Fetch real user data directly using the same API as UserTable
-      await fetchUsers();
-      
-      // Simulate loading other dashboard data
+      // Simulate loading dashboard data
       setTimeout(() => {
         setLoading(false);
       }, 1000);
@@ -163,7 +134,7 @@ const AdminDashboard = () => {
           {[
             { 
               label: "Total Users", 
-              value: totalUsersCount.toLocaleString(), 
+              value: "Loading...", 
               icon: <Users className="w-6 h-6 text-blue-600" />, 
               bg: "bg-blue-50" 
             },

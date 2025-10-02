@@ -131,13 +131,6 @@ const calculateStatistics = (data: ChartDataPoint[]) => {
   };
 };
 
-// Helper function to get status based on thresholds
-const getStatus = (value: number, thresholds: { min: number; max: number; critical: number }): string => {
-  if (value < thresholds.min) return "Low";
-  if (value > thresholds.max) return "High";
-  if (value > thresholds.critical) return "Critical";
-  return "Normal";
-};
 
 // Helper function to generate standardized filename
 const generateFilename = (chartType: string, format: string, options: ExportOptions) => {
@@ -239,7 +232,7 @@ const createFilteredDataForExport = (
     }
     
     // Add metadata to describe the current period being exported
-    const enhancedData = originalData.map((item, index) => ({
+    const enhancedData = originalData.map((item) => ({
       ...item,
       periodDescription,
       exportType: 'predefined_current_view'

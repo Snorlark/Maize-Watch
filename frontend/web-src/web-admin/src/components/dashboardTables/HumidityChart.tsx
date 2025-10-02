@@ -2,15 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Download, Clock, BarChart3, Table, Droplets, ChevronLeft, ChevronRight, ChevronDown, Menu } from 'lucide-react';
+import { Calendar, Download, BarChart3, Table, Droplets, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import UnifiedExportModal from '../UnifiedExportModal';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -130,18 +123,9 @@ const getWeeksInMonth = (date: Date): number => {
   // Calculate number of weeks
   let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
   if (lastWeekday < firstWeekday) weeks++;
-
   return weeks;
 };
 
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
   const today = baseDate ? new Date(baseDate) : new Date();
@@ -293,7 +277,6 @@ const HumidityDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>('line');
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [xKey, setXKey] = useState<string>('hour');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
   // Use intelligent refresh hook
