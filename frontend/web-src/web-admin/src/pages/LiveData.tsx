@@ -62,33 +62,23 @@ const LiveData: React.FC = () => {
     const fetchFarms = async () => {
       try {
         const response = await apiClient.get('/api/farms');
-        console.log('Farms API response:', response.data);
         
         if (response.data?.success && response.data?.data?.farms) {
           const farmsData = response.data.data.farms;
           setFarms(farmsData);
-          
-          // Auto-select first farm for super_admin (they have access to all farms)
-          console.log('✅ Found farms:', farmsData.map((f: Farm) => ({ id: f._id, name: f.fieldName })));
           if (farmsData.length > 0) {
             setSelectedFarm(farmsData[0]);
-            console.log('🎯 Auto-selected farm for super_admin:', farmsData[0].fieldName);
           }
         } else if (response.data?.farms) {
-          // Handle different response format
           setFarms(response.data.farms);
-          console.log('✅ Found farms (alt format):', response.data.farms.map((f: any) => ({ id: f._id, name: f.fieldName })));
           if (response.data.farms.length > 0) {
             setSelectedFarm(response.data.farms[0]);
-            console.log('🎯 Auto-selected farm for super_admin (alt format):', response.data.farms[0].fieldName);
           }
         } else {
-          console.warn('No farms found in response:', response.data);
           setFarms([]);
           setSelectedFarm(null);
         }
       } catch (err: any) {
-        console.error('Error fetching farms:', err);
         setFarms([]);
         setSelectedFarm(null);
       } finally {
@@ -99,9 +89,8 @@ const LiveData: React.FC = () => {
     fetchFarms();
   }, []);
 
-  // Fetch sensor data function (extracted for reuse)
+  // Fetch sensor data function
   const fetchData = async (silent: boolean = false) => {
-    // Only show loading spinner on initial load, not on updates
     if (!sensorData && !silent) {
       setLoading(true);
     }
@@ -111,66 +100,33 @@ const LiveData: React.FC = () => {
     setError(null);
       
     try {
-      console.log('[LiveData] Fetching live data from ThingSpeak...');
-      
-      // First try ThingSpeak live data endpoint
       let result;
       try {
         result = await sensorService.getThingSpeakLiveData();
-        console.log('[LiveData] ThingSpeak result:', result);
-        
-        // If ThingSpeak returns success but no data, treat as failure
         if (result.success && (!result.data || Object.keys(result.data).length === 0)) {
-          console.warn('[LiveData] ThingSpeak returned empty data, treating as failure');
           throw new Error('ThingSpeak returned empty data');
         }
-      } catch (thingSpeakError) {
-        console.warn('[LiveData] ThingSpeak failed, falling back to regular endpoint:', thingSpeakError);
-        // Fallback to regular sensor service
+      } catch {
         result = await sensorService.getLatestSensorData(selectedFarm?._id);
       }
       
-      console.log('[LiveData] Sensor service result:', result);
-
       if (result.success && result.data) {
         const raw = result.data;
-        
-        // Enhanced timestamp handling for ThingSpeak data
         const currentTime = new Date();
-        
-        // Try to get the most accurate timestamp from ThingSpeak response
         let actualTimestamp = null;
         
-        // Check for ThingSpeak timestamp formats
         if (raw.created_at) {
-          actualTimestamp = raw.created_at; // ThingSpeak format
+          actualTimestamp = raw.created_at;
         } else if (raw.timestamp) {
-          actualTimestamp = raw.timestamp; // Our API format
+          actualTimestamp = raw.timestamp;
         } else if (raw.entry_id && raw.field1) {
-          // If we have ThingSpeak entry data, use current time as fallback
-          console.warn('[LiveData] ThingSpeak data found but no timestamp - using current time');
           actualTimestamp = new Date().toISOString();
         }
         
         const dataTime = actualTimestamp ? new Date(actualTimestamp) : new Date();
         const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
-        const timeDiffHours = timeDiffMinutes / 60;
         const isDataFresh = timeDiffMinutes <= 30;
         
-        // Enhanced logging for debugging
-        console.log(`[LiveData] Timestamp Analysis:`, {
-          rawTimestamp: raw.timestamp,
-          thingSpeakCreatedAt: raw.created_at,
-          actualTimestamp,
-          currentTime: currentTime.toISOString(),
-          dataTime: dataTime.toISOString(),
-          ageMinutes: timeDiffMinutes.toFixed(1),
-          ageHours: timeDiffHours.toFixed(1),
-          isDataFresh,
-          rawDataKeys: Object.keys(raw)
-        });
-        
-        // If data is more than 13 hours old (like your ThingSpeak data), mark as offline
         setSensorStatus({
           temperature: (raw.temperature !== null && raw.temperature !== undefined) && isDataFresh,
           humidity: (raw.humidity !== null && raw.humidity !== undefined) && isDataFresh,
@@ -182,7 +138,7 @@ const LiveData: React.FC = () => {
         const transformedData: SensorData = {
           _id: raw._id || 'sensor-reading',
           field_id: selectedFarm?._id || 'general',
-          timestamp: actualTimestamp || new Date().toISOString(), // Use the actual timestamp we found
+          timestamp: actualTimestamp || new Date().toISOString(),
           measurements: {
             temperature: raw.temperature || 0,
             humidity: raw.humidity || 0,
@@ -194,23 +150,16 @@ const LiveData: React.FC = () => {
 
         setSensorData(transformedData);
         setError(null);
-        console.log('[LiveData] Successfully updated sensor data:', transformedData);
       } else {
         throw new Error(result.error || 'Failed to fetch sensor data');
       }
-    } catch (err: any) {
-      console.error('[LiveData] Error fetching sensor data:', err);
-      
-      // If we don't have any data yet, show mock data to prevent blank screen
+    } catch {
       if (!sensorData) {
-        console.log('[LiveData] Using mock data since no real data is available');
-        
-        // Use your actual ThingSpeak timestamp (13+ hours old) for realistic demo
-        const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00'; // Your actual last data timestamp
+        const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00';
         const mockData: SensorData = {
           _id: 'mock-sensor-001',
           field_id: selectedFarm?._id || 'mock-field',
-          timestamp: thingSpeakTimestamp, // Use old timestamp instead of current time
+          timestamp: thingSpeakTimestamp,
           measurements: {
             temperature: 25.5,
             humidity: 65,
@@ -220,24 +169,14 @@ const LiveData: React.FC = () => {
           },
         };
         
-        // Apply the same 30-minute logic to mock data
         const currentTime = new Date();
         const dataTime = new Date(thingSpeakTimestamp);
         const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
         const isDataFresh = timeDiffMinutes <= 30;
         
-        console.log(`[LiveData] Mock data timestamp analysis:`, {
-          mockTimestamp: thingSpeakTimestamp,
-          currentTime: currentTime.toISOString(),
-          dataTime: dataTime.toISOString(),
-          ageMinutes: timeDiffMinutes.toFixed(1),
-          ageHours: (timeDiffMinutes / 60).toFixed(1),
-          isDataFresh
-        });
-        
         setSensorData(mockData);
         setSensorStatus({
-          temperature: isDataFresh, // Will be false since data is 13+ hours old
+          temperature: isDataFresh,
           humidity: isDataFresh,
           soil_moisture: isDataFresh,
           soil_ph: isDataFresh,
@@ -252,20 +191,14 @@ const LiveData: React.FC = () => {
     }
   };
 
-  // Fetch sensor data using the same pattern as TemperatureChart
   useEffect(() => {
-    if (farmsLoading) return; // Wait for farms to load first
-
+    if (farmsLoading) return;
     fetchData();
-    // Refresh every 30 seconds like TemperatureChart
     const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
-  }, [farmsLoading, selectedFarm]); // Include selectedFarm in dependencies
+  }, [farmsLoading, selectedFarm]);
 
-  // Manual refresh function
   const handleRefresh = () => {
-    console.log('[LiveData] Manual refresh triggered - clearing cached data');
-    // Clear existing data to force fresh fetch
     setSensorData(null);
     setSensorStatus({
       temperature: false,

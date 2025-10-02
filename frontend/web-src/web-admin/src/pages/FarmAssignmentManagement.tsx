@@ -150,95 +150,13 @@ export default function FarmAssignmentManagement() {
 
     setActionLoading(true);
     try {
-      console.log('Attempting to reassign farm:', {
-        farmId: selectedFarm._id,
-        currentUserId: selectedFarm.userId,
-        newUserId: newUserId
-      });
-      
-      // Test basic connectivity first
-      console.log('Testing basic connectivity...');
-      try {
-        // Test if we can reach the backend at all with a simple request
-        const response = await fetch('http://localhost:8080/api/farms', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${authService.getToken()}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        console.log('Basic connectivity test:', response.status, response.statusText);
-        
-        if (response.ok) {
-          console.log('✅ Backend is reachable');
-          
-          // First, let's see what farms are actually available
-          const farmsData = await response.json();
-          console.log('Available farms:', farmsData);
-          
-          if (farmsData.data && farmsData.data.farms && farmsData.data.farms.length > 0) {
-            console.log('First farm ID in list:', farmsData.data.farms[0]._id);
-            console.log('Selected farm ID:', selectedFarm._id);
-            console.log('Farm ID match?', farmsData.data.farms.some((f: any) => f._id === selectedFarm._id));
-          }
-          
-          // Now test the specific farm endpoint
-          console.log('Testing specific farm endpoint...');
-          
-          // First test the debug-auth route
-          console.log('Testing debug-auth route...');
-          const debugAuthResponse = await fetch(`http://localhost:8080/api/farms/debug-auth/${selectedFarm._id}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${authService.getToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          console.log('Debug-auth test:', debugAuthResponse.status, debugAuthResponse.statusText);
-          if (debugAuthResponse.ok) {
-            const debugData = await debugAuthResponse.json();
-            console.log('Debug-auth data:', debugData);
-          }
-          
-          // Then test the regular farm endpoint
-          const farmResponse = await fetch(`http://localhost:8080/api/farms/${selectedFarm._id}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${authService.getToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          console.log('Farm endpoint test:', farmResponse.status, farmResponse.statusText);
-          
-          if (farmResponse.ok) {
-            console.log('✅ Farm endpoint is reachable');
-            const farmData = await farmResponse.json();
-            console.log('Farm data:', farmData);
-          } else {
-            console.log('❌ Farm endpoint failed:', await farmResponse.text());
-          }
-        } else {
-          console.log('❌ Backend not reachable:', await response.text());
-        }
-      } catch (connectError) {
-        console.error('❌ Connectivity test failed:', connectError);
-      }
-      
-      const result = await farmService.reassignFarm(selectedFarm._id, newUserId);
-      console.log('Reassignment successful:', result);
-      
+      await farmService.reassignFarm(selectedFarm._id, newUserId);
       await fetchFarms(); // Refresh the list
       setShowReassignModal(false);
       setSelectedFarm(null);
       alert('Farm reassigned successfully!');
     } catch (error: any) {
       console.error('Error reassigning farm:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
       let errorMessage = 'Failed to reassign farm. ';
       if (error.response?.data?.message) {
         errorMessage += error.response.data.message;
@@ -247,7 +165,6 @@ export default function FarmAssignmentManagement() {
       } else {
         errorMessage += 'Please try again.';
       }
-      
       alert(errorMessage);
     } finally {
       setActionLoading(false);
