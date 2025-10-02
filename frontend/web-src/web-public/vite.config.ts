@@ -33,5 +33,11 @@ export default defineConfig({
         entryFileNames: 'assets/[name]-[hash].js'
       }
     }
-  }
+  },
+  // Add this to ensure public assets are served correctly in development
+  optimizeDeps: {
+    exclude: ['lucide-react']
+  },
+  // Ensure static assets are properly handled
+  assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg', '**/*.webp']
 })
