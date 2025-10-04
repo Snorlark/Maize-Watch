@@ -2929,10 +2929,10 @@ class S {
     );
   }
 
-  /// `Contact Support`
+  /// `Contact & Support`
   String get contact_support {
     return Intl.message(
-      'Contact Support',
+      'Contact & Support',
       name: 'contact_support',
       desc: '',
       args: [],
@@ -4109,10 +4109,10 @@ class S {
     );
   }
 
-  /// `Network error. Please check your connection.`
+  /// `Network error`
   String get network_error {
     return Intl.message(
-      'Network error. Please check your connection.',
+      'Network error',
       name: 'network_error',
       desc: '',
       args: [],
@@ -6517,10 +6517,10 @@ class S {
     );
   }
 
-  /// `Setting up your farm...`
+  /// `Setting Up Your Farm`
   String get setting_up_your_farm {
     return Intl.message(
-      'Setting up your farm...',
+      'Setting Up Your Farm',
       name: 'setting_up_your_farm',
       desc: '',
       args: [],
@@ -7257,6 +7257,1014 @@ class S {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Getting Started`
+  String get getting_started {
+    return Intl.message(
+      'Getting Started',
+      name: 'getting_started',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Learn how to add and configure your farm details`
+  String get learn_how_to_add_and_configure_your_farm_details {
+    return Intl.message(
+      'Learn how to add and configure your farm details',
+      name: 'learn_how_to_add_and_configure_your_farm_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Setup Guide`
+  String get farm_setup_guide {
+    return Intl.message(
+      'Farm Setup Guide',
+      name: 'farm_setup_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connecting Sensors`
+  String get connecting_sensors {
+    return Intl.message(
+      'Connecting Sensors',
+      name: 'connecting_sensors',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Step-by-step guide to connect your monitoring sensors`
+  String get step_by_step_guide_to_connect_your_monitoring_sensors {
+    return Intl.message(
+      'Step-by-step guide to connect your monitoring sensors',
+      name: 'step_by_step_guide_to_connect_your_monitoring_sensors',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor Setup Guide`
+  String get sensor_setup_guide {
+    return Intl.message(
+      'Sensor Setup Guide',
+      name: 'sensor_setup_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First Time Setup`
+  String get first_time_setup {
+    return Intl.message(
+      'First Time Setup',
+      name: 'first_time_setup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete walkthrough for new users`
+  String get complete_walkthrough_for_new_users {
+    return Intl.message(
+      'Complete walkthrough for new users',
+      name: 'complete_walkthrough_for_new_users',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Features Guide`
+  String get features_guide {
+    return Intl.message(
+      'Features Guide',
+      name: 'features_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Live Monitoring`
+  String get live_monitoring {
+    return Intl.message(
+      'Live Monitoring',
+      name: 'live_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How to read and interpret sensor data`
+  String get how_to_read_and_interpret_sensor_data {
+    return Intl.message(
+      'How to read and interpret sensor data',
+      name: 'how_to_read_and_interpret_sensor_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Live Monitoring Guide`
+  String get live_monitoring_guide {
+    return Intl.message(
+      'Live Monitoring Guide',
+      name: 'live_monitoring_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Analytics & Reports`
+  String get analytics_reports {
+    return Intl.message(
+      'Analytics & Reports',
+      name: 'analytics_reports',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Understanding your farm analytics and reports`
+  String get understanding_your_farm_analytics_and_reports {
+    return Intl.message(
+      'Understanding your farm analytics and reports',
+      name: 'understanding_your_farm_analytics_and_reports',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Analytics Guide`
+  String get analytics_guide {
+    return Intl.message(
+      'Analytics Guide',
+      name: 'analytics_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setting up and managing app notifications`
+  String get setting_up_and_managing_app_notifications {
+    return Intl.message(
+      'Setting up and managing app notifications',
+      name: 'setting_up_and_managing_app_notifications',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notifications Guide`
+  String get notifications_guide {
+    return Intl.message(
+      'Notifications Guide',
+      name: 'notifications_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile Management`
+  String get profile_management {
+    return Intl.message(
+      'Profile Management',
+      name: 'profile_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How to update your profile and settings`
+  String get how_to_update_your_profile_and_settings {
+    return Intl.message(
+      'How to update your profile and settings',
+      name: 'how_to_update_your_profile_and_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile Guide`
+  String get profile_guide {
+    return Intl.message(
+      'Profile Guide',
+      name: 'profile_guide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Troubleshooting`
+  String get troubleshooting {
+    return Intl.message(
+      'Troubleshooting',
+      name: 'troubleshooting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor Connection Issues`
+  String get sensor_connection_issues {
+    return Intl.message(
+      'Sensor Connection Issues',
+      name: 'sensor_connection_issues',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Common problems and solutions for sensor connectivity`
+  String get common_problems_and_solutions_for_sensor_connectivity {
+    return Intl.message(
+      'Common problems and solutions for sensor connectivity',
+      name: 'common_problems_and_solutions_for_sensor_connectivity',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor Troubleshooting`
+  String get sensor_troubleshooting {
+    return Intl.message(
+      'Sensor Troubleshooting',
+      name: 'sensor_troubleshooting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data Not Updating`
+  String get data_not_updating {
+    return Intl.message(
+      'Data Not Updating',
+      name: 'data_not_updating',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Why your data might not be refreshing`
+  String get why_your_data_might_not_be_refreshing {
+    return Intl.message(
+      'Why your data might not be refreshing',
+      name: 'why_your_data_might_not_be_refreshing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data Update Issues`
+  String get data_update_issues {
+    return Intl.message(
+      'Data Update Issues',
+      name: 'data_update_issues',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `App Performance`
+  String get app_performance {
+    return Intl.message(
+      'App Performance',
+      name: 'app_performance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tips to improve app performance and speed`
+  String get tips_to_improve_app_performance_and_speed {
+    return Intl.message(
+      'Tips to improve app performance and speed',
+      name: 'tips_to_improve_app_performance_and_speed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Performance Tips`
+  String get performance_tips {
+    return Intl.message(
+      'Performance Tips',
+      name: 'performance_tips',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How often does the app update sensor data?`
+  String get how_often_does_the_app_update_sensor_data {
+    return Intl.message(
+      'How often does the app update sensor data?',
+      name: 'how_often_does_the_app_update_sensor_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor data is updated every 30 minutes automatically.`
+  String get sensor_data_is_updated_every_30_minutes_automatically {
+    return Intl.message(
+      'Sensor data is updated every 30 minutes automatically.',
+      name: 'sensor_data_is_updated_every_30_minutes_automatically',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Can I use the app without internet?`
+  String get can_i_use_the_app_without_internet {
+    return Intl.message(
+      'Can I use the app without internet?',
+      name: 'can_i_use_the_app_without_internet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The app requires internet connection to sync data and receive updates.`
+  String
+  get the_app_requires_internet_connection_to_sync_data_and_receive_updates {
+    return Intl.message(
+      'The app requires internet connection to sync data and receive updates.',
+      name:
+          'the_app_requires_internet_connection_to_sync_data_and_receive_updates',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How do I change the language?`
+  String get how_do_i_change_the_language {
+    return Intl.message(
+      'How do I change the language?',
+      name: 'how_do_i_change_the_language',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Go to Settings > Language and select your preferred language.`
+  String get go_to_settings_language_and_select_your_preferred_language {
+    return Intl.message(
+      'Go to Settings > Language and select your preferred language.',
+      name: 'go_to_settings_language_and_select_your_preferred_language',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What if my sensors go offline?`
+  String get what_if_my_sensors_go_offline {
+    return Intl.message(
+      'What if my sensors go offline?',
+      name: 'what_if_my_sensors_go_offline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The app will show offline status and send notifications when sensors reconnect.`
+  String
+  get the_app_will_show_offline_status_and_send_notifications_when_sensors_reconnect {
+    return Intl.message(
+      'The app will show offline status and send notifications when sensors reconnect.',
+      name:
+          'the_app_will_show_offline_status_and_send_notifications_when_sensors_reconnect',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{feature} guide coming soon!`
+  String guide_coming_soon(Object feature) {
+    return Intl.message(
+      '$feature guide coming soon!',
+      name: 'guide_coming_soon',
+      desc: '',
+      args: [feature],
+    );
+  }
+
+  /// `App Information`
+  String get app_information {
+    return Intl.message(
+      'App Information',
+      name: 'app_information',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Key Features`
+  String get key_features {
+    return Intl.message(
+      'Key Features',
+      name: 'key_features',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Real-time Sensor Monitoring`
+  String get real_time_sensor_monitoring {
+    return Intl.message(
+      'Real-time Sensor Monitoring',
+      name: 'real_time_sensor_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Track temperature, humidity, soil moisture, and light levels`
+  String get track_temperature_humidity_soil_moisture_and_light_levels {
+    return Intl.message(
+      'Track temperature, humidity, soil moisture, and light levels',
+      name: 'track_temperature_humidity_soil_moisture_and_light_levels',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Weather Integration`
+  String get weather_integration {
+    return Intl.message(
+      'Weather Integration',
+      name: 'weather_integration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Get weather forecasts and alerts for your farm`
+  String get get_weather_forecasts_and_alerts_for_your_farm {
+    return Intl.message(
+      'Get weather forecasts and alerts for your farm',
+      name: 'get_weather_forecasts_and_alerts_for_your_farm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Smart Analytics`
+  String get smart_analytics {
+    return Intl.message(
+      'Smart Analytics',
+      name: 'smart_analytics',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `AI-powered insights and recommendations`
+  String get ai_powered_insights_and_recommendations {
+    return Intl.message(
+      'AI-powered insights and recommendations',
+      name: 'ai_powered_insights_and_recommendations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Multi-language Support`
+  String get multi_language_support {
+    return Intl.message(
+      'Multi-language Support',
+      name: 'multi_language_support',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Available in English and Filipino`
+  String get available_in_english_and_filipino {
+    return Intl.message(
+      'Available in English and Filipino',
+      name: 'available_in_english_and_filipino',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email Support`
+  String get email_support {
+    return Intl.message(
+      'Email Support',
+      name: 'email_support',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone Support`
+  String get phone_support {
+    return Intl.message(
+      'Phone Support',
+      name: 'phone_support',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Website`
+  String get website {
+    return Intl.message('Website', name: 'website', desc: '', args: []);
+  }
+
+  /// `Follow Us`
+  String get follow_us {
+    return Intl.message('Follow Us', name: 'follow_us', desc: '', args: []);
+  }
+
+  /// `Instagram`
+  String get instagram {
+    return Intl.message('Instagram', name: 'instagram', desc: '', args: []);
+  }
+
+  /// `GitHub`
+  String get github {
+    return Intl.message('GitHub', name: 'github', desc: '', args: []);
+  }
+
+  /// `LinkedIn`
+  String get linkedin {
+    return Intl.message('LinkedIn', name: 'linkedin', desc: '', args: []);
+  }
+
+  /// `Twitter`
+  String get twitter {
+    return Intl.message('Twitter', name: 'twitter', desc: '', args: []);
+  }
+
+  /// `Maize Watch`
+  String get maize_watch {
+    return Intl.message('Maize Watch', name: 'maize_watch', desc: '', args: []);
+  }
+
+  /// `version 1.0.0`
+  String get version {
+    return Intl.message('version 1.0.0', name: 'version', desc: '', args: []);
+  }
+
+  /// `Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.`
+  String get maize_watch_description {
+    return Intl.message(
+      'Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.',
+      name: 'maize_watch_description',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{platform} integration coming soon!`
+  String integration_coming_soon(Object platform) {
+    return Intl.message(
+      '$platform integration coming soon!',
+      name: 'integration_coming_soon',
+      desc: '',
+      args: [platform],
+    );
+  }
+
+  /// `e.g. Field Sensor 1`
+  String get e_g_field_sensor_1 {
+    return Intl.message(
+      'e.g. Field Sensor 1',
+      name: 'e_g_field_sensor_1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device name is required`
+  String get device_name_required {
+    return Intl.message(
+      'Device name is required',
+      name: 'device_name_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter unique device ID`
+  String get enter_unique_device_id {
+    return Intl.message(
+      'Enter unique device ID',
+      name: 'enter_unique_device_id',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Update Device`
+  String get update_device {
+    return Intl.message(
+      'Update Device',
+      name: 'update_device',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add Device`
+  String get add_device {
+    return Intl.message('Add Device', name: 'add_device', desc: '', args: []);
+  }
+
+  /// `Sandy Soil`
+  String get sandy_soil {
+    return Intl.message('Sandy Soil', name: 'sandy_soil', desc: '', args: []);
+  }
+
+  /// `Clay Soil`
+  String get clay_soil {
+    return Intl.message('Clay Soil', name: 'clay_soil', desc: '', args: []);
+  }
+
+  /// `Silty Soil`
+  String get silty_soil {
+    return Intl.message('Silty Soil', name: 'silty_soil', desc: '', args: []);
+  }
+
+  /// `Fast-draining soil with good aeration`
+  String get fast_draining_soil {
+    return Intl.message(
+      'Fast-draining soil with good aeration',
+      name: 'fast_draining_soil',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Water-retaining soil with high fertility`
+  String get water_retaining_soil {
+    return Intl.message(
+      'Water-retaining soil with high fertility',
+      name: 'water_retaining_soil',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Smooth-textured soil with good moisture retention`
+  String get smooth_textured_soil {
+    return Intl.message(
+      'Smooth-textured soil with good moisture retention',
+      name: 'smooth_textured_soil',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Device`
+  String get edit_device {
+    return Intl.message('Edit Device', name: 'edit_device', desc: '', args: []);
+  }
+
+  /// `No devices registered yet`
+  String get no_devices_registered_yet {
+    return Intl.message(
+      'No devices registered yet',
+      name: 'no_devices_registered_yet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add your first monitoring device to get started`
+  String get add_your_first_monitoring_device_to_get_started {
+    return Intl.message(
+      'Add your first monitoring device to get started',
+      name: 'add_your_first_monitoring_device_to_get_started',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed Device`
+  String get unnamed_device {
+    return Intl.message(
+      'Unnamed Device',
+      name: 'unnamed_device',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device ID *`
+  String get device_id_hint {
+    return Intl.message(
+      'Device ID *',
+      name: 'device_id_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device Name *`
+  String get device_name_hint {
+    return Intl.message(
+      'Device Name *',
+      name: 'device_name_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device ID is required`
+  String get device_id_required {
+    return Intl.message(
+      'Device ID is required',
+      name: 'device_id_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype ID *`
+  String get prototype_id_hint {
+    return Intl.message(
+      'Prototype ID *',
+      name: 'prototype_id_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype ID is required`
+  String get prototype_id_required {
+    return Intl.message(
+      'Prototype ID is required',
+      name: 'prototype_id_required',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Validate`
+  String get validate {
+    return Intl.message('Validate', name: 'validate', desc: '', args: []);
+  }
+
+  /// `Prototype ID valid and available`
+  String get prototype_id_valid_and_available {
+    return Intl.message(
+      'Prototype ID valid and available',
+      name: 'prototype_id_valid_and_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Soil Type *`
+  String get soil_type_hint {
+    return Intl.message(
+      'Soil Type *',
+      name: 'soil_type_hint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loamy Soil`
+  String get loamy_soil {
+    return Intl.message('Loamy Soil', name: 'loamy_soil', desc: '', args: []);
+  }
+
+  /// `Well-balanced soil`
+  String get well_balanced_soil {
+    return Intl.message(
+      'Well-balanced soil',
+      name: 'well_balanced_soil',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add Another Device`
+  String get add_another_device {
+    return Intl.message(
+      'Add Another Device',
+      name: 'add_another_device',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm Your Farm Data`
+  String get confirm_your_farm_data {
+    return Intl.message(
+      'Confirm Your Farm Data',
+      name: 'confirm_your_farm_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please review your farm information before submitting`
+  String get please_review_your_farm_information_before_submitting {
+    return Intl.message(
+      'Please review your farm information before submitting',
+      name: 'please_review_your_farm_information_before_submitting',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registered Devices`
+  String get registered_devices {
+    return Intl.message(
+      'Registered Devices',
+      name: 'registered_devices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No devices registered`
+  String get no_devices_registered {
+    return Intl.message(
+      'No devices registered',
+      name: 'no_devices_registered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Registered Successfully!`
+  String get farm_registered_successfully {
+    return Intl.message(
+      'Farm Registered Successfully!',
+      name: 'farm_registered_successfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your farm has been successfully registered and is ready for monitoring.`
+  String
+  get your_farm_has_been_successfully_registered_and_is_ready_for_monitoring {
+    return Intl.message(
+      'Your farm has been successfully registered and is ready for monitoring.',
+      name:
+          'your_farm_has_been_successfully_registered_and_is_ready_for_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Summary`
+  String get farm_summary {
+    return Intl.message(
+      'Farm Summary',
+      name: 'farm_summary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device Status`
+  String get device_status {
+    return Intl.message(
+      'Device Status',
+      name: 'device_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not connected`
+  String get not_connected {
+    return Intl.message(
+      'Not connected',
+      name: 'not_connected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not set`
+  String get not_set {
+    return Intl.message('Not set', name: 'not_set', desc: '', args: []);
+  }
+
+  /// `Not specified`
+  String get not_specified {
+    return Intl.message(
+      'Not specified',
+      name: 'not_specified',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Validated`
+  String get validated {
+    return Intl.message('Validated', name: 'validated', desc: '', args: []);
+  }
+
+  /// `Delete Device`
+  String get delete_device {
+    return Intl.message(
+      'Delete Device',
+      name: 'delete_device',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this device? This action cannot be undone.`
+  String
+  get are_you_sure_you_want_to_delete_this_device_this_action_cannot_be_undone {
+    return Intl.message(
+      'Are you sure you want to delete this device? This action cannot be undone.',
+      name:
+          'are_you_sure_you_want_to_delete_this_device_this_action_cannot_be_undone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unexpected error`
+  String get unexpected_error {
+    return Intl.message(
+      'Unexpected error',
+      name: 'unexpected_error',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Registration Summary`
+  String get farm_registration_summary {
+    return Intl.message(
+      'Farm Registration Summary',
+      name: 'farm_registration_summary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Farm Details`
+  String get farm_details {
+    return Intl.message(
+      'Farm Details',
+      name: 'farm_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit Details`
+  String get edit_details {
+    return Intl.message(
+      'Edit Details',
+      name: 'edit_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submit Farm Data`
+  String get submit_farm_data {
+    return Intl.message(
+      'Submit Farm Data',
+      name: 'submit_farm_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Device {index}`
+  String device(Object index) {
+    return Intl.message(
+      'Device $index',
+      name: 'device',
+      desc: '',
+      args: [index],
+    );
+  }
+
+  /// `Name`
+  String get name {
+    return Intl.message('Name', name: 'name', desc: '', args: []);
+  }
+
+  /// `Type`
+  String get type {
+    return Intl.message('Type', name: 'type', desc: '', args: []);
+  }
+
+  /// `ID`
+  String get id {
+    return Intl.message('ID', name: 'id', desc: '', args: []);
   }
 }
 

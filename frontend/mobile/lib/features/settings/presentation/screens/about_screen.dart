@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../generated/l10n.dart';
 
@@ -50,7 +51,7 @@ class _AboutScreenState extends State<AboutScreen> {
               
               // App Info Section
               _buildSectionCard(
-                title: 'App Information',
+                title: S.of(context).app_information,
                 children: [
                   _buildAppInfoItem(),
                 ],
@@ -59,35 +60,35 @@ class _AboutScreenState extends State<AboutScreen> {
 
               // Features Section
               _buildSectionCard(
-                title: 'Key Features',
+                title: S.of(context).key_features,
                 children: [
                   _buildFeatureItem(
-                    'Real-time Sensor Monitoring',
-                    'Track temperature, humidity, soil moisture, and light levels',
+                    S.of(context).real_time_sensor_monitoring,
+                    S.of(context).track_temperature_humidity_soil_moisture_and_light_levels,
                     Icons.sensors,
                   ),
                   SizedBox(height: kAppMediumPadding),
                   Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
                   SizedBox(height: kAppMediumPadding),
                   _buildFeatureItem(
-                    'Weather Integration',
-                    'Get weather forecasts and alerts for your farm',
+                    S.of(context).weather_integration,
+                    S.of(context).get_weather_forecasts_and_alerts_for_your_farm,
                     Icons.wb_sunny,
                   ),
                   SizedBox(height: kAppMediumPadding),
                   Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
                   SizedBox(height: kAppMediumPadding),
                   _buildFeatureItem(
-                    'Smart Analytics',
-                    'AI-powered insights and recommendations',
+                    S.of(context).smart_analytics,
+                    S.of(context).ai_powered_insights_and_recommendations,
                     Icons.analytics,
                   ),
                   SizedBox(height: kAppMediumPadding),
                   Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1, indent: 10, endIndent: 10),
                   SizedBox(height: kAppMediumPadding),
                   _buildFeatureItem(
-                    'Multi-language Support',
-                    'Available in English and Filipino',
+                    S.of(context).multi_language_support,
+                    S.of(context).available_in_english_and_filipino,
                     Icons.language,
                   ),
                 ],
@@ -96,31 +97,31 @@ class _AboutScreenState extends State<AboutScreen> {
 
               // Contact Section
               _buildSectionCard(
-                title: 'Contact & Support',
+                title: S.of(context).contact_support,
         children: [
                   _buildContactItem(
-                    'Email Support',
+                    S.of(context).email_support,
                     'maizewatch@gmail.com',
                     Icons.email,
-                    () => _showComingSoon('Email'),
+                    () => _launchWebsite(),
                   ),
                   SizedBox(height: kAppMediumPadding),
                   Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
                   SizedBox(height: kAppMediumPadding),
                   _buildContactItem(
-                    'Phone Support',
+                    S.of(context).phone_support,
                     '+63 912 345 6789',
                     Icons.phone,
-                    () => _showComingSoon('Phone'),
+                    () => _launchWebsite(),
                   ),
                   SizedBox(height: kAppMediumPadding),
                   Divider(color: MAIZE_ACCENT.withOpacity(0.1), height: 1),
                   SizedBox(height: kAppMediumPadding),
                   _buildContactItem(
-                    'Website',
+                    S.of(context).website,
                     'www.maizewatch.com',
                     Icons.web,
-                    () => _showComingSoon('Website'),
+                    () => _launchWebsite(),
                   ),
                 ],
               ),
@@ -128,30 +129,30 @@ class _AboutScreenState extends State<AboutScreen> {
 
               // Social Media Section
               _buildSectionCard(
-                title: 'Follow Us',
+                title: S.of(context).follow_us,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildSocialIcon(
                         icon: Icons.camera_alt,
-                        label: 'Instagram',
-                        onTap: () => _showComingSoon('Instagram'),
+                        label: S.of(context).instagram,
+                        onTap: () => _launchWebsite(),
                       ),
                       _buildSocialIcon(
                         icon: Icons.code,
-                        label: 'GitHub',
-                        onTap: () => _showComingSoon('GitHub'),
+                        label: S.of(context).github,
+                        onTap: () => _launchWebsite(),
                       ),
                       _buildSocialIcon(
                         icon: Icons.business,
-                        label: 'LinkedIn',
-                        onTap: () => _showComingSoon('LinkedIn'),
+                        label: S.of(context).linkedin,
+                        onTap: () => _launchWebsite(),
                       ),
                       _buildSocialIcon(
                         icon: Icons.alternate_email,
-                        label: 'Twitter',
-                        onTap: () => _showComingSoon('Twitter'),
+                        label: S.of(context).twitter,
+                        onTap: () => _launchWebsite(),
                       ),
                     ],
                   ),
@@ -212,7 +213,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Maize Watch',
+                        S.of(context).maize_watch,
                         style: TextStyle(
                           fontSize: 24.sp,
                           fontWeight: FontWeight.bold,
@@ -220,7 +221,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         ),
                       ),
                       Text(
-                        'version 1.0.0',
+                        S.of(context).version,
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: Colors.grey[600],
@@ -229,7 +230,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
               SizedBox(height: kAppSmallPadding),
                 Text(
-                  'Maize Watch is a comprehensive crop monitoring application designed specifically for Filipino farmers to track maize growth, monitor environmental conditions, and identify potential issues early.',
+                  S.of(context).maize_watch_description,
                   style: TextStyle(
                   fontSize: 14.sp,
                     color: Colors.black87,
@@ -323,7 +324,7 @@ class _AboutScreenState extends State<AboutScreen> {
             Icon(
                 Icons.north_east,
                   color: MAIZE_ACCENT,
-                  size: 24.sp,
+                  size: 20.sp,
               )
             ],
           ),
@@ -374,16 +375,21 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  void _showComingSoon(String platform) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$platform integration coming soon!'),
-        backgroundColor: MAIZE_ACCENT,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
+  void _launchWebsite() async {
+    final Uri url = Uri.parse('https://maize-watch-rdcy.onrender.com/');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not launch website'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.r),
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }

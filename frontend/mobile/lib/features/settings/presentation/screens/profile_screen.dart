@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -537,62 +538,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // Listen for the result with timeout
           bool resultReceived = false;
-          await for (final authState in context.read<AuthenticationBloc>().stream) {
-            if (authState.status == AuthenticationStatus.authenticated && 
-                authState.message == S.of(context).profile_updated_successfully) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).profile_updated_successfully),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+          
+          // Set up a timeout
+          Timer? timeoutTimer;
+          timeoutTimer = Timer(Duration(seconds: 10), () {
+            if (!resultReceived) {
+              print("🚨 Profile update timeout after 10 seconds");
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(S.of(context).request_timed_out),
+                    backgroundColor: Colors.orange,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
                   ),
-                ),
-              );
-              
-              setState(() {
-                _isEditing = false;
-                _isLoading = false;
-              });
-              resultReceived = true;
-              break;
-            } else if (authState.status == AuthenticationStatus.failure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(authState.message ?? 'Failed to update profile'),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                ),
-              );
-              
-              setState(() {
-                _isLoading = false;
-              });
-              resultReceived = true;
-              break;
+                );
+              }
             }
-          }
-
-          // If no result received after timeout, show error
-          if (!resultReceived) {
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(S.of(context).request_timed_out),
-                backgroundColor: Colors.orange,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-              ),
-            );
-          }
+          });
+          
+          // Listen to authentication state changes
+          final subscription = context.read<AuthenticationBloc>().stream.listen((authState) {
+            if (resultReceived) return; // Prevent multiple responses
+            
+            if (authState.status == AuthenticationStatus.authenticated && 
+                authState.message == "profile_updated_successfully") {
+              print("✅ Profile update successful, showing success message");
+              resultReceived = true;
+              timeoutTimer?.cancel(); // Cancel the timeout
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(S.of(context).profile_updated_successfully),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                );
+                
+                setState(() {
+                  _isEditing = false;
+                  _isLoading = false;
+                });
+                
+                // Navigate back after a short delay
+                Future.delayed(Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                });
+              }
+            } else if (authState.status == AuthenticationStatus.failure) {
+              print("❌ Profile update failed: ${authState.message}");
+              resultReceived = true;
+              timeoutTimer?.cancel(); // Cancel the timeout
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(authState.message ?? 'Failed to update profile'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                  ),
+                );
+                
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            }
+          });
+          
+          // Wait for either success, failure, or timeout
+          await Future.delayed(Duration(seconds: 10));
+          subscription.cancel(); // Clean up the subscription
+          timeoutTimer.cancel(); // Clean up the timeout timer
         }
       } catch (e) {
         print("🚨 Profile update error: $e");

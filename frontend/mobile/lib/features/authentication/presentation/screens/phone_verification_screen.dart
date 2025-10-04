@@ -99,8 +99,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: kAppLargePadding.h * 2),
-            
+            SizedBox(height: kAppLargePadding.h),            
             // Icon
             Center(
               child: Container(

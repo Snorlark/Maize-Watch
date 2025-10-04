@@ -167,4 +167,51 @@ export class PrototypeController {
       });
     }
   }
+
+  /**
+   * Unregister a prototype (admin function)
+   */
+  public static async unregisterPrototype(req: Request, res: Response) {
+    try {
+      const { prototype_id } = req.body;
+
+      if (!prototype_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Prototype ID is required'
+        });
+      }
+
+      // Unregister the prototype by removing registeredBy and registeredAt fields
+      const result = await Prototype.updateOne(
+        { prototype_id: prototype_id.toUpperCase() },
+        { 
+          $unset: { 
+            registeredBy: 1, 
+            registeredAt: 1 
+          } 
+        }
+      );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Prototype ID not found'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Prototype unregistered successfully',
+        prototype_id: prototype_id.toUpperCase()
+      });
+
+    } catch (error) {
+      console.error('Error unregistering prototype:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
 }

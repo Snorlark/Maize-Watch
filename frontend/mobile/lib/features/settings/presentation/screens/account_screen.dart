@@ -26,12 +26,21 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
+  String? _lastUserFullName;
+  
   @override
   void initState() {
     super.initState();
     // Load settings when screen initializes
     context.read<SettingsBloc>().add(LoadSettings());
+    
+    // Initialize the last user full name
+    final authState = context.read<AuthenticationBloc>().state;
+    if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+      _lastUserFullName = authState.user!.fullName;
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -128,9 +137,24 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _buildSettingsSection() {
     return Expanded(
       child: SingleChildScrollView(
-        child: BlocBuilder<AuthenticationBloc, AuthenticationState>(
-      builder: (context, state) {
-            final user = state.user;
+        child: BlocListener<AuthenticationBloc, AuthenticationState>(
+          listener: (context, state) {
+            // Listen for profile update success or user data changes
+            if (state.status == AuthenticationStatus.authenticated && state.user != null) {
+              final currentFullName = state.user!.fullName;
+              if (_lastUserFullName != currentFullName) {
+                print('🔧 AccountScreen: User data changed - old: $_lastUserFullName, new: $currentFullName');
+                _lastUserFullName = currentFullName;
+                // Force rebuild by calling setState to refresh the display
+                if (mounted) {
+                  setState(() {});
+                }
+              }
+            }
+          },
+          child: BlocBuilder<AuthenticationBloc, AuthenticationState>(
+            builder: (context, state) {
+              final user = state.user;
           return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -342,7 +366,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 
               ],
             );
-          },
+            },
+          ),
         ),
       ),
     );

@@ -1,11 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/services/completion_status_manager.dart';
+import '../../../../core/services/notification_service.dart';
 // import '../../../../core/services/background_task_service.dart';
 import '../../domain/entities/user.dart';
 import '../../data/model/user_model.dart';
@@ -213,6 +215,16 @@ class AuthenticationBloc
       // Clear completion status for this user
       await CompletionStatusManager.clearAll();
       print("🔐 AuthBloc: Completion status cleared");
+      
+      // Clear user notifications
+      final notificationService = NotificationService();
+      await notificationService.clearAllUserNotifications();
+      print("🔐 AuthBloc: User notifications cleared");
+      
+      // Clear user session flag to force refresh on next login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_user_id');
+      print("🔐 AuthBloc: User session flag cleared");
     }
 
     // Stop background tasks
@@ -372,7 +384,7 @@ class AuthenticationBloc
               state.copyWith(
                 status: AuthenticationStatus.authenticated,
                 user: updatedUser,
-                message: "Profile updated successfully",
+                message: "profile_updated_successfully",
               ),
             );
             print("🔐 AuthBloc: State emitted successfully");

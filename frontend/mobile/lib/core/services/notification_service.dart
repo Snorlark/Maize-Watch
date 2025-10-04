@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:mobile/generated/l10n.dart';
+import '../storage/secure_storage.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -20,9 +21,35 @@ class NotificationService {
   static const int SENSOR_OFFLINE_ID = 1003;
   static const int BACKGROUND_PRESCRIPTION_ID = 2000;
   
-  // Cache keys
+  // Cache keys (will be made user-specific)
   static const String _CACHED_NOTIFICATIONS_KEY = 'cached_notifications';
   static const String _NOTIFICATION_COUNTER_KEY = 'notification_counter';
+  
+  // Get user-specific cache keys
+  Future<String> _getCachedNotificationsKey() async {
+    final userId = await _getCurrentUserId();
+    return userId != null ? '${_CACHED_NOTIFICATIONS_KEY}_$userId' : _CACHED_NOTIFICATIONS_KEY;
+  }
+  
+  Future<String> _getNotificationCounterKey() async {
+    final userId = await _getCurrentUserId();
+    return userId != null ? '${_NOTIFICATION_COUNTER_KEY}_$userId' : _NOTIFICATION_COUNTER_KEY;
+  }
+  
+  // Get current user ID from secure storage
+  Future<String?> _getCurrentUserId() async {
+    try {
+      final userData = await SecureStorage.getUserData();
+      if (userData != null) {
+        final user = jsonDecode(userData);
+        return user['id']?.toString();
+      }
+      return null;
+    } catch (e) {
+      print('🔔 Error getting current user ID: $e');
+      return null;
+    }
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -468,8 +495,12 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       final cachedNotifications = await getCachedNotifications();
       
+      // Get user-specific cache keys
+      final notificationsKey = await _getCachedNotificationsKey();
+      final counterKey = await _getNotificationCounterKey();
+      
       // Get next notification ID
-      final counter = prefs.getInt(_NOTIFICATION_COUNTER_KEY) ?? 0;
+      final counter = prefs.getInt(counterKey) ?? 0;
       final notificationId = BACKGROUND_PRESCRIPTION_ID + counter;
       
       final notification = {
@@ -485,11 +516,11 @@ class NotificationService {
       
       cachedNotifications.add(notification);
       
-      // Store updated cache
-      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(cachedNotifications));
-      await prefs.setInt(_NOTIFICATION_COUNTER_KEY, counter + 1);
+      // Store updated cache with user-specific keys
+      await prefs.setString(notificationsKey, jsonEncode(cachedNotifications));
+      await prefs.setInt(counterKey, counter + 1);
       
-      print('🔔 Cached notification: $title');
+      print('🔔 Cached notification for user: $title');
     } catch (e) {
       print('🚨 Error caching notification: $e');
     }
@@ -499,7 +530,8 @@ class NotificationService {
   Future<List<Map<String, dynamic>>> getCachedNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cachedData = prefs.getString(_CACHED_NOTIFICATIONS_KEY);
+      final notificationsKey = await _getCachedNotificationsKey();
+      final cachedData = prefs.getString(notificationsKey);
       
       if (cachedData == null) return [];
       
@@ -533,9 +565,10 @@ class NotificationService {
         notification['delivered'] = true;
       }
       
-      // Update cache
+      // Update cache with user-specific key
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(cachedNotifications));
+      final notificationsKey = await _getCachedNotificationsKey();
+      await prefs.setString(notificationsKey, jsonEncode(cachedNotifications));
       
     } catch (e) {
       print('🚨 Error delivering cached notifications: $e');
@@ -549,10 +582,28 @@ class NotificationService {
       final activeNotifications = cachedNotifications.where((n) => n['delivered'] == false).toList();
       
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_CACHED_NOTIFICATIONS_KEY, jsonEncode(activeNotifications));
+      final notificationsKey = await _getCachedNotificationsKey();
+      await prefs.setString(notificationsKey, jsonEncode(activeNotifications));
       
     } catch (e) {
       print('🚨 Error clearing delivered notifications: $e');
+    }
+  }
+
+  /// Clear all notifications for current user (used during logout)
+  Future<void> clearAllUserNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsKey = await _getCachedNotificationsKey();
+      final counterKey = await _getNotificationCounterKey();
+      
+      // Clear all notifications and reset counter for this user
+      await prefs.remove(notificationsKey);
+      await prefs.remove(counterKey);
+      
+      print('🔔 Cleared all notifications for current user');
+    } catch (e) {
+      print('🚨 Error clearing user notifications: $e');
     }
   }
 
