@@ -445,8 +445,8 @@ class _DeviceRegistrationFormPageState
             icon: Icon(Icons.add, size: 20.sp),
             label: Text(
               widget.controllers.devices.isEmpty
-                  ? 'Add Device'
-                  : 'Add Another Device',
+                  ? S.of(context).add_device
+                  : S.of(context).add_another_device,
               style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -484,7 +484,7 @@ class _DeviceRegistrationFormPageState
           ),
           SizedBox(height: 16.h),
           Text(
-            'No devices registered yet',
+            S.of(context).no_devices_registered_yet,
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
@@ -493,7 +493,7 @@ class _DeviceRegistrationFormPageState
           ),
           SizedBox(height: 8.h),
           Text(
-            'Add your first monitoring device to get started',
+            S.of(context).add_your_first_monitoring_device_to_get_started,
             style: TextStyle(
               fontSize: 14.sp,
               color: MAIZE_ACCENT.withOpacity(0.7),
@@ -547,7 +547,7 @@ class _DeviceRegistrationFormPageState
                 Text(
                   device.deviceName.isNotEmpty
                       ? device.deviceName
-                      : 'Unnamed Device',
+                      : S.of(context).unnamed_device,
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
@@ -601,7 +601,7 @@ class _DeviceRegistrationFormPageState
                       Icon(Icons.check_circle, size: 12.sp, color: Colors.green),
                       SizedBox(width: 4.w),
                       Text(
-                        'Validated',
+                        S.of(context).validated,
                         style: TextStyle(
                           fontSize: 12.sp,
                           color: Colors.green,
@@ -691,7 +691,7 @@ class _DeviceRegistrationFormPageState
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Delete Device',
+            S.of(context).delete_device,
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.w600,
@@ -699,14 +699,14 @@ class _DeviceRegistrationFormPageState
             ),
           ),
           content: Text(
-            'Are you sure you want to delete this device? This action cannot be undone.',
+            S.of(context).are_you_sure_you_want_to_delete_this_device_this_action_cannot_be_undone,
             style: TextStyle(fontSize: 14.sp),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Cancel',
+                S.of(context).cancel,
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             ),
@@ -848,7 +848,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
                 children: [
                   Expanded(
                     child: Text(
-                      widget.editIndex != null ? 'Edit Device' : 'Add Device',
+                      widget.editIndex != null ? S.of(context).edit_device : S.of(context).add_device,
                       style: textTheme.headlineSmall?.copyWith(
                         fontSize: 24.sp,
                         fontWeight: FontWeight.w700,
@@ -866,12 +866,12 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
 
               // Device Name Field
               _buildModalInputField(
-                label: 'Device Name *',
+                label: S.of(context).device_name_hint,
                 controller: _deviceNameController,
-                hintText: 'e.g., Field Sensor 1',
+                hintText: S.of(context).e_g_field_sensor_1,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Device name is required';
+                    return S.of(context).device_name_required;
                   }
                   return null;
                 },
@@ -880,12 +880,12 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
 
               // Device ID Field
               _buildModalInputField(
-                label: 'Device ID *',
+                label: S.of(context).device_id_hint,
                 controller: _deviceIdController,
-                hintText: 'Enter unique device ID',
+                hintText: S.of(context).enter_unique_device_id,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Device ID is required';
+                    return S.of(context).device_id_required;
                   }
                   return null;
                 },
@@ -917,7 +917,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
                     elevation: 2,
                   ),
                   child: Text(
-                    widget.editIndex != null ? 'Update Device' : 'Add Device',
+                    widget.editIndex != null ? S.of(context).update_device : S.of(context).add_device,
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w600,
@@ -990,7 +990,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Prototype ID *',
+          S.of(context).prototype_id_hint,
           style: TextTheme().bodyMedium?.copyWith(
             fontWeight: FontWeight.w400,
             color: MAIZE_ACCENT.withOpacity(0.8),
@@ -1013,7 +1013,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
                   }
                 },
                 decoration: InputDecoration(
-                  hintText: 'e.g., PROTO_001, SENSOR_001',
+                  hintText: S.of(context).prototype_id_hint,
                   hintStyle: TextStyle(
                     fontWeight: FontWeight.w100,
                     color: MAIZE_ACCENT.withOpacity(0.4),
@@ -1083,7 +1083,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Prototype ID is required';
+                    return S.of(context).prototype_id_required;
                   }
                   if (!_isPrototypeValid && _prototypeValidationError != null) {
                     return _prototypeValidationError;
@@ -1104,7 +1104,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               ),
               child: Text(
-                'Validate',
+                S.of(context).validate,
                 style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
               ),
             ),
@@ -1123,7 +1123,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
         if (_isPrototypeValid) ...[
           SizedBox(height: 4.h),
           Text(
-            'Prototype ID is valid and available',
+            S.of(context).prototype_id_valid_and_available,
             style: TextStyle(
               fontSize: 12.sp,
               color: Colors.green,
@@ -1138,27 +1138,27 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
     final soilTypes = [
       {
         'id': 'loamy',
-        'name': 'Loamy Soil',
+        'name': S.of(context).loamy_soil,
         'icon': Icons.landscape,
-        'description': 'Well-balanced soil',
+        'description': S.of(context).well_balanced_soil,
       },
       {
         'id': 'sandy',
-        'name': 'Sandy Soil',
+        'name': S.of(context).sandy_soil,
         'icon': Icons.grain,
-        'description': 'Fast-draining soil',
+        'description': S.of(context).fast_draining_soil,
       },
       {
         'id': 'clay',
-        'name': 'Clay Soil',
+        'name': S.of(context).clay_soil,
         'icon': Icons.layers,
-        'description': 'Water-retaining soil',
+        'description': S.of(context).water_retaining_soil,
       },
       {
         'id': 'silty',
-        'name': 'Silty Soil',
+        'name': S.of(context).silty_soil,
         'icon': Icons.texture,
-        'description': 'Smooth textured soil',
+        'description': S.of(context).smooth_textured_soil,
       },
     ];
 
@@ -1166,7 +1166,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Soil Type *',
+          S.of(context).soil_type_hint,
           style: TextStyle(
             fontSize: 16.sp,
             fontWeight: FontWeight.w600,
@@ -1335,25 +1335,25 @@ class FarmDataConfirmationPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Confirm Your Farm Data',
-            style: textTheme.headlineMedium?.copyWith(
-              fontSize: 28.sp,
-              height: 1.2,
-              letterSpacing: 0,
-              color: MAIZE_ACCENT,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            'Please review your farm information before submitting',
-            style: textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w400,
-              color: MAIZE_ACCENT.withOpacity(0.8),
-              fontSize: 14.sp,
-            ),
-          ),
+                  Text(
+                    S.of(context).confirm_your_farm_data,
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontSize: 28.sp,
+                      height: 1.2,
+                      letterSpacing: 0,
+                      color: MAIZE_ACCENT,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    S.of(context).please_review_your_farm_information_before_submitting,
+                    style: textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: MAIZE_ACCENT.withOpacity(0.8),
+                      fontSize: 14.sp,
+                    ),
+                  ),
           SizedBox(height: 20.h),
 
           Expanded(
@@ -1361,27 +1361,29 @@ class FarmDataConfirmationPage extends StatelessWidget {
               child: Column(
                 children: [
                   _buildInfoCard(
-                    title: 'Field Information',
+                    title: S.of(context).field_information,
                     icon: Icons.agriculture,
                     children: [
-                      _buildInfoRow('Field Name', controllers.fieldName),
-                      _buildInfoRow('Location', controllers.location),
+                      _buildInfoRow(context, S.of(context).field_name, controllers.fieldName),
+                      _buildInfoRow(context, S.of(context).location, controllers.location),
                       _buildInfoRow(
-                        'Soil Type',
+                        context,
+                        S.of(context).soil_type,
                         _formatSoilType(controllers.soilType),
                       ),
                       _buildInfoRow(
-                        'Planting Date',
+                        context,
+                        S.of(context).planting_date,
                         controllers.plantingDate != null
                             ? '${controllers.plantingDate!.day}/${controllers.plantingDate!.month}/${controllers.plantingDate!.year}'
-                            : 'Not set',
+                            : S.of(context).not_set,
                       ),
                     ],
                   ),
                   SizedBox(height: 16.h),
 
                   _buildInfoCard(
-                    title: 'Registered Devices',
+                    title: S.of(context).registered_devices,
                     icon: Icons.device_hub,
                     children:
                         controllers.devices.isEmpty
@@ -1389,7 +1391,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
                               Container(
                                 padding: EdgeInsets.all(16.w),
                                 child: Text(
-                                  'No devices registered',
+                                  S.of(context).no_devices_registered,
                                   style: TextStyle(
                                     fontSize: 14.sp,
                                     color: MAIZE_ACCENT.withOpacity(0.6),
@@ -1399,7 +1401,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
                               ),
                             ]
                             : controllers.devices
-                                .map((device) => _buildDeviceInfo(device))
+                                .map((device) => _buildDeviceInfo(context, device))
                                 .toList(),
                   ),
                 ],
@@ -1462,7 +1464,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
@@ -1482,7 +1484,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              value.isNotEmpty ? value : 'Not specified',
+              value.isNotEmpty ? value : S.of(context).not_specified,
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -1495,7 +1497,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceInfo(DeviceInfo device) {
+  Widget _buildDeviceInfo(BuildContext context, DeviceInfo device) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.w),
@@ -1508,7 +1510,7 @@ class FarmDataConfirmationPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            device.deviceName.isNotEmpty ? device.deviceName : 'Unnamed Device',
+            device.deviceName.isNotEmpty ? device.deviceName : S.of(context).unnamed_device,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -1516,8 +1518,8 @@ class FarmDataConfirmationPage extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6.h),
-          _buildInfoRow('Device ID', device.deviceId),
-          _buildInfoRow('Device Type', device.deviceType),
+          _buildInfoRow(context, S.of(context).device_id_hint, device.deviceId),
+          _buildInfoRow(context, S.of(context).device_name_hint, device.deviceType),
         ],
       ),
     );
@@ -1585,7 +1587,7 @@ class CompletionFormPage extends StatelessWidget {
           SizedBox(height: 24.h),
 
           Text(
-            'Farm Registered Successfully!',
+            S.of(context).farm_registered_successfully,
             style: TextStyle(
               fontSize: 24.sp,
               color: MAIZE_ACCENT,
@@ -1596,7 +1598,7 @@ class CompletionFormPage extends StatelessWidget {
           SizedBox(height: 12.h),
 
           Text(
-            'Your farm has been successfully registered and is ready for monitoring.',
+            S.of(context).your_farm_has_been_successfully_registered_and_is_ready_for_monitoring,
             style: TextStyle(
               fontSize: 16.sp,
               color: MAIZE_ACCENT.withOpacity(0.7),
@@ -1624,7 +1626,7 @@ class CompletionFormPage extends StatelessWidget {
                       Icon(Icons.sensors, color: MAIZE_ACCENT, size: 20.sp),
                       SizedBox(width: 8.w),
                       Text(
-                        'Registered Devices',
+                        S.of(context).registered_devices,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
@@ -1734,7 +1736,7 @@ class CompletionFormPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Farm Summary',
+                    S.of(context).farm_summary,
                     style: TextStyle(
                       fontSize: 18.sp,
                       color: MAIZE_ACCENT,
@@ -1745,44 +1747,44 @@ class CompletionFormPage extends StatelessWidget {
 
                   _buildSummaryItem(
                     icon: Icons.agriculture,
-                    label: 'Field Name',
+                    label: S.of(context).field_name,
                     value:
                         controllers.fieldName.isNotEmpty
                             ? controllers.fieldName
-                            : 'Not set',
+                            : S.of(context).not_set,
                   ),
 
                   _buildSummaryItem(
                     icon: Icons.location_on,
-                    label: 'Location',
+                    label: S.of(context).location,
                     value: controllers.location,
                   ),
 
                   _buildSummaryItem(
                     icon: Icons.terrain,
-                    label: 'Soil Type',
+                    label: S.of(context).soil_type,
                     value: _formatSoilType(controllers.soilType),
                   ),
 
                   _buildSummaryItem(
                     icon: Icons.calendar_today,
-                    label: 'Planting Date',
+                    label: S.of(context).planting_date,
                     value:
                         controllers.plantingDate != null
                             ? '${controllers.plantingDate!.day}/${controllers.plantingDate!.month}/${controllers.plantingDate!.year}'
-                            : 'Not set',
+                            : S.of(context).not_set,
                   ),
 
                   _buildSummaryItem(
                     icon: Icons.timeline,
-                    label: 'Current Growth Stage',
+                    label: S.of(context).current_growth_stage,
                     value: '$growthStage ($daysSincePlanting days)',
                   ),
 
                   if (controllers.hasDevices)
                     _buildSummaryItem(
                       icon: Icons.device_hub,
-                      label: 'Devices',
+                      label: S.of(context).registered_devices,
                       value:
                           '${controllers.devices.length} device${controllers.devices.length != 1 ? 's' : ''} registered',
                       isLast: true,
@@ -1790,8 +1792,8 @@ class CompletionFormPage extends StatelessWidget {
                   else
                     _buildSummaryItem(
                       icon: Icons.info_outline,
-                      label: 'Device Status',
-                      value: 'Not connected',
+                      label: S.of(context).device_status,
+                      value: S.of(context).not_connected,
                       isLast: true,
                     ),
                 ],

@@ -12,4 +12,7 @@ router.get('/available', PrototypeController.getAvailablePrototypes);
 router.post('/register', authenticate, PrototypeController.registerPrototype);
 router.get('/user', authenticate, PrototypeController.getUserPrototypes);
 
+// Admin routes (no authentication for testing purposes)
+router.post('/unregister', PrototypeController.unregisterPrototype);
+
 export default router;

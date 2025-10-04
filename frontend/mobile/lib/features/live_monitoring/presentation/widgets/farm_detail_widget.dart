@@ -2092,7 +2092,8 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       final metricData = _stressAnalysis![metricKey] as Map<String, dynamic>?;
       if (metricData != null) {
         final stressLevel = metricData['stress_level'] as String? ?? 'low';
-        print('🔍 $metricTitle stress level from analytics: $stressLevel');
+        print('🔍 $metricTitle stress level from analytics: "$stressLevel" (type: ${stressLevel.runtimeType})');
+        print('🔍 Full metric data for $metricTitle: $metricData');
         return stressLevel;
       }
     }
@@ -2107,6 +2108,8 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
 
   // Calculate stress level based on metric value and optimal ranges
   String _calculateStressLevelFromValue(String metricTitle, MetricsModel metrics) {
+    print('🔍 _calculateStressLevelFromValue: $metricTitle with value: ${_getMetricValue(metricTitle, metrics)}');
+    
     switch (metricTitle) {
       case 'Soil pH':
         final ph = metrics.soilPh;
@@ -2139,43 +2142,101 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         return 'low';
       
       default:
-        return 'unknown';
+        return 'low'; // Changed from 'unknown' to 'low'
+    }
+  }
+  
+  // Helper method to get metric value for debugging
+  double _getMetricValue(String metricTitle, MetricsModel metrics) {
+    switch (metricTitle) {
+      case 'Soil pH':
+        return metrics.soilPh;
+      case 'Soil Moisture':
+        return metrics.soilMoisture;
+      case 'Temperature':
+        return metrics.temperature;
+      case 'Humidity':
+        return metrics.humidity;
+      case 'Light Intensity':
+        return metrics.lightIntensity;
+      default:
+        return 0.0;
     }
   }
 
   // Get color based on stress level
   Color _getStatusColor(String stressLevel) {
-    switch (stressLevel.toLowerCase()) {
-      case 'low':
-        return Colors.green;
-      case 'medium':
-        return Colors.orange;
-      case 'high':
-        return Colors.red;
-      case 'critical':
-        return Colors.red[800]!;
-      case 'unknown':
-        return Colors.grey[600]!;
-      default:
-        return Colors.grey;
+    final lowerStressLevel = stressLevel.toLowerCase().trim();
+    print('🔍 _getStatusColor: "$stressLevel" -> "$lowerStressLevel"');
+    
+    // Handle both English and potentially translated values
+    if (lowerStressLevel == 'low' || 
+        lowerStressLevel == 'mababa' || 
+        lowerStressLevel == 'baba' ||
+        lowerStressLevel == 'normal' ||
+        lowerStressLevel == 'okay') {
+      return Colors.green;
+    } else if (lowerStressLevel == 'medium' || 
+               lowerStressLevel == 'katamtaman' || 
+               lowerStressLevel == 'moderate' ||
+               lowerStressLevel == 'gitna') {
+      return Colors.orange;
+    } else if (lowerStressLevel == 'high' || 
+               lowerStressLevel == 'mataas' || 
+               lowerStressLevel == 'taas' ||
+               lowerStressLevel == 'elevated') {
+      return Colors.red;
+    } else if (lowerStressLevel == 'critical' || 
+               lowerStressLevel == 'kritikal' || 
+               lowerStressLevel == 'urgent' ||
+               lowerStressLevel == 'emergency') {
+      return Colors.red[800]!;
+    } else if (lowerStressLevel == 'unknown' || 
+               lowerStressLevel == 'hindi kilala' || 
+               lowerStressLevel == 'unknown' ||
+               lowerStressLevel == '') {
+      return Colors.green; // Show as green instead of grey
+    } else {
+      print('🔍 Unknown stress level for color: "$stressLevel", defaulting to green');
+      return Colors.green; // Default to green instead of grey
     }
   }
 
   // Get farmer-friendly status text
   String _getFarmerFriendlyStatus(String stressLevel) {
-    switch (stressLevel.toLowerCase()) {
-      case 'low':
-        return S.of(context).good;
-      case 'medium':
-        return S.of(context).warning;
-      case 'high':
-        return S.of(context).attention;
-      case 'critical':
-        return S.of(context).urgent;
-      case 'unknown':
-        return S.of(context).unknown; // Show as good instead of unknown
-      default:
-        return S.of(context).unknown; // Default to good instead of unknown
+    final lowerStressLevel = stressLevel.toLowerCase().trim();
+    print('🔍 _getFarmerFriendlyStatus: "$stressLevel" -> "$lowerStressLevel"');
+    
+    // Handle both English and potentially translated values
+    if (lowerStressLevel == 'low' || 
+        lowerStressLevel == 'mababa' || 
+        lowerStressLevel == 'baba' ||
+        lowerStressLevel == 'normal' ||
+        lowerStressLevel == 'okay') {
+      return S.of(context).good;
+    } else if (lowerStressLevel == 'medium' || 
+               lowerStressLevel == 'katamtaman' || 
+               lowerStressLevel == 'moderate' ||
+               lowerStressLevel == 'gitna') {
+      return S.of(context).warning;
+    } else if (lowerStressLevel == 'high' || 
+               lowerStressLevel == 'mataas' || 
+               lowerStressLevel == 'taas' ||
+               lowerStressLevel == 'elevated') {
+      return S.of(context).attention;
+    } else if (lowerStressLevel == 'critical' || 
+               lowerStressLevel == 'kritikal' || 
+               lowerStressLevel == 'urgent' ||
+               lowerStressLevel == 'emergency') {
+      return S.of(context).urgent;
+    } else if (lowerStressLevel == 'unknown' || 
+               lowerStressLevel == 'hindi kilala' || 
+               lowerStressLevel == 'unknown' ||
+               lowerStressLevel == '') {
+      return S.of(context).good; // Show as good instead of unknown
+    } else {
+      print('🔍 Unknown stress level: "$stressLevel", defaulting to good');
+      return S.of(context).good; // Default to good instead of unknown
     }
   }
 

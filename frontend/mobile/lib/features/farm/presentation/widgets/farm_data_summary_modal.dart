@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/theme/colors.dart';
 import '../../../../generated/l10n.dart';
 import '../screens/field_registration_screen.dart';
 
@@ -53,7 +51,7 @@ class FarmDataSummaryModal extends StatelessWidget {
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
-                      'Farm Registration Summary',
+                      S.of(context).farm_registration_summary,
                       style: textTheme.bodyLarge?.copyWith(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
@@ -81,7 +79,7 @@ class FarmDataSummaryModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Please review your farm information before submitting:',
+                      S.of(context).please_review_your_farm_information_before_submitting,
                       style: textTheme.bodyMedium?.copyWith(
                         fontSize: 16.sp,
                         color: Colors.grey.shade700,
@@ -92,14 +90,15 @@ class FarmDataSummaryModal extends StatelessWidget {
                     
                     // Farm Details Section
                     _buildSectionCard(
-                      title: 'Farm Details',
+                      title: S.of(context).farm_details,
                       icon: Icons.agriculture,
                       children: [
-                        _buildSummaryItem('Field Name', controllers.fieldName),
-                        _buildSummaryItem('Location', controllers.location),
+                        _buildSummaryItem('Field Name', controllers.fieldName, context),
+                        _buildSummaryItem('Location', controllers.location, context),
                         _buildSummaryItem(
                           'Planting Date', 
-                          controllers.plantingDate?.toString().split(' ')[0] ?? 'Not selected'
+                          controllers.plantingDate?.toString().split(' ')[0] ?? 'Not selected',
+                          context
                         ),
                       ],
                     ),
@@ -108,16 +107,16 @@ class FarmDataSummaryModal extends StatelessWidget {
                     
                     // Devices Section
                     _buildSectionCard(
-                      title: 'Registered Devices',
+                      title: S.of(context).registered_devices,
                       icon: Icons.sensors,
                       children: [
                         if (controllers.devices.isEmpty)
-                          _buildNoDevicesMessage()
+                          _buildNoDevicesMessage(context)
                         else
                           ...controllers.devices.asMap().entries.map((entry) {
                             final index = entry.key;
                             final device = entry.value;
-                            return _buildDeviceItem(device, index + 1);
+                            return _buildDeviceItem(device, index + 1, context);
                           }).toList(),
                       ],
                     ),
@@ -152,7 +151,7 @@ class FarmDataSummaryModal extends StatelessWidget {
                         padding: EdgeInsets.symmetric(vertical: 16.h),
                       ),
                       child: Text(
-                        'Edit Details',
+                        S.of(context).edit_details,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
@@ -174,10 +173,10 @@ class FarmDataSummaryModal extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
+                        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
                       ),
                       child: Text(
-                        'Submit Farm Data',
+                        S.of(context).submit_farm_data,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
@@ -241,7 +240,7 @@ class FarmDataSummaryModal extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value) {
+  Widget _buildSummaryItem(String label, String value, BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
@@ -260,7 +259,7 @@ class FarmDataSummaryModal extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              value.isNotEmpty ? value : 'Not specified',
+              value.isNotEmpty ? value : S.of(context).not_specified,
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
@@ -273,7 +272,7 @@ class FarmDataSummaryModal extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceItem(DeviceInfo device, int index) {
+  Widget _buildDeviceItem(DeviceInfo device, int index, BuildContext context) {
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
       padding: EdgeInsets.all(12.w),
@@ -286,7 +285,7 @@ class FarmDataSummaryModal extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Device $index',
+            S.of(context).device(index),
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
@@ -294,16 +293,16 @@ class FarmDataSummaryModal extends StatelessWidget {
             ),
           ),
           SizedBox(height: 6.h),
-          _buildDeviceDetail('Name', device.deviceName),
-          _buildDeviceDetail('Type', device.deviceType),
-          _buildDeviceDetail('ID', device.deviceId),
-          _buildDeviceDetail('Soil Type', device.soilType),
+          _buildDeviceDetail(S.of(context).name, device.deviceName, context),
+          _buildDeviceDetail(S.of(context).type, device.deviceType, context),
+          _buildDeviceDetail(S.of(context).id, device.deviceId, context),
+          _buildDeviceDetail(S.of(context).soil_type, device.soilType, context),
         ],
       ),
     );
   }
 
-  Widget _buildDeviceDetail(String label, String value) {
+  Widget _buildDeviceDetail(String label, String value, BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 2.h),
       child: Row(
@@ -320,7 +319,7 @@ class FarmDataSummaryModal extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              value.isNotEmpty ? value : 'Not specified',
+              value.isNotEmpty ? value : S.of(context).not_specified,
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w500,
@@ -333,7 +332,7 @@ class FarmDataSummaryModal extends StatelessWidget {
     );
   }
 
-  Widget _buildNoDevicesMessage() {
+  Widget _buildNoDevicesMessage(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -351,7 +350,7 @@ class FarmDataSummaryModal extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              'No devices registered. You can add devices later from the dashboard.',
+              S.of(context).no_devices_registered,
               style: TextStyle(
                 fontSize: 14.sp,
                 color: Colors.orange.shade700,

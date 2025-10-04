@@ -117,6 +117,11 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
     // Initialize background notification service
     BackgroundNotificationService.initialize();
+    
+    // Initialize notification processing flags (don't clear cache to allow stacking)
+    _isNotificationProcessing = false;
+    _lastNotificationTime = null;
+    print('🔔 Initialized notification processing flags');
 
     // Don't clear notifications on init - let them persist
     // _clearExistingNotifications();
@@ -127,6 +132,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Load initial data
     _loadData();
     _animationController.forward();
+    
+    // Trigger notifications after a short delay to ensure data is loaded
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        _triggerNotificationsOnScreenLoad();
+      }
+    });
   }
 
   @override
@@ -134,11 +146,150 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     super.didChangeDependencies();
     // Refresh completion status when screen becomes visible
     _refreshCompletionStatus();
+    
+    // Listen for analytics data changes and trigger notifications
+    _listenForAnalyticsAndTriggerNotifications();
   }
 
   void _loadData() {
+    // Check if this is a new user session and force refresh if needed
+    _checkAndForceRefreshForNewUser();
+    
     // Load data with optimized caching
     _loadDataOptimized();
+  }
+
+  /// Check if this is a new user session and force refresh data
+  Future<void> _checkAndForceRefreshForNewUser() async {
+    try {
+      final authState = context.read<AuthenticationBloc>().state;
+      if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+        final userId = authState.user!.id;
+        
+        // Check if this is a new user session by looking for a flag
+        final prefs = await SharedPreferences.getInstance();
+        final lastUserId = prefs.getString('last_user_id');
+        final isNewUserSession = lastUserId != userId;
+        
+        if (isNewUserSession) {
+          print('🔄 LiveMonitoring: New user session detected (old: $lastUserId, new: $userId), forcing data refresh');
+          
+          // Update the last user ID
+          await prefs.setString('last_user_id', userId);
+          
+          // Clear any cached data for this user
+          await HomeScreenService.clearUserCache();
+          
+          // Force refresh farms data
+          context.read<FarmBloc>().add(GetUserFarmsEvent(userId: userId));
+          
+          // Force refresh monitoring data
+          context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+          
+          print('🔄 LiveMonitoring: Forced data refresh for new user session');
+        } else {
+          print('🔄 LiveMonitoring: Same user session, using cached data');
+        }
+      }
+    } catch (e) {
+      print('🔄 LiveMonitoring: Error checking new user session: $e');
+    }
+  }
+
+  /// Ensure field-specific analytics are loaded for all fields to enable prescriptions
+  void _ensureFieldSpecificAnalyticsLoaded(List<Farm> farms) async {
+    try {
+      print('🌽 LiveMonitoring: Ensuring field-specific analytics are loaded for all fields');
+      
+      for (final farm in farms) {
+        if (farm.id != null) {
+          print('🌽 LiveMonitoring: Loading field-specific analytics for farm: ${farm.id} (${farm.farmName})');
+          
+          // Load field-specific analytics for each field in this farm
+          for (final field in farm.fields) {
+            print('🌽 LiveMonitoring: Loading field-specific analytics for field: ${field.fieldName}');
+            
+            // Load field-specific analytics for this field
+            context.read<MonitoringBloc>().add(
+              LoadWeeklyDataEvent(
+                farmId: farm.id!, 
+                fieldId: field.fieldName,
+                weekOffset: 0
+              )
+            );
+          }
+        }
+      }
+      
+      print('🌽 LiveMonitoring: Completed ensuring field-specific analytics for all fields');
+    } catch (e) {
+      print('🌽 LiveMonitoring: Error ensuring field-specific analytics: $e');
+    }
+  }
+
+  /// Listen for analytics data changes and trigger notifications
+  void _listenForAnalyticsAndTriggerNotifications() {
+    // Listen to MonitoringBloc stream for analytics data changes
+    context.read<MonitoringBloc>().stream.listen((monitoringState) {
+      if (mounted && monitoringState.farmAnalytics != null) {
+        print('🔔 LiveMonitoring: Analytics data available, triggering notifications');
+        _triggerNotificationsOnScreenLoad();
+      }
+    });
+  }
+
+  /// Trigger notifications when live monitoring screen loads
+  void _triggerNotificationsOnScreenLoad() async {
+    try {
+      print('🔔 LiveMonitoring: Triggering notifications on screen load');
+      
+      // Wait a bit for analytics to be processed
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      // Get current monitoring state
+      final monitoringState = context.read<MonitoringBloc>().state;
+      
+      if (monitoringState.farmAnalytics != null) {
+        print('🔔 LiveMonitoring: Found analytics data, processing for notifications');
+        
+        // Process analytics data for notifications
+        final analyticsData = monitoringState.farmAnalytics!;
+        List<dynamic> recommendations = [];
+        
+        if (analyticsData['prescriptive'] != null) {
+          final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
+          recommendations = prescriptive['recommendations'] as List<dynamic>? ?? [];
+          print('🔔 LiveMonitoring: Found ${recommendations.length} prescriptive recommendations');
+        }
+        
+        // If no prescriptive data, try to generate from stress analysis
+        if (recommendations.isEmpty && analyticsData['descriptive'] != null) {
+          final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+          final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+          
+          if (stressAnalysis != null) {
+            print('🔔 LiveMonitoring: Generating recommendations from stress analysis');
+            final farmState = context.read<FarmBloc>().state;
+            if (farmState is FarmsLoaded) {
+              recommendations = _generateRecommendationsFromStressAnalysis(stressAnalysis, farmState);
+              print('🔔 LiveMonitoring: Generated ${recommendations.length} recommendations from stress analysis');
+            }
+          }
+        }
+        
+        // Send notifications if we have recommendations
+        if (recommendations.isNotEmpty) {
+          print('🔔 LiveMonitoring: Sending ${recommendations.length} notifications on screen load');
+          await _showPrescriptionNotifications(recommendations);
+        } else {
+          print('🔔 LiveMonitoring: No recommendations found for notifications');
+        }
+      } else {
+        print('🔔 LiveMonitoring: No analytics data available for notifications');
+      }
+    } catch (e) {
+      print('🔔 LiveMonitoring: Error triggering notifications on screen load: $e');
+    }
   }
 
   /// Optimized data loading with smart caching
@@ -174,9 +325,16 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           print('🌽 LiveMonitoring: Loading cached home data for farm: ${selectedFarm.id}');
           
           try {
+            // Check if this is a new user session and force refresh if needed
+            final prefs = await SharedPreferences.getInstance();
+            final authState = context.read<AuthenticationBloc>().state;
+            final currentUserId = authState.user?.id;
+            final lastUserId = prefs.getString('last_user_id');
+            final shouldForceRefresh = currentUserId != null && lastUserId != currentUserId;
+            
             final homeData = await HomeScreenService.getHomeScreenData(
               farmId: selectedFarm.id,
-              forceRefresh: false,
+              forceRefresh: shouldForceRefresh,
             );
             
             if (homeData.isNotEmpty) {
@@ -185,6 +343,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               // Analytics should already be loaded from splash screen, no need to reload
               print('🌽 LiveMonitoring: Using pre-loaded analytics from splash screen');
             }
+            
+            // Ensure field-specific analytics are loaded for all fields to enable prescriptions
+            _ensureFieldSpecificAnalyticsLoaded(farmState.farms);
+            
+            // Trigger notifications when live monitoring screen loads
+            _triggerNotificationsOnScreenLoad();
           } catch (e) {
             print('🌽 LiveMonitoring: Error loading cached data: $e');
           }
@@ -689,8 +853,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     print('🔧 BUILDING TASK CARD: $title - isCompleted: $isCompleted');
     print('🔧 BUILDING TASK CARD: Full task data: $taskData');
     
-    // Show loading spinner if this is a loading task
-    if (isLoading) {
+    // Show loading spinner only if this is specifically a loading task AND no other data is available
+    if (isLoading && title == S.of(context).loading_analytics_data) {
       return Container(
         width: 155.w,
         height: 140.h,
@@ -1523,6 +1687,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       // CRITICAL: Always show notifications if we have recommendations, regardless of analytics data source
       if (recommendations.isNotEmpty) {
         print('🔔 Found ${recommendations.length} recommendations');
+        
+        // Always send notifications when we have recommendations (both during splash and live monitoring screen)
         print('🔔 CALLING _showPrescriptionNotifications NOW...');
         await _showPrescriptionNotifications(recommendations);
         print('🔔 _showPrescriptionNotifications COMPLETED');
@@ -1698,8 +1864,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             'instructions': instructions,
           });
         }
-      } else if (monitoringState.isLoading && analyticsData == null && _cachedAnalytics == null) {
-        // Only show loading indicator when analytics is being processed AND we don't have any data (cached or fresh)
+      } else if (monitoringState.isLoading && analyticsData == null && _cachedAnalytics == null && tasks.isEmpty && recommendations.isEmpty) {
+        // Only show loading indicator when analytics is being processed AND we don't have any data (cached or fresh) AND no tasks have been generated AND no recommendations
+        print('🔍 Showing loading indicator - isLoading: ${monitoringState.isLoading}, analyticsData: ${analyticsData != null}, cachedAnalytics: ${_cachedAnalytics != null}, tasks: ${tasks.length}, recommendations: ${recommendations.length}');
         tasks.add({
           'time':
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
@@ -1715,6 +1882,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'description': S.of(context).processing_farm_analytics_data,
           'isLoading': true, // Add flag to indicate this is a loading task
         });
+      } else if (monitoringState.isLoading && (tasks.isNotEmpty || recommendations.isNotEmpty)) {
+        // If we're loading but have tasks or recommendations, don't show loading indicator
+        print('🔍 Loading but have ${tasks.length} tasks and ${recommendations.length} recommendations - not showing loading indicator');
       } else {
         // Show proper no-data message instead of fallback tasks
         tasks.add({
@@ -1798,6 +1968,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           'details': task['description'] ?? '',
         }).toList();
         
+        // Always send notifications for real prescription tasks (both during splash and live monitoring screen)
         print('🔔 CALLING _showPrescriptionNotifications for REAL prescription tasks NOW...');
         await _showPrescriptionNotifications(taskRecommendations);
         print('🔔 _showPrescriptionNotifications for REAL prescription tasks COMPLETED');
@@ -1807,6 +1978,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     }
     
     print('🚀 _generateDynamicTasks COMPLETED - returning ${tasks.length} tasks');
+    print('🚀 Final task list: ${tasks.map((t) => t['title']).toList()}');
     return tasks;
   }
 
@@ -2688,9 +2860,43 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     return Colors.grey;
   }
 
+  // Global notification tracking to prevent duplicates across multiple calls
+  static final Set<String> _globalNotifiedPrescriptions = <String>{};
+  static String? _lastNotificationDataHash;
+  static bool _isNotificationProcessing = false;
+  static DateTime? _lastNotificationTime;
+
   Future<void> _showPrescriptionNotifications(List<dynamic> recommendations) async {
+    // Prevent concurrent processing
+    if (_isNotificationProcessing) {
+      print('🔔 Skipping notification processing - already in progress');
+      return;
+    }
+    
+    // Check if we've processed notifications recently (within 10 seconds)
+    final now = DateTime.now();
+    if (_lastNotificationTime != null && 
+        now.difference(_lastNotificationTime!).inSeconds < 10) {
+      print('🔔 Skipping notification processing - too soon after last call (${now.difference(_lastNotificationTime!).inSeconds}s ago)');
+      return;
+    }
+    
+    // Create a hash of the recommendations to prevent duplicate processing
+    final recommendationsHash = recommendations.map((r) => r.toString()).join('|').hashCode.toString();
+    
+    if (_lastNotificationDataHash == recommendationsHash) {
+      print('🔔 Skipping duplicate notification processing - same data as last call');
+      return;
+    }
+    
+    // Set processing lock
+    _isNotificationProcessing = true;
+    _lastNotificationDataHash = recommendationsHash;
+    _lastNotificationTime = now;
+    
     print('🔔 ===== NOTIFICATION DEBUG START =====');
     print('🔔 Checking ${recommendations.length} recommendations for notifications');
+    print('🔔 Global notified prescriptions: ${_globalNotifiedPrescriptions.length}');
     
     // Force request permissions first
     print('🔔 Requesting notification permissions...');
@@ -2742,11 +2948,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       }
     }
     
-    // TEMPORARY DEBUG: Clear notification cache to test
-    print('🔔 TEMPORARY DEBUG: Clearing notification cache for testing');
-    await prefs.remove(notificationKey);
-    previouslyNotified.clear();
-    print('🔔 Notification cache cleared, previouslyNotified is now empty');
+    // DON'T clear notification cache - let notifications stack up
+    print('🔔 Using existing notification cache to allow stacking');
+    print('🔔 Previously notified: ${previouslyNotified.length} prescriptions');
     
     final Set<String> newNotifications = {};
     
@@ -2785,17 +2989,16 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       
       print('🔔 Checking prescription: $action (${urgency}) for $fieldName - Previously notified: ${previouslyNotified.contains(prescriptionId)}');
       
-      // Check if this prescription should show notification
-      final shouldNotify = !previouslyNotified.contains(prescriptionId) &&
-                          !_notifiedPrescriptions.contains(prescriptionId);
+      // Check if this prescription should show notification (only check persistent cache, not global)
+      final shouldNotify = !previouslyNotified.contains(prescriptionId);
       
       print('🔔 Prescription: $action, Priority: $urgency, Should notify: $shouldNotify');
       print('🔔 Previously notified: ${previouslyNotified.contains(prescriptionId)}');
       print('🔔 Session notified: ${_notifiedPrescriptions.contains(prescriptionId)}');
       
       if (shouldNotify) {
-        // Limit notifications per session to prevent spam
-        if (newNotifications.length < 15) { // Increased limit
+        // Allow more notifications to stack up (increased limit)
+        if (newNotifications.length < 10) { // Increased limit to allow more notifications to stack
           print('🔔 Showing ${urgency} notification for: $action on $fieldName');
           
           // Translate notification content
@@ -2821,10 +3024,14 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         
           print('🔔 showPrescriptionAlertNotificationWithCaching COMPLETED');
         
-          // Mark as notified in both session and persistent storage
-        _notifiedPrescriptions.add(prescriptionId);
-          newNotifications.add(prescriptionId);
+        // Mark as notified in persistent storage only (allow stacking)
+        newNotifications.add(prescriptionId);
         print('🔔 Marked as notified: $prescriptionId');
+        
+        // Add small delay between notifications to prevent spam
+        if (newNotifications.length < 10) {
+          await Future.delayed(Duration(milliseconds: 500)); // Reduced delay for faster stacking
+        }
         } else {
           print('🔔 Skipping ${urgency} notification - limit reached (${newNotifications.length})');
         }
@@ -2847,6 +3054,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       print('🔔 No new notifications to show');
     }
     print('🔔 ===== NOTIFICATION DEBUG END =====');
+    
+    // Release processing lock
+    _isNotificationProcessing = false;
   }
 
   // Helper method to format send time

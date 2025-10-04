@@ -15,6 +15,11 @@ import '../widgets/field_registration_form_pages.dart';
 import '../widgets/farm_data_summary_modal.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 import 'farm_registration_success_screen.dart';
+import '../../../../core/services/cache_service.dart';
+import '../../../../core/services/completion_status_manager.dart';
+import '../../../../core/services/home_screen_service.dart';
+import '../../../../core/services/notification_service.dart';
+import '../../../live_monitoring/presentation/bloc/monitoring_bloc.dart';
 
 class FarmRegistrationScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -92,10 +97,13 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<FarmBloc, FarmState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is FarmCreated) {
           // Register prototype IDs after successful farm creation
           _registerPrototypeIds();
+          
+          // Clear all cached data for the new user to ensure fresh data loads
+          await _clearUserCacheAndRefreshData();
           
           // Navigate to congratulatory screen
           Navigator.pushReplacement(
@@ -361,6 +369,67 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
             },
           ),
     );
+  }
+
+  Future<void> _clearUserCacheAndRefreshData() async {
+    try {
+      print('🧹 Clearing user cache and refreshing data after farm registration...');
+      
+      // Get current user ID
+      final authState = context.read<AuthenticationBloc>().state;
+      if (authState.user != null) {
+        final userId = authState.user!.id;
+        
+        // Clear all user-specific cache
+        await CacheService.clearCache(userId: userId);
+        await CompletionStatusManager.clearAll();
+        await HomeScreenService.clearUserCache();
+        
+        // Clear user notifications to prevent cross-user notification leakage
+        final notificationService = NotificationService();
+        await notificationService.clearAllUserNotifications();
+        
+        print('🧹 Cache cleared for user: $userId');
+        
+        // Force refresh farms data for the new user
+        context.read<FarmBloc>().add(GetUserFarmsEvent(userId: userId));
+        
+        // Force refresh monitoring data
+        context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+        
+        // Load field-specific analytics for the newly registered field
+        _loadFieldSpecificAnalyticsForNewField();
+        
+        print('🧹 Data refresh triggered for new user');
+      }
+    } catch (e) {
+      print('❌ Error clearing cache and refreshing data: $e');
+    }
+  }
+
+  /// Load field-specific analytics for the newly registered field
+  void _loadFieldSpecificAnalyticsForNewField() async {
+    try {
+      print('🌽 FieldRegistration: Loading field-specific analytics for newly registered field');
+      
+      // Get the farm ID from the form data
+      final farmId = _formControllers.farmName; // This should be the farm ID
+      
+      if (farmId.isNotEmpty) {
+        // Load field-specific analytics for the new field
+        context.read<MonitoringBloc>().add(
+          LoadWeeklyDataEvent(
+            farmId: farmId,
+            fieldId: _formControllers.fieldName,
+            weekOffset: 0
+          )
+        );
+        
+        print('🌽 FieldRegistration: Triggered field-specific analytics load for field: ${_formControllers.fieldName}');
+      }
+    } catch (e) {
+      print('❌ Error loading field-specific analytics for new field: $e');
+    }
   }
 
   void _submitFarmData() async {

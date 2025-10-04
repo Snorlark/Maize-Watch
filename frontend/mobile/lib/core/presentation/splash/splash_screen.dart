@@ -7,6 +7,7 @@ import '../../../features/authentication/presentation/screens/landing_screen.dar
 import '../../../features/authentication/presentation/bloc/authentication_bloc.dart';
 import '../../../features/farm/presentation/bloc/farm_bloc.dart';
 import '../../../features/farm/presentation/screens/field_registration_screen.dart';
+import '../../../features/farm/domain/entities/farm.dart';
 import '../../../features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
 import '../../../generated/l10n.dart';
 import '../../theme/colors.dart';
@@ -122,11 +123,10 @@ class _SplashScreenState extends State<SplashScreen>
     // Listen to FarmBloc stream to know when farms are loaded
     context.read<FarmBloc>().stream.listen((farmState) {
       if (mounted && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
-        final firstFarm = farmState.farms.first;
-        print("🌽 Splash: Farms loaded, pre-loading monitoring analytics for farm: ${firstFarm.id}");
+        print("🌽 Splash: Farms loaded, pre-loading monitoring analytics for all farms and fields");
         
-        // Load analytics for the first farm
-        context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: firstFarm.id ?? ''));
+        // Load analytics for all farms and their fields
+        _loadAnalyticsForAllFarms(farmState.farms);
         
         // Also load latest readings for immediate display
         Timer(const Duration(milliseconds: 500), () {
@@ -140,6 +140,41 @@ class _SplashScreenState extends State<SplashScreen>
         _listenForAnalyticsLoading();
       }
     });
+  }
+  
+  /// Load analytics for all farms and their fields to ensure prescriptions are available immediately
+  void _loadAnalyticsForAllFarms(List<Farm> farms) async {
+    try {
+      print("🌽 Splash: Loading analytics for ${farms.length} farms");
+      
+      // Load analytics for each farm
+      for (final farm in farms) {
+        if (farm.id != null) {
+          print("🌽 Splash: Loading analytics for farm: ${farm.id} (${farm.farmName})");
+          
+          // Load farm-level analytics
+          context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: farm.id!));
+          
+          // Load field-specific analytics for each field in this farm
+          for (final field in farm.fields) {
+            print("🌽 Splash: Loading field-specific analytics for field: ${field.fieldName}");
+            
+            // Load field-specific analytics for this field
+            context.read<MonitoringBloc>().add(
+              LoadWeeklyDataEvent(
+                farmId: farm.id!, 
+                fieldId: field.fieldName,
+                weekOffset: 0
+              )
+            );
+          }
+        }
+      }
+      
+      print("🌽 Splash: Completed loading analytics for all farms and fields");
+    } catch (e) {
+      print("🌽 Splash: Error loading analytics for all farms: $e");
+    }
   }
   
   void _listenForAnalyticsLoading() {

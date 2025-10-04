@@ -183,14 +183,16 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
           ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(kAppLargePadding.w),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: kAppLargePadding.h),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(kAppLargePadding.w),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+
               
               // Icon
               Center(
@@ -231,7 +233,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                 textAlign: TextAlign.center,
               ),
               
-              SizedBox(height: kAppLargePadding.h * 2),
+              SizedBox(height: kAppLargePadding.h),
               
               // Code input field
               Text(
@@ -328,7 +330,7 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                 ),
               ),
               
-              const Spacer(),
+              SizedBox(height: kAppLargePadding.h),
               
               // Help text
               Text(
@@ -338,7 +340,11 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
                 ),
                 textAlign: TextAlign.center,
               ),
-            ],
+              
+              SizedBox(height: kAppLargePadding.h),
+                ],
+              ),
+            ),
           ),
         ),
       ),
