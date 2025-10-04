@@ -7,6 +7,8 @@ import '../../../features/authentication/presentation/screens/landing_screen.dar
 import '../../../features/authentication/presentation/bloc/authentication_bloc.dart';
 import '../../../features/farm/presentation/bloc/farm_bloc.dart';
 import '../../../features/farm/presentation/screens/field_registration_screen.dart';
+import '../../../features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
+import '../../../generated/l10n.dart';
 import '../../theme/colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -37,29 +39,39 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(milliseconds: 4500), () async {
       _rotationController.stop();
       setState(() {
-        _statusMessage = 'Checking authentication...';
+        _statusMessage = S.of(context).checking_authentication;
       });
 
       // Initialize session first, then check authentication
       context.read<AuthenticationBloc>().add(InitializeSessionEvent());
       context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
+      
+      // Start analytics loading early for better performance
+      _startAnalyticsLoading();
     });
 
-    // Add timeout timer to prevent infinite loading
-    _timeoutTimer = Timer(const Duration(seconds: 15), () {
+    // Add timeout timer to prevent infinite loading (reduced from 15 to 8 seconds)
+    _timeoutTimer = Timer(const Duration(seconds: 8), () {
       if (mounted) {
         // Check if user is authenticated but just having network issues
         final authState = context.read<AuthenticationBloc>().state;
         if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
-          print("🌽 Splash: User is authenticated but network timeout - going to home screen for offline access");
+          print("🌽 Splash: User is authenticated but analytics timeout - going to home screen for offline access");
           _navigateTo(const HomeScreen());
         } else {
           _showErrorAndNavigate(
-            'Connection timeout. Please check your internet connection.',
+            S.of(context).connection_timeout,
           );
         }
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Set initial translated message when context is available
+    _statusMessage = S.of(context).initializing;
   }
 
   @override
@@ -84,6 +96,73 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
         _navigateTo(const LandingScreen());
+      }
+    });
+  }
+
+  // Start analytics loading early for better performance
+  void _startAnalyticsLoading() {
+    // Pre-load analytics in the background to improve performance
+    Timer(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        final authState = context.read<AuthenticationBloc>().state;
+        if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+          print("🌽 Splash: Pre-loading analytics for better performance");
+          // Start analytics loading in background
+          context.read<FarmBloc>().add(GetUserFarmsEvent(userId: authState.user!.id));
+          
+          // Listen for farm loading completion and then load analytics
+          _listenForFarmLoadingAndLoadAnalytics();
+        }
+      }
+    });
+  }
+  
+  void _listenForFarmLoadingAndLoadAnalytics() {
+    // Listen to FarmBloc stream to know when farms are loaded
+    context.read<FarmBloc>().stream.listen((farmState) {
+      if (mounted && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+        final firstFarm = farmState.farms.first;
+        print("🌽 Splash: Farms loaded, pre-loading monitoring analytics for farm: ${firstFarm.id}");
+        
+        // Load analytics for the first farm
+        context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: firstFarm.id ?? ''));
+        
+        // Also load latest readings for immediate display
+        Timer(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            print("🌽 Splash: Pre-loading latest readings");
+            context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
+          }
+        });
+        
+        // Listen for analytics loading completion
+        _listenForAnalyticsLoading();
+      }
+    });
+  }
+  
+  void _listenForAnalyticsLoading() {
+    // Listen to MonitoringBloc stream to know when analytics are loaded
+    context.read<MonitoringBloc>().stream.listen((monitoringState) {
+      if (mounted && monitoringState.farmAnalytics != null) {
+        print("🌽 Splash: Analytics loaded successfully, navigating to home screen");
+        // Cancel timeout timer since we have data
+        _timeoutTimer?.cancel();
+        // Navigate to home screen with loaded data
+        _navigateTo(const HomeScreen());
+      }
+    });
+    
+    // Fallback: If analytics don't load within 5 seconds, navigate anyway
+    Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        final monitoringState = context.read<MonitoringBloc>().state;
+        if (monitoringState.farmAnalytics == null) {
+          print("🌽 Splash: Analytics loading timeout, navigating to home screen anyway");
+          _timeoutTimer?.cancel();
+          _navigateTo(const HomeScreen());
+        }
       }
     });
   }
@@ -128,7 +207,7 @@ class _SplashScreenState extends State<SplashScreen>
                 _requestedFarms = true;
                 final userId = state.user!.id;
                 setState(() {
-                  _statusMessage = 'Loading your farm...';
+                  _statusMessage = S.of(context).loading_your_farm;
                   _isLoadingFarms = true;
                 });
 
@@ -174,7 +253,7 @@ class _SplashScreenState extends State<SplashScreen>
               _timeoutTimer?.cancel();
               _navigateTo(const LandingScreen());
             } else if (state.status == AuthenticationStatus.failure) {
-              _showErrorAndNavigate('Authentication failed. Please try again.');
+              _showErrorAndNavigate(S.of(context).authentication_failed);
             }
           },
         ),
@@ -190,7 +269,7 @@ class _SplashScreenState extends State<SplashScreen>
               print("🌽 Splash: FarmsLoaded. hasFarms=$hasFarms");
               setState(() {
                 _statusMessage =
-                    hasFarms ? 'Welcome back!' : 'Setting up your farm...';
+                    hasFarms ? S.of(context).welcome_back : S.of(context).setting_up_your_farm;
               });
 
               // Stop rotation animation
@@ -219,7 +298,7 @@ class _SplashScreenState extends State<SplashScreen>
                   state.message.contains('401') ||
                   state.message.contains('Unauthorized')) {
                 print("🚨 Splash: Authentication expired - redirecting to landing");
-                _showErrorAndNavigate('Your session has expired. Please log in again.');
+                _showErrorAndNavigate(S.of(context).session_expired);
               } else if (state.message.contains('Network error') ||
                          state.message.contains('Server error') ||
                          state.message.contains('internet connection')) {
@@ -242,7 +321,7 @@ class _SplashScreenState extends State<SplashScreen>
             } else if (state is FarmLoading) {
               print("🌽 Splash: FarmLoading state - keeping timer active");
               setState(() {
-                _statusMessage = 'Loading your farms...';
+                _statusMessage = S.of(context).loading_your_farms;
                 _isLoadingFarms = true;
               });
               // Ensure rotation continues during loading
@@ -320,7 +399,7 @@ class _SplashScreenState extends State<SplashScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'from',
+                    S.of(context).from,
                     style: textTheme.bodyMedium?.copyWith(
                       color: MAIZE_ACCENT,
                       fontWeight: FontWeight.w500,

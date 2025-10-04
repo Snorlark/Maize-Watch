@@ -102,12 +102,12 @@ class _AccountScreenState extends State<AccountScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                    'Menu',
+                    S.of(context).menu,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
                   SizedBox(height: kAppSmallGap),
               Text(
-                'Manage your account settings',
+                S.of(context).manage_your_account_settings,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
               ),                  
                 ],
@@ -136,11 +136,11 @@ class _AccountScreenState extends State<AccountScreen> {
               children: [
                 // Profile Section
                 _buildSectionCard(
-                  title: 'Profile',
+                  title: S.of(context).profile,
             children: [
                     _buildMenuItem(
                       title: user?.fullName ?? '',
-                      subtitle: 'Manage your personal informations',
+                      subtitle: S.of(context).manage_your_personal_informations,
                       icon: Icons.person,
                 onTap: () {
                   Navigator.push(
@@ -154,7 +154,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 SizedBox(height: kAppMediumPadding),
 
                 _buildSectionCard(
-                  title: 'Settings',
+                  title: S.of(context).settings,
                   children: [
                     _buildMenuItem(
                       title: S.of(context).sensor_status,
@@ -174,7 +174,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     SizedBox(height: kAppMediumPadding),
 
                                         _buildMenuItem(
-                      title: 'Prototype Management',
+                      title: S.of(context).prototype_management,
                       subtitle: 'Manage and unsync prototypes from fields',
                       icon: Icons.device_hub,
                       onTap: () {
@@ -257,12 +257,12 @@ class _AccountScreenState extends State<AccountScreen> {
                         }
                         
                         return _buildOptionItem(
-                          title: 'Notifications',
+                          title: S.of(context).notifications,
                           currentValue: currentNotificationStatus,
                           icon: Icons.notifications,
                           onTap: () {
                             print('🔧 AccountScreen: Notification dialog opened, current settings: enabled=$notificationsEnabled, vibrationOnly=$vibrationOnly');
-                            _showOptionDialog('Notification Settings', NotificationSettingsWidget(
+                            _showOptionDialog(S.of(context).notification_settings, NotificationSettingsWidget(
                               isNotificationsEnabled: notificationsEnabled,
                               isVibrationOnly: vibrationOnly,
                               onNotificationToggled: (enabled) {
@@ -301,10 +301,10 @@ class _AccountScreenState extends State<AccountScreen> {
                 SizedBox(height: kAppMediumPadding),
                 // SupportSection
                 _buildSectionCard(
-                  title: 'Support',
+                  title: S.of(context).support,
                   children: [
                     _buildMenuItem(
-                      title: 'About',
+                      title: S.of(context).about,
                       subtitle: 'Know more about Maize Watch\'s objective and socials',
                       icon: Icons.info_outline,
                       onTap: () {
@@ -321,7 +321,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     SizedBox(height: kAppMediumPadding),
 
                     _buildMenuItem(
-                      title: 'Help',
+                      title: S.of(context).help,
                       subtitle: 'Learn how to use the Maize Watch app',
                       icon: Icons.help_outline,
                       onTap: () {
@@ -511,7 +511,7 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: kAppLargePadding*2, vertical: kAppMediumPadding),
                 child: Text(
-                  'Log out',
+                  S.of(context).log_out,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white, 
                     fontWeight: FontWeight.bold,
@@ -526,7 +526,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _showLogoutDialog() {
-    customOptionDialog(context, title: 'Log out', content: 'Are you sure you want to log out?', onYes: () {
+      customOptionDialog(context, title: S.of(context).log_out, content: S.of(context).are_you_sure_you_want_to_log_out, onYes: () {
       context.read<AuthenticationBloc>().add(LogoutEvent());
     });
   }

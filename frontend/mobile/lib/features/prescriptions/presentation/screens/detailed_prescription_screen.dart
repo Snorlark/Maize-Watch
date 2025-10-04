@@ -286,7 +286,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'This prescription has been completed successfully!',
+                      S.of(context).this_prescription_is_completed,
                       style: TextStyle(
                         color: Colors.green[700],
                         fontWeight: FontWeight.w600,
@@ -355,7 +355,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                 builder: (context, snapshot) {
                   final translatedDescription = snapshot.data ?? description;
                   return _buildMenuItem(
-                    title: 'Description',
+                    title: S.of(context).description_prescription,
                     subtitle: translatedDescription,
                     icon: Icons.description,
                     isFullWidth: true,
@@ -370,7 +370,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                 children: [
                   Expanded(
                     child: _buildMenuItem(
-                      title: 'Growth Stage',
+                      title: S.of(context).growth_stage,
                       subtitle: growthStage,
                       icon: Icons.trending_up,
                     ),
@@ -378,7 +378,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                   SizedBox(width: kAppSmallGap),
                   Expanded(
                     child: _buildMenuItem(
-                      title: 'Soil Type',
+                      title: S.of(context).soil_type,
                       subtitle: soilType,
                       icon: Icons.eco,
                     ),
@@ -402,6 +402,7 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
   Widget _buildInstructionsDropdown(Map<String, dynamic> prescriptionData, Color urgencyColor) {
     final prescriptionId = prescriptionData['id'] as String? ?? '';
     final instructions = prescriptionData['instructions'] as List<dynamic>? ?? [];
+    final title = prescriptionData['title'] as String? ?? S.of(context).farm_prescription;
     final isExpanded = _expandedInstructions[prescriptionId] ?? false;
     
     return Material(
@@ -436,14 +437,17 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
             children: [
                   Icon(Icons.list_alt, color: MAIZE_ACCENT, size: 20.sp),
                   SizedBox(width: 8.w),
-              Text(
-                    'Step-by-Step Instructions (${instructions.length} steps)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: MAIZE_ACCENT,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  '${S.of(context).step_by_step_instructions} (${instructions.length} ${S.of(context).steps})',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: MAIZE_ACCENT,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-                  Spacer(),
               Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: MAIZE_ACCENT,
@@ -461,45 +465,104 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                  ...instructions.asMap().entries.map((entry) => 
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 8.h),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 24.w,
-                            height: 24.w,
-                    decoration: BoxDecoration(
-                              color: MAIZE_ACCENT,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                                '${entry.key + 1}',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  FutureBuilder<List<String>>(
+                    future: PrescriptionTranslationService.getTranslatedInstructions(title),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        // Use translated instructions from the service
+                        return Column(
+                          children: snapshot.data!.asMap().entries.map((entry) => 
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 8.h),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 24.w,
+                                    height: 24.w,
+                                    decoration: BoxDecoration(
+                                      color: MAIZE_ACCENT,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${entry.key + 1}',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Text(
+                                      entry.value,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: MAIZE_ACCENT,
+                                        height: 1.4,
+                                        decoration: _isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ).toList(),
+                        );
+                      } else {
+                        // Fallback to original instructions with individual translation
+                        return Column(
+                          children: instructions.asMap().entries.map((entry) => 
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 8.h),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 24.w,
+                                    height: 24.w,
+                                    decoration: BoxDecoration(
+                                      color: MAIZE_ACCENT,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${entry.key + 1}',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: FutureBuilder<String>(
+                                      future: PrescriptionTranslationService.translatePrescriptionDescription(entry.value.toString()),
+                                      builder: (context, snapshot) {
+                                        final translatedInstruction = snapshot.data ?? entry.value.toString();
+                                        return Text(
+                                          translatedInstruction,
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: MAIZE_ACCENT,
+                                            height: 1.4,
+                                            decoration: _isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ).toList(),
+                        );
+                      }
+                    },
                   ),
-                          SizedBox(width: 12.w),
-                  Expanded(
-                    child: Text(
-                              entry.value.toString(),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: MAIZE_ACCENT,
-                        height: 1.4,
-                                decoration: _isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-                    ),
-                  ).toList(),
                 ],
               ),
             ),
@@ -691,11 +754,14 @@ class _DetailedPrescriptionScreenState extends State<DetailedPrescriptionScreen>
                     size: 18.sp,
                   ),
                   SizedBox(width: 8.w),
-                  Text(
-                    _isCompleted ? S.of(context).completed : S.of(context).mark_complete,
-              style: TextStyle(
-                fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      _isCompleted ? S.of(context).completed : S.of(context).mark_complete,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

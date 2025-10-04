@@ -33,7 +33,10 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
 
     try {
       final token = await SecureStorage.getToken();
+      print('🔧 PrototypeManagement: Token available: ${token != null}');
+      
       if (token == null) {
+        print('🔧 PrototypeManagement: No token available');
         setState(() {
           _errorMessage = S.of(context).authentication_required;
           _isLoading = false;
@@ -41,19 +44,28 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
         return;
       }
 
+      print('🔧 PrototypeManagement: Calling getUserPrototypes API...');
       final result = await PrototypeService.getUserPrototypes(token);
+      print('🔧 PrototypeManagement: API response: $result');
       
       if (mounted) {
         setState(() {
           _isLoading = false;
           if (result['success'] == true) {
-            _prototypes = List<Map<String, dynamic>>.from(result['data'] ?? []);
+            // Backend returns data in 'prototypes' field, not 'data'
+            _prototypes = List<Map<String, dynamic>>.from(result['prototypes'] ?? []);
+            print('🔧 PrototypeManagement: Loaded ${_prototypes.length} prototypes');
+            for (var prototype in _prototypes) {
+              print('🔧 PrototypeManagement: Prototype: ${prototype['prototype_id']} - Channel: ${prototype['channel_id']}');
+            }
           } else {
             _errorMessage = result['message'] ?? S.of(context).failed_to_load_prototypes;
+            print('🔧 PrototypeManagement: API error: $_errorMessage');
           }
         });
       }
     } catch (e) {
+      print('🔧 PrototypeManagement: Exception: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -141,147 +153,276 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
     }
   }
 
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  Widget _buildPrototypeMenuItem({
+    required String prototypeId,
+    required String channelId,
+    required String registeredAt,
+    required bool isActive,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(kAppMediumPadding),
+      margin: EdgeInsets.only(bottom: kAppSmallGap),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.white),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30.r),
+            ),
+            child: Icon(
+              Icons.device_hub,
+              color: isActive ? Colors.green : Colors.red,
+              size: 20.sp,
+            ),
+          ),
+          SizedBox(width: kAppSmallGap),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      S.of(context).prototype_id,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: MAIZE_ACCENT.withOpacity(0.8),
+                
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: 3.h),
+                Text(
+                  prototypeId,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  S.of(context).channel_id,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: MAIZE_ACCENT.withOpacity(0.8),
+                  ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  channelId,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (registeredAt.isNotEmpty) ...[
+                  SizedBox(height: 8.h),
+                  Text(
+                    S.of(context).registered,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: MAIZE_ACCENT.withOpacity(0.8),
+                    ),
+                  ),
+                  SizedBox(height: 3.h),
+                  Text(
+                    _formatDate(registeredAt),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    Icon(
+                      isActive ? Icons.check_circle : Icons.cancel,
+                      size: 16.sp,
+                      color: isActive ? Colors.green : Colors.red,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      isActive ? S.of(context).active : S.of(context).inactive,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isActive ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.link_off, color: Colors.red),
+            onPressed: () => _unsyncPrototype(prototypeId, channelId, 'Prototype $prototypeId'),
+            tooltip: S.of(context).unsync_prototype,
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = S.of(context);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: MAIZE_BACKGROUND,
+      extendBodyBehindAppBar: true,
+      backgroundColor: MAIZE_PRIMARY_LIGHT,
       appBar: AppBar(
-        backgroundColor: MAIZE_BACKGROUND,
+        backgroundColor: MAIZE_PRIMARY_LIGHT,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: MAIZE_ACCENT),
           onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          S.of(context).unsync_prototype,
-          style: textTheme.headlineSmall?.copyWith(
-            color: MAIZE_ACCENT,
-            fontWeight: FontWeight.bold,
+        ),        
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: MAIZE_ACCENT),
+            onPressed: _loadPrototypes,
+            tooltip: S.of(context).refresh,
           ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _isLoading ? _buildLoadingSection() : _buildContentSection(),
+          ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64.sp,
-                        color: Colors.red,
-                      ),
-                      SizedBox(height: kAppMediumPadding.h),
-                      Text(
-                        _errorMessage!,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: Colors.red,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: kAppMediumPadding.h),
-                      ElevatedButton(
-                        onPressed: _loadPrototypes,
-                        child: Text(l10n.retry),
-                      ),
-                    ],
-                  ),
-                )
-              : _prototypes.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.device_hub_outlined,
-                            size: 64.sp,
-                            color: MAIZE_ACCENT.withOpacity(0.5),
-                          ),
-                          SizedBox(height: kAppMediumPadding.h),
-                          Text(
-                            S.of(context).no_prototypes_found,
-                            style: textTheme.headlineSmall?.copyWith(
-                              color: MAIZE_ACCENT.withOpacity(0.7),
-                            ),
-                          ),
-                          SizedBox(height: kAppSmallPadding.h),
-                          Text(
-                            S.of(context).no_prototypes_registered,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: MAIZE_ACCENT.withOpacity(0.5),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: EdgeInsets.all(kAppMediumPadding.w),
-                      itemCount: _prototypes.length,
-                      itemBuilder: (context, index) {
-                        final prototype = _prototypes[index];
-                        final prototypeId = prototype['prototype_id'] ?? '';
-                        final fieldId = prototype['field_id'] ?? '';
-                        final fieldName = prototype['field_name'] ?? 'Unknown Field';
-                        final isActive = prototype['is_active'] ?? false;
+    );
+  }
 
-                        return Card(
-                          margin: EdgeInsets.only(bottom: kAppMediumPadding.h),
-                          child: ListTile(
-                            leading: Container(
-                              padding: EdgeInsets.all(kAppSmallPadding.w),
-                              decoration: BoxDecoration(
-                                color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              child: Icon(
-                                Icons.device_hub,
-                                color: isActive ? Colors.green : Colors.red,
-                                size: 24.sp,
-                              ),
-                            ),
-                            title: Text(
-                              S.of(context).prototype_id(prototypeId),
-                              style: textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('${S.of(context).field_colon} $fieldName'),
-                                SizedBox(height: 4.h),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      isActive ? Icons.check_circle : Icons.cancel,
-                                      size: 16.sp,
-                                      color: isActive ? Colors.green : Colors.red,
-                                    ),
-                                    SizedBox(width: 4.w),
-                                    Text(
-                                      isActive ? S.of(context).active : S.of(context).inactive,
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: isActive ? Colors.green : Colors.red,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.link_off, color: Colors.red),
-                              onPressed: () => _unsyncPrototype(prototypeId, fieldId, fieldName),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+  Widget _buildLoadingSection() {
+    return Expanded(
+      child: Center(
+        child: CircularProgressIndicator(
+          color: MAIZE_ACCENT,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentSection() {
+    final textTheme = Theme.of(context).textTheme;
+    
+    if (_errorMessage != null) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64.sp,
+                color: Colors.red,
+              ),
+              SizedBox(height: kAppMediumPadding.h),
+              Text(
+                _errorMessage!,
+                style: textTheme.bodyLarge?.copyWith(
+                  color: Colors.red,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: kAppMediumPadding.h),
+              ElevatedButton(
+                onPressed: _loadPrototypes,
+                child: Text(S.of(context).retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (_prototypes.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.device_hub_outlined,
+                size: 64.sp,
+                color: MAIZE_ACCENT.withOpacity(0.5),
+              ),
+              SizedBox(height: kAppMediumPadding.h),
+              Text(
+                S.of(context).no_prototypes_found,
+                style: textTheme.headlineSmall?.copyWith(
+                  color: MAIZE_ACCENT.withOpacity(0.7),
+                ),
+              ),
+              SizedBox(height: kAppSmallPadding.h),
+              Text(
+                S.of(context).no_prototypes_registered,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: MAIZE_ACCENT.withOpacity(0.5),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.all(kAppMediumPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              S.of(context).prototype_management,
+              style: textTheme.headlineMedium,
+            ),
+            verticalSpace(5.h),
+            Text(
+              S.of(context).manage_your_registered_prototypes,
+              style: textTheme.bodySmall,
+            ),
+            verticalSpace(kAppLargeGap),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _prototypes.length,
+                itemBuilder: (context, index) {
+                  final prototype = _prototypes[index];
+                  final prototypeId = prototype['prototype_id'] ?? '';
+                  final channelId = prototype['channel_id'] ?? '';
+                  final registeredAt = prototype['registeredAt'] ?? '';
+                  final isActive = prototype['isActive'] ?? true;
+
+                  return _buildPrototypeMenuItem(
+                    prototypeId: prototypeId,
+                    channelId: channelId,
+                    registeredAt: registeredAt,
+                    isActive: isActive,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

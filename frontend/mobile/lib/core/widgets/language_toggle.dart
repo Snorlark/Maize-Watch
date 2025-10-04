@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
-import 'package:mobile/core/services/language_notifier.dart';
 
 import '../../features/settings/presentation/bloc/settings_bloc.dart';
 import '../../features/settings/presentation/bloc/settings_event.dart';
@@ -23,7 +22,7 @@ class LanguageToggle extends StatelessWidget {
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
-        // OPTIMIZED: Removed debug prints for better performance
+        print('🔧 LanguageToggle: Settings state: ${state.runtimeType}');
         
         return Theme(
           data: Theme.of(context).copyWith(canvasColor: dropdownBackgroundColor),
@@ -38,16 +37,12 @@ class LanguageToggle extends StatelessWidget {
               value: _getCurrentLocale(state),
               onChanged: (Locale? newLocale) {
                 if (newLocale != null) {
-                  print("🌐 LanguageToggle: User selected language: ${newLocale.languageCode}");
-                  
-                  // Update settings
+                  print('🔧 LanguageToggle: Language changed to: ${newLocale.languageCode}');
                   context.read<SettingsBloc>().add(UpdateLanguage(newLocale.languageCode));
-                  
-                  // Notify language change
-                  languageNotifier.changeLanguage(newLocale);
                 }
               },
               items: S.delegate.supportedLocales.map((locale) {
+                print('🔧 LanguageToggle: Creating dropdown item for locale: ${locale.languageCode}');
                 return DropdownMenuItem<Locale>(
                   value: locale,
                   child: Text(
@@ -64,14 +59,19 @@ class LanguageToggle extends StatelessWidget {
   }
 
   Locale _getCurrentLocale(SettingsState state) {
-    // OPTIMIZED: Removed debug prints for better performance
+    print('🔧 LanguageToggle: Getting current locale for state: ${state.runtimeType}');
+    print('🔧 LanguageToggle: Available locales: ${S.delegate.supportedLocales}');
     
     String currentLanguage = 'en'; // Default language
     
     if (state is SettingsLoaded) {
       currentLanguage = state.settings.language;
+      print('🔧 LanguageToggle: Current language from settings: $currentLanguage');
     } else if (state is SettingsUpdated) {
       currentLanguage = state.settings.language;
+      print('🔧 LanguageToggle: Current language from updated settings: $currentLanguage');
+    } else {
+      print('🔧 LanguageToggle: Using default language: $currentLanguage');
     }
     
     // Find matching locale from supported locales
@@ -80,6 +80,7 @@ class LanguageToggle extends StatelessWidget {
       orElse: () => S.delegate.supportedLocales.first,
     );
     
+    print('🔧 LanguageToggle: Matching locale: ${matchingLocale.languageCode}');
     return matchingLocale;
   }
 }
