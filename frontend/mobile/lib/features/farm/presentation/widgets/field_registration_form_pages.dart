@@ -37,7 +37,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            S.current.name_your_field,
+            S.of(context).name_your_field,
             style: textTheme.headlineMedium?.copyWith(
               fontSize: 28.sp,
               height: 1.2,

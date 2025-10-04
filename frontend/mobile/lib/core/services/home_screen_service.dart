@@ -275,10 +275,10 @@ class HomeScreenService {
     }
   }
 
-  /// Start background refresh timer
+  /// Start background refresh timer - REDUCED FREQUENCY
   static void _startBackgroundRefresh(String? farmId) {
     _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(Duration(minutes: 5), (timer) async {
+    _refreshTimer = Timer.periodic(Duration(minutes: 15), (timer) async { // Reduced from 5 to 15 minutes
       try {
         print('🏠 HOME: Background refresh triggered');
         await _loadFreshHomeData(farmId);

@@ -8,6 +8,8 @@ import 'package:mobile/core/widgets/error_dialog.dart';
 import 'package:mobile/core/services/two_factor_auth_service.dart';
 import 'package:mobile/generated/l10n.dart';
 
+import '../../../../core/widgets/language_toggle.dart';
+
 class TwoFactorVerificationScreen extends StatefulWidget {
   final String contactNumber;
   final String purpose; // 'registration' or 'password_reset'
@@ -166,21 +168,20 @@ class _TwoFactorVerificationScreenState extends State<TwoFactorVerificationScree
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: MAIZE_BACKGROUND,
+      backgroundColor: MAIZE_PRIMARY_LIGHT,
       appBar: AppBar(
-        backgroundColor: MAIZE_BACKGROUND,
+        backgroundColor: MAIZE_PRIMARY_LIGHT,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: MAIZE_ACCENT),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-              'Verify Phone Number',
-          style: textTheme.headlineSmall?.copyWith(
-            color: MAIZE_ACCENT,
-            fontWeight: FontWeight.bold,
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 16.w),
+            child: const LanguageToggle(color_toggle: MAIZE_ACCENT),
           ),
-        ),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(kAppLargePadding.w),

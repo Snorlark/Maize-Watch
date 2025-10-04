@@ -35,7 +35,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
       final token = await SecureStorage.getToken();
       if (token == null) {
         setState(() {
-          _errorMessage = 'Authentication required';
+          _errorMessage = S.of(context).authentication_required;
           _isLoading = false;
         });
         return;
@@ -49,7 +49,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
           if (result['success'] == true) {
             _prototypes = List<Map<String, dynamic>>.from(result['data'] ?? []);
           } else {
-            _errorMessage = result['message'] ?? 'Failed to load prototypes';
+            _errorMessage = result['message'] ?? S.of(context).failed_to_load_prototypes;
           }
         });
       }
@@ -57,7 +57,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Error loading prototypes: $e';
+          _errorMessage = S.of(context).error_loading_prototypes(e.toString());
         });
       }
     }
@@ -102,7 +102,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
         ErrorDialog.show(
           context,
           title: S.of(context).error,
-          message: 'Authentication required',
+          message: S.of(context).authentication_required,
         );
         return;
       }
@@ -125,7 +125,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
           ErrorDialog.show(
             context,
             title: S.of(context).error,
-            message: result['message'] ?? 'Failed to unsync prototype',
+            message: result['message'] ?? S.of(context).failed_to_unsync_prototype,
           );
         }
       }
@@ -135,7 +135,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
         ErrorDialog.show(
           context,
           title: S.of(context).error,
-          message: 'Error unsyncing prototype: $e',
+          message: S.of(context).error_unsyncing_prototype(e.toString()),
         );
       }
     }
@@ -156,7 +156,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Unsync Prototype',
+          S.of(context).unsync_prototype,
           style: textTheme.headlineSmall?.copyWith(
             color: MAIZE_ACCENT,
             fontWeight: FontWeight.bold,
@@ -203,14 +203,14 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                           ),
                           SizedBox(height: kAppMediumPadding.h),
                           Text(
-                            'No prototypes found',
+                            S.of(context).no_prototypes_found,
                             style: textTheme.headlineSmall?.copyWith(
                               color: MAIZE_ACCENT.withOpacity(0.7),
                             ),
                           ),
                           SizedBox(height: kAppSmallPadding.h),
                           Text(
-                            'No prototypes are currently registered',
+                            S.of(context).no_prototypes_registered,
                             style: textTheme.bodyMedium?.copyWith(
                               color: MAIZE_ACCENT.withOpacity(0.5),
                             ),
@@ -245,7 +245,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                               ),
                             ),
                             title: Text(
-                              'Prototype ID: $prototypeId',
+                              S.of(context).prototype_id(prototypeId),
                               style: textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -264,7 +264,7 @@ class _PrototypeManagementScreenState extends State<PrototypeManagementScreen> {
                                     ),
                                     SizedBox(width: 4.w),
                                     Text(
-                                      isActive ? 'Active' : 'Inactive',
+                                      isActive ? S.of(context).active : S.of(context).inactive,
                                       style: textTheme.bodySmall?.copyWith(
                                         color: isActive ? Colors.green : Colors.red,
                                         fontWeight: FontWeight.w500,

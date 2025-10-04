@@ -70,19 +70,23 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   void didUpdateWidget(FarmDetailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Check if the selected field has changed
+    // Check if the selected field has changed - OPTIMIZED to prevent unnecessary rebuilds
     if (oldWidget.selectedField?.fieldName != widget.selectedField?.fieldName) {
       print('🔍 Field changed from ${oldWidget.selectedField?.fieldName} to ${widget.selectedField?.fieldName}');
       
-      // Clear current metrics to force reload
-      setState(() {
-        _currentMetrics = null;
-        _cropCondition = null;
-        _stressAnalysis = null;
+      // Use WidgetsBinding to defer the state update and prevent immediate rebuild
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentMetrics = null;
+            _cropCondition = null;
+            _stressAnalysis = null;
+          });
+          
+          // Reload cached data first, then fresh data for the new field
+          _loadCachedDataFirst();
+        }
       });
-      
-      // Reload cached data first, then fresh data for the new field
-      _loadCachedDataFirst();
     }
   }
 
@@ -792,6 +796,12 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   @override
   void dispose() {
     _tabController.dispose();
+    // Clear all data to prevent memory leaks
+    _cropCondition = null;
+    _currentMetrics = null;
+    _weeklyData = null;
+    _growthStageAnalysis = null;
+    _stressAnalysis = null;
     super.dispose();
   }
 

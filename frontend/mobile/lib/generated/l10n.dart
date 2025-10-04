@@ -1374,10 +1374,10 @@ class S {
     );
   }
 
-  /// `Soil Moisture`
+  /// `Soil Moisture Sensor`
   String get soil_moisture_sensor {
     return Intl.message(
-      'Soil Moisture',
+      'Soil Moisture Sensor',
       name: 'soil_moisture_sensor',
       desc: '',
       args: [],
@@ -2519,9 +2519,14 @@ class S {
     );
   }
 
-  /// `Prototype`
-  String get prototype_id {
-    return Intl.message('Prototype', name: 'prototype_id', desc: '', args: []);
+  /// `Prototype ID: {prototypeId}`
+  String prototype_id(Object prototypeId) {
+    return Intl.message(
+      'Prototype ID: $prototypeId',
+      name: 'prototype_id',
+      desc: '',
+      args: [prototypeId],
+    );
   }
 
   /// `Field:`
@@ -2549,23 +2554,23 @@ class S {
     );
   }
 
-  /// `Error loading prototypes`
-  String get error_loading_prototypes {
+  /// `Error loading prototypes: {error}`
+  String error_loading_prototypes(Object error) {
     return Intl.message(
-      'Error loading prototypes',
+      'Error loading prototypes: $error',
       name: 'error_loading_prototypes',
       desc: '',
-      args: [],
+      args: [error],
     );
   }
 
-  /// `Error unsyncing prototype`
-  String get error_unsyncing_prototype {
+  /// `Error unsyncing prototype: {error}`
+  String error_unsyncing_prototype(Object error) {
     return Intl.message(
-      'Error unsyncing prototype',
+      'Error unsyncing prototype: $error',
       name: 'error_unsyncing_prototype',
       desc: '',
-      args: [],
+      args: [error],
     );
   }
 
@@ -6265,6 +6270,201 @@ class S {
       desc: '',
       args: [seconds],
     );
+  }
+
+  /// `Failed to load prototypes`
+  String get failed_to_load_prototypes {
+    return Intl.message(
+      'Failed to load prototypes',
+      name: 'failed_to_load_prototypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensors are in sleep mode (8pm-3am PH time)`
+  String get sensors_sleep_mode {
+    return Intl.message(
+      'Sensors are in sleep mode (8pm-3am PH time)',
+      name: 'sensors_sleep_mode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registered Prototypes`
+  String get registered_prototypes {
+    return Intl.message(
+      'Registered Prototypes',
+      name: 'registered_prototypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Refresh Status`
+  String get refresh_status {
+    return Intl.message(
+      'Refresh Status',
+      name: 'refresh_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to load sensor status`
+  String get failed_to_load_sensor_status {
+    return Intl.message(
+      'Failed to load sensor status',
+      name: 'failed_to_load_sensor_status',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please try again`
+  String get please_try_again {
+    return Intl.message(
+      'Please try again',
+      name: 'please_try_again',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Status Check`
+  String get status_check {
+    return Intl.message(
+      'Status Check',
+      name: 'status_check',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checking if sensors are actively sending data to ThingSpeak`
+  String get checking_if_sensors_are_actively_sending_data_to_thingspeak {
+    return Intl.message(
+      'Checking if sensors are actively sending data to ThingSpeak',
+      name: 'checking_if_sensors_are_actively_sending_data_to_thingspeak',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sleep Mode Active`
+  String get sleep_mode_active {
+    return Intl.message(
+      'Sleep Mode Active',
+      name: 'sleep_mode_active',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensors are sleeping from 8pm to 3am PH time`
+  String get sensors_are_sleeping_from_8pm_to_3am_ph_time {
+    return Intl.message(
+      'Sensors are sleeping from 8pm to 3am PH time',
+      name: 'sensors_are_sleeping_from_8pm_to_3am_ph_time',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Temperature Sensor`
+  String get temperature_sensor {
+    return Intl.message(
+      'Temperature Sensor',
+      name: 'temperature_sensor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Humidity Sensor`
+  String get humidity_sensor {
+    return Intl.message(
+      'Humidity Sensor',
+      name: 'humidity_sensor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Soil pH Sensor`
+  String get soil_ph_sensor {
+    return Intl.message(
+      'Soil pH Sensor',
+      name: 'soil_ph_sensor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Light Intensity Sensor`
+  String get light_intensity_sensor {
+    return Intl.message(
+      'Light Intensity Sensor',
+      name: 'light_intensity_sensor',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Status Legend`
+  String get status_legend {
+    return Intl.message(
+      'Status Legend',
+      name: 'status_legend',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Active: Sensor is sending data to ThingSpeak`
+  String get active_sensor_is_sending_data_to_thingspeak {
+    return Intl.message(
+      'Active: Sensor is sending data to ThingSpeak',
+      name: 'active_sensor_is_sending_data_to_thingspeak',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inactive: Sensor is offline or not sending data`
+  String get inactive_sensor_is_offline_or_not_sending_data {
+    return Intl.message(
+      'Inactive: Sensor is offline or not sending data',
+      name: 'inactive_sensor_is_offline_or_not_sending_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor is actively sending data to ThingSpeak`
+  String get sensor_is_actively_sending_data_to_thingspeak {
+    return Intl.message(
+      'Sensor is actively sending data to ThingSpeak',
+      name: 'sensor_is_actively_sending_data_to_thingspeak',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sensor is not sending data or offline`
+  String get sensor_is_not_sending_data_or_offline {
+    return Intl.message(
+      'Sensor is not sending data or offline',
+      name: 'sensor_is_not_sending_data_or_offline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Menu`
+  String get menu {
+    return Intl.message('Menu', name: 'menu', desc: '', args: []);
   }
 }
 

@@ -51,13 +51,14 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       final result = await getSettings(NoParams());
       print("🔧 SettingsBloc: getSettings result received");
       
-      await result.fold(
-        (failure) async {
+      result.fold(
+        (failure) {
           print("🔧 SettingsBloc: Settings failed with error: ${failure.toString()}");
           emit(SettingsError('Failed to load settings: ${failure.toString()}'));
         },
-        (settings) async {
-          print("🔧 SettingsBloc: Settings loaded successfully - emitting immediately");
+        (settings) {
+          print("🔧 SettingsBloc: Settings loaded successfully - language: ${settings.language}");
+          print("🔧 SettingsBloc: Emitting SettingsLoaded with language: ${settings.language}");
           // Load settings immediately without waiting for sensor status
           emit(SettingsLoaded(settings: settings));
         },
