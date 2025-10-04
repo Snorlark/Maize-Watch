@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/services/background_notification_service.dart';
-import 'package:mobile/core/services/language_notifier.dart';
 
 import 'core/di/injection_container.dart' as di;
 import 'core/presentation/splash/splash_screen.dart';
@@ -30,8 +29,6 @@ class MaizeWatchApp extends StatefulWidget {
 }
 
 class _MaizeWatchAppState extends State<MaizeWatchApp> with WidgetsBindingObserver {
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  
   @override
   void initState() {
     super.initState();
@@ -69,38 +66,41 @@ class _MaizeWatchAppState extends State<MaizeWatchApp> with WidgetsBindingObserv
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, settingsState) {
-        // OPTIMIZED: Removed debug prints for better performance
-        if (settingsState is SettingsInitial) {
+        print("🔧 App: Settings state changed: ${settingsState.runtimeType}");
+        if (settingsState is SettingsLoaded) {
+          print("🔧 App: Current language: ${settingsState.settings.language}");
+        } else if (settingsState is SettingsUpdated) {
+          print("🔧 App: Settings updated, current language: ${settingsState.settings.language}");
+        } else if (settingsState is SettingsInitial) {
+          print("🔧 App: Settings not loaded yet, loading...");
           // Load settings when state is initial
           WidgetsBinding.instance.addPostFrameCallback((_) {
             context.read<SettingsBloc>().add(LoadSettings());
           });
         }
         
-        // Update language notifier when settings change
-        if (settingsState is SettingsLoaded || settingsState is SettingsUpdated) {
-          final locale = settingsState.locale;
-          if (languageNotifier.value != locale) {
-            languageNotifier.changeLanguage(locale);
-          }
-        }
-        
-        return ValueListenableBuilder<Locale>(
-          valueListenable: languageNotifier,
-          builder: (context, currentLocale, child) {
-            print("🌐 ValueListenableBuilder: Rebuilding with locale: ${currentLocale.languageCode}");
-            return ScreenUtilInit(
-              designSize: const Size(360, 690),
-              minTextAdapt: true,
-              splitScreenMode: true,
-              builder: (_, child) {
-                return MaterialApp(
-                  navigatorKey: _navigatorKey,
-                  title: "Maize Watch",
-                  theme: AppTheme.lightTheme,
-                  debugShowCheckedModeBanner: false,
-                  // Internationalization
-                  locale: currentLocale,
+        return ScreenUtilInit(
+          designSize: const Size(360, 690),
+          minTextAdapt: true,
+          splitScreenMode: true,
+          builder: (_, child) {
+            return MaterialApp(
+              title: "Maize Watch",
+              theme: AppTheme.lightTheme,
+              debugShowCheckedModeBanner: false,
+              // Internationalization
+              locale: () {
+                Locale appLocale;
+                if (settingsState is SettingsLoaded) {
+                  appLocale = settingsState.settings.language == 'tl' ? const Locale('tl', 'PH') : const Locale('en', 'US');
+                } else if (settingsState is SettingsUpdated) {
+                  appLocale = settingsState.settings.language == 'tl' ? const Locale('tl', 'PH') : const Locale('en', 'US');
+                } else {
+                  appLocale = const Locale('en', 'US');
+                }
+                print("🔧 App: Setting locale to: ${appLocale.languageCode}");
+                return appLocale;
+              }(),
               localizationsDelegates: const [
                 S.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -139,8 +139,6 @@ class _MaizeWatchAppState extends State<MaizeWatchApp> with WidgetsBindingObserv
                 return null;
               },
             );
-          },
-        );
           },
         );
       },

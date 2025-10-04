@@ -128,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     
     print('🔍 Address is unknown type, returning "Not provided"');
-    return 'Not provided';
+    return S.of(context).null_value;
   }
 
   @override
@@ -539,7 +539,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           bool resultReceived = false;
           await for (final authState in context.read<AuthenticationBloc>().stream) {
             if (authState.status == AuthenticationStatus.authenticated && 
-                authState.message == "Profile updated successfully") {
+                authState.message == S.of(context).profile_updated_successfully) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(S.of(context).profile_updated_successfully),

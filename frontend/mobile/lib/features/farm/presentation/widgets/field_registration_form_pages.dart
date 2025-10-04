@@ -48,7 +48,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
           ),
           SizedBox(height: 8.h),
           Text(
-            S.current.give_field_unique_name,
+            S.of(context).give_field_unique_name,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w400,
               color: MAIZE_ACCENT.withOpacity(0.8),
@@ -59,8 +59,8 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
 
           // Field Name Input using consistent styling
           _buildInputField(
-            S.current.field_name,
-            S.current.field_name_hint,
+            S.of(context).field_name,
+            S.of(context).field_name_hint,
             _fieldNameController,
           ),
           SizedBox(height: 20.h),
@@ -83,7 +83,7 @@ class _FieldNameFormPageState extends State<FieldNameFormPage> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
-                    S.current.multiple_fields_info,
+                    S.of(context).multiple_fields_info,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: Colors.blue.shade700,
@@ -164,12 +164,12 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
     final days = daysSincePlanting;
     if (days == null) return '';
 
-    if (days <= 7) return S.current.emergence_stage(days);
-    if (days <= 21) return S.current.third_leaf_stage(days);
-    if (days <= 42) return S.current.eighth_leaf_stage(days);
-    if (days <= 65) return S.current.tasseling_stage(days);
-    if (days <= 85) return S.current.silking_stage(days);
-    return S.current.maturity_stage(days);
+    if (days <= 7) return S.of(context).emergence_stage(days);
+    if (days <= 21) return S.of(context).third_leaf_stage(days);
+    if (days <= 42) return S.of(context).eighth_leaf_stage(days);
+    if (days <= 65) return S.of(context).tasseling_stage(days);
+    if (days <= 85) return S.of(context).silking_stage(days);
+    return S.of(context).maturity_stage(days);
   }
 
   @override
@@ -181,7 +181,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            S.current.planting_date,
+            S.of(context).planting_date,
             style: textTheme.headlineMedium?.copyWith(
               fontSize: 28.sp,
               height: 1.2,
@@ -192,7 +192,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
           ),
           SizedBox(height: 8.h),
           Text(
-            S.current.when_did_you_plant,
+            S.of(context).when_did_you_plant,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w400,
               color: MAIZE_ACCENT.withOpacity(0.8),
@@ -257,7 +257,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                     child: Text(
                       widget.controllers.plantingDate != null
                           ? '${widget.controllers.plantingDate!.day}/${widget.controllers.plantingDate!.month}/${widget.controllers.plantingDate!.year}'
-                          : S.current.select_planting_date,
+                          : S.of(context).select_planting_date,
                       style: TextStyle(
                         fontSize: 16.sp,
                         color:
@@ -293,7 +293,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                       Icon(Icons.timeline, color: MAIZE_ACCENT, size: 20.sp),
                       SizedBox(width: 8.w),
                       Text(
-                        S.current.estimated_growth_stage,
+                        S.of(context).estimated_growth_stage,
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: MAIZE_ACCENT,
@@ -335,7 +335,7 @@ class _PlantingDateFormPageState extends State<PlantingDateFormPage> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
-                    S.current.growth_stage_calculated,
+                    S.of(context).growth_stage_calculated,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: Colors.blue.shade700,
@@ -379,7 +379,7 @@ class _DeviceRegistrationFormPageState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          S.current.device_registration,
+          S.of(context).device_registration,
           style: textTheme.headlineMedium?.copyWith(
             fontSize: 28.sp,
             height: 1.2,
@@ -390,7 +390,7 @@ class _DeviceRegistrationFormPageState
         ),
         SizedBox(height: 8.h),
         Text(
-          S.current.register_monitoring_devices,
+          S.of(context).register_monitoring_devices,
           style: textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w400,
             color: MAIZE_ACCENT.withOpacity(0.8),
@@ -409,7 +409,7 @@ class _DeviceRegistrationFormPageState
               border: Border.all(color: MAIZE_ACCENT.withOpacity(0.2)),
             ),
             child: Text(
-              S.current.devices_registered(widget.controllers.devices.length),
+              S.of(context).devices_registered(widget.controllers.devices.length),
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
@@ -647,7 +647,7 @@ class _DeviceRegistrationFormPageState
                       children: [
                         Icon(Icons.edit, size: 18.sp),
                         SizedBox(width: 8.w),
-                        Text(S.current.edit),
+                        Text(S.of(context).edit),
                       ],
                     ),
                   ),
@@ -657,7 +657,7 @@ class _DeviceRegistrationFormPageState
                       children: [
                         Icon(Icons.delete, size: 18.sp, color: Colors.red),
                         SizedBox(width: 8.w),
-                        Text(S.current.delete, style: TextStyle(color: Colors.red)),
+                        Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
@@ -717,7 +717,7 @@ class _DeviceRegistrationFormPageState
                   widget.controllers.removeDevice(index);
                 });
               },
-              child: Text(S.current.delete, style: TextStyle(color: Colors.red)),
+              child: Text(S.of(context).delete, style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -1272,7 +1272,7 @@ class _DeviceRegistrationModalState extends State<DeviceRegistrationModal> {
       if (!_isPrototypeValid) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.current.please_validate_prototype_id),
+            content: Text(S.of(context).please_validate_prototype_id),
             backgroundColor: Colors.red,
           ),
         );

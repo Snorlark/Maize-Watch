@@ -238,7 +238,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                     Column(
                       children: [
                         Text(
-                          currentWeekOffset == 0 ? 'This Week' : 'Weekly Overview',
+                          currentWeekOffset == 0 ? S.of(context).this_week : S.of(context).weekly_overview,
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 16.sp,

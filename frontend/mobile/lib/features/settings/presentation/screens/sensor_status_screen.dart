@@ -300,7 +300,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          S.of(context).prototype_id(prototypeId),
+                                          '${S.of(context).prototype_id}: $prototypeId',
                                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),

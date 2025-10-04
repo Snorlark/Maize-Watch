@@ -69,14 +69,9 @@ class S {
     return Intl.message('Settings', name: 'settings', desc: '', args: []);
   }
 
-  /// `Maximize your yields, minimize your worries.`
+  /// `Description`
   String get description {
-    return Intl.message(
-      'Maximize your yields, minimize your worries.',
-      name: 'description',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Description', name: 'description', desc: '', args: []);
   }
 
   /// `Log In`
@@ -1609,9 +1604,9 @@ class S {
     );
   }
 
-  /// `days`
-  String get days {
-    return Intl.message('days', name: 'days', desc: '', args: []);
+  /// `{count} days`
+  String days(Object count) {
+    return Intl.message('$count days', name: 'days', desc: '', args: [count]);
   }
 
   /// `Good Morning`
@@ -1719,19 +1714,34 @@ class S {
     );
   }
 
-  /// `minutes ago`
-  String get minutes_ago {
-    return Intl.message('minutes ago', name: 'minutes_ago', desc: '', args: []);
+  /// `{count}m ago`
+  String minutes_ago(Object count) {
+    return Intl.message(
+      '${count}m ago',
+      name: 'minutes_ago',
+      desc: '',
+      args: [count],
+    );
   }
 
-  /// `hours ago`
-  String get hours_ago {
-    return Intl.message('hours ago', name: 'hours_ago', desc: '', args: []);
+  /// `{count}h ago`
+  String hours_ago(Object count) {
+    return Intl.message(
+      '${count}h ago',
+      name: 'hours_ago',
+      desc: '',
+      args: [count],
+    );
   }
 
-  /// `days ago`
-  String get days_ago {
-    return Intl.message('days ago', name: 'days_ago', desc: '', args: []);
+  /// `{count}d ago`
+  String days_ago(Object count) {
+    return Intl.message(
+      '${count}d ago',
+      name: 'days_ago',
+      desc: '',
+      args: [count],
+    );
   }
 
   /// `Just now`
@@ -1749,9 +1759,9 @@ class S {
     return Intl.message('Excellent', name: 'excellent', desc: '', args: []);
   }
 
-  /// `Good`
+  /// `GOOD`
   String get good {
-    return Intl.message('Good', name: 'good', desc: '', args: []);
+    return Intl.message('GOOD', name: 'good', desc: '', args: []);
   }
 
   /// `Fair`
@@ -2519,13 +2529,13 @@ class S {
     );
   }
 
-  /// `Prototype ID: {prototypeId}`
-  String prototype_id(Object prototypeId) {
+  /// `Prototype ID`
+  String get prototype_id {
     return Intl.message(
-      'Prototype ID: $prototypeId',
+      'Prototype ID',
       name: 'prototype_id',
       desc: '',
-      args: [prototypeId],
+      args: [],
     );
   }
 
@@ -4714,9 +4724,9 @@ class S {
     return Intl.message('Quiet Hours', name: 'quiet_hours', desc: '', args: []);
   }
 
-  /// `From`
+  /// `from`
   String get from {
-    return Intl.message('From', name: 'from', desc: '', args: []);
+    return Intl.message('from', name: 'from', desc: '', args: []);
   }
 
   /// `To`
@@ -4964,9 +4974,9 @@ class S {
     );
   }
 
-  /// `Unknown`
+  /// `UNKNOWN`
   String get unknown {
-    return Intl.message('Unknown', name: 'unknown', desc: '', args: []);
+    return Intl.message('UNKNOWN', name: 'unknown', desc: '', args: []);
   }
 
   /// `Now`
@@ -5209,13 +5219,13 @@ class S {
     );
   }
 
-  /// `Step-by-Step Instructions ({count} steps)`
-  String step_by_step_instructions(Object count) {
+  /// `Step-by-Step Instructions`
+  String get step_by_step_instructions {
     return Intl.message(
-      'Step-by-Step Instructions ($count steps)',
+      'Step-by-Step Instructions',
       name: 'step_by_step_instructions',
       desc: '',
-      args: [count],
+      args: [],
     );
   }
 
@@ -6465,6 +6475,788 @@ class S {
   /// `Menu`
   String get menu {
     return Intl.message('Menu', name: 'menu', desc: '', args: []);
+  }
+
+  /// `Initializing...`
+  String get initializing {
+    return Intl.message(
+      'Initializing...',
+      name: 'initializing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checking authentication...`
+  String get checking_authentication {
+    return Intl.message(
+      'Checking authentication...',
+      name: 'checking_authentication',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading your farm...`
+  String get loading_your_farm {
+    return Intl.message(
+      'Loading your farm...',
+      name: 'loading_your_farm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Welcome back!`
+  String get welcome_back {
+    return Intl.message(
+      'Welcome back!',
+      name: 'welcome_back',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setting up your farm...`
+  String get setting_up_your_farm {
+    return Intl.message(
+      'Setting up your farm...',
+      name: 'setting_up_your_farm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading your farms...`
+  String get loading_your_farms {
+    return Intl.message(
+      'Loading your farms...',
+      name: 'loading_your_farms',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connection timeout. Please check your internet connection.`
+  String get connection_timeout {
+    return Intl.message(
+      'Connection timeout. Please check your internet connection.',
+      name: 'connection_timeout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Authentication failed. Please try again.`
+  String get authentication_failed {
+    return Intl.message(
+      'Authentication failed. Please try again.',
+      name: 'authentication_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading`
+  String get loading {
+    return Intl.message('Loading', name: 'loading', desc: '', args: []);
+  }
+
+  /// `Analytics`
+  String get analytics {
+    return Intl.message('Analytics', name: 'analytics', desc: '', args: []);
+  }
+
+  /// `Processing`
+  String get processing {
+    return Intl.message('Processing', name: 'processing', desc: '', args: []);
+  }
+
+  /// `System`
+  String get system {
+    return Intl.message('System', name: 'system', desc: '', args: []);
+  }
+
+  /// `Soon`
+  String get soon {
+    return Intl.message('Soon', name: 'soon', desc: '', args: []);
+  }
+
+  /// `Processing farm analytics data...`
+  String get processing_farm_analytics_data {
+    return Intl.message(
+      'Processing farm analytics data...',
+      name: 'processing_farm_analytics_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Tasks`
+  String get no_tasks {
+    return Intl.message('No Tasks', name: 'no_tasks', desc: '', args: []);
+  }
+
+  /// `for Today`
+  String get for_today {
+    return Intl.message('for Today', name: 'for_today', desc: '', args: []);
+  }
+
+  /// `All Clear`
+  String get all_clear {
+    return Intl.message('All Clear', name: 'all_clear', desc: '', args: []);
+  }
+
+  /// `All Fields`
+  String get all_fields {
+    return Intl.message('All Fields', name: 'all_fields', desc: '', args: []);
+  }
+
+  /// `All farm operations are up to date.`
+  String get all_farm_operations_up_to_date {
+    return Intl.message(
+      'All farm operations are up to date.',
+      name: 'all_farm_operations_up_to_date',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setup`
+  String get setup {
+    return Intl.message('Setup', name: 'setup', desc: '', args: []);
+  }
+
+  /// `Farm`
+  String get farm {
+    return Intl.message('Farm', name: 'farm', desc: '', args: []);
+  }
+
+  /// `Required`
+  String get required {
+    return Intl.message('Required', name: 'required', desc: '', args: []);
+  }
+
+  /// `New Farm`
+  String get new_farm {
+    return Intl.message('New Farm', name: 'new_farm', desc: '', args: []);
+  }
+
+  /// `Register your farm details`
+  String get register_farm_details {
+    return Intl.message(
+      'Register your farm details',
+      name: 'register_farm_details',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add field information`
+  String get add_field_information {
+    return Intl.message(
+      'Add field information',
+      name: 'add_field_information',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configure sensor settings`
+  String get configure_sensor_settings {
+    return Intl.message(
+      'Configure sensor settings',
+      name: 'configure_sensor_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete farm registration to start monitoring`
+  String get complete_farm_registration_to_start_monitoring {
+    return Intl.message(
+      'Complete farm registration to start monitoring',
+      name: 'complete_farm_registration_to_start_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add`
+  String get add {
+    return Intl.message('Add', name: 'add', desc: '', args: []);
+  }
+
+  /// `Install soil moisture sensors`
+  String get install_soil_moisture_sensors {
+    return Intl.message(
+      'Install soil moisture sensors',
+      name: 'install_soil_moisture_sensors',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Set up weather station`
+  String get set_up_weather_station {
+    return Intl.message(
+      'Set up weather station',
+      name: 'set_up_weather_station',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connect to monitoring system`
+  String get connect_to_monitoring_system {
+    return Intl.message(
+      'Connect to monitoring system',
+      name: 'connect_to_monitoring_system',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Install sensors to enable real-time monitoring`
+  String get install_sensors_to_enable_real_time_monitoring {
+    return Intl.message(
+      'Install sensors to enable real-time monitoring',
+      name: 'install_sensors_to_enable_real_time_monitoring',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unknown Action`
+  String get unknown_action {
+    return Intl.message(
+      'Unknown Action',
+      name: 'unknown_action',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Corn Condition`
+  String get corn_condition {
+    return Intl.message(
+      'Corn Condition',
+      name: 'corn_condition',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading analytics data...`
+  String get loading_analytics_data {
+    return Intl.message(
+      'Loading analytics data...',
+      name: 'loading_analytics_data',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to load crop condition`
+  String get failed_to_load_crop_condition {
+    return Intl.message(
+      'Failed to load crop condition',
+      name: 'failed_to_load_crop_condition',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No analytics data available`
+  String get no_analytics_data_available {
+    return Intl.message(
+      'No analytics data available',
+      name: 'no_analytics_data_available',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Overview`
+  String get overview {
+    return Intl.message('Overview', name: 'overview', desc: '', args: []);
+  }
+
+  /// `Historical`
+  String get historical {
+    return Intl.message('Historical', name: 'historical', desc: '', args: []);
+  }
+
+  /// `Current Stage`
+  String get current_stage {
+    return Intl.message(
+      'Current Stage',
+      name: 'current_stage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete`
+  String get complete {
+    return Intl.message('Complete', name: 'complete', desc: '', args: []);
+  }
+
+  /// `Growth Stage Progress`
+  String get growth_stage_progress {
+    return Intl.message(
+      'Growth Stage Progress',
+      name: 'growth_stage_progress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Expected Harvest`
+  String get expected_harvest {
+    return Intl.message(
+      'Expected Harvest',
+      name: 'expected_harvest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} days remaining`
+  String days_remaining(Object count) {
+    return Intl.message(
+      '$count days remaining',
+      name: 'days_remaining',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Harvest time!`
+  String get harvest_time {
+    return Intl.message(
+      'Harvest time!',
+      name: 'harvest_time',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Soil pH`
+  String get soil_ph {
+    return Intl.message('Soil pH', name: 'soil_ph', desc: '', args: []);
+  }
+
+  /// `WARNING`
+  String get warning {
+    return Intl.message('WARNING', name: 'warning', desc: '', args: []);
+  }
+
+  /// `ATTENTION`
+  String get attention {
+    return Intl.message('ATTENTION', name: 'attention', desc: '', args: []);
+  }
+
+  /// `CHECKING...`
+  String get checking {
+    return Intl.message('CHECKING...', name: 'checking', desc: '', args: []);
+  }
+
+  /// `Weekly Summary`
+  String get weekly_summary {
+    return Intl.message(
+      'Weekly Summary',
+      name: 'weekly_summary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Data collected over the past 7 days`
+  String get data_collected_over_past_7_days {
+    return Intl.message(
+      'Data collected over the past 7 days',
+      name: 'data_collected_over_past_7_days',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Emergence`
+  String get emergence {
+    return Intl.message('Emergence', name: 'emergence', desc: '', args: []);
+  }
+
+  /// `Early Vegetative`
+  String get early_vegetative {
+    return Intl.message(
+      'Early Vegetative',
+      name: 'early_vegetative',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mid Vegetative`
+  String get mid_vegetative {
+    return Intl.message(
+      'Mid Vegetative',
+      name: 'mid_vegetative',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tasseling`
+  String get tasseling {
+    return Intl.message('Tasseling', name: 'tasseling', desc: '', args: []);
+  }
+
+  /// `Reproductive`
+  String get reproductive {
+    return Intl.message(
+      'Reproductive',
+      name: 'reproductive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturing`
+  String get maturing {
+    return Intl.message('Maturing', name: 'maturing', desc: '', args: []);
+  }
+
+  /// `Maturity/Harvest`
+  String get maturity_harvest {
+    return Intl.message(
+      'Maturity/Harvest',
+      name: 'maturity_harvest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Seedling emergence - roots developing`
+  String get seedling_emergence_roots_developing {
+    return Intl.message(
+      'Seedling emergence - roots developing',
+      name: 'seedling_emergence_roots_developing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Early vegetative growth - rapid leaf development`
+  String get early_vegetative_growth_rapid_leaf_development {
+    return Intl.message(
+      'Early vegetative growth - rapid leaf development',
+      name: 'early_vegetative_growth_rapid_leaf_development',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mid vegetative growth - stem elongation`
+  String get mid_vegetative_growth_stem_elongation {
+    return Intl.message(
+      'Mid vegetative growth - stem elongation',
+      name: 'mid_vegetative_growth_stem_elongation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Tasseling - reproductive phase begins`
+  String get tasseling_reproductive_phase_begins {
+    return Intl.message(
+      'Tasseling - reproductive phase begins',
+      name: 'tasseling_reproductive_phase_begins',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reproductive phase - grain development`
+  String get reproductive_phase_grain_development {
+    return Intl.message(
+      'Reproductive phase - grain development',
+      name: 'reproductive_phase_grain_development',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturing phase - grain filling`
+  String get maturing_phase_grain_filling {
+    return Intl.message(
+      'Maturing phase - grain filling',
+      name: 'maturing_phase_grain_filling',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturity - ready for harvest`
+  String get maturity_ready_for_harvest {
+    return Intl.message(
+      'Maturity - ready for harvest',
+      name: 'maturity_ready_for_harvest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Growth stage unknown`
+  String get growth_stage_unknown {
+    return Intl.message(
+      'Growth stage unknown',
+      name: 'growth_stage_unknown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Early Vegetative`
+  String get early_vegetative_stage {
+    return Intl.message(
+      'Early Vegetative',
+      name: 'early_vegetative_stage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mid Vegetative`
+  String get mid_vegetative_stage {
+    return Intl.message(
+      'Mid Vegetative',
+      name: 'mid_vegetative_stage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reproductive`
+  String get reproductive_stage {
+    return Intl.message(
+      'Reproductive',
+      name: 'reproductive_stage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maturing`
+  String get maturing_stage {
+    return Intl.message('Maturing', name: 'maturing_stage', desc: '', args: []);
+  }
+
+  /// `Manage your account settings`
+  String get manage_your_account_settings {
+    return Intl.message(
+      'Manage your account settings',
+      name: 'manage_your_account_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage your personal informations`
+  String get manage_your_personal_informations {
+    return Intl.message(
+      'Manage your personal informations',
+      name: 'manage_your_personal_informations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage and unsync prototypes from fields`
+  String get manage_and_unsync_prototypes_from_fields {
+    return Intl.message(
+      'Manage and unsync prototypes from fields',
+      name: 'manage_and_unsync_prototypes_from_fields',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Prototype Management`
+  String get prototype_management {
+    return Intl.message(
+      'Prototype Management',
+      name: 'prototype_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile`
+  String get profile {
+    return Intl.message('Profile', name: 'profile', desc: '', args: []);
+  }
+
+  /// `Help`
+  String get help {
+    return Intl.message('Help', name: 'help', desc: '', args: []);
+  }
+
+  /// `Log out`
+  String get log_out {
+    return Intl.message('Log out', name: 'log_out', desc: '', args: []);
+  }
+
+  /// `Are you sure you want to log out?`
+  String get are_you_sure_you_want_to_log_out {
+    return Intl.message(
+      'Are you sure you want to log out?',
+      name: 'are_you_sure_you_want_to_log_out',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `steps`
+  String get steps {
+    return Intl.message('steps', name: 'steps', desc: '', args: []);
+  }
+
+  /// `Manage your registered prototypes`
+  String get manage_your_registered_prototypes {
+    return Intl.message(
+      'Manage your registered prototypes',
+      name: 'manage_your_registered_prototypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Channel ID`
+  String get channel_id {
+    return Intl.message('Channel ID', name: 'channel_id', desc: '', args: []);
+  }
+
+  /// `Registered`
+  String get registered {
+    return Intl.message('Registered', name: 'registered', desc: '', args: []);
+  }
+
+  /// `fields registered`
+  String get fields_registered {
+    return Intl.message(
+      'fields registered',
+      name: 'fields_registered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Weekly Overview`
+  String get weekly_overview {
+    return Intl.message(
+      'Weekly Overview',
+      name: 'weekly_overview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This prescription is completed`
+  String get this_prescription_is_completed {
+    return Intl.message(
+      'This prescription is completed',
+      name: 'this_prescription_is_completed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Description`
+  String get description_prescription {
+    return Intl.message(
+      'Description',
+      name: 'description_prescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Healthy`
+  String get healthy {
+    return Intl.message('Healthy', name: 'healthy', desc: '', args: []);
+  }
+
+  /// `Moderate`
+  String get moderate {
+    return Intl.message('Moderate', name: 'moderate', desc: '', args: []);
+  }
+
+  /// `High Stress`
+  String get high_stress {
+    return Intl.message('High Stress', name: 'high_stress', desc: '', args: []);
+  }
+
+  /// `Moderate Stress`
+  String get moderate_stress {
+    return Intl.message(
+      'Moderate Stress',
+      name: 'moderate_stress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Critical Stress`
+  String get critical_stress {
+    return Intl.message(
+      'Critical Stress',
+      name: 'critical_stress',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crop requires immediate attention - multiple high stress factors detected`
+  String
+  get crop_requires_immediate_attention_multiple_high_stress_factors_detected {
+    return Intl.message(
+      'Crop requires immediate attention - multiple high stress factors detected',
+      name:
+          'crop_requires_immediate_attention_multiple_high_stress_factors_detected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crop needs attention - several high stress factors detected`
+  String get crop_needs_attention_several_high_stress_factors_detected {
+    return Intl.message(
+      'Crop needs attention - several high stress factors detected',
+      name: 'crop_needs_attention_several_high_stress_factors_detected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crop is growing with some stress factors`
+  String get crop_is_growing_with_some_stress_factors {
+    return Intl.message(
+      'Crop is growing with some stress factors',
+      name: 'crop_is_growing_with_some_stress_factors',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Crop is growing well with minimal stress`
+  String get crop_is_growing_well_with_minimal_stress {
+    return Intl.message(
+      'Crop is growing well with minimal stress',
+      name: 'crop_is_growing_well_with_minimal_stress',
+      desc: '',
+      args: [],
+    );
   }
 }
 

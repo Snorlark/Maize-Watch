@@ -102,6 +102,9 @@ class PrototypeService {
   /// Get user's registered prototypes
   static Future<Map<String, dynamic>> getUserPrototypes(String token) async {
     try {
+      print('🔧 PrototypeService: Making API call to ${AppConfig.baseUrl}/api/prototypes/user');
+      print('🔧 PrototypeService: Token length: ${token.length}');
+      
       final response = await _dio.get(
         '${AppConfig.baseUrl}/api/prototypes/user',
         options: Options(
@@ -112,18 +115,25 @@ class PrototypeService {
         ),
       );
 
+      print('🔧 PrototypeService: Response status: ${response.statusCode}');
+      print('🔧 PrototypeService: Response data: ${response.data}');
+
       if (response.statusCode == 200) {
         return response.data;
       } else {
         throw Exception('Failed to get user prototypes: ${response.statusMessage}');
       }
     } on DioException catch (e) {
+      print('🔧 PrototypeService: DioException - Status: ${e.response?.statusCode}, Message: ${e.message}');
+      print('🔧 PrototypeService: Response data: ${e.response?.data}');
+      
       if (e.response?.statusCode == 401) {
         throw Exception('Authentication required');
       } else {
         throw Exception('Network error: ${e.message}');
       }
     } catch (e) {
+      print('🔧 PrototypeService: General exception: $e');
       throw Exception('Unexpected error: $e');
     }
   }

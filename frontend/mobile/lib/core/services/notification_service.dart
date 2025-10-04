@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:mobile/generated/l10n.dart';
-import 'package:mobile/core/services/prescription_translation_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -29,6 +27,8 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    print('🔔 Initializing notification service...');
+
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -41,15 +41,47 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _notifications.initialize(
-      settings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
+    try {
+      await _notifications.initialize(
+        settings,
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+      );
+      print('🔔 Notification service initialized successfully');
 
-    // Request notification permissions
-    await requestPermissions();
+      // Create notification channel for Android
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await _createNotificationChannel();
+      }
 
-    _isInitialized = true;
+      // Request notification permissions
+      final permissionsGranted = await requestPermissions();
+      print('🔔 Notification permissions granted: $permissionsGranted');
+
+      _isInitialized = true;
+    } catch (e) {
+      print('🚨 Error initializing notification service: $e');
+    }
+  }
+
+  Future<void> _createNotificationChannel() async {
+    try {
+      final androidPlugin = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'maize_watch_channel',
+            'Maize Watch Notifications',
+            description: 'Notifications for farm monitoring and prescriptions',
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+        print('🔔 Notification channel created successfully');
+      }
+    } catch (e) {
+      print('🚨 Error creating notification channel: $e');
+    }
   }
 
   Future<bool> requestPermissions() async {
@@ -244,36 +276,67 @@ class NotificationService {
     required String payload,
     required bool vibrationOnly,
   }) async {
-    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'maize_watch_channel',
-      S.current.maize_watch_notifications,
-      channelDescription: S.current.notifications_channel_description,
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-      enableVibration: true,
-      playSound: true,
-      icon: '@mipmap/launcher_icon',      
-    );
+    print('🔔 Attempting to show notification: $title');
+    
+    if (!_isInitialized) {
+      print('🚨 Notification service not initialized, initializing now...');
+      await initialize();
+      if (!_isInitialized) {
+        print('🚨 Failed to initialize notification service');
+        return;
+      }
+    }
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+    // Check if notification permissions are granted
+    final androidPlugin = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final permissionsGranted = await androidPlugin?.areNotificationsEnabled() ?? false;
+    print('🔔 Notification permissions status: $permissionsGranted');
+    
+    if (!permissionsGranted) {
+      print('🚨 Notification permissions not granted, requesting permissions...');
+      final requested = await requestPermissions();
+      if (!requested) {
+        print('🚨 Failed to get notification permissions');
+        return;
+      }
+    }
 
-    NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    try {
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'maize_watch_channel',
+        'Maize Watch Notifications',
+        channelDescription: 'Notifications for farm monitoring and prescriptions',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: !vibrationOnly,
+        playSound: !vibrationOnly,
+        icon: '@mipmap/launcher_icon',      
+      );
 
-    await _notifications.show(
-      id,
-      title,
-      body,
-      details,
-      payload: payload,
-    );
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notifications.show(
+        id,
+        title,
+        body,
+        details,
+        payload: payload,
+      );
+
+      print('✅ Notification sent successfully: $title');
+    } catch (e) {
+      print('🚨 Error showing notification: $e');
+    }
   }
 
   String _getPriorityEmoji(String? priority) {
@@ -293,9 +356,9 @@ class NotificationService {
   /// Translate prescription notification title
   Future<String> _translatePrescriptionTitle(String title) async {
     try {
-      // Get current locale from SharedPreferences
+      // Get current locale from SharedPreferences - use the same key as settings
       final prefs = await SharedPreferences.getInstance();
-      final locale = prefs.getString('language') ?? 'en';
+      final locale = prefs.getString('selected_language_code') ?? 'en';
       
       switch (title.toLowerCase()) {
         case 'new farm prescriptions':
@@ -318,9 +381,9 @@ class NotificationService {
   /// Translate prescription notification message
   Future<String> _translatePrescriptionMessage(String message) async {
     try {
-      // Get current locale from SharedPreferences
+      // Get current locale from SharedPreferences - use the same key as settings
       final prefs = await SharedPreferences.getInstance();
-      final locale = prefs.getString('language') ?? 'en';
+      final locale = prefs.getString('selected_language_code') ?? 'en';
       
       // Check for common message patterns
       if (message.contains('You have') && message.contains('new farm tasks')) {
@@ -346,7 +409,9 @@ class NotificationService {
           : 'Requires immediate attention';
       }
       
-      return message; // Return original if no translation found
+      // Don't translate the actual prescription details - they should be specific to each prescription
+      // Just return the original message as it should already be translated by PrescriptionTranslationService
+      return message;
     } catch (e) {
       print('🔔 Error translating message: $e');
       return message; // Fallback to original message
@@ -357,7 +422,7 @@ class NotificationService {
   Future<String> _translateSensorOfflineTitle() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final locale = prefs.getString('language') ?? 'en';
+      final locale = prefs.getString('selected_language_code') ?? 'en';
       
       return locale == 'tl' ? '⚠️ Sensor na Offline' : '⚠️ Sensor Offline';
     } catch (e) {
@@ -370,7 +435,7 @@ class NotificationService {
   Future<String> _translateSensorOfflineMessage(String sensorName) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final locale = prefs.getString('language') ?? 'en';
+      final locale = prefs.getString('selected_language_code') ?? 'en';
       
       if (locale == 'tl') {
         return 'Ang $sensorName sensor ay offline na ng mahigit sa 30 minuto.';
@@ -543,16 +608,25 @@ class NotificationService {
     String? fieldName,
     bool cacheForBackground = true,
   }) async {
+    print('🔔 showPrescriptionAlertNotificationWithCaching called');
+    print('🔔 Title: $title, Message: $message, Priority: $priority');
+    
     // Show immediate notification
+    print('🔔 Calling showPrescriptionAlertNotification...');
+    final notificationId = prescriptionId != null ? int.tryParse(prescriptionId) : null;
+    print('🔔 Parsed notification ID: $notificationId (from prescriptionId: $prescriptionId)');
+    
     await showPrescriptionAlertNotification(
       title: title,
       message: message,
       priority: priority,
-      notificationId: prescriptionId != null ? int.tryParse(prescriptionId) : null,
+      notificationId: notificationId,
     );
+    print('🔔 showPrescriptionAlertNotification completed');
     
     // Cache for background delivery if enabled
     if (cacheForBackground) {
+      print('🔔 Caching notification for background delivery...');
       await cacheNotification(
         title: title,
         message: message,
@@ -560,6 +634,9 @@ class NotificationService {
         prescriptionId: prescriptionId,
         fieldName: fieldName,
       );
+      print('🔔 Notification cached successfully');
     }
+    
+    print('🔔 showPrescriptionAlertNotificationWithCaching completed');
   }
 }

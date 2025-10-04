@@ -121,7 +121,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   ),
                   SizedBox(height: kAppSmallGap),
                   Text(
-                    'Manage your notification preferences',
+                    S.of(context).manage_your_app_preferences,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
                   ),                  
                 ],

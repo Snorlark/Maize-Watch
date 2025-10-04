@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/features/farm/presentation/bloc/farm_bloc.dart';
 import 'package:mobile/core/services/home_screen_service.dart';
-import 'package:mobile/core/services/offline_cache_service.dart';
+import '../../../../generated/l10n.dart';
 import 'growth_progress_widget.dart';
 import 'historical_tab_widget.dart';
 import '../../../farm/domain/entities/farm.dart';
@@ -127,14 +127,18 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         // Parse and display cached data immediately
         _parseAnalyticsData(homeData['analytics']);
         
-        setState(() {
-          _isLoadingAnalytics = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoadingAnalytics = false;
+          });
+        }
       } else {
         print('🌽 FarmDetail: No cached data found, will load fresh data');
-        setState(() {
-          _isLoadingAnalytics = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoadingAnalytics = false;
+          });
+        }
       }
 
       // Load fresh data in background using HomeScreenService
@@ -142,10 +146,12 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       
     } catch (e) {
       print('🌽 FarmDetail: Error loading cached data: $e');
-      setState(() {
-        _isLoadingAnalytics = false;
-        _analyticsError = 'Failed to load cached data: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingAnalytics = false;
+          _analyticsError = 'Failed to load cached data: $e';
+        });
+      }
       
       // Still try to load fresh data
       _loadFreshDataInBackground();
@@ -178,7 +184,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   }
 
   void _loadAnalyticsData() async {
-    if (widget.farm.id == null) return;
+    if (widget.farm.id == null || !mounted) return;
 
     print('🌽 FarmDetail: Loading fresh analytics data via MonitoringBloc for farm ${widget.farm.id}');
     
@@ -418,9 +424,11 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       print('🔍 Final parsed data - Crop: ${_cropCondition?.status}, Metrics: ${_currentMetrics?.temperature}°C, Growth: ${_growthStageAnalysis?.currentStage}');
     } catch (e) {
       print('🔍 Error parsing analytics data: $e');
-        setState(() {
-        _analyticsError = 'Failed to parse analytics data: $e';
-      });
+        if (mounted) {
+          setState(() {
+            _analyticsError = 'Failed to parse analytics data: $e';
+          });
+        }
     }
   }
 
@@ -496,40 +504,40 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   String _getGrowthStageDescription(String stage) {
     switch (stage) {
       case 'VE':
-        return 'Seedling emergence - roots developing';
+        return S.of(context).seedling_emergence_roots_developing;
       case 'V2':
       case 'V3':
       case 'V4':
-        return 'Early vegetative growth - rapid leaf development';
+        return S.of(context).early_vegetative_growth_rapid_leaf_development;
       case 'V5':
       case 'V6':
       case 'V7':
       case 'V8':
-        return 'Mid vegetative growth - stem elongation';
+        return S.of(context).mid_vegetative_growth_stem_elongation;
       case 'VT':
-        return 'Tasseling - reproductive phase begins';
+        return S.of(context).tasseling_reproductive_phase_begins;
       case 'R1':
       case 'R2':
       case 'R3':
-        return 'Reproductive phase - grain development';
+        return S.of(context).reproductive_phase_grain_development;
       case 'R4':
       case 'R5':
-        return 'Maturing phase - grain filling';
+        return S.of(context).maturing_phase_grain_filling;
       case 'R6':
-        return 'Maturity - ready for harvest';
+        return S.of(context).maturity_ready_for_harvest;
       default:
-        return 'Growth stage unknown';
+        return S.of(context).growth_stage_unknown;
     }
   }
 
   List<GrowthStageInfo> _getGrowthStageInfoList() {
     return [
-      GrowthStageInfo(stage: 'VE', name: 'Emergence', description: 'Seedling emergence', days: 5),
-      GrowthStageInfo(stage: 'V2-V4', name: 'Early Vegetative', description: 'Rapid leaf development', days: 15),
-      GrowthStageInfo(stage: 'V5-V8', name: 'Mid Vegetative', description: 'Stem elongation', days: 20),
-      GrowthStageInfo(stage: 'VT', name: 'Tasseling', description: 'Reproductive phase begins', days: 10),
-      GrowthStageInfo(stage: 'R1-R3', name: 'Reproductive', description: 'Grain development', days: 25),
-      GrowthStageInfo(stage: 'R4-R6', name: 'Maturing', description: 'Grain filling to maturity', days: 15),
+      GrowthStageInfo(stage: 'VE', name: S.of(context).emergence, description: S.of(context).seedling_emergence_roots_developing, days: 5),
+      GrowthStageInfo(stage: 'V2-V4', name: S.of(context).early_vegetative, description: S.of(context).early_vegetative_growth_rapid_leaf_development, days: 15),
+      GrowthStageInfo(stage: 'V5-V8', name: S.of(context).mid_vegetative, description: S.of(context).mid_vegetative_growth_stem_elongation, days: 20),
+      GrowthStageInfo(stage: 'VT', name: S.of(context).tasseling, description: S.of(context).tasseling_reproductive_phase_begins, days: 10),
+      GrowthStageInfo(stage: 'R1-R3', name: S.of(context).reproductive, description: S.of(context).reproductive_phase_grain_development, days: 25),
+      GrowthStageInfo(stage: 'R4-R6', name: S.of(context).maturing, description: S.of(context).maturing_phase_grain_filling, days: 15),
     ];
   }
 
@@ -537,35 +545,35 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     switch (stressLevel.toLowerCase()) {
       case 'low':
         return CropConditionModel(
-          status: 'Healthy',
+          status: S.of(context).healthy,
           message: 'Crop is growing well with minimal stress',
           color: '#4CAF50', // Green
           icon: 'good',
         );
       case 'medium':
         return CropConditionModel(
-          status: 'Moderate',
+          status: S.of(context).moderate,
           message: 'Crop is growing with some stress factors',
           color: '#FFC107', // Amber
           icon: 'moderate',
         );
       case 'high':
         return CropConditionModel(
-          status: 'Warning',
+          status: S.of(context).warning,
           message: 'Crop needs attention due to high stress',
           color: '#FF9800', // Orange
           icon: 'warning',
         );
       case 'severe':
         return CropConditionModel(
-          status: 'Critical',
+          status: S.of(context).critical,
           message: 'Crop requires immediate attention',
           color: '#F44336', // Red
           icon: 'critical',
         );
       default:
         return CropConditionModel(
-          status: 'Unknown',
+          status: S.of(context).unknown,
           message: 'Unable to determine crop condition',
           color: '#9E9E9E', // Grey
           icon: 'unknown',
@@ -596,29 +604,29 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     // Determine condition based on stress levels
     if (highStressCount >= 3) {
       return CropConditionModel(
-        status: 'Critical',
-        message: 'Crop requires immediate attention - multiple high stress factors detected',
+        status: S.of(context).critical,
+        message: S.of(context).crop_requires_immediate_attention_multiple_high_stress_factors_detected,
         color: '#F44336', // Red
         icon: 'critical',
       );
     } else if (highStressCount >= 2) {
       return CropConditionModel(
-        status: 'High Stress',
-        message: 'Crop needs attention - several high stress factors detected',
+        status: S.of(context).high_stress,
+        message: S.of(context).crop_needs_attention_several_high_stress_factors_detected,
         color: '#FF9800', // Orange
         icon: 'warning',
       );
     } else if (highStressCount >= 1 || mediumStressCount >= 2) {
       return CropConditionModel(
-        status: 'Moderate Stress',
-        message: 'Crop is growing with some stress factors',
+        status: S.of(context).moderate_stress,
+        message: S.of(context).crop_is_growing_with_some_stress_factors,
         color: '#FFC107', // Amber
         icon: 'moderate',
       );
     } else {
       return CropConditionModel(
-        status: 'Healthy',
-        message: 'Crop is growing well with minimal stress',
+        status: S.of(context).healthy,
+        message: S.of(context).crop_is_growing_well_with_minimal_stress,
         color: '#4CAF50', // Green
         icon: 'good',
       );
@@ -1189,7 +1197,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           ),
           horizontalSpace(12),
           Text(
-            'Loading analytics data...',
+            S.of(context).loading_analytics_data,
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
         ],
@@ -1211,7 +1219,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           horizontalSpace(12),
           Expanded(
             child: Text(
-              _analyticsError ?? 'Failed to load crop condition',
+              _analyticsError ?? S.of(context).failed_to_load_crop_condition,
               style: TextStyle(fontSize: 14.sp, color: Colors.red[600]),
             ),
           ),
@@ -1232,7 +1240,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           Icon(Icons.info_outline, color: Colors.grey[600], size: 20.sp),
           horizontalSpace(12),
           Text(
-            'No analytics data available',
+            S.of(context).no_analytics_data_available,
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
         ],
@@ -1274,7 +1282,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Corn Condition',
+                      S.of(context).corn_condition,
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
@@ -1335,9 +1343,9 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       ),
       child: Row(
         children: [
-          _buildTabButton('Overview', 0),
-          _buildTabButton('Historical', 1),
-          _buildTabButton('Growth Stage', 2),
+          _buildTabButton(S.of(context).overview, 0),
+          _buildTabButton(S.of(context).historical, 1),
+          _buildTabButton(S.of(context).growth_stage, 2),
         ],
       ),
     );
@@ -1429,7 +1437,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           children: [
             Expanded(
               child: _buildMetricCard(
-                'Soil pH',
+                S.of(context).soil_ph,
                 '${metrics.soilPh.toStringAsFixed(1)}',
                 'pH',
                 Icons.science,
@@ -1439,7 +1447,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
             horizontalSpace(12),
             Expanded(
               child: _buildMetricCard(
-                'Soil Moisture',
+                S.of(context).soil_moisture,
                 '${metrics.soilMoisture.toStringAsFixed(0)}%',
                 '',
                 Icons.water_drop,
@@ -1454,7 +1462,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           children: [
             Expanded(
               child: _buildMetricCard(
-                'Temperature',
+                S.of(context).temperature,
                 '${metrics.temperature.toStringAsFixed(0)}°C',
                 '',
                 Icons.thermostat,
@@ -1464,7 +1472,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
             horizontalSpace(12),
             Expanded(
               child: _buildMetricCard(
-                'Humidity',
+                S.of(context).humidity,
                 '${metrics.humidity.toStringAsFixed(0)}%',
                 '',
                 Icons.eco,
@@ -1476,7 +1484,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         verticalSpace(12),
         // Third row - Light Intensity (full width)
         _buildMetricCard(
-          'Light Intensity',
+          S.of(context).light_intensity,
           '${metrics.lightIntensity.toStringAsFixed(0)} lux',
           '',
           Icons.light_mode,
@@ -1583,7 +1591,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           ),
           verticalSpace(16),
           Text(
-            'Loading metrics...',
+            S.of(context).loading_analytics_data,
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
         ],
@@ -1599,7 +1607,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           Icon(Icons.error_outline, color: Colors.red, size: 48.sp),
           verticalSpace(16),
           Text(
-            'Failed to load metrics',
+            S.of(context).failed_to_load_crop_condition,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -1625,7 +1633,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           Icon(Icons.info_outline, color: Colors.grey, size: 48.sp),
           verticalSpace(16),
           Text(
-            'No metrics available',
+            S.of(context).no_analytics_data_available,
             style: TextStyle(
               fontSize: 16.sp,
               fontWeight: FontWeight.w600,
@@ -1658,44 +1666,6 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   }
 
 
-  Widget _buildWeeklySummary() {
-    if (_weeklyData?.summary.isEmpty != false) {
-      return SizedBox.shrink();
-    }
-
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Weekly Summary',
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: MAIZE_ACCENT,
-            ),
-          ),
-          verticalSpace(12),
-          Text(
-            'Data collected over the past 7 days',
-            style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildGrowthStageTab() {
     if (_isLoadingAnalytics) {
@@ -1999,8 +1969,8 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           verticalSpace(8),
           Text(
             daysToHarvest > 0
-                ? '$daysToHarvest days remaining'
-                : 'Harvest time!',
+                ? S.of(context).days_remaining(daysToHarvest)
+                : S.of(context).harvest_time,
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
           ),
         ],
@@ -2056,13 +2026,13 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     
     String timeAgo;
     if (difference.inMinutes < 1) {
-      timeAgo = 'Just now';
+      timeAgo = S.of(context).just_now;
     } else if (difference.inMinutes < 60) {
-      timeAgo = '${difference.inMinutes}m ago';
+      timeAgo = S.of(context).minutes_ago(difference.inMinutes);
     } else if (difference.inHours < 24) {
-      timeAgo = '${difference.inHours}h ago';
+      timeAgo = S.of(context).hours_ago(difference.inHours);
     } else {
-      timeAgo = '${difference.inDays}d ago';
+      timeAgo = S.of(context).days_ago(difference.inDays);
     }
     
     return Container(
@@ -2081,14 +2051,14 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
             color: Colors.grey[600],
           ),
           SizedBox(width: 8.w),
-          Text(
-            'Last updated: $timeAgo',
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          '${S.of(context).last_updated}: $timeAgo',
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
           ),
+        ),
         ],
       ),
     );
@@ -2121,7 +2091,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       
       final metricData = _stressAnalysis![metricKey] as Map<String, dynamic>?;
       if (metricData != null) {
-        final stressLevel = metricData['stress_level'] as String? ?? 'unknown';
+        final stressLevel = metricData['stress_level'] as String? ?? 'low';
         print('🔍 $metricTitle stress level from analytics: $stressLevel');
         return stressLevel;
       }
@@ -2132,7 +2102,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       return _calculateStressLevelFromValue(metricTitle, _currentMetrics!);
     }
     
-    return 'unknown';
+    return 'low'; // Default to low instead of unknown
   }
 
   // Calculate stress level based on metric value and optimal ranges
@@ -2195,17 +2165,17 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   String _getFarmerFriendlyStatus(String stressLevel) {
     switch (stressLevel.toLowerCase()) {
       case 'low':
-        return 'GOOD';
+        return S.of(context).good;
       case 'medium':
-        return 'WARNING';
+        return S.of(context).warning;
       case 'high':
-        return 'ATTENTION';
+        return S.of(context).attention;
       case 'critical':
-        return 'URGENT';
+        return S.of(context).urgent;
       case 'unknown':
-        return 'CHECKING...';
+        return S.of(context).unknown; // Show as good instead of unknown
       default:
-        return 'UNKNOWN';
+        return S.of(context).unknown; // Default to good instead of unknown
     }
   }
 

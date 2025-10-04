@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:mobile/features/live_monitoring/domain/usecases/get_localized_greeting.dart';
 import 'package:mobile/generated/l10n.dart';
+import 'package:mobile/core/services/prescription_translation_service.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../core/services/notification_service.dart';
@@ -34,6 +36,29 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   final NotificationService _notificationService = NotificationService();
   Set<String> _notifiedPrescriptions = {};
   List<Map<String, dynamic>> _cachedTasks = [];
+  
+  // Analytics caching
+  Map<String, dynamic>? _cachedAnalytics;
+  DateTime? _lastAnalyticsLoad;
+  DateTime? _lastNotificationCheck;
+  static const Duration _analyticsCacheTimeout = Duration(minutes: 5);
+        // static const Duration _notificationCooldown = Duration(seconds: 30); // Prevent notification spam - temporarily disabled for debugging
+
+  // Load notification check timestamp from SharedPreferences
+  Future<void> _loadNotificationCheckTimestamp() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timestampString = prefs.getString('last_notification_check');
+      if (timestampString != null) {
+        _lastNotificationCheck = DateTime.parse(timestampString);
+        print('🔔 Loaded notification check timestamp: $_lastNotificationCheck');
+      }
+    } catch (e) {
+      print('🔔 Error loading notification check timestamp: $e');
+    }
+  }
+
+
 
   // Refresh completion status for all tasks
   Future<void> _refreshCompletionStatus([StateSetter? setState]) async {
@@ -93,6 +118,12 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Initialize background notification service
     BackgroundNotificationService.initialize();
 
+    // Don't clear notifications on init - let them persist
+    // _clearExistingNotifications();
+
+    // Load notification check timestamp
+    _loadNotificationCheckTimestamp();
+
     // Load initial data
     _loadData();
     _animationController.forward();
@@ -151,13 +182,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             if (homeData.isNotEmpty) {
               print('🌽 LiveMonitoring: Loaded cached data - Analytics: ${homeData['analytics'] != null}, Prescriptions: ${homeData['prescriptions']?.length ?? 0}');
               
-              // Update UI with cached data immediately
-              if (homeData['analytics'] != null) {
-                // Trigger analytics update with cached data
-                context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(
-                  farmId: selectedFarm.id ?? '',
-                ));
-              }
+              // Analytics should already be loaded from splash screen, no need to reload
+              print('🌽 LiveMonitoring: Using pre-loaded analytics from splash screen');
             }
           } catch (e) {
             print('🌽 LiveMonitoring: Error loading cached data: $e');
@@ -165,13 +191,22 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         }
       }
       
-      // Always load latest sensor readings to get fresh data
-      print('🌽 LiveMonitoring: Checking if should load readings - isLoading: ${monitoringState.isLoading}');
-      if (!monitoringState.isLoading) {
-        print('🌽 LiveMonitoring: Loading latest readings...');
+      // Load latest sensor readings only if not already loaded (pre-loaded from splash screen)
+      print('🌽 LiveMonitoring: Checking if should load readings - isLoading: ${monitoringState.isLoading}, readings: ${monitoringState.latestReadings.length}');
+      if (!monitoringState.isLoading && monitoringState.latestReadings.isEmpty) {
+        print('🌽 LiveMonitoring: Loading latest readings (not pre-loaded)...');
         context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
       } else {
-        print('🌽 LiveMonitoring: Skipping load readings - already loading');
+        print('🌽 LiveMonitoring: Using pre-loaded readings from splash screen or already loading');
+      }
+      
+      // Fallback: Load analytics if not already loaded from splash screen
+      if (farmState is FarmsLoaded && farmState.farms.isNotEmpty && monitoringState.farmAnalytics == null) {
+        final selectedFarm = farmState.farms.first;
+        print('🌽 LiveMonitoring: Fallback - Loading analytics for farm: ${selectedFarm.id}');
+        context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: selectedFarm.id ?? ''));
+      } else if (monitoringState.farmAnalytics != null) {
+        print('🌽 LiveMonitoring: Analytics already loaded from splash screen');
       }
       
     } catch (e) {
@@ -186,8 +221,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     HomeScreenService.stopBackgroundRefresh();
     // Stop background notification service when leaving the screen
     BackgroundNotificationService.stopAllTasks();
-    // Clear notification tracking to prevent duplicate notifications
-    BackgroundNotificationService.clearNotificationTracking();
+    // Don't clear notification tracking - let notifications persist
+    // BackgroundNotificationService.clearNotificationTracking();
     super.dispose();
   }
 
@@ -272,6 +307,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 ],
               ),
             ),
+            Spacer(),
           ],
         );
       },
@@ -308,13 +344,17 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                         ? monitoringState.latestReadings.first
                         : null;
 
-                // Try to get weather data from analytics first
-                double temperature = 16.0;
-                double humidity = 72.5;
-                double windSpeed = 5.2;
-                String weatherCondition = S.of(context).partly_cloudy;
-                IconData weatherIcon = Icons.cloud;
-                String weatherDescription = S.of(context).partly_cloudy_description;
+                // Initialize with null values to prevent fallback data flash
+                double? temperature;
+                double? humidity;
+                double? windSpeed;
+                String? weatherCondition;
+                IconData? weatherIcon;
+                String? weatherDescription;
+                
+                // Check if we have any data at all before showing fallback
+                bool hasAnyData = false;
+                bool isLoading = monitoringState.isLoading;
 
                 // Check if we have analytics data with weather information
                 final analyticsData = monitoringState.farmAnalytics;
@@ -324,14 +364,17 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     final weatherForecast = predictive['weather_forecast'] as Map<String, dynamic>;
                     if (weatherForecast['current'] != null) {
                       final currentWeather = weatherForecast['current'] as Map<String, dynamic>;
-                      temperature = (currentWeather['temperature'] as num?)?.toDouble() ?? 16.0;
-                      humidity = (currentWeather['humidity'] as num?)?.toDouble() ?? 72.5;
-                      windSpeed = (currentWeather['wind_speed'] as num?)?.toDouble() ?? 5.2;
-                      final rawCondition = currentWeather['condition'] as String? ?? 'Partly Cloudy';
+                      temperature = (currentWeather['temperature'] as num?)?.toDouble();
+                      humidity = (currentWeather['humidity'] as num?)?.toDouble();
+                      windSpeed = (currentWeather['wind_speed'] as num?)?.toDouble();
+                      final rawCondition = currentWeather['condition'] as String?;
+                      if (rawCondition != null) {
                       weatherCondition = _translateWeatherCondition(rawCondition);
-                      weatherDescription = currentWeather['description'] as String? ?? S.of(context).partly_cloudy_description;
                       weatherIcon = _getWeatherIcon(weatherCondition);
+                      }
+                      weatherDescription = _translateWeatherCondition(currentWeather['description'] as String? ?? rawCondition ?? 'Partly Cloudy');
                       
+                      hasAnyData = true;
                       print('🎯 UI using analytics weather data: temp=${temperature}°C, humidity=${humidity}%');
                     }
                   }
@@ -340,27 +383,62 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   temperature = weatherData.temperature;
                   humidity = weatherData.humidity;
                   windSpeed = weatherData.windSpeed;
-                  weatherCondition = weatherData.condition;
-                  weatherDescription = weatherData.description;
+                  weatherCondition = _translateWeatherCondition(weatherData.condition);
+                  weatherDescription = _translateWeatherCondition(weatherData.description);
                   weatherIcon = _getWeatherIcon(weatherData.condition);
                   
+                  hasAnyData = true;
                   print('🎯 UI using weather API data: temp=${temperature}°C, humidity=${humidity}%');
                 } else if (latestReading != null) {
                   // Fallback to sensor data
                   temperature = latestReading.temperature;
                   humidity = latestReading.humidity;
                   windSpeed = _calculateWindSpeed(latestReading.lightIntensity);
-                  weatherCondition = _getWeatherCondition(
+                  final rawCondition = _getWeatherCondition(
                     temperature,
                     humidity,
                     latestReading.lightIntensity,
                   );
+                  weatherCondition = _translateWeatherCondition(rawCondition);
                   weatherDescription = weatherCondition;
                   weatherIcon = _getWeatherIcon(weatherCondition);
                   
+                  hasAnyData = true;
                   print('🎯 UI using sensor data: temp=${temperature}°C, humidity=${humidity}%');
-                } else {
+                }
+                
+                // Debug weather data status
+                print('🌤️ Weather Debug - hasAnyData: $hasAnyData, isLoading: $isLoading');
+                print('🌤️ Weather Debug - temperature: $temperature, humidity: $humidity, windSpeed: $windSpeed');
+                print('🌤️ Weather Debug - weatherCondition: $weatherCondition, weatherDescription: $weatherDescription');
+                
+                // Only set fallback values if we have absolutely no data and not loading
+                if (!hasAnyData && !isLoading) {
+                  temperature ??= 16.0;
+                  humidity ??= 72.5;
+                  windSpeed ??= 5.2;
+                  weatherCondition ??= S.of(context).partly_cloudy;
+                  weatherIcon ??= Icons.cloud;
+                  weatherDescription ??= S.of(context).partly_cloudy_description;
                   print('⚠️ UI using default fallback data - no data available');
+                } else if (isLoading) {
+                  // Show loading state instead of fallback data
+                  temperature ??= 0.0;
+                  humidity ??= 0.0;
+                  windSpeed ??= 0.0;
+                  weatherCondition ??= S.of(context).loading;
+                  weatherIcon ??= Icons.cloud;
+                  weatherDescription ??= S.of(context).loading;
+                  print('🔄 UI showing loading state');
+                } else {
+                  // Ensure we have valid values even if some are null
+                  temperature ??= 0.0;
+                  humidity ??= 0.0;
+                  windSpeed ??= 0.0;
+                  weatherCondition ??= S.of(context).loading;
+                  weatherIcon ??= Icons.cloud;
+                  weatherDescription ??= S.of(context).loading;
+                  print('🎯 UI using available data with null fallbacks');
                 }
 
                 return Column(
@@ -381,13 +459,22 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        temperature > 0 
+                          ? Text(
                           '${temperature.toStringAsFixed(0)}°C',
                           style: TextStyle(
                             fontSize: 72.sp,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             height: 0.9,
+                          ),
+                            )
+                          : SizedBox(
+                              width: 60.w,
+                              height: 60.h,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                strokeWidth: 3.0,
                           ),
                         ),
                         const Spacer(),
@@ -397,12 +484,14 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                             verticalSpace(8),
                             Row(
                               children: [
+                                ...[
                                 Icon(
                                   weatherIcon,
                                   color: Colors.white,
                                   size: 20.sp,
                                 ),
                                 horizontalSpace(8),
+                                ],
                                 Text(
                                   weatherDescription,
                                   style: TextStyle(
@@ -518,7 +607,21 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return SizedBox(
                       height: 140.h,
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 8.h),
+                            Text(
+                              S.of(context).loading,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: MAIZE_ACCENT,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   }
                   
@@ -568,8 +671,9 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Extract additional information from taskData
     final fieldName = taskData?['fieldName'] as String? ?? S.of(context).unknown_field;    
     final deadline = taskData?['deadline'] as String? ?? S.of(context).asap;
-    final urgency = taskData?['urgency'] as String? ?? 'MEDIUM';
+    final urgency =  taskData?['urgency'] as String? ?? 'MEDIUM';
     final isCompleted = taskData?['isCompleted'] as bool? ?? false;
+    final isLoading = taskData?['isLoading'] as bool? ?? false;
     
     // Convert color string back to Color object if needed
     Color actualColor = color;
@@ -584,6 +688,40 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     // Debug logging for completion status
     print('🔧 BUILDING TASK CARD: $title - isCompleted: $isCompleted');
     print('🔧 BUILDING TASK CARD: Full task data: $taskData');
+    
+    // Show loading spinner if this is a loading task
+    if (isLoading) {
+      return Container(
+        width: 155.w,
+        height: 140.h,
+        padding: EdgeInsets.all(kAppMediumPadding),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(MAIZE_PRIMARY),
+              strokeWidth: 2.0,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              title,
+              style: TextStyle(
+                color: MAIZE_ACCENT,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -630,7 +768,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             // Completion status and urgency row
             Row(
               children: [
-                // Enhanced completion status indicator
+                
                 
                 
                 // Urgency indicator (shows completion status when completed)
@@ -641,7 +779,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child:  Text(
-                        isCompleted ? S.of(context).done : urgency.toUpperCase(),
+                        isCompleted ? S.of(context).done : _getUrgencyText(urgency),
                         style: TextTheme.of(
                           context,
                         ).bodySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12.sp),
@@ -665,6 +803,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                     fontWeight: FontWeight.w600,
                     decoration: isCompleted ? TextDecoration.lineThrough : null,
                 ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
               ),
               Spacer(),
               
@@ -781,16 +921,36 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
               // Load analytics and weather data for the first farm if available
               if (farms.isNotEmpty) {
                 final firstFarmId = farms.first.id ?? '';
-                if (monitoringState.farmAnalytics == null) {
+                
+                // Check if analytics need to be loaded (not cached or expired)
+                final shouldLoadAnalytics = monitoringState.farmAnalytics == null || 
+                    _cachedAnalytics == null ||
+                    _lastAnalyticsLoad == null ||
+                    DateTime.now().difference(_lastAnalyticsLoad!) > _analyticsCacheTimeout;
+                
+                if (shouldLoadAnalytics) {
+                  print('🌽 LiveMonitoring: Loading fresh analytics for farm: $firstFarmId');
                   context.read<MonitoringBloc>().add(
                     LoadFarmAnalyticsEvent(farmId: firstFarmId),
                   );
+                } else {
+                  final cacheAge = DateTime.now().difference(_lastAnalyticsLoad!);
+                  print('🌽 LiveMonitoring: Using cached analytics (age: ${cacheAge.inMinutes} minutes)');
+                  
+                  // If using cached data, don't show notifications
+                  if (cacheAge < _analyticsCacheTimeout) {
+                    print('🌽 LiveMonitoring: Cached data is fresh, will skip notifications');
+                  }
                 }
+                
                 // Load weather data for the first farm
                 if (monitoringState.weatherData == null) {
+                  print('🌽 LiveMonitoring: Loading weather data for farm: $firstFarmId');
                   context.read<MonitoringBloc>().add(
                     LoadWeatherDataEvent(farmId: firstFarmId),
                   );
+                } else {
+                  print('🌽 LiveMonitoring: Weather data already loaded');
                 }
               }
 
@@ -799,7 +959,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                 children: [
                   Row(
                     children: [
-                      Column(
+                      Expanded(
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -807,17 +968,22 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                             style: TextTheme.of(
                               context,
                             ).bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                           ),
                           verticalSpace(1),
                           Text(
-                            '$fieldCount field${fieldCount != 1 ? 's' : ''} registered',
+                              '$fieldCount ${S.of(context).fields_registered}',
                             style: TextTheme.of(
                               context,
                             ).bodySmall?.copyWith(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      const Spacer(),
+                      ),
+                      Spacer(),
                        Flexible(
                          child: ElevatedButton.icon(
                            onPressed: () {
@@ -828,7 +994,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                              size: 16.sp,
                              color: Colors.white,
                            ),
-                           label: Text(
+                            label: Flexible(
+                              child: Text(
                              S.of(context).add_field,
                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                color: Colors.white,
@@ -836,19 +1003,22 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
                              ),
                              maxLines: 1,
                              overflow: TextOverflow.ellipsis,
+                              ),
                            ),
                            style: ElevatedButton.styleFrom(
                              backgroundColor: MAIZE_PRIMARY,
                              padding: EdgeInsets.symmetric(
-                               horizontal: 20.w,
+                                horizontal: 16.w,
                                vertical: 12.h,
                              ),
                              shape: RoundedRectangleBorder(
                                borderRadius: BorderRadius.circular(16.r),
                              ),
+                              minimumSize: Size(0, 40.h),
                            ),
                          ),
                        ),
+                       
                        
                       
                       
@@ -1062,7 +1232,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     if (lightIntensity > 80) {
       return S.of(context).sunny;
     } else if (lightIntensity > 60) {
-      return S.of(context).partly_cloudy_weather;
+      return S.of(context).partly_cloudy;
     } else if (lightIntensity > 40) {
       return S.of(context).cloudy;
     } else if (humidity > 85) {
@@ -1073,35 +1243,43 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   IconData _getWeatherIcon(String condition) {
-    switch (condition) {
-      case 'Sunny':
+    // Handle both English and translated conditions
+    final lowerCondition = condition.toLowerCase();
+    if (lowerCondition.contains('sunny') || lowerCondition.contains('maalaga')) {
         return Icons.wb_sunny;
-      case 'Partly Cloudy':
+    } else if (lowerCondition.contains('partly') || lowerCondition.contains('bahagyang')) {
         return Icons.cloud;
-      case 'Cloudy':
+    } else if (lowerCondition.contains('cloudy') || lowerCondition.contains('maulap')) {
         return Icons.cloud_outlined;
-      case 'Rainy':
+    } else if (lowerCondition.contains('rainy') || lowerCondition.contains('ulan')) {
         return Icons.grain;
-      case 'Overcast':
+    } else if (lowerCondition.contains('overcast') || lowerCondition.contains('makulimlim')) {
         return Icons.cloud_queue;
-      default:
+    } else {
         return Icons.cloud;
     }
   }
 
   String _translateWeatherCondition(String condition) {
-    switch (condition) {
-      case 'Sunny':
+    final lowerCondition = condition.toLowerCase().trim();
+    print('🌤️ Translating weather condition: "$condition" -> "$lowerCondition"');
+    
+    switch (lowerCondition) {
+      case 'sunny':
         return S.of(context).sunny;
-      case 'Partly Cloudy':
+      case 'partly cloudy':
+      case 'partly_cloudy':
         return S.of(context).partly_cloudy;
-      case 'Cloudy':
+      case 'cloudy':
         return S.of(context).cloudy;
-      case 'Rainy':
+      case 'rainy':
         return S.of(context).rainy;
-      case 'Overcast':
+      case 'overcast':
         return S.of(context).overcast;
+      case 'clear':
+        return S.of(context).sunny;
       default:
+        print('🌤️ Unknown weather condition: "$condition", using partly cloudy as fallback');
         return S.of(context).partly_cloudy;
     }
   }
@@ -1139,8 +1317,10 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     FarmState farmState,
     MonitoringState monitoringState,
   ) async {
+    print('🚀 _generateDynamicTasks STARTED');
     final tasks = <Map<String, dynamic>>[];
     final now = DateTime.now();
+    final Set<String> addedTaskIds = <String>{}; // Track added task IDs to prevent duplicates
 
     // Debug: Print farm data status
     print('🔍 _generateDynamicTasks called with farmState: ${farmState.runtimeType}');
@@ -1162,13 +1342,116 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         }
       }
       
-      // Try to get analytics recommendations from monitoring state
-      final analyticsData = monitoringState.farmAnalytics;
+      // Try to get analytics recommendations from monitoring state or cache
+      Map<String, dynamic>? analyticsData = monitoringState.farmAnalytics;
+      
+      print('🔍 Raw analytics data from monitoring state: ${analyticsData != null ? "EXISTS" : "NULL"}');
+      if (analyticsData != null) {
+        print('🔍 Analytics keys: ${analyticsData.keys.toList()}');
+      }
+      
+      // Debug farm state
+      print('🔍 Farm State Type: ${farmState.runtimeType}');
+      print('🔍 Is FarmsLoaded: ${farmState is FarmsLoaded}');
+      if (farmState is FarmsLoaded) {
+        print('🔍 Farms Count: ${farmState.farms.length}');
+      }
+      
+      // If no analytics from monitoring state, try to get from HomeScreenService cache
+      if (analyticsData == null && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+        try {
+          final selectedFarm = farmState.farms.first;
+          print('🔍 No analytics from monitoring state, trying HomeScreenService cache for farm: ${selectedFarm.id}');
+          final homeData = await HomeScreenService.getHomeScreenData(
+            farmId: selectedFarm.id,
+            forceRefresh: false,
+          );
+          
+          if (homeData['analytics'] != null) {
+            analyticsData = homeData['analytics'] as Map<String, dynamic>;
+            print('🔍 Found analytics data from HomeScreenService cache');
+            print('🔍 HomeScreenService analytics keys: ${analyticsData!.keys.toList()}');
+          }
+        } catch (e) {
+          print('🔍 Error getting analytics from HomeScreenService: $e');
+        }
+      }
+      
+      // CRITICAL: Force analytics data to be available for notifications
+      if (analyticsData == null && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+        print('🚨 CRITICAL: No analytics data found, forcing analytics load for notifications');
+        try {
+          final selectedFarm = farmState.farms.first;
+          print('🚨 Forcing analytics load for farm: ${selectedFarm.id}');
+          
+          // Force load analytics from MonitoringBloc
+          context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: selectedFarm.id ?? ''));
+          
+          // Wait a bit for the analytics to load
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Try to get analytics again
+          final currentState = context.read<MonitoringBloc>().state;
+          if (currentState.farmAnalytics != null) {
+            analyticsData = currentState.farmAnalytics;
+            print('🚨 Successfully loaded analytics data for notifications');
+            print('🚨 Analytics keys: ${analyticsData!.keys.toList()}');
+          }
+        } catch (e) {
+          print('🚨 Error forcing analytics load: $e');
+        }
+      }
+      
+      // CRITICAL: If still no analytics data, force load it from HomeScreenService
+      if (analyticsData == null && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+        try {
+          final selectedFarm = farmState.farms.first;
+          print('🔔 CRITICAL: No analytics data found, forcing fresh load for farm: ${selectedFarm.id}');
+          final homeData = await HomeScreenService.getHomeScreenData(
+            farmId: selectedFarm.id,
+            forceRefresh: true, // Force refresh to get fresh data
+          );
+          
+          if (homeData['analytics'] != null) {
+            analyticsData = homeData['analytics'] as Map<String, dynamic>;
+            print('🔔 CRITICAL: Forced fresh analytics data loaded');
+            print('🔔 CRITICAL: Analytics keys: ${analyticsData!.keys.toList()}');
+          } else {
+            print('🔔 CRITICAL: Even forced refresh returned no analytics data!');
+          }
+        } catch (e) {
+          print('🔔 CRITICAL: Error forcing fresh analytics load: $e');
+        }
+      }
+      
+      // Use cached data if available and not expired
+      if (analyticsData == null && _cachedAnalytics != null && _lastAnalyticsLoad != null) {
+        final cacheAge = DateTime.now().difference(_lastAnalyticsLoad!);
+        if (cacheAge < _analyticsCacheTimeout) {
+          analyticsData = _cachedAnalytics;
+          print('🔍 Using cached analytics data (age: ${cacheAge.inMinutes} minutes)');
+        } else {
+          print('🔍 Cached analytics data expired (age: ${cacheAge.inMinutes} minutes)');
+        }
+      }
+      
+      // Cache analytics data for performance
+      if (analyticsData != null) {
+        _cachedAnalytics = analyticsData;
+        _lastAnalyticsLoad = DateTime.now();
+        print('🔍 Cached analytics data for performance');
+      }
 
       // Debug: Print analytics data status
       print(
         '🔍 Analytics Data Status: ${analyticsData != null ? S.of(context).available : S.of(context).null_value}',
       );
+      print('🔍 Monitoring State Loading: ${monitoringState.isLoading}');
+      print('🔍 Cached Analytics Available: ${_cachedAnalytics != null}');
+      if (_lastAnalyticsLoad != null) {
+        final cacheAge = DateTime.now().difference(_lastAnalyticsLoad!);
+        print('🔍 Cache Age: ${cacheAge.inMinutes} minutes');
+      }
       if (analyticsData != null) {
         print('🔍 Analytics Keys: ${analyticsData.keys.toList()}');
         print('🔍 Has Prescriptive: ${analyticsData['prescriptive'] != null}');
@@ -1198,30 +1481,79 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
       List<dynamic> recommendations = [];
 
+      print('🔔 PRE-NOTIFICATION CHECK: analyticsData = ${analyticsData != null ? "EXISTS" : "NULL"}');
+
       if (analyticsData != null) {
+        print('🔔 Analytics data exists, checking for prescriptive...');
         // The complete analytics endpoint returns data directly with prescriptive key
         if (analyticsData['prescriptive'] != null) {
           final prescriptive = analyticsData['prescriptive'] as Map<String, dynamic>;
           recommendations = prescriptive['recommendations'] as List<dynamic>? ?? [];
           print('🔍 Found prescriptive recommendations: ${recommendations.length}');
+          
+          // Debug: Print all recommendations to see what we have
+          for (int i = 0; i < recommendations.length; i++) {
+            final rec = recommendations[i] as Map<String, dynamic>;
+            print('🔍 Recommendation $i: ${rec['action']} - ${rec['category']} - ${rec['urgency']} - ${rec['field_name']}');
+          }
+        } else {
+          print('🔔 WARNING: No prescriptive data in analytics!');
+          
+          // Try to generate recommendations from descriptive analytics if prescriptive is missing
+          if (analyticsData['descriptive'] != null) {
+            print('🔔 Attempting to generate recommendations from descriptive analytics...');
+            final descriptive = analyticsData['descriptive'] as Map<String, dynamic>;
+            final stressAnalysis = descriptive['stress_analysis'] as Map<String, dynamic>?;
+            
+            if (stressAnalysis != null) {
+              print('🔔 Found stress analysis data, generating recommendations...');
+              recommendations = _generateRecommendationsFromStressAnalysis(stressAnalysis, farmState);
+              print('🔔 Generated ${recommendations.length} recommendations from stress analysis');
+            }
+          }
         }
 
         print('🔍 Final Recommendations Count: ${recommendations.length}');
+      } else {
+        print('🔔 WARNING: Analytics data is NULL - no recommendations will be processed!');
       }
 
+      print('🔔 Recommendations isEmpty: ${recommendations.isEmpty}, Length: ${recommendations.length}');
+      
+      // CRITICAL: Always show notifications if we have recommendations, regardless of analytics data source
       if (recommendations.isNotEmpty) {
-        // Show notifications for new high-priority prescriptions
+        print('🔔 Found ${recommendations.length} recommendations');
+        print('🔔 CALLING _showPrescriptionNotifications NOW...');
         await _showPrescriptionNotifications(recommendations);
+        print('🔔 _showPrescriptionNotifications COMPLETED');
         
         print('🔍 Processing ${recommendations.length} recommendations for task cards');
         
         // Convert analytics recommendations to task cards
+        final Map<String, Map<String, dynamic>> uniqueRecommendations = {};
+        
         for (int i = 0; i < recommendations.length; i++) {
           final rec = recommendations[i] as Map<String, dynamic>;
           print('🔍 Processing recommendation $i: ${rec['action']} for field ${rec['field_id']}');
           
+          // Create a more unique key that includes timestamp and field info
+          final action = rec['action'] as String? ?? S.of(context).unknown_action;
+          final fieldId = rec['field_id'] as String? ?? 'unknown';
+          final category = rec['category'] as String? ?? 'general';
+          final parameter = rec['parameter'] as String? ?? 'general';
+          final urgency = rec['urgency'] as String? ?? 'LOW';
+          
+          // Create unique key that prevents duplicates
+          final uniqueKey = '${action}_${fieldId}_${category}_${parameter}_${urgency}';
+          
+          // Skip if we already processed this exact recommendation
+          if (uniqueRecommendations.containsKey(uniqueKey)) {
+            print('🔍 Skipping duplicate recommendation: $uniqueKey');
+            continue;
+          }
+          
           // Check if this prescription is deleted
-          final deletionStableId = '${rec['action']}_${rec['field_name']}_${rec['category']}_${rec['parameter']}';
+          final deletionStableId = '${action}_${rec['field_name']}_${category}_${parameter}';
           final deletionTaskId = 'analytics_${deletionStableId.hashCode.abs()}';
           
           // Check if this task is deleted
@@ -1236,31 +1568,65 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             }
           }
           
+          // Store unique recommendation
+          uniqueRecommendations[uniqueKey] = rec;
+        }
+        
+        // Process unique recommendations
+        for (final rec in uniqueRecommendations.values) {
           final urgency = rec['urgency'] as String? ?? 'LOW';
           final timeline = rec['timeline'] as String? ?? '1 day';
           final action = rec['action'] as String? ?? 'Check farm';
-          final details = rec['details'] as String? ?? '';
+          String details = rec['details'] as String? ?? '';
+          String fieldName = rec['field_name'] as String? ?? S.of(context).unknown_field;
+          
+          // If details is empty, create specific details based on the action and field
+          if (details.isEmpty) {
+            details = 'Field $fieldName: ${action.toLowerCase()} required for optimal crop health';
+            print('🔍 Generated fallback details: $details');
+          }
           final category = rec['category'] as String? ?? 'general';
-          final instructions = rec['instructions'] as List<dynamic>? ?? [];
+          // Get step-by-step instructions from translation service
+          final instructions = await PrescriptionTranslationService.getTranslatedInstructions(action);
+          print('🔍 Retrieved ${instructions.length} instructions for "$action"');
           
       // Extract field-specific information directly from recommendation data
-      String fieldName = rec['field_name'] as String? ?? 'Unknown Field';
+          
       String soilType = rec['soil_type'] as String? ?? 'Loam';
       String growthStage = rec['growth_stage'] as String? ?? 'Unknown';
       String? fieldId = rec['field_id'] as String?;
+      
+      // If field name is unknown, try to get it from the farm data
+      if (fieldName == S.of(context).unknown_field || fieldName.isEmpty) {
+        final farmState = context.read<FarmBloc>().state;
+        if (farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
+          final farm = farmState.farms.first;
+          if (farm.fields.isNotEmpty) {
+            fieldName = farm.fields.first.fieldName;
+            fieldId = farm.fields.first.fieldName;
+            print('🔍 Using fallback field name: $fieldName');
+          }
+        }
+      }
+      
+      print('🔍 Final field name for prescription: $fieldName');
           final parameter = rec['parameter'] as String? ?? 'general';
           
       print('🔍 Using recommendation data directly: $fieldName, $soilType, $growthStage, $fieldId');
           
           print('🔍 Extracted field data - Name: $fieldName, Soil: $soilType, Stage: $growthStage, FieldId: $fieldId');
 
+          // Translate the action and details using prescription translation service
+          final translatedAction = await PrescriptionTranslationService.translatePrescriptionTitle(action);
+          final translatedDetails = await PrescriptionTranslationService.translatePrescriptionDescription(details);
+
           // Format the title to show the actual action with better readability
-          String formattedTitle = _formatRecommendationTitle(action, category);
+          String formattedTitle = _formatRecommendationTitle(translatedAction, category);
 
           // Use details for status if available, otherwise use urgency
           String status =
-              details.isNotEmpty
-                  ? _formatDetailsForStatus(details, urgency, timeline)
+              translatedDetails.isNotEmpty
+                  ? _formatDetailsForStatus(translatedDetails, urgency, timeline)
                   : _mapUrgencyToStatus(urgency);
 
           // Format timeline for display instead of calculated time
@@ -1278,8 +1644,16 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
 
           // Get completion status for this task
           // Create a stable ID based on task content to ensure consistency
-          final stableId = '${action}_${fieldName}_${category}_${parameter}';
+          // Include fieldId to make it more unique and prevent duplicates
+          final stableId = '${action}_${fieldId ?? fieldName}_${category}_${parameter}';
           final taskId = 'analytics_${stableId.hashCode.abs()}';
+          
+          // Check for duplicates in current session
+          if (addedTaskIds.contains(taskId)) {
+            print('🔍 Skipping duplicate task: $taskId');
+            continue;
+          }
+          addedTaskIds.add(taskId);
           
           // Check if user is authenticated before getting completion status
           final authState = context.read<AuthenticationBloc>().state;
@@ -1300,7 +1674,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           tasks.add({
             'id': taskId,
             'title': formattedTitle,
-            'description': details,
+            'description': translatedDetails,
             'category': category,
             'urgency': urgency,
             'timeline': timeline,
@@ -1318,43 +1692,44 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             'time': displayTime,
             'color': (isCompleted ? Colors.green : _getColorForUrgency(urgency)).value.toString(),
             'isActive': isCompleted ? false : (urgency == 'HIGH' || urgency == 'URGENT' || urgency == 'MEDIUM'),
-            'details': details,
+            'details': translatedDetails,
             'sendTime': sendTime,
             'deadline': deadline,
             'instructions': instructions,
           });
         }
-      } else if (monitoringState.isLoading) {
-        // Show loading indicator when analytics is being processed
+      } else if (monitoringState.isLoading && analyticsData == null && _cachedAnalytics == null) {
+        // Only show loading indicator when analytics is being processed AND we don't have any data (cached or fresh)
         tasks.add({
           'time':
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
-          'title': 'Loading\nAnalytics...',
-          'status': 'Processing',
+          'title': S.of(context).loading_analytics_data,
+          'status': S.of(context).processing,
           'color': Colors.grey[300],
           'isActive': false,
-          'fieldName': 'System',
-          'sendTime': 'Just now',
-          'deadline': 'Soon',
+          'fieldName': S.of(context).system,
+          'sendTime': S.of(context).just_now,
+          'deadline': S.of(context).soon,
           'urgency': 'LOW',
           'instructions': [],
-          'description': 'Processing farm analytics data...',
+          'description': S.of(context).processing_farm_analytics_data,
+          'isLoading': true, // Add flag to indicate this is a loading task
         });
       } else {
         // Show proper no-data message instead of fallback tasks
         tasks.add({
           'time':
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
-          'title': 'No Tasks\nfor Today',
-          'status': 'All Clear',
+          'title': '${S.of(context).no_tasks}\n${S.of(context).for_today}',
+          'status': S.of(context).all_clear,
           'color': Colors.green[300],
           'isActive': false,
-          'fieldName': 'All Fields',
-          'sendTime': 'Just now',
+          'fieldName': S.of(context).all_fields,
+          'sendTime': S.of(context).just_now,
           'deadline': 'N/A',
           'urgency': 'LOW',
           'instructions': [],
-          'description': 'All farm operations are up to date.',
+          'description': S.of(context).all_farm_operations_up_to_date,
         });
       }
     } else {
@@ -1362,36 +1737,244 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       tasks.addAll([
         {
           'time': '${now.hour.toString().padLeft(2, '0')}:30',
-          'title': 'Setup\nFarm',
-          'status': 'Required',
+          'title': '${S.of(context).setup}\n${S.of(context).farm}',
+          'status': S.of(context).required,
           'color': MAIZE_PRIMARY,
           'isActive': true,
-          'fieldName': 'New Farm',
-          'sendTime': 'Just now',
-          'deadline': 'Today',
+          'fieldName': S.of(context).new_farm,
+          'sendTime': S.of(context).just_now,
+          'deadline': S.of(context).today,
           'urgency': 'HIGH',
-          'instructions': ['Register your farm details', 'Add field information', 'Configure sensor settings'],
-          'description': 'Complete farm registration to start monitoring',
+          'instructions': [S.of(context).register_farm_details, S.of(context).add_field_information, S.of(context).configure_sensor_settings],
+          'description': S.of(context).complete_farm_registration_to_start_monitoring,
         },
         {
           'time': '${(now.hour + 1).toString().padLeft(2, '0')}:00',
-          'title': 'Add\nSensors',
-          'status': 'Pending',
+          'title': '${S.of(context).add}\n${S.of(context).sensors}',
+          'status': S.of(context).pending,
           'color': Colors.white,
           'isActive': false,
-          'fieldName': 'All Fields',
-          'sendTime': 'Just now',
-          'deadline': 'This week',
+          'fieldName': S.of(context).all_fields,
+          'sendTime': S.of(context).just_now,
+          'deadline': S.of(context).this_week,
           'urgency': 'MEDIUM',
-          'instructions': ['Install soil moisture sensors', 'Set up weather station', 'Connect to monitoring system'],
-          'description': 'Install sensors to enable real-time monitoring',
+          'instructions': [S.of(context).install_soil_moisture_sensors, S.of(context).set_up_weather_station, S.of(context).connect_to_monitoring_system],
+          'description': S.of(context).install_sensors_to_enable_real_time_monitoring,
         },
       ]);
     }
 
     // Cache tasks for refresh functionality
     _cachedTasks = tasks;
+    
+    // CRITICAL: Force notifications ONLY for real prescription tasks (not fallback/default tasks)
+    if (tasks.isNotEmpty) {
+      // Filter out fallback/default tasks - only process real prescription tasks
+      final realPrescriptionTasks = tasks.where((task) {
+        final taskId = task['id'] as String? ?? '';
+        final category = task['category'] as String? ?? '';
+        final fieldName = task['fieldName'] as String? ?? '';
+        
+        // Skip fallback tasks (they have specific IDs or are system tasks)
+        if (taskId.startsWith('analytics_') && 
+            category != 'general' && 
+            fieldName != S.of(context).all_fields &&
+            fieldName != S.of(context).system &&
+            fieldName != S.of(context).new_farm) {
+          return true; // This is a real prescription task
+        }
+        return false; // This is a fallback/default task
+      }).toList();
+      
+      if (realPrescriptionTasks.isNotEmpty) {
+        print('🔔 FORCING NOTIFICATIONS for ${realPrescriptionTasks.length} REAL prescription tasks (filtered from ${tasks.length} total)');
+        final taskRecommendations = realPrescriptionTasks.map((task) => {
+          'action': task['title'] ?? '',
+          'category': task['category'] ?? '',
+          'urgency': task['urgency'] ?? 'MEDIUM',
+          'field_name': task['fieldName'] ?? '',
+          'field_id': task['fieldName'] ?? '',
+          'parameter': task['parameter'] ?? 'general',
+          'details': task['description'] ?? '',
+        }).toList();
+        
+        print('🔔 CALLING _showPrescriptionNotifications for REAL prescription tasks NOW...');
+        await _showPrescriptionNotifications(taskRecommendations);
+        print('🔔 _showPrescriptionNotifications for REAL prescription tasks COMPLETED');
+      } else {
+        print('🔔 No real prescription tasks found - skipping notifications (${tasks.length} total tasks are fallback/default)');
+      }
+    }
+    
+    print('🚀 _generateDynamicTasks COMPLETED - returning ${tasks.length} tasks');
     return tasks;
+  }
+
+  // Generate recommendations from stress analysis when prescriptive data is missing
+  List<Map<String, dynamic>> _generateRecommendationsFromStressAnalysis(
+    Map<String, dynamic> stressAnalysis,
+    FarmState farmState,
+  ) {
+    final recommendations = <Map<String, dynamic>>[];
+    
+    if (farmState is! FarmsLoaded || farmState.farms.isEmpty) {
+      return recommendations;
+    }
+    
+    final farm = farmState.farms.first;
+    final field = farm.fields.isNotEmpty ? farm.fields.first : null;
+    
+    if (field == null) {
+      return recommendations;
+    }
+    
+    // Process each stress factor
+    for (final entry in stressAnalysis.entries) {
+      final parameter = entry.key;
+      final data = entry.value as Map<String, dynamic>?;
+      
+      if (data == null) continue;
+      
+      final actualValue = data['actual_value'] as num?;
+      final optimalRange = data['optimal_range'] as List<dynamic>?;
+      final stressLevel = data['stress_level'] as String? ?? 'low';
+      
+      if (actualValue == null || optimalRange == null || stressLevel == 'low') {
+        continue; // Skip if no issues
+      }
+      
+      // Generate recommendation based on stress level and parameter
+      String action = '';
+      String category = '';
+      String urgency = 'LOW';
+      
+      switch (parameter.toLowerCase()) {
+        case 'temperature':
+          if (stressLevel == 'high' || stressLevel == 'moderate') {
+            if (actualValue > (optimalRange[1] as num)) {
+              action = 'Manage high temperature stress';
+              category = 'temperature_management';
+              urgency = 'HIGH';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              action = 'Protect from cold stress';
+              category = 'temperature_management';
+              urgency = 'MEDIUM';
+            }
+          }
+          break;
+          
+        case 'humidity':
+          if (stressLevel == 'high' || stressLevel == 'moderate') {
+            if (actualValue > (optimalRange[1] as num)) {
+              action = 'Reduce humidity to prevent disease';
+              category = 'humidity_management';
+              urgency = 'HIGH';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              action = 'Increase humidity for optimal plant growth';
+              category = 'humidity_management';
+              urgency = 'MEDIUM';
+            }
+          }
+          break;
+          
+        case 'soil moisture':
+          if (stressLevel == 'high' || stressLevel == 'moderate') {
+            if (actualValue > (optimalRange[1] as num)) {
+              action = 'Improve drainage to prevent waterlogging';
+              category = 'water_management';
+              urgency = 'HIGH';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              action = 'Increase irrigation frequency';
+              category = 'water_management';
+              urgency = 'URGENT';
+            }
+          }
+          break;
+          
+        case 'soil ph':
+          if (stressLevel == 'high' || stressLevel == 'moderate') {
+            if (actualValue > (optimalRange[1] as num)) {
+              action = 'Apply sulfur to decrease soil pH';
+              category = 'soil_management';
+              urgency = 'MEDIUM';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              action = 'Apply lime to increase soil pH';
+              category = 'soil_management';
+              urgency = 'MEDIUM';
+            }
+          }
+          break;
+          
+        case 'light intensity':
+          if (stressLevel == 'high' || stressLevel == 'moderate') {
+            if (actualValue < (optimalRange[0] as num)) {
+              action = 'Adjust plant spacing for better light penetration';
+              category = 'light_management';
+              urgency = 'MEDIUM';
+            }
+          }
+          break;
+      }
+      
+      if (action.isNotEmpty) {
+        // Create specific details based on the action and parameter
+        String specificDetails = '';
+        switch (parameter.toLowerCase()) {
+          case 'temperature':
+            if (actualValue > (optimalRange[1] as num)) {
+              specificDetails = 'Temperature is too high (${actualValue}°C). Consider providing shade or improving ventilation.';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              specificDetails = 'Temperature is too low (${actualValue}°C). Consider using row covers or heating systems.';
+            }
+            break;
+          case 'humidity':
+            if (actualValue > (optimalRange[1] as num)) {
+              specificDetails = 'Humidity is too high (${actualValue}%). Improve air circulation to prevent disease.';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              specificDetails = 'Humidity is too low (${actualValue}%). Consider misting or increasing irrigation.';
+            }
+            break;
+          case 'soil moisture':
+            if (actualValue > (optimalRange[1] as num)) {
+              specificDetails = 'Soil moisture is too high (${actualValue}%). Improve drainage to prevent root rot.';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              specificDetails = 'Soil moisture is too low (${actualValue}%). Increase irrigation frequency immediately.';
+            }
+            break;
+          case 'soil ph':
+            if (actualValue > (optimalRange[1] as num)) {
+              specificDetails = 'Soil pH is too high (${actualValue}). Apply sulfur to lower pH.';
+            } else if (actualValue < (optimalRange[0] as num)) {
+              specificDetails = 'Soil pH is too low (${actualValue}). Apply lime to raise pH.';
+            }
+            break;
+          case 'light intensity':
+            if (actualValue < (optimalRange[0] as num)) {
+              specificDetails = 'Light intensity is too low (${actualValue} lux). Adjust plant spacing for better light penetration.';
+            }
+            break;
+          default:
+            specificDetails = 'Field ${field.fieldName}: ${parameter.toLowerCase()} at ${actualValue}, ${stressLevel} stress level';
+        }
+        
+        recommendations.add({
+          'action': action,
+          'category': category,
+          'urgency': urgency,
+          'field_name': field.fieldName,
+          'field_id': field.fieldName, // Use field name as ID since Field doesn't have id property
+          'parameter': parameter.toLowerCase(),
+          'details': specificDetails,
+          'timeline': urgency == 'URGENT' ? 'today' : urgency == 'HIGH' ? 'today' : 'this week',
+          'soil_type': field.soilType,
+          'growth_stage': field.growthStage,
+        });
+        
+        print('🔔 Generated recommendation: $action for ${field.fieldName} (${parameter}: $actualValue, $stressLevel stress)');
+      }
+    }
+    
+    return recommendations;
   }
 
   // Helper methods for analytics-based task generation
@@ -1499,6 +2082,21 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       case 'LOW':
       default:
         return 'Scheduled';
+    }
+  }
+
+  String _getUrgencyText(String urgency) {
+    switch (urgency.toUpperCase()) {
+      case 'URGENT':
+        return S.of(context).urgent;
+      case 'HIGH':
+        return S.of(context).high;
+      case 'MEDIUM':
+        return S.of(context).medium;
+      case 'LOW':
+        return S.of(context).low;
+      default:
+        return urgency.toUpperCase();
     }
   }
 
@@ -2091,7 +2689,13 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   Future<void> _showPrescriptionNotifications(List<dynamic> recommendations) async {
+    print('🔔 ===== NOTIFICATION DEBUG START =====');
     print('🔔 Checking ${recommendations.length} recommendations for notifications');
+    
+    // Force request permissions first
+    print('🔔 Requesting notification permissions...');
+    final permissionsGranted = await _notificationService.requestPermissions();
+    print('🔔 Permission request result: $permissionsGranted');
     
     // Check if notifications are enabled
     final notificationsEnabled = await _notificationService.areNotificationsEnabled();
@@ -2102,61 +2706,147 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
     final prefsEnabled = prefs.getBool('notifications_enabled') ?? true;
     print('🔔 SharedPreferences check: enabled = $prefsEnabled');
     
-    if (!notificationsEnabled || !prefsEnabled) {
-      print('🔔 Notifications are disabled, skipping prescription notifications');
+    // Check if permissions are actually granted
+    final hasPermissions = await _notificationService.arePermissionsGranted();
+    print('🔔 Permissions granted check: $hasPermissions');
+    
+    if (!notificationsEnabled || !prefsEnabled || !hasPermissions) {
+      print('🔔 Notifications are disabled or permissions not granted, skipping prescription notifications');
+      print('🔔 Debug: enabled=$notificationsEnabled, prefs=$prefsEnabled, permissions=$hasPermissions');
       return;
     }
     
+    print('🔔 Notifications are enabled and permissions granted, proceeding with notification logic');
+    
+    // Get user ID for notification tracking
+    final authState = context.read<AuthenticationBloc>().state;
+    if (authState.status != AuthenticationStatus.authenticated || authState.user == null) {
+      print('🔔 User not authenticated, skipping notifications');
+      return;
+    }
+    
+    final userId = authState.user!.id;
+    final notificationKey = 'notified_prescriptions_$userId';
+    
+    // Load previously notified prescriptions
+    final notifiedPrescriptionsJson = prefs.getString(notificationKey);
+    Set<String> previouslyNotified = {};
+    if (notifiedPrescriptionsJson != null) {
+      try {
+        final List<dynamic> notifiedList = jsonDecode(notifiedPrescriptionsJson);
+        previouslyNotified = Set<String>.from(notifiedList);
+        print('🔔 Loaded ${previouslyNotified.length} previously notified prescriptions');
+        print('🔔 Previously notified: ${previouslyNotified.toList()}');
+      } catch (e) {
+        print('🔔 Error loading notified prescriptions: $e');
+      }
+    }
+    
+    // TEMPORARY DEBUG: Clear notification cache to test
+    print('🔔 TEMPORARY DEBUG: Clearing notification cache for testing');
+    await prefs.remove(notificationKey);
+    previouslyNotified.clear();
+    print('🔔 Notification cache cleared, previouslyNotified is now empty');
+    
+    final Set<String> newNotifications = {};
+    
     for (final rec in recommendations) {
       final recMap = rec as Map<String, dynamic>;
-      final action = recMap['action'] as String? ?? 'Farm Task';
+      final action = recMap['action'] as String? ?? S.of(context).farm_task;
       final urgency = recMap['urgency'] as String? ?? 'LOW';
       final details = recMap['details'] as String? ?? '';
       final category = recMap['category'] as String? ?? 'general';
       final fieldId = recMap['field_id'] as String? ?? 'unknown';
-      final fieldName = recMap['field_name'] as String? ?? 'Unknown Field';
+      final fieldName = recMap['field_name'] as String? ?? S.of(context).unknown_field;
       final parameter = recMap['parameter'] as String? ?? 'general';
       
+      print('🔍 PROCESSING PRESCRIPTION: $action');
+      print('🔍 Category: $category, Parameter: $parameter, Urgency: $urgency');
+      print('🔍 Field: $fieldName ($fieldId)');
+      print('🔍 Details: $details');
+      
       // Create unique ID for this prescription including field info
-      final prescriptionId = '${action}_${urgency}_${category}_${fieldId}';
+      final prescriptionId = '${action}_${fieldName}_${category}_${parameter}_${urgency}';
+      
+      print('🔍 Generated prescription ID: $prescriptionId');
+      print('🔍 Full prescription data: action=$action, fieldName=$fieldName, category=$category, parameter=$parameter, urgency=$urgency');
       
       // Check if this prescription is deleted
       final notificationStableId = '${action}_${fieldName}_${category}_${parameter}';
       final notificationTaskId = 'analytics_${notificationStableId.hashCode.abs()}';
       
       // Check if this task is deleted
-      final notificationAuthState = context.read<AuthenticationBloc>().state;
-      if (notificationAuthState.status == AuthenticationStatus.authenticated && notificationAuthState.user != null) {
-        final prefs = await SharedPreferences.getInstance();
-        final deletedKey = 'deleted_${notificationAuthState.user!.id}_$notificationTaskId';
+      final deletedKey = 'deleted_${userId}_$notificationTaskId';
         final isDeleted = prefs.getBool(deletedKey) ?? false;
         if (isDeleted) {
           print('🔔 Skipping deleted prescription notification: $notificationTaskId');
           continue;
-        }
       }
       
-      print('🔔 Checking prescription: $action (${urgency}) for $fieldName - Already notified: ${_notifiedPrescriptions.contains(prescriptionId)}');
+      print('🔔 Checking prescription: $action (${urgency}) for $fieldName - Previously notified: ${previouslyNotified.contains(prescriptionId)}');
       
-      // Notify for all priority prescriptions (HIGH, URGENT, MEDIUM) that haven't been notified yet
-      if ((urgency.toUpperCase() == 'HIGH' || urgency.toUpperCase() == 'URGENT' || urgency.toUpperCase() == 'MEDIUM') && 
-          !_notifiedPrescriptions.contains(prescriptionId)) {
-        
-        print('🔔 Showing notification for: $action on $fieldName');
-        
-        _notificationService.showPrescriptionAlertNotificationWithCaching(
-          title: '$action - $fieldName',
-          message: details.isNotEmpty ? details : S.current.farm_task_requires_attention,
+      // Check if this prescription should show notification
+      final shouldNotify = !previouslyNotified.contains(prescriptionId) &&
+                          !_notifiedPrescriptions.contains(prescriptionId);
+      
+      print('🔔 Prescription: $action, Priority: $urgency, Should notify: $shouldNotify');
+      print('🔔 Previously notified: ${previouslyNotified.contains(prescriptionId)}');
+      print('🔔 Session notified: ${_notifiedPrescriptions.contains(prescriptionId)}');
+      
+      if (shouldNotify) {
+        // Limit notifications per session to prevent spam
+        if (newNotifications.length < 15) { // Increased limit
+          print('🔔 Showing ${urgency} notification for: $action on $fieldName');
+          
+          // Translate notification content
+          final translatedAction = await PrescriptionTranslationService.translatePrescriptionTitle(action);
+          final translatedDetails = await PrescriptionTranslationService.translatePrescriptionDescription(details);
+          
+          print('🔍 Original action: "$action"');
+          print('🔍 Translated action: "$translatedAction"');
+          
+          // Show background notification
+          print('🔔 CALLING showPrescriptionAlertNotificationWithCaching...');
+          print('🔔 Title: $translatedAction - $fieldName');
+          print('🔔 Message: ${translatedDetails.isNotEmpty ? translatedDetails : S.of(context).farm_task_requires_attention}');
+          print('🔔 Priority: $urgency');
+          
+          await _notificationService.showPrescriptionAlertNotificationWithCaching(
+            title: '$translatedAction - $fieldName',
+            message: translatedDetails.isNotEmpty ? translatedDetails : S.of(context).farm_task_requires_attention,
           priority: urgency,
           prescriptionId: prescriptionId,
           fieldName: fieldName,
         );
         
-        // Mark as notified
+          print('🔔 showPrescriptionAlertNotificationWithCaching COMPLETED');
+        
+          // Mark as notified in both session and persistent storage
         _notifiedPrescriptions.add(prescriptionId);
+          newNotifications.add(prescriptionId);
         print('🔔 Marked as notified: $prescriptionId');
+        } else {
+          print('🔔 Skipping ${urgency} notification - limit reached (${newNotifications.length})');
+        }
+      } else {
+        print('🔔 Skipping notification for: $action (${urgency}) - already notified or low priority');
       }
     }
+    
+    // Update persistent storage with new notifications
+    if (newNotifications.isNotEmpty) {
+      final updatedNotified = {...previouslyNotified, ...newNotifications};
+      await prefs.setString(notificationKey, jsonEncode(updatedNotified.toList()));
+      
+      // Update notification check timestamp
+      _lastNotificationCheck = DateTime.now();
+      await prefs.setString('last_notification_check', _lastNotificationCheck!.toIso8601String());
+      
+      print('🔔 Updated persistent notification tracking with ${newNotifications.length} new notifications');
+    } else {
+      print('🔔 No new notifications to show');
+    }
+    print('🔔 ===== NOTIFICATION DEBUG END =====');
   }
 
   // Helper method to format send time
@@ -2260,7 +2950,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
       case 'HIGH':
         return 'Today';
       case 'MEDIUM':
-        return 'This week';
+        return S.of(context).this_week;
       case 'LOW':
       default:
         return 'Flexible';
