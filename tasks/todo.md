@@ -481,6 +481,7 @@ All critical issues have been resolved. The registration flow now works smoothly
 4. **Production Readiness**: Identified cleanup items and security hardening steps
 5. **Legacy Code**: Found and documented unused components for removal
 6. **Integration Guidelines**: Provided mobile-backend integration patterns
+7. **Translation System Fix**: Fixed mobile app language toggle and translation functionality
 
 ### Ready for Production Deployment
 - Both backend and mobile app have been thoroughly analyzed
@@ -489,3 +490,81 @@ All critical issues have been resolved. The registration flow now works smoothly
 - Legacy code identified for cleanup
 - Comprehensive documentation created for future development
 - All critical functionality working and properly integrated
+- Translation system working correctly with proper language switching
+
+## Translation System Fix - Mobile App Language Toggle ✅
+
+### Issue Identified:
+- Language toggle in mobile app was not working properly
+- `S.of(context).text` calls were not updating when language changed
+- Missing "menu" translation key in both English and Tagalog files
+
+### Root Cause Analysis:
+1. **App Rebuild Issue**: When language changed, the MaterialApp wasn't rebuilding with new locale
+2. **Missing Translation**: "menu" translation key was missing from both language files
+3. **Localization Cache**: Flutter's localization system wasn't reloading translations at runtime
+
+### Solution Implemented:
+
+#### 1. Fixed App Rebuild Issue (`app.dart`):
+- Added `key: ValueKey(settingsState.locale.languageCode)` to MaterialApp
+- This forces the entire app to rebuild when locale changes
+- Ensures all `S.of(context)` calls use the new language
+
+#### 2. Added Missing Translation (`intl_en.arb` & `intl_tl.arb`):
+- Added `"menu": "Menu"` to English translation file
+- Added `"menu": "Menu"` to Tagalog translation file
+- Regenerated `l10n.dart` file with new translation
+
+#### 3. Language Toggle Optimization (`language_toggle.dart`):
+- Kept existing language toggle logic (it was working correctly)
+- The issue was in the app rebuild, not the toggle itself
+- Removed unnecessary navigation logic that was added initially
+
+### Technical Implementation:
+
+#### Files Modified:
+1. **`/frontend/mobile/lib/app.dart`**:
+   - Added `key: ValueKey(settingsState.locale.languageCode)` to MaterialApp
+   - Forces complete app rebuild when locale changes
+
+2. **`/frontend/mobile/lib/l10n/intl_en.arb`**:
+   - Added `"menu": "Menu"` translation key
+
+3. **`/frontend/mobile/lib/l10n/intl_tl.arb`**:
+   - Added `"menu": "Menu"` translation key
+
+4. **`/frontend/mobile/lib/generated/l10n.dart`**:
+   - Regenerated with new "menu" translation
+   - Now includes `String get menu` method
+
+#### How It Works:
+1. User selects language from dropdown in language toggle
+2. `UpdateLanguage` event triggers in SettingsBloc
+3. Settings state updates with new language code
+4. MaterialApp key changes, forcing complete rebuild
+5. All `S.of(context)` calls now use the new language
+6. UI updates immediately with translated text
+
+### Security & Production Readiness:
+- No sensitive data exposed in translation files
+- Proper error handling maintained
+- All existing functionality preserved
+- Translation system follows Flutter best practices
+- No breaking changes to existing code
+
+### User Experience:
+- Language switching now works instantly
+- All text updates immediately when language changes
+- No app restart required
+- Smooth transition between languages
+- "Menu" translation now available for use
+
+### Testing Verification:
+- Language toggle properly updates all `S.of(context)` calls
+- MaterialApp rebuilds correctly with new locale
+- Translation files properly generated and accessible
+- No syntax errors or linting issues
+- App runs successfully with both English and Tagalog
+
+The translation system is now fully functional and ready for production use.

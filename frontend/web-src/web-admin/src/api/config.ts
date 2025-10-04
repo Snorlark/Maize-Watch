@@ -136,4 +136,4 @@ export const dateUtils = {
     return start.getDay() === 0 && end.getDay() === 6 && 
            end.getTime() - start.getTime() === 6 * 24 * 60 * 60 * 1000;
   }
-}; 
+};

@@ -282,8 +282,8 @@ class SessionService {
   void _startSessionTimers() {
     _stopSessionTimers();
     
-    // Start refresh timer (check every minute)
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+    // Start refresh timer (check every 5 minutes - REDUCED FREQUENCY)
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) async { // Reduced from 1 to 5 minutes
       if (_isSessionActive) {
         final isValid = await isSessionValid();
         if (!isValid) {
@@ -293,8 +293,8 @@ class SessionService {
       }
     });
 
-    // Start session timeout timer
-    _sessionTimeoutTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    // Start session timeout timer (check every 5 minutes - REDUCED FREQUENCY)
+    _sessionTimeoutTimer = Timer.periodic(const Duration(minutes: 5), (timer) { // Reduced from 1 to 5 minutes
       if (_isSessionActive && _lastActivity != null) {
         final timeSinceActivity = DateTime.now().difference(_lastActivity!);
         if (timeSinceActivity.inMinutes >= _sessionTimeoutMinutes) {

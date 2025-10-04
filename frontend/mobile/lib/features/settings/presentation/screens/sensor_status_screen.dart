@@ -4,7 +4,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/theme/colors.dart';
 import 'package:mobile/core/services/notification_service.dart';
+import 'package:mobile/core/services/prototype_service.dart';
+import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:mobile/features/settings/presentation/bloc/sensor_status_bloc.dart';
+import 'package:mobile/generated/l10n.dart';
 
 import '../../../../core/widgets/custom_button.dart';
 
@@ -18,6 +21,7 @@ class SensorStatusScreen extends StatefulWidget {
 class _SensorStatusScreenState extends State<SensorStatusScreen> {
   final NotificationService _notificationService = NotificationService();
   bool _hasShownSleepModeNotification = false;
+  List<Map<String, dynamic>> _prototypes = [];
 
   @override
   void initState() {
@@ -26,6 +30,26 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
     _notificationService.initialize();
     // Load sensor status when screen initializes
     context.read<SensorStatusBloc>().add(const GetSensorStatusEvent());
+    // Load prototypes
+    _loadPrototypes();
+  }
+
+  Future<void> _loadPrototypes() async {
+    try {
+      final token = await SecureStorage.getToken();
+      if (token != null) {
+        final result = await PrototypeService.getUserPrototypes(token);
+        if (mounted) {
+          setState(() {
+            if (result['success'] == true) {
+              _prototypes = List<Map<String, dynamic>>.from(result['data'] ?? []);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   @override
@@ -78,14 +102,14 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                     ),
                     verticalSpace(kAppMediumGap),
                     Text(
-                      'Failed to load sensor status',
+                      S.of(context).failed_to_load_sensor_status,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: Colors.red,
                       ),
                     ),
                     verticalSpace(kAppSmallGap),
                     Text(
-                      state.message ?? 'Please try again',
+                      state.message ?? S.of(context).please_try_again,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
@@ -116,14 +140,14 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [                 
                   Text(
-                    'Sensor Status',
+                    S.of(context).sensor_status,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   verticalSpace(5.h),
                   Text(
                     isSleepMode 
-                      ? 'Sensors are in sleep mode (8pm-3am PH time)'
-                      : 'Monitor the condition of your sensors',
+                      ? S.of(context).sensors_sleep_mode
+                      : S.of(context).monitor_sensor_condition,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: isSleepMode ? Colors.orange : null,
                     ),
@@ -152,14 +176,14 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Status Check',
+                                S.of(context).status_check,
                                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                   color: MAIZE_ACCENT,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
-                                'Checking if sensors are actively sending data to ThingSpeak',
+                                S.of(context).checking_if_sensors_are_actively_sending_data_to_thingspeak,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: MAIZE_ACCENT.withOpacity(0.8),
                                 ),
@@ -195,14 +219,14 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Sleep Mode Active',
+                                  S.of(context).sleep_mode_active,
                                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     color: Colors.orange,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  'Sensors are sleeping from 8pm to 3am PH time',
+                                  S.of(context).sensors_are_sleeping_from_8pm_to_3am_ph_time,
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.orange.shade700,
                                   ),
@@ -216,9 +240,108 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                          verticalSpace(kAppSmallGap),
                   ],
                   
+                  // Registered Prototypes Section
+                  if (_prototypes.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(kAppMediumPadding),
+                      decoration: BoxDecoration(
+                        color: MAIZE_PRIMARY.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: MAIZE_PRIMARY.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.device_hub,
+                                color: MAIZE_PRIMARY,
+                                size: 20.sp,
+                              ),
+                              SizedBox(width: kAppSmallGap),
+                              Text(
+                                S.of(context).registered_prototypes,
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: MAIZE_PRIMARY,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: kAppSmallGap),
+                          ...(_prototypes.map((prototype) {
+                            final prototypeId = prototype['prototype_id'] ?? '';
+                            final fieldName = prototype['field_name'] ?? S.of(context).unknown_field;
+                            final isActive = prototype['is_active'] ?? false;
+                            
+                            return Container(
+                              margin: EdgeInsets.only(bottom: kAppSmallGap),
+                              padding: EdgeInsets.all(kAppSmallPadding),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(8.r),
+                                border: Border.all(
+                                  color: isActive ? Colors.green : Colors.red,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.device_hub,
+                                    color: isActive ? Colors.green : Colors.red,
+                                    size: 16.sp,
+                                  ),
+                                  SizedBox(width: kAppSmallGap),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          S.of(context).prototype_id(prototypeId),
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${S.of(context).field_colon} $fieldName',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                                    decoration: BoxDecoration(
+                                      color: isActive ? Colors.green : Colors.red,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Text(
+                                      isActive ? S.of(context).active : S.of(context).inactive,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList()),
+                        ],
+                      ),
+                    ),
+                    verticalSpace(kAppSmallGap),
+                  ],
+                  
                   // Temperature Sensor
                   _buildSensorStatusItem(
-                    title: 'Temperature Sensor',
+                    title: S.of(context).temperature_sensor,
                     
                     isActive: state.sensorStatus!['temperature'] ?? false,
                     icon: Icons.thermostat,
@@ -227,7 +350,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                   
                   // Humidity Sensor
                   _buildSensorStatusItem(
-                    title: 'Humidity Sensor',
+                    title: S.of(context).humidity_sensor,
                     
                     isActive: state.sensorStatus!['humidity'] ?? false,
                     icon: Icons.water_drop,
@@ -236,7 +359,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                   
                   // Soil Moisture Sensor
                   _buildSensorStatusItem(
-                    title: 'Soil Moisture Sensor',
+                    title: S.of(context).soil_moisture_sensor,
                     
                     isActive: state.sensorStatus!['soilMoisture'] ?? false,
                     icon: Icons.grass,
@@ -245,7 +368,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                   
                   // Soil pH Sensor
                   _buildSensorStatusItem(
-                    title: 'Soil pH Sensor',
+                    title: S.of(context).soil_ph_sensor,
                    
                     isActive: state.sensorStatus!['soilPh'] ?? false,
                     icon: Icons.science,
@@ -254,7 +377,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                   
                   // Light Intensity Sensor
                   _buildSensorStatusItem(
-                    title: 'Light Intensity Sensor',
+                    title: S.of(context).light_intensity_sensor,
                     
                     isActive: state.sensorStatus!['lightIntensity'] ?? false,
                     icon: Icons.light_mode,
@@ -274,7 +397,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Status Legend',
+                          S.of(context).status_legend,
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.grey[800],
@@ -293,7 +416,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                             ),
                             SizedBox(width: 8.w),
                             Text(
-                              'Active: Sensor is sending data to ThingSpeak',
+                              S.of(context).active_sensor_is_sending_data_to_thingspeak,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey[700],
                               ),
@@ -313,7 +436,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                             ),
                             SizedBox(width: 8.w),
                             Text(
-                              'Inactive: Sensor is offline or not sending data',
+                              S.of(context).inactive_sensor_is_offline_or_not_sending_data,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey[700],
                               ),
@@ -385,7 +508,7 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
-                  isActive ? 'Active' : 'Inactive',
+                  isActive ? S.of(context).active : S.of(context).inactive,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12.sp,
@@ -408,8 +531,8 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
               Expanded(
                 child: Text(
                   isActive 
-                    ? 'Sensor is actively sending data to ThingSpeak'
-                    : 'Sensor is not sending data or offline',
+                    ? S.of(context).sensor_is_actively_sending_data_to_thingspeak
+                    : S.of(context).sensor_is_not_sending_data_or_offline,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: isActive ? Colors.green.shade700 : Colors.red.shade700,
                     fontStyle: FontStyle.italic,
@@ -426,11 +549,12 @@ class _SensorStatusScreenState extends State<SensorStatusScreen> {
   Widget _buildRefreshButton() {
     return Padding(
       padding: EdgeInsets.all(kAppMediumPadding),
-              child: CustomButton(
-                onPressed: () {
+      child: CustomButton(
+        onPressed: () {
           context.read<SensorStatusBloc>().add(const GetSensorStatusEvent());
+          _loadPrototypes();
         },
-        text: 'Refresh Status',
+        text: S.of(context).refresh_status,
       ),
     );
   }

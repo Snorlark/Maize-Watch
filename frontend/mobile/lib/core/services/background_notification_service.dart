@@ -13,10 +13,10 @@ class BackgroundNotificationService {
   static Timer? _sensorStatusTask;
   static Timer? _sleepModeTask;
 
-  // Task intervals
-  static const Duration prescriptionCheckInterval = Duration(minutes: 15);
-  static const Duration sensorStatusInterval = Duration(minutes: 30);
-  static const Duration sleepModeCheckInterval = Duration(hours: 1);
+  // Task intervals - REDUCED for better performance
+  static const Duration prescriptionCheckInterval = Duration(minutes: 30); // Reduced from 15
+  static const Duration sensorStatusInterval = Duration(hours: 1); // Reduced from 30 minutes
+  static const Duration sleepModeCheckInterval = Duration(hours: 2); // Reduced from 1 hour
 
   // Notification tracking to prevent duplicates
   static final Set<String> _notifiedPrescriptions = <String>{};

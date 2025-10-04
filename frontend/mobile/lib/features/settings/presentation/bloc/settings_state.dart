@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entity.dart';
 
 abstract class SettingsState extends Equatable {
@@ -6,6 +7,18 @@ abstract class SettingsState extends Equatable {
 
   @override
   List<Object?> get props => [];
+
+  // Add locale getter for compatibility
+  Locale get locale {
+    if (this is SettingsLoaded) {
+      final state = this as SettingsLoaded;
+      return state.settings.language == 'tl' ? const Locale('tl', 'PH') : const Locale('en', 'US');
+    } else if (this is SettingsUpdated) {
+      final state = this as SettingsUpdated;
+      return state.settings.language == 'tl' ? const Locale('tl', 'PH') : const Locale('en', 'US');
+    }
+    return const Locale('en', 'US');
+  }
 }
 
 class SettingsInitial extends SettingsState {

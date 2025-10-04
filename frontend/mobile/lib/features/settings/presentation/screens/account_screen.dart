@@ -222,7 +222,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 context.read<SettingsBloc>().add(UpdateLanguage(language));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(S.current.language_changed_to(language == 'tl' ? 'Filipino' : 'English')),
+                                    content: Text(S.of(context).language_changed_to(language == 'tl' ? 'Filipino' : 'English')),
                                     backgroundColor: MAIZE_ACCENT,
                                   ),
                                 );

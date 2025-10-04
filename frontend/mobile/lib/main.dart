@@ -24,26 +24,29 @@ void main() async {
   // Initialize dependency injection
   await di.init();
 
-  // Initialize notification service
-  await NotificationService().initialize();
-  
-  // Request notification permissions at app start
-  try {
-    final notificationService = NotificationService();
-    final hasPermissions = await notificationService.arePermissionsGranted();
-    if (!hasPermissions) {
-      print('🔔 Requesting notification permissions at app start');
-      await notificationService.requestPermissions();
+  // Initialize notification service - DEFERRED to reduce startup time
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      await NotificationService().initialize();
+      
+      // Request notification permissions after app loads
+      final notificationService = NotificationService();
+      final hasPermissions = await notificationService.arePermissionsGranted();
+      if (!hasPermissions) {
+        print('🔔 Requesting notification permissions after app load');
+        await notificationService.requestPermissions();
+      }
+      
+      // Deliver any cached notifications
+      await notificationService.deliverCachedNotifications();
+      print('🔔 Delivered cached notifications after app load');
+    } catch (e) {
+      print('⚠️ Error initializing notifications: $e');
     }
-    
-    // Deliver any cached notifications
-    await notificationService.deliverCachedNotifications();
-    print('🔔 Delivered cached notifications on app start');
-  } catch (e) {
-    print('⚠️ Error requesting notification permissions at app start: $e');
-  }
+  });
 
-    // Initialize background notification service
+  // Initialize background notification service - DEFERRED to reduce startup time
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
     try {
       await BackgroundNotificationService.initialize();
       print('✅ Background notification service initialized successfully');
@@ -51,12 +54,16 @@ void main() async {
       print('⚠️ Background notification service failed to initialize: $e');
       print('⚠️ App will continue without background notifications');
     }
+  });
 
   runApp(
     ConnectivityIndicator(
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => di.sl<SettingsBloc>()),
+          BlocProvider(create: (_) {
+            print("🔧 Main: Creating SettingsBloc");
+            return di.sl<SettingsBloc>();
+          }),
           BlocProvider(create: (_) => di.sl<SensorStatusBloc>()),
           BlocProvider(create: (_) => di.sl<AuthenticationBloc>()),
           BlocProvider(create: (_) => di.sl<FarmBloc>()),

@@ -40,8 +40,8 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadWeeklyData();
     });
-    // Set up periodic refresh every 15 minutes (reduced frequency for cached data)
-    _timer = Timer.periodic(const Duration(minutes: 15), (timer) {
+    // Set up periodic refresh every 30 minutes (FURTHER REDUCED for performance)
+    _timer = Timer.periodic(const Duration(minutes: 30), (timer) { // Reduced from 15 to 30 minutes
       _loadWeeklyData();
     });
   }

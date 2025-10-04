@@ -444,8 +444,8 @@ export const validateSession = catchAsync(async (req: Request, res: Response) =>
     tokenExpiry: new Date((req as any).decoded.exp * 1000)
   });
 
-  res.status(HTTP_STATUS.OK).json({
-    success: true,
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
     message: 'Session is valid',
     data: { 
       user: user.toJSON(),
@@ -472,12 +472,12 @@ export const sendPasswordResetCode = catchAsync(async (req: Request, res: Respon
   
   if (result.success) {
     res.status(HTTP_STATUS.OK).json({
-      success: true,
+        success: true,
       message: 'Password reset code sent to your phone number'
     });
   } else {
     res.status(HTTP_STATUS.BAD_REQUEST).json({
-      success: false,
+        success: false,
       message: result.message
     });
   }
@@ -581,8 +581,8 @@ export const sendVerificationCode = catchAsync(async (req: Request, res: Respons
   const result = await authService.sendVerificationCode(contactNumber);
   
   if (result.success) {
-    res.status(HTTP_STATUS.OK).json({
-      success: true,
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
       message: 'Verification code sent to your phone number',
       phoneNumber: contactNumber
     });
