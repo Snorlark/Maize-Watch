@@ -272,6 +272,12 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     logger.warn('Attempted to modify username, which is not allowed', { userId: id, attemptedBy: currentUser.id });
   }
 
+  // Remove password if it's empty or undefined (password updates should use separate endpoint)
+  if (!updateData.password || updateData.password.trim() === '') {
+    delete updateData.password;
+    logger.info('Empty password removed from update data', { userId: id });
+  }
+
   const user = await User.findByIdAndUpdate(
     id,
     { ...updateData, updatedAt: new Date() },
