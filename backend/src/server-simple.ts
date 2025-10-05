@@ -8,8 +8,27 @@ import { createServer } from 'http';
 const app = express();
 const server = createServer(app);
 
-// Basic middleware
-app.use(helmet());
+// Basic middleware with stricter defaults
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      formAction: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL || "http://localhost:3000", "ws:", "wss:", "https:"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+    }
+  },
+  frameguard: { action: 'sameorigin' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}));
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true
@@ -17,6 +36,34 @@ app.use(cors({
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Permissions-Policy
+app.use((req, res, next) => {
+  res.setHeader(
+    'Permissions-Policy',
+    [
+      'accelerometer=()',
+      'autoplay=(self)',
+      'camera=()',
+      'clipboard-read=(self)',
+      'clipboard-write=(self)',
+      'display-capture=()',
+      'document-domain=()',
+      'encrypted-media=()',
+      'fullscreen=(self)',
+      'geolocation=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'microphone=()',
+      'payment=()',
+      'picture-in-picture=(self)',
+      'publickey-credentials-get=(self)',
+      'usb=()',
+      'xr-spatial-tracking=()'
+    ].join(', ')
+  );
+  next();
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
