@@ -465,7 +465,21 @@ export const toggleUserStatus = catchAsync(async (req: Request, res: Response) =
  * @access  Private/Admin
  */
 export const getUserStats = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  
+  // Build region filter for regional_admin
+  let regionFilter: any = {};
+  if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+    regionFilter = {
+      $or: [
+        { 'address.region': currentUser.assignedRegion },
+        { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+      ]
+    };
+  }
+  
   const stats = await User.aggregate([
+    { $match: regionFilter },
     {
       $group: {
         _id: null,
@@ -480,6 +494,7 @@ export const getUserStats = catchAsync(async (req: Request, res: Response) => {
   ]);
 
   const roleStats = await User.aggregate([
+    { $match: regionFilter },
     {
       $group: {
         _id: '$role',
@@ -488,7 +503,8 @@ export const getUserStats = catchAsync(async (req: Request, res: Response) => {
     }
   ]);
 
-  const recentUsers = await User.find()
+  const recentUsersQuery = Object.keys(regionFilter).length > 0 ? regionFilter : {};
+  const recentUsers = await User.find(recentUsersQuery)
     .select('username email fullName createdAt isActive emailVerified')
     .sort({ createdAt: -1 })
     .limit(10);
@@ -496,6 +512,7 @@ export const getUserStats = catchAsync(async (req: Request, res: Response) => {
   const monthlyRegistrations = await User.aggregate([
     {
       $match: {
+        ...regionFilter,
         createdAt: {
           $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1)
         }

@@ -10,6 +10,7 @@ export interface LogFilters {
   startDate?: string;
   endDate?: string;
   search?: string;
+  excludeSuperAdmin?: string;
 }
 
 export interface CreateLogData {
@@ -156,6 +157,10 @@ class ActivityLogService {
       }
       if (filters.userRole) {
         query.userRole = filters.userRole;
+      }
+      // Exclude super_admin actions for regional_admin users
+      if (filters.excludeSuperAdmin === 'true') {
+        query.userRole = { $ne: UserRole.SUPER_ADMIN };
       }
       if (filters.startDate && filters.endDate) {
         query.timestamp = {
