@@ -16,7 +16,7 @@ interface UserTableProps {
 type SortDirection = 'asc' | 'desc' | null;
 type SortField = 'fullName' | 'address' | 'contactNumber' | 'username' | 'role' | null;
 
-type RoleFilter = 'all' | 'user' | 'farmer' | 'admin' | 'super_admin';
+type RoleFilter = 'all' | 'user' | 'regional_admin' | 'super_admin';
 
 const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete, onTotalUsersChange }) => {
   const [sortField, setSortField] = useState<SortField>(null);
@@ -332,8 +332,8 @@ const UserTable: React.FC<UserTableProps> = ({ users, loading, onEdit, onDelete,
               className="px-2 py-1 rounded-lg border border-[#B8D4A8] text-[#356B2C] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B4513]"
             >
               <option value="all">All</option>
-              <option value="farmer">farmer</option>
-              <option value="admin">admin</option>
+              <option value="user">user</option>
+              <option value="regional_admin">regional_admin</option>
               <option value="super_admin">super_admin</option>
             </select>
           </div>

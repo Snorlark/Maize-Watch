@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }>;
   verifyOTP: (email: string, otp: string) => Promise<boolean>;
+  resendLoginOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
   sendForgotPasswordOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyForgotPasswordOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
@@ -215,6 +216,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const resendLoginOTP = async (email: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.sendLoginOTP(email);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Resend login OTP error:', error);
+      return { success: false, message: 'Failed to resend OTP. Please try again.' };
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -275,6 +286,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     login,
     verifyOTP,
+    resendLoginOTP,
     sendForgotPasswordOTP,
     verifyForgotPasswordOTP,
     resetPassword,
