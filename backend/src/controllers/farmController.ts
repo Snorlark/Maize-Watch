@@ -159,9 +159,10 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
   // Get farm to check ownership
   const existingFarm = await farmService.getFarmById(id);
 
-  // Check if user owns the farm or is admin
+  // Check if user owns the farm or is admin/regional_admin
   const existingFarmUserId = existingFarm.userId._id ? existingFarm.userId._id.toString() : existingFarm.userId.toString();
   if (existingFarmUserId !== currentUser.id && 
+      currentUser.role !== USER_ROLES.REGIONAL_ADMIN &&
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
@@ -232,8 +233,9 @@ export const deleteFarm = catchAsync(async (req: Request, res: Response) => {
   // Get farm to check ownership
   const existingFarm = await farmService.getFarmById(id);
 
-  // Check if user owns the farm or is admin
+  // Check if user owns the farm or is admin/regional_admin
   if (existingFarm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.REGIONAL_ADMIN &&
       currentUser.role !== USER_ROLES.ADMIN && 
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
