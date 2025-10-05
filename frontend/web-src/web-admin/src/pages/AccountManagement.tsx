@@ -30,8 +30,7 @@ export default function AccountManagement() {
     errorType,
     fetchUsers, 
     addUser, 
-    updateUserById, 
-    deleteUserById,
+    updateUserById,
     currentUser,
     clearError
   } = useUserContext();
@@ -65,6 +64,9 @@ export default function AccountManagement() {
   // Check if user has regional_admin, admin or super_admin role
   const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
   const isSuperAdmin = currentUser?.role === 'super_admin';
+
+  // Filter out users with pending deletion
+  const activeUsers = users.filter((user: any) => !user.deletionPending);
 
   // Create a map of users for quick lookup
   const userMap = new Map(users.map(user => [user._id || '', user]));
@@ -180,24 +182,34 @@ export default function AccountManagement() {
   };
 
   // Handle user deletion
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = async (reason?: string) => {
     if (!currentEditUser?._id) return;
 
-    console.log(' Attempting to delete user:', {
+    console.log('Attempting to delete user:', {
       userId: currentEditUser._id,
       username: currentEditUser.username,
       currentUserRole: currentUser?.role,
-      hasAdminAccess
+      hasAdminAccess,
+      reason
     });
     
     setActionLoading(true);
     try {
-      await deleteUserById(currentEditUser._id);
-      console.log('✅ User deleted successfully');
+      const result = await userService.deleteUser(currentEditUser._id, reason);
+      console.log('Delete request processed:', result);
+      
+      // Show appropriate success message
+      if (currentUser?.role === 'regional_admin') {
+        alert('✅ Deletion request submitted successfully! Your request is now pending super admin approval.');
+      } else {
+        alert('✅ User deleted successfully!');
+      }
+      
       setIsDeleteModalOpen(false);
       await fetchUsers(); // Refresh user list
+      await fetchPendingDeletions(); // Refresh pending deletions
     } catch (err: any) {
-      console.error(' Error deleting user:', err);
+      console.error('Error deleting user:', err);
       console.error('Error details:', {
         message: err.message,
         status: err.response?.status,
@@ -429,7 +441,7 @@ export default function AccountManagement() {
             {/* User Table */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
               <UserTable 
-                users={users} 
+                users={activeUsers} 
                 loading={loading} 
                 onEdit={handleOpenEditModal} 
                 onDelete={handleOpenDeleteModal} 
@@ -671,6 +683,7 @@ export default function AccountManagement() {
             onConfirm={handleDeleteConfirm}
             onCancel={() => setIsDeleteModalOpen(false)}
             isLoading={actionLoading}
+            isRegionalAdmin={currentUser?.role === 'regional_admin'}
           />
         )}
 
