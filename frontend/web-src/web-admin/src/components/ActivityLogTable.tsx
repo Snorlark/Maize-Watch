@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Clock, MapPin, Smartphone, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { User, MapPin, Smartphone, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface ActivityLog {
   _id: string;
@@ -64,24 +64,11 @@ const ActivityLogTable: React.FC<ActivityLogTableProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
   const getBrowserFromUserAgent = (userAgent: string) => {
     if (userAgent.includes('Chrome')) return 'Chrome';
     if (userAgent.includes('Firefox')) return 'Firefox';
     if (userAgent.includes('Safari')) return 'Safari';
     if (userAgent.includes('Edge')) return 'Edge';
-    return 'Unknown';
-  };
-
-  const getOSFromUserAgent = (userAgent: string) => {
-    if (userAgent.includes('Windows')) return 'Windows';
-    if (userAgent.includes('Mac')) return 'macOS';
-    if (userAgent.includes('Linux')) return 'Linux';
-    if (userAgent.includes('Android')) return 'Android';
-    if (userAgent.includes('iOS')) return 'iOS';
     return 'Unknown';
   };
 
@@ -124,7 +111,7 @@ const ActivityLogTable: React.FC<ActivityLogTableProps> = ({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full">
       {/* Header Section */}
       <div className="flex justify-between mb-4 items-end">
         <div>
@@ -135,108 +122,111 @@ const ActivityLogTable: React.FC<ActivityLogTableProps> = ({
         </div>
       </div>
 
-      <table className="min-w-full bg-white rounded-xl shadow-md overflow-hidden">
-        <thead className="bg-[#456C2D] text-[#F5F5DC] text-left">
-          <tr>
-            <th className="px-6 py-3 w-12">#</th>
-            <th className="px-6 py-3">User</th>
-            <th className="px-6 py-3">Role</th>
-            <th className="px-6 py-3">Action</th>
-            <th className="px-6 py-3">Resource</th>
-            <th className="px-6 py-3">Timestamp</th>
-            <th className="px-6 py-3">Details</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan={7} className="px-6 py-4 text-center">
-                <Loader2 className="w-6 h-6 mx-auto animate-spin" />
-                <p>Loading activity logs...</p>
-              </td>
-            </tr>
-          ) : logs.length === 0 ? (
-            <tr>
-              <td colSpan={7} className="px-6 py-4 text-center">No activity logs found</td>
-            </tr>
-          ) : (
-            logs.map((log, index) => (
-              <tr key={log._id} className="border-b hover:bg-[#F5F9E8] transition-colors">
-                <td className="px-6 py-4 text-center font-medium text-[#456C2D]">
-                  {index + 1}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-8 w-8">
-                      <div className="h-8 w-8 rounded-full bg-[#B8D4A8] flex items-center justify-center">
-                        <User className="w-4 h-4 text-[#356B2C]" />
-                      </div>
-                    </div>
-                    <div className="ml-3">
-                      <div className="font-medium text-[#356B2C] text-sm">
-                        {log.userId?.fullName || log.userId?.username || 'Unknown User'}
-                      </div>
-                      <div className="text-[#4A7C59] text-sm">
-                        {log.userId?.email || log.userEmail || 'No email available'}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(log.userRole)}`}>
-                    {log.userRole}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActionColor(log.action)}`}>
-                    {log.action}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-[#356B2C] text-sm">{log.resource}</div>
-                  {log.resourceId && (
-                    <div className="text-[#4A7C59] text-xs">ID: {log.resourceId}</div>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center text-[#356B2C] text-sm">
-                    <Clock className="w-4 h-4 mr-1 text-[#4A7C59]" />
-                    {formatDate(log.timestamp)}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center text-[#4A7C59] text-xs">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      {log.ipAddress}
-                    </div>
-                    <div className="flex items-center text-[#4A7C59] text-xs">
-                      <Smartphone className="w-3 h-3 mr-1" />
-                      {getBrowserFromUserAgent(log.userAgent)} on {getOSFromUserAgent(log.userAgent)}
-                    </div>
-                    {log.details && Object.keys(log.details).length > 0 && (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-[#356B2C] hover:text-[#2D5A24]">
-                          View Details
-                        </summary>
-                        <pre className="mt-1 p-2 bg-[#F5F9F1] rounded overflow-x-auto text-[#356B2C] text-xs">
-                          {JSON.stringify(log.details, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                </td>
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-[#456C2D] text-[#F5F5DC] text-left">
+              <tr>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider w-12">#</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider min-w-[180px]">User</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider w-24">Role</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider w-24">Action</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider w-28">Resource</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider w-36">Timestamp</th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider min-w-[200px]">Details</th>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center">
+                    <Loader2 className="w-6 h-6 mx-auto animate-spin text-[#456C2D]" />
+                    <p className="mt-2 text-[#456C2D]">Loading activity logs...</p>
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-[#456C2D]">No activity logs found</td>
+                </tr>
+              ) : (
+                logs.map((log, index) => (
+                  <tr key={log._id} className="hover:bg-[#F5F9E8] transition-colors">
+                    <td className="px-4 py-3 text-center font-medium text-[#456C2D] text-sm">
+                      {(currentPage - 1) * 20 + index + 1}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center min-w-0">
+                        <div className="flex-shrink-0 h-8 w-8">
+                          <div className="h-8 w-8 rounded-full bg-[#B8D4A8] flex items-center justify-center">
+                            <User className="w-4 h-4 text-[#356B2C]" />
+                          </div>
+                        </div>
+                        <div className="ml-2 min-w-0">
+                          <div className="font-medium text-[#356B2C] text-sm truncate">
+                            {log.userId?.fullName || log.userId?.username || 'Unknown User'}
+                          </div>
+                          <div className="text-[#4A7C59] text-xs truncate">
+                            {log.userId?.email || log.userEmail || 'No email'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getRoleColor(log.userRole)}`}>
+                        {log.userRole.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getActionColor(log.action)}`}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-[#356B2C] text-sm truncate">{log.resource}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-[#356B2C] text-xs whitespace-nowrap">
+                        {new Date(log.timestamp).toLocaleDateString()}
+                      </div>
+                      <div className="text-[#4A7C59] text-xs whitespace-nowrap">
+                        {new Date(log.timestamp).toLocaleTimeString()}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center text-[#4A7C59] text-xs">
+                          <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{log.ipAddress}</span>
+                        </div>
+                        <div className="flex items-center text-[#4A7C59] text-xs">
+                          <Smartphone className="w-3 h-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{getBrowserFromUserAgent(log.userAgent)}</span>
+                        </div>
+                        {log.details && Object.keys(log.details).length > 0 && (
+                          <details className="text-xs">
+                            <summary className="cursor-pointer text-[#456C2D] hover:text-[#2D5A24] font-medium">
+                              More
+                            </summary>
+                            <pre className="mt-1 p-2 bg-[#F5F9F1] rounded overflow-x-auto text-[#356B2C] text-xs max-w-xs">
+                              {JSON.stringify(log.details, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Pagination Controls */}
       {totalPages > 1 && !loading && (
-        <div className="flex items-center justify-between mt-6 p-4 bg-gray-50 rounded-lg border">
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 p-4 bg-white rounded-lg shadow-sm border border-[#B8D4A8] gap-4">
           <div className="text-sm text-[#456C2D] font-medium">
-            Page {currentPage} of {totalPages} ({logs.length} total logs)
+            Page {currentPage} of {totalPages}
           </div>
           
           <div className="flex items-center gap-2">
