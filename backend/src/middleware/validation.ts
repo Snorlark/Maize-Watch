@@ -171,6 +171,51 @@ export const validateUserUpdate: ValidationChain[] = [
     .optional()
     .matches(VALIDATION_RULES.PHONE.PATTERN)
     .withMessage('Please provide a valid Philippine mobile number'),
+  
+  body('address')
+    .optional()
+    .custom((value, { req }) => {
+      // Allow both string and object format for mobile and web
+      if (typeof value === 'string') {
+        return value.length >= 2 && value.length <= 100;
+      } else if (typeof value === 'object') {
+        return value.region && 
+               value.province && 
+               value.municipality && 
+               value.barangay;
+      }
+      return false;
+    })
+    .withMessage('Address is required'),
+
+  // Validate address fields when address is an object
+  body('address.region')
+    .if(body('address').isObject())
+    .optional()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Region is required')
+    .trim(),
+    
+  body('address.province')
+    .if(body('address').isObject())
+    .optional()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Province must be between 2 and 50 characters')
+    .trim(),
+  
+  body('address.municipality')
+    .if(body('address').isObject())
+    .optional()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Municipality must be between 2 and 50 characters')
+    .trim(),
+  
+  body('address.barangay')
+    .if(body('address').isObject())
+    .optional()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Barangay must be between 2 and 50 characters')
+    .trim(),
 ];
 
 // Farm validation rules
