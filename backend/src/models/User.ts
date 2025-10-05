@@ -2,6 +2,7 @@ import mongoose, { Document, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { AppError } from "../middleware/errorHandler";
 
 // Interface for User document
 interface IUser extends Document {
@@ -377,9 +378,6 @@ userSchema.methods.createEmailVerificationToken = function () {
 
 // Static method to find user by credentials
 userSchema.statics.findByCredentials = async function (login, password) {
-  // Import AppError at the top of the file if not already imported
-  const { AppError } = require('../middleware/errorHandler');
-  
   // Allow login with either username or email
   const user = await this.findOne({
     $or: [{ username: login }, { email: login }],

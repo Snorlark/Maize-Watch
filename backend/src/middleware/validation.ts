@@ -172,6 +172,11 @@ export const validateUserUpdate: ValidationChain[] = [
     .matches(VALIDATION_RULES.PHONE.PATTERN)
     .withMessage('Please provide a valid Philippine mobile number'),
   
+  body('password')
+    .optional()
+    .isLength({ min: VALIDATION_RULES.PASSWORD.MIN_LENGTH })
+    .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`),
+  
   body('address')
     .optional()
     .custom((value, { req }) => {
