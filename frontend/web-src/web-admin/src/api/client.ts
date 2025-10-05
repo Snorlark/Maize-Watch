@@ -194,12 +194,56 @@ export const userService = {
     }
   },
 
-  deleteUser: async (id: string): Promise<void> => {
+  deleteUser: async (id: string, reason?: string): Promise<{ message: string }> => {
     try {
       if (!authService.isAuthenticated()) {
         throw new Error('Authentication required');
       }
-      await apiClient.delete(`/users/${id}`);
+      const response = await apiClient.delete(`/users/${id}`, {
+        data: { reason }
+      });
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  getPendingDeletions: async (): Promise<any[]> => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      const response = await apiClient.get('/users/pending-deletions');
+      if (response.data?.success && response.data?.data?.pendingDeletions) {
+        return response.data.data.pendingDeletions;
+      }
+      return [];
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  approveDeletion: async (id: string): Promise<{ message: string }> => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      const response = await apiClient.post(`/users/${id}/approve-deletion`);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  rejectDeletion: async (id: string, rejectionReason?: string): Promise<{ message: string }> => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error('Authentication required');
+      }
+      const response = await apiClient.post(`/users/${id}/reject-deletion`, {
+        rejectionReason
+      });
+      return response.data;
     } catch (error: any) {
       throw error;
     }
