@@ -58,7 +58,6 @@ export default function AccountManagement() {
 
   // Check if user has regional_admin, admin or super_admin role
   const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
-  const hasFullAdminAccess = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
 
   // Create a map of users for quick lookup
   const userMap = new Map(users.map(user => [user._id || '', user]));
