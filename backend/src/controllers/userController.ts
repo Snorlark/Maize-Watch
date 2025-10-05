@@ -278,6 +278,17 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     logger.info('Empty password removed from update data', { userId: id });
   }
 
+  // Remove system-managed fields that shouldn't be updated via this endpoint
+  const systemFields = ['createdAt', 'lastLogin', 'loginAttempts', 'lockUntil', 'refreshTokens', 
+                        'passwordResetToken', 'passwordResetExpires', 'emailVerificationToken', 
+                        'twoFactorSecret', '_id', '__v'];
+  systemFields.forEach(field => {
+    if (updateData[field]) {
+      delete updateData[field];
+      logger.info(`System field ${field} removed from update data`, { userId: id });
+    }
+  });
+
   const user = await User.findByIdAndUpdate(
     id,
     { ...updateData, updatedAt: new Date() },

@@ -177,6 +177,27 @@ export const validateUserUpdate: ValidationChain[] = [
     .isLength({ min: VALIDATION_RULES.PASSWORD.MIN_LENGTH })
     .withMessage(`Password must be at least ${VALIDATION_RULES.PASSWORD.MIN_LENGTH} characters long`),
   
+  body('role')
+    .optional()
+    .isIn(['user', 'admin', 'regional_admin', 'super_admin'])
+    .withMessage('Invalid role'),
+  
+  body('assignedRegion')
+    .optional()
+    .custom((value, { req }) => {
+      // If role is regional_admin, assignedRegion should be a valid Philippine region
+      if (req.body.role === 'regional_admin' && value) {
+        return PHILIPPINE_REGIONS.includes(value);
+      }
+      return true;
+    })
+    .withMessage('Assigned region must be a valid Philippine region'),
+  
+  body('isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean value'),
+  
   body('address')
     .optional()
     .custom((value, { req }) => {
