@@ -110,9 +110,9 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 table-auto">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -184,7 +184,7 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
                         <button
                           onClick={() => handleApprove(deletion._id)}
                           disabled={processingId === deletion._id}
-                          className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center px-3 py-1.5 bg-[#456C2D] text-[#F5F5DC] rounded-lg hover:bg-[#5A7A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                           title="Approve deletion"
                         >
                           {processingId === deletion._id ? (
@@ -192,20 +192,20 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
                           ) : (
                             <Check className="w-4 h-4" />
                           )}
-                          <span className="ml-1">Approve</span>
+                          <span className="ml-1.5">Approve</span>
                         </button>
                         <button
                           onClick={() => handleRejectClick(deletion._id)}
                           disabled={processingId === deletion._id}
-                          className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center px-3 py-1.5 bg-[#8B4513] text-[#F5F5DC] rounded-lg hover:bg-[#A0522D] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                           title="Reject deletion"
                         >
                           <X className="w-4 h-4" />
-                          <span className="ml-1">Reject</span>
+                          <span className="ml-1.5">Reject</span>
                         </button>
                       </div>
                     ) : (
-                      <span className="text-xs text-gray-500 italic">Pending super admin approval</span>
+                      <span className="text-xs text-[#456C2D] italic">Pending super admin approval</span>
                     )}
                   </td>
                 </tr>
