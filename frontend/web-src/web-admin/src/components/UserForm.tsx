@@ -174,7 +174,8 @@ const UserForm: React.FC<UserFormProps> = ({
                 value={formData.username}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                readOnly={mode === 'edit'}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 ${mode === 'edit' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
             </div>
             
@@ -311,8 +312,7 @@ const UserForm: React.FC<UserFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
               >
                 <option value="user">User</option>
-                <option value="admin">Admin</option>
-                <option value="super_admin">Super Admin</option>
+                <option value="regional_admin">Regional Admin</option>
               </select>
             </div>
             

@@ -11,7 +11,7 @@ const LoginForm: React.FC = () => {
   const navigate = useNavigate();
   const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || 'admin-portal-xyz123';
   const [showPassword, setShowPassword] = useState(false);
-  const { login, verifyOTP, sendForgotPasswordOTP, verifyForgotPasswordOTP, resetPassword } = useAuth();
+  const { login, verifyOTP, resendLoginOTP, sendForgotPasswordOTP, verifyForgotPasswordOTP, resetPassword } = useAuth();
 
   // Form states
   const [currentStep, setCurrentStep] = useState<LoginStep>('password');
@@ -120,6 +120,29 @@ const LoginForm: React.FC = () => {
     setCountdown(0);
     setError('');
     setSuccess('');
+  };
+
+  // Handle resend OTP
+  const handleResendOTP = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const result = await resendLoginOTP(email);
+      
+      if (result.success) {
+        setCountdown(300); // Reset countdown to 5 minutes
+        setSuccess('Verification code resent to your email');
+      } else {
+        setError(result.message || 'Failed to resend verification code');
+      }
+    } catch (err: any) {
+      console.error('Resend OTP failed:', err);
+      setError('Failed to resend verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle forgot password flow
@@ -406,6 +429,18 @@ const LoginForm: React.FC = () => {
                       Code expires in: <span className="font-mono text-green-400">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span>
                     </div>
                   )}
+
+                  {/* Resend OTP Button */}
+                  <div className="text-center mb-4">
+                    <button 
+                      type="button" 
+                      onClick={handleResendOTP}
+                      disabled={loading}
+                      className="text-sm text-white/70 hover:text-white underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Resending...' : 'Resend verification code'}
+                    </button>
+                  </div>
 
                   <div className="flex space-x-3 mt-6">
                     <button 

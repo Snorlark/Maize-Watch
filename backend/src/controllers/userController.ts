@@ -266,6 +266,12 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     }
   }
 
+  // Prevent username modification - usernames are immutable
+  if (updateData.username) {
+    delete updateData.username;
+    logger.warn('Attempted to modify username, which is not allowed', { userId: id, attemptedBy: currentUser.id });
+  }
+
   const user = await User.findByIdAndUpdate(
     id,
     { ...updateData, updatedAt: new Date() },

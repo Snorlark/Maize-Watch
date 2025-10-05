@@ -693,7 +693,8 @@ class AuthService {
       }
 
       // Remove sensitive fields that shouldn't be updated via this method
-      const { password, role, isActive, twoFactorSecret, twoFactorEnabled, ...safeUpdateData } = updateData as any;
+      // Also remove username as usernames are immutable
+      const { password, role, isActive, twoFactorSecret, twoFactorEnabled, username, ...safeUpdateData } = updateData as any;
 
       // Update user fields
       Object.assign(user, safeUpdateData);
