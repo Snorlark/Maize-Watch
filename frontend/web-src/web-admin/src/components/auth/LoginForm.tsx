@@ -33,6 +33,8 @@ const LoginForm: React.FC = () => {
   
   // OTP specific states
   const [countdown, setCountdown] = useState<number>(300); // 5 minutes
+  const [resendCountdown, setResendCountdown] = useState<number>(0); // Resend cooldown in seconds
+  const [forgotResendCountdown, setForgotResendCountdown] = useState<number>(0); // Forgot password resend cooldown
 
   // Countdown timer for OTP expiry
   useEffect(() => {
@@ -45,6 +47,24 @@ const LoginForm: React.FC = () => {
     }
     return () => clearTimeout(timer);
   }, [countdown, currentStep]);
+
+  // Countdown timer for resend OTP cooldown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (currentStep === 'otp' && resendCountdown > 0) {
+      timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCountdown, currentStep]);
+
+  // Countdown timer for forgot password resend OTP cooldown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (currentStep === 'forgot-otp' && forgotResendCountdown > 0) {
+      timer = setTimeout(() => setForgotResendCountdown(forgotResendCountdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [forgotResendCountdown, currentStep]);
 
   // Handle password login (Step 1)
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -69,6 +89,7 @@ const LoginForm: React.FC = () => {
           setEmail(emailFromResponse);
           setCurrentStep('otp');
           setCountdown(300); // 5 minutes
+          setResendCountdown(60); // 1 minute cooldown for resend
           setSuccess(result.message || 'Verification code sent to your email');
         } else {
           navigate(`/${ADMIN_PATH}/dashboard`);
@@ -118,12 +139,18 @@ const LoginForm: React.FC = () => {
     setCurrentStep('password');
     setOtp('');
     setCountdown(0);
+    setResendCountdown(0);
     setError('');
     setSuccess('');
   };
 
   // Handle resend OTP
   const handleResendOTP = async () => {
+    // Prevent resend if cooldown is active
+    if (resendCountdown > 0) {
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
@@ -133,6 +160,7 @@ const LoginForm: React.FC = () => {
       
       if (result.success) {
         setCountdown(300); // Reset countdown to 5 minutes
+        setResendCountdown(60); // Reset resend cooldown to 1 minute
         setSuccess('Verification code resent to your email');
       } else {
         setError(result.message || 'Failed to resend verification code');
@@ -173,6 +201,7 @@ const LoginForm: React.FC = () => {
         setCurrentStep('forgot-otp');
         setSuccess('Verification code sent to your email');
         setCountdown(300); // 5 minutes
+        setForgotResendCountdown(60); // 1 minute cooldown for resend
       } else {
         setError(result.message || 'Failed to send verification code');
       }
@@ -269,6 +298,36 @@ const LoginForm: React.FC = () => {
     setError('');
     setSuccess('');
     setCountdown(0);
+    setForgotResendCountdown(0);
+  };
+
+  // Handle resend forgot password OTP
+  const handleResendForgotPasswordOTP = async () => {
+    // Prevent resend if cooldown is active
+    if (forgotResendCountdown > 0) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const result = await sendForgotPasswordOTP(forgotEmail);
+      
+      if (result.success) {
+        setCountdown(300); // Reset countdown to 5 minutes
+        setForgotResendCountdown(60); // Reset resend cooldown to 1 minute
+        setSuccess('Verification code resent to your email');
+      } else {
+        setError(result.message || 'Failed to resend verification code');
+      }
+    } catch (err: any) {
+      console.error('Resend forgot password OTP failed:', err);
+      setError('Failed to resend verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -435,10 +494,12 @@ const LoginForm: React.FC = () => {
                     <button 
                       type="button" 
                       onClick={handleResendOTP}
-                      disabled={loading}
+                      disabled={loading || resendCountdown > 0}
                       className="text-sm text-white/70 hover:text-white underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Resending...' : 'Resend verification code'}
+                      {loading ? 'Resending...' : 
+                       resendCountdown > 0 ? `Resend available in ${resendCountdown}s` : 
+                       'Resend verification code'}
                     </button>
                   </div>
 
@@ -556,6 +617,20 @@ const LoginForm: React.FC = () => {
                       Code expires in {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                     </div>
                   )}
+
+                  {/* Resend OTP Button for Forgot Password */}
+                  <div className="text-center mb-4">
+                    <button 
+                      type="button" 
+                      onClick={handleResendForgotPasswordOTP}
+                      disabled={loading || forgotResendCountdown > 0}
+                      className="text-sm text-white/70 hover:text-white underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Resending...' : 
+                       forgotResendCountdown > 0 ? `Resend available in ${forgotResendCountdown}s` : 
+                       'Resend verification code'}
+                    </button>
+                  </div>
 
                   <div className="flex gap-3">
                     <button
