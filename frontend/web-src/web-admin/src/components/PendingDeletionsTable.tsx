@@ -38,6 +38,9 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  // Debug log
+  console.log('PendingDeletionsTable render:', { isSuperAdmin, pendingDeletionsCount: pendingDeletions.length });
+
   const handleApprove = async (userId: string) => {
     if (!confirm('Are you sure you want to approve this deletion? This action cannot be undone.')) {
       return;
@@ -127,11 +130,9 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Requested At
                 </th>
-                {isSuperAdmin && (
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                )}
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -177,8 +178,8 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
                       {formatDistanceToNow(new Date(deletion.deletionRequestedAt), { addSuffix: true })}
                     </div>
                   </td>
-                  {isSuperAdmin && (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {isSuperAdmin ? (
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleApprove(deletion._id)}
@@ -203,8 +204,10 @@ const PendingDeletionsTable: React.FC<PendingDeletionsTableProps> = ({
                           <span className="ml-1">Reject</span>
                         </button>
                       </div>
-                    </td>
-                  )}
+                    ) : (
+                      <span className="text-xs text-gray-500 italic">Pending super admin approval</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
