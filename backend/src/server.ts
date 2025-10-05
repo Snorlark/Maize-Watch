@@ -39,6 +39,9 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      formAction: ["'self'"],
       scriptSrc: ["'self'", "https://apis.google.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
@@ -49,7 +52,8 @@ app.use(helmet({
         "wss:",
         "https:"
       ],
-      frameAncestors: ["'self'"]
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   },
   // X-Frame-Options
@@ -63,8 +67,26 @@ app.use(helmet({
 app.use((req, res, next) => {
   res.setHeader(
     'Permissions-Policy',
-    // Example: deny sensitive features; allow fullscreen to self
-    'geolocation=(), microphone=(), camera=(), payment=(), fullscreen=(self)'
+    [
+      'accelerometer=()',
+      'autoplay=(self)',
+      'camera=()',
+      'clipboard-read=(self)',
+      'clipboard-write=(self)',
+      'display-capture=()',
+      'document-domain=()',
+      'encrypted-media=()',
+      'fullscreen=(self)',
+      'geolocation=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'microphone=()',
+      'payment=()',
+      'picture-in-picture=(self)',
+      'publickey-credentials-get=(self)',
+      'usb=()',
+      'xr-spatial-tracking=()'
+    ].join(', ')
   );
   next();
 });
@@ -94,6 +116,7 @@ const allowedOrigins = [
   "http://localhost:3000", // React default
   "http://localhost:5173", // Vite default
   "https://maize-watch-rdcy.onrender.com",
+  "https://www.maize-watch.com",
   "https://maize-watch-web-backend.onrender.com", // Production frontend
   process.env.FRONTEND_URL, // Environment variable for flexibility
 ].filter((origin): origin is string => Boolean(origin));
