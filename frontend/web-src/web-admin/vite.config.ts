@@ -28,7 +28,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // Copy public assets to dist root
+    // Copy public assets to dist root (includes _headers and _redirects)
     copyPublicDir: true,
     rollupOptions: {
       output: {

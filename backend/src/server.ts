@@ -197,6 +197,24 @@ app.get('/', (req, res) => {
 // API routes
 app.use('/api', apiRoutes);
 
+// Serve frontend app for all other routes (SPA fallback) - MUST be after API routes
+if (!isDevelopment) {
+  app.get('*', (req, res, next) => {
+    // Don't serve index.html for API routes or static assets
+    if (req.path.startsWith('/api') || req.path.startsWith('/images') || req.path.startsWith('/footer')) {
+      return next();
+    }
+    
+    const path = require('path');
+    const indexPath = path.join(__dirname, '../frontend/web-src/web-admin/dist/index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        next();
+      }
+    });
+  });
+}
+
 // Error handling middleware (must be last)
 app.use(notFound);
 app.use(globalErrorHandler);
