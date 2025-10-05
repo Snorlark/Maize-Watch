@@ -31,24 +31,63 @@ const server = createServer(app);
 app.set('trust proxy', 1);
 
 // Security middleware
+// Helmet base protections (Express 4, ESM, TypeScript)
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+  // Content Security Policy
+  contentSecurityPolicy: {
     useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "https://apis.google.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: [
         "'self'",
         process.env.FRONTEND_URL || "http://localhost:3000",
         "ws:",
-        "wss:"
-      ]
+        "wss:",
+        "https:"
+      ],
+      frameAncestors: ["'self'"]
     }
-  } : false
+  },
+  // X-Frame-Options
+  frameguard: { action: 'SAMEORIGIN' },
+  // Referrer-Policy
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // X-Content-Type-Options is enabled by default in helmet
 }));
+
+// Permissions-Policy (formerly Feature-Policy) - set explicitly
+app.use((req, res, next) => {
+  res.setHeader(
+    'Permissions-Policy',
+    // Example: deny sensitive features; allow fullscreen to self
+    'geolocation=(), microphone=(), camera=(), payment=(), fullscreen=(self)'
+  );
+  next();
+});
+
+// Ensure critical security headers are always present (defensive in addition to Helmet)
+app.use((req, res, next) => {
+  if (!res.getHeader('X-Frame-Options')) {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  }
+  if (!res.getHeader('X-Content-Type-Options')) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+  next();
+});
+
+// Strict-Transport-Security (HSTS) - only when HTTPS is detected (behind proxy supported)
+app.use((req, res, next) => {
+  const isHttps = req.secure || req.get('x-forwarded-proto') === 'https';
+  if (isHttps) {
+    return helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: false })(req, res, next);
+  }
+  return next();
+});
 
 // CORS configuration
 const allowedOrigins = [
@@ -125,6 +164,11 @@ app.get('/debug/images', (req, res) => {
       imagePath
     });
   }
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).send('✅ Secure Express App');
 });
 
 // API routes
