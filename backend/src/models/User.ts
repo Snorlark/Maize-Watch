@@ -377,6 +377,9 @@ userSchema.methods.createEmailVerificationToken = function () {
 
 // Static method to find user by credentials
 userSchema.statics.findByCredentials = async function (login, password) {
+  // Import AppError at the top of the file if not already imported
+  const { AppError } = require('../middleware/errorHandler');
+  
   // Allow login with either username or email
   const user = await this.findOne({
     $or: [{ username: login }, { email: login }],
@@ -384,12 +387,13 @@ userSchema.statics.findByCredentials = async function (login, password) {
   }).select("+password");
 
   if (!user) {
-    throw new Error("Invalid credentials");
+    throw new AppError("Incorrect email or password. Please try again.", 401);
   }
 
   if (user.isLocked) {
-    throw new Error(
-      "Account is temporarily locked due to too many failed login attempts"
+    throw new AppError(
+      "Account is temporarily locked due to too many failed login attempts. Please try again later.",
+      403
     );
   }
 
@@ -397,7 +401,7 @@ userSchema.statics.findByCredentials = async function (login, password) {
 
   if (!isMatch) {
     await user.incLoginAttempts();
-    throw new Error("Invalid credentials");
+    throw new AppError("Incorrect email or password. Please try again.", 401);
   }
 
   // Reset login attempts on successful login

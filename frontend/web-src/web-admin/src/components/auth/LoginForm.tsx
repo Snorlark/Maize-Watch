@@ -95,11 +95,16 @@ const LoginForm: React.FC = () => {
           navigate(`/${ADMIN_PATH}/dashboard`);
         }
       } else {
-        setError(result.message || 'Invalid username/email or password');
+        // Show user-friendly error message
+        setError(result.message || 'Incorrect email or password. Please try again.');
       }
     } catch (err: any) {
       console.error('Login failed:', err);
-      setError('Login failed. Please try again.');
+      // Extract error message from response if available
+      const errorMessage = err?.response?.data?.message || 
+                          err?.message || 
+                          'Incorrect email or password. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
