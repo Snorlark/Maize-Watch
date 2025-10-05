@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Users, Sprout, MapPin, Calendar, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { PlusCircle, Users, Sprout, MapPin, Calendar, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
@@ -8,9 +8,11 @@ import DeleteConfirmation from "../components/DeleteConfirmation";
 import ErrorModal from "../components/ErrorModal";
 import FarmReassignmentModal from "../components/FarmReassignmentModal";
 import FarmDetailsModal from "../components/FarmDetailsModal";
+import PendingDeletionsTable from "../components/PendingDeletionsTable";
 import { User } from "../api/services/authService";
 import { CurrentFarm, farmService } from "../api/services/farmService";
 import { useUserContext } from "../contexts/UserContext";
+import { userService } from "../api/client";
 
 interface UserFormData extends Omit<User, '_id'> {
   password?: string;
@@ -18,7 +20,7 @@ interface UserFormData extends Omit<User, '_id'> {
 
 type SortDirection = 'asc' | 'desc' | null;
 type SortField = 'farmName' | 'location' | 'assignedUser' | 'fieldsCount' | 'updatedAt' | null;
-type ActiveTab = 'users' | 'farms';
+type ActiveTab = 'users' | 'farms' | 'pending';
 
 export default function AccountManagement() {
   const { 
@@ -56,8 +58,13 @@ export default function AccountManagement() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
+  // State for pending deletions
+  const [pendingDeletions, setPendingDeletions] = useState<any[]>([]);
+  const [pendingLoading, setPendingLoading] = useState(true);
+
   // Check if user has regional_admin, admin or super_admin role
   const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // Create a map of users for quick lookup
   const userMap = new Map(users.map(user => [user._id || '', user]));
@@ -81,6 +88,44 @@ export default function AccountManagement() {
     }
   };
 
+  // Fetch pending deletions
+  const fetchPendingDeletions = async () => {
+    setPendingLoading(true);
+    try {
+      const data = await userService.getPendingDeletions();
+      setPendingDeletions(data);
+    } catch (error) {
+      console.error('Error fetching pending deletions:', error);
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
+  // Handle approve deletion
+  const handleApproveDeletion = async (userId: string) => {
+    try {
+      const result = await userService.approveDeletion(userId);
+      alert(result.message || 'Deletion approved successfully');
+      await fetchPendingDeletions();
+      await fetchUsers(); // Refresh users list
+    } catch (error: any) {
+      console.error('Error approving deletion:', error);
+      alert(error.response?.data?.message || 'Failed to approve deletion');
+    }
+  };
+
+  // Handle reject deletion
+  const handleRejectDeletion = async (userId: string) => {
+    try {
+      const result = await userService.rejectDeletion(userId);
+      alert(result.message || 'Deletion rejected successfully');
+      await fetchPendingDeletions();
+    } catch (error: any) {
+      console.error('Error rejecting deletion:', error);
+      alert(error.response?.data?.message || 'Failed to reject deletion');
+    }
+  };
+
   // Fetch users on component mount and check authentication
   useEffect(() => {
     // First set authChecked to true to indicate we've performed the check
@@ -91,6 +136,8 @@ export default function AccountManagement() {
       fetchUsers();
       // Regional admin and above can access Farm Assignment
       fetchFarms();
+      // Fetch pending deletions
+      fetchPendingDeletions();
     }
   }, [hasAdminAccess]); // Removed fetchUsers from dependencies to prevent infinite loop
 
@@ -353,6 +400,26 @@ export default function AccountManagement() {
                 Farm Assignments
               </button>
             )}
+            {/* Regional admin and above can access Pending Deletions */}
+            {hasAdminAccess && (
+              <button
+                onClick={() => setActiveTab('pending')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
+                  activeTab === 'pending'
+                    ? 'bg-[#456C2D] text-white shadow-sm'
+                    : 'text-[#456C2D] hover:bg-[#F0F8E8]'
+                }`}
+                style={{ fontSize: 'var(--text-sm)' }}
+              >
+                <AlertCircle className="w-4 h-4" />
+                Pending Deletions
+                {pendingDeletions.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full">
+                    {pendingDeletions.length}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -379,6 +446,27 @@ export default function AccountManagement() {
                 <PlusCircle className="w-5 h-5" />
                 Create New Account
               </button>
+            </div>
+          </>
+        ) : activeTab === 'pending' ? (
+          <>
+            {/* Pending Deletions Table */}
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-[#1E441E]">Pending Deletion Requests</h2>
+                <p className="text-[#456C2D] mt-2">
+                  {isSuperAdmin 
+                    ? 'Review and approve or reject user deletion requests from regional admins'
+                    : 'View your submitted deletion requests awaiting super admin approval'}
+                </p>
+              </div>
+              <PendingDeletionsTable
+                pendingDeletions={pendingDeletions}
+                loading={pendingLoading}
+                onApprove={handleApproveDeletion}
+                onReject={handleRejectDeletion}
+                isSuperAdmin={isSuperAdmin}
+              />
             </div>
           </>
         ) : (

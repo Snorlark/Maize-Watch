@@ -9,7 +9,10 @@ import {
   getUserStats,
   updateUserPreferences,
   getUserActivity,
-  searchUsers
+  searchUsers,
+  getPendingDeletions,
+  approveDeletion,
+  rejectDeletion
 } from '../controllers/userController';
 import { authenticate, authorize, requireRegionalAdmin } from '../middleware/auth';
 import {
@@ -38,6 +41,9 @@ router.get('/search', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USE
 // Get user statistics (Regional Admin and above)
 router.get('/stats', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getUserStats);
 
+// Get pending deletion requests (Regional Admin and above)
+router.get('/pending-deletions', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getPendingDeletions);
+
 // Get user by ID
 router.get('/:id', validateObjectId('id'), getUserById);
 
@@ -46,6 +52,12 @@ router.put('/:id', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, 
 
 // Delete user (Regional Admin and above)
 router.delete('/:id', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), deleteUser);
+
+// Approve deletion request (Super Admin only)
+router.post('/:id/approve-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), approveDeletion);
+
+// Reject deletion request (Super Admin only)
+router.post('/:id/reject-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), rejectDeletion);
 
 // Toggle user status (Regional Admin and above)
 router.patch('/:id/status', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), toggleUserStatus);

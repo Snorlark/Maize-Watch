@@ -342,6 +342,7 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
  */
 export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { reason } = req.body; // Optional deletion reason
   const currentUser = (req as any).user;
 
   logger.info(`Delete user request started for user ID: ${id}`);
@@ -367,7 +368,50 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Cannot delete super admin user', HTTP_STATUS.FORBIDDEN);
   }
 
-  // Hard delete - permanently remove from database
+  // Regional admin can only request deletion (soft delete)
+  if (currentUser.role === USER_ROLES.REGIONAL_ADMIN) {
+    logger.info(`Regional admin requesting deletion for user: ${user.username}`);
+    
+    user.deletionPending = true;
+    user.deletionRequestedBy = currentUser.id;
+    user.deletionRequestedAt = new Date();
+    user.deletionReason = reason || 'No reason provided';
+    await user.save();
+
+    // Activity Log: Deletion Request
+    try {
+      await ActivityLogService.createLog({
+        userId: currentUser.id,
+        userEmail: currentUser.email || 'unknown@email.com',
+        userRole: (currentUser.role as UserRole) || ('regional_admin' as UserRole),
+        action: Action.UPDATE,
+        resource: Resource.USER,
+        resourceId: user._id,
+        details: {
+          action: 'Deletion Requested',
+          targetUser: user.username,
+          targetEmail: user.email || 'no email',
+          targetRole: user.role,
+          reason: reason || 'No reason provided',
+          deletionType: 'PENDING_APPROVAL'
+        },
+        ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+        userAgent: req.get('User-Agent') || 'unknown',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      logger.error('Failed to create activity log for deletion request:', error);
+    }
+
+    logger.info(`Deletion request submitted for user: ${user.username}`);
+
+    return res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Deletion request submitted for super admin approval'
+    });
+  }
+
+  // Admin and Super Admin can perform hard delete
   logger.info(`Performing hard delete for user: ${user.username}`);
   
   // Activity Log: User Deletion (log before deletion)
@@ -406,6 +450,167 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'User deleted successfully'
+  });
+});
+
+/**
+ * @desc    Get all pending deletion requests
+ * @route   GET /api/users/pending-deletions
+ * @access  Private/Admin
+ */
+export const getPendingDeletions = catchAsync(async (req: Request, res: Response) => {
+  const currentUser = (req as any).user;
+  
+  let query: any = { deletionPending: true };
+  
+  // Regional admins can only see deletion requests they made
+  if (currentUser.role === USER_ROLES.REGIONAL_ADMIN) {
+    query.deletionRequestedBy = currentUser.id;
+  }
+  
+  const pendingDeletions = await User.find(query)
+    .populate('deletionRequestedBy', 'username email fullName')
+    .select('username email fullName role deletionRequestedAt deletionReason deletionRequestedBy')
+    .sort({ deletionRequestedAt: -1 });
+  
+  logger.info('Fetched pending deletions', {
+    requestedBy: currentUser.id,
+    count: pendingDeletions.length
+  });
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    data: { pendingDeletions }
+  });
+});
+
+/**
+ * @desc    Approve deletion request (super_admin only)
+ * @route   POST /api/users/:id/approve-deletion
+ * @access  Private/SuperAdmin
+ */
+export const approveDeletion = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const currentUser = (req as any).user;
+  
+  // Only super_admin can approve
+  if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Only super admin can approve deletion requests', HTTP_STATUS.FORBIDDEN);
+  }
+  
+  const user = await User.findById(id);
+  if (!user) {
+    throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
+  }
+  
+  if (!user.deletionPending) {
+    throw new AppError('No pending deletion request for this user', HTTP_STATUS.BAD_REQUEST);
+  }
+  
+  // Activity Log: Deletion Approved
+  try {
+    await ActivityLogService.createLog({
+      userId: currentUser.id,
+      userEmail: currentUser.email || 'unknown@email.com',
+      userRole: (currentUser.role as UserRole) || ('super_admin' as UserRole),
+      action: Action.DELETE,
+      resource: Resource.USER,
+      resourceId: user._id,
+      details: {
+        action: 'Deletion Approved',
+        targetUser: user.username,
+        targetEmail: user.email || 'no email',
+        targetRole: user.role,
+        originalReason: user.deletionReason,
+        requestedBy: user.deletionRequestedBy?.toString()
+      },
+      ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    logger.error('Failed to log deletion approval:', error);
+  }
+  
+  // Perform hard delete
+  await User.findByIdAndDelete(id);
+  
+  logger.info('Deletion approved and user deleted', {
+    userId: user._id,
+    approvedBy: currentUser.id,
+    username: user.username
+  });
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Deletion request approved and user deleted'
+  });
+});
+
+/**
+ * @desc    Reject deletion request
+ * @route   POST /api/users/:id/reject-deletion
+ * @access  Private/SuperAdmin
+ */
+export const rejectDeletion = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { rejectionReason } = req.body;
+  const currentUser = (req as any).user;
+  
+  // Only super_admin can reject
+  if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Only super admin can reject deletion requests', HTTP_STATUS.FORBIDDEN);
+  }
+  
+  const user = await User.findById(id);
+  if (!user) {
+    throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
+  }
+  
+  if (!user.deletionPending) {
+    throw new AppError('No pending deletion request for this user', HTTP_STATUS.BAD_REQUEST);
+  }
+  
+  // Clear deletion fields
+  user.deletionPending = false;
+  user.deletionRequestedBy = undefined;
+  user.deletionRequestedAt = undefined;
+  user.deletionReason = undefined;
+  await user.save();
+  
+  // Activity Log: Deletion Rejected
+  try {
+    await ActivityLogService.createLog({
+      userId: currentUser.id,
+      userEmail: currentUser.email || 'unknown@email.com',
+      userRole: (currentUser.role as UserRole) || ('super_admin' as UserRole),
+      action: Action.UPDATE,
+      resource: Resource.USER,
+      resourceId: user._id,
+      details: {
+        action: 'Deletion Rejected',
+        targetUser: user.username,
+        targetEmail: user.email || 'no email',
+        targetRole: user.role,
+        rejectionReason: rejectionReason || 'No reason provided'
+      },
+      ipAddress: (req as any).ip || req.connection.remoteAddress || 'unknown',
+      userAgent: req.get('User-Agent') || 'unknown',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    logger.error('Failed to log deletion rejection:', error);
+  }
+  
+  logger.info('Deletion rejected', {
+    userId: user._id,
+    rejectedBy: currentUser.id,
+    username: user.username
+  });
+  
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: 'Deletion request rejected'
   });
 });
 

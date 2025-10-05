@@ -46,6 +46,12 @@ interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   
+  // Soft delete fields
+  deletionPending: boolean;
+  deletionRequestedBy?: mongoose.Types.ObjectId;
+  deletionRequestedAt?: Date;
+  deletionReason?: string;
+  
   // Virtual properties
   isLocked: boolean;
   
@@ -238,6 +244,22 @@ const userSchema = new mongoose.Schema(
           default: true,
         },
       },
+    },
+    // Soft delete fields
+    deletionPending: {
+      type: Boolean,
+      default: false,
+    },
+    deletionRequestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    deletionRequestedAt: {
+      type: Date,
+    },
+    deletionReason: {
+      type: String,
+      maxlength: [500, "Deletion reason cannot exceed 500 characters"],
     },
   },
   {
