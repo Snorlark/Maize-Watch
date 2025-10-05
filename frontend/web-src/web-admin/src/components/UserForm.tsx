@@ -126,9 +126,9 @@ const UserForm: React.FC<UserFormProps> = ({
     e.preventDefault();
     
     // Transform form data to match backend expected format
-    const { region, province, municipality, barangay, address, ...otherData } = formData;
+    const { region, province, municipality, barangay, address, createdAt, lastLogin, ...otherData } = formData;
     
-    const submitData = {
+    const submitData: any = {
       ...otherData,
       address: {
         region: region || '',
@@ -137,6 +137,11 @@ const UserForm: React.FC<UserFormProps> = ({
         barangay: barangay || ''
       }
     };
+    
+    // For regional_admin role, set assignedRegion to match their address region
+    if (submitData.role === 'regional_admin' && region) {
+      submitData.assignedRegion = region;
+    }
     
     // For edit mode, if password is empty, remove it
     if (mode === 'edit' && !submitData.password) {
