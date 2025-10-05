@@ -65,6 +65,12 @@ router.get('/', authenticate, requireRegionalAdmin, async (req: LogsRequest, res
         search: req.query.search
       }).filter(([_, value]) => value !== undefined)
     );
+    
+    // For regional_admin users, exclude super_admin actions
+    const currentUser = (req as any).user;
+    if (currentUser && currentUser.role === 'regional_admin') {
+      filters.excludeSuperAdmin = 'true';
+    }
 
     // Use consolidated view logs if requested and action is VIEW
     let result;

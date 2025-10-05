@@ -90,11 +90,10 @@ export default function AccountManagement() {
     // Only fetch users if the user has admin access
     if (hasAdminAccess) {
       fetchUsers();
-      if (hasFullAdminAccess) {
-        fetchFarms();
-      }
+      // Regional admin and above can access Farm Assignment
+      fetchFarms();
     }
-  }, [hasAdminAccess, hasFullAdminAccess]); // Removed fetchUsers from dependencies to prevent infinite loop
+  }, [hasAdminAccess]); // Removed fetchUsers from dependencies to prevent infinite loop
 
   // Open create user modal
   const handleOpenCreateModal = () => {
@@ -340,7 +339,8 @@ export default function AccountManagement() {
               <Users className="w-4 h-4" />
               User Management
             </button>
-            {hasFullAdminAccess && (
+            {/* Regional admin and above can access Farm Assignment */}
+            {hasAdminAccess && (
               <button
                 onClick={() => setActiveTab('farms')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${

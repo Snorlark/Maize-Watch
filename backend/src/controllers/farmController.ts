@@ -187,15 +187,34 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
  * @route   GET /api/farms/count
  * @access  Private
  */
-// export const getTotalFarms = catchAsync(async (req: Request, res: Response) => {
-//   const total = await farmService.getTotalFarms(); // create this in service
-//   res.status(HTTP_STATUS.OK).json({ total });
-// });
 export const getTotalFarms = async (req: Request, res: Response) => {
   try {
-    const total = await Farm.countDocuments();
+    const currentUser = (req as any).user;
+    let total;
+    
+    // For regional_admin, filter farms by users in their assigned region
+    if (currentUser && currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+      // First get users in the assigned region
+      const User = require('../models/User').default;
+      const usersInRegion = await User.find({
+        $or: [
+          { 'address.region': currentUser.assignedRegion },
+          { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+        ]
+      }).select('_id');
+      
+      const userIds = usersInRegion.map((u: any) => u._id);
+      
+      // Count farms owned by users in this region
+      total = await Farm.countDocuments({ userId: { $in: userIds } });
+    } else {
+      // For super_admin and admin, count all farms
+      total = await Farm.countDocuments();
+    }
+    
     res.json({ total });
   } catch (err) {
+    logger.error('Error fetching total farms:', err);
     res.status(500).json({ message: "Error fetching total farms" });
   }
 };
