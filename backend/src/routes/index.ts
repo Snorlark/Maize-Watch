@@ -29,10 +29,38 @@ router.get('/test', (req, res) => {
     availableRoutes: [
       'GET /api/health',
       'GET /api/test', 
+      'GET /api/security-headers-test',
       'GET /api/historical-data',
       'GET /api/historical-data/debug',
       'GET /api/sensors/readings'
     ]
+  });
+});
+
+// Security headers test endpoint
+router.get('/security-headers-test', (req, res) => {
+  // Get all response headers that will be sent
+  const headers = res.getHeaders();
+  
+  res.status(200).json({
+    success: true,
+    message: 'Security headers test endpoint',
+    timestamp: new Date().toISOString(),
+    protocol: req.protocol,
+    isSecure: req.secure,
+    forwardedProto: req.get('x-forwarded-proto'),
+    headers: {
+      'content-security-policy': res.getHeader('content-security-policy'),
+      'x-frame-options': res.getHeader('x-frame-options'),
+      'referrer-policy': res.getHeader('referrer-policy'),
+      'permissions-policy': res.getHeader('permissions-policy'),
+      'strict-transport-security': res.getHeader('strict-transport-security'),
+      'x-content-type-options': res.getHeader('x-content-type-options'),
+      'x-dns-prefetch-control': res.getHeader('x-dns-prefetch-control'),
+      'x-download-options': res.getHeader('x-download-options'),
+      'x-permitted-cross-domain-policies': res.getHeader('x-permitted-cross-domain-policies')
+    },
+    allHeaders: headers
   });
 });
 
