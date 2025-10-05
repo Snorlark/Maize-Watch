@@ -53,7 +53,7 @@ app.use(helmet({
     }
   },
   // X-Frame-Options
-  frameguard: { action: 'SAMEORIGIN' },
+  frameguard: { action: 'sameorigin' },
   // Referrer-Policy
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   // X-Content-Type-Options is enabled by default in helmet
