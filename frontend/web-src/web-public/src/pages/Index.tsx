@@ -151,15 +151,15 @@ export default function Index() {
           </div>
 
 
-
-         {/* <div className="py-8 md:py-15 px-4 md:px-30">
+          <div className="py-12 md:py-12 px-4 md:px-30 ">
             <div className="container mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+              <div className="grid  mx-0 2xl:mx-42 grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
-                <div data-aos="fade-up" data-aos-delay="300">
-                  <div className="bg-[url(/images/cmission.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-40 lg:mr-10 ml-2 md:ml-8">
+                {/* Mission Box */}
+                <div className="mt-10 " data-aos="fade-up" data-aos-delay="300">
+                  <div className="bg-[url('/images/cmission.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+                    <h3 className="text-3xl md:text-[40px] font-bold">Mission.</h3>
+                    <div className="mt-6 md:mt-8">
                       <p className="text-sm md:text-base">
                         We aim to support Filipino corn farmers by providing real-time insights
                         for smarter, more efficient corn farming.
@@ -168,10 +168,11 @@ export default function Index() {
                   </div>
                 </div>
 
-                <div data-aos="fade-up" data-aos-delay="600" >
-                  <div className="bg-[url(/images/cprinciple.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-30 md:mr-45 lg:mr-10 ml-2 md:ml-8">
+                {/* Principle Box */}
+                <div className="mt-10" data-aos="fade-up" data-aos-delay="600">
+                  <div className="bg-[url('/images/cprinciple.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+                    <h3 className="text-3xl md:text-[40px] font-bold">Principle.</h3>
+                    <div className="mt-6 md:mt-8">
                       <p className="text-sm md:text-base">
                         We use IoT and Data Analytics to simplify decision-making, promote sustainable
                         practices, and ensure accessible tools for all.
@@ -180,10 +181,11 @@ export default function Index() {
                   </div>
                 </div>
 
-                <div data-aos="fade-up" data-aos-delay="900">
-                  <div className="bg-[url(/images/cvalues.png)] bg-cover p-6 md:p-10 rounded-31 text-white transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-                    <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
-                    <div className="flex items-start gap-4 mt-4 md:mt-8 mr-35 mb-3 md:mr-45 lg:mr-10 ml-2 md:ml-8">
+                {/* Values Box */}
+                <div className="mt-10" data-aos="fade-up" data-aos-delay="900">
+                  <div className="bg-[url('/images/cvalues.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+                    <h3 className="text-3xl md:text-[40px] font-bold">Values.</h3>
+                    <div className="mt-6 md:mt-8 mb-3">
                       <p className="text-sm md:text-base">
                         We value innovation, sustainability, and empowering farmers through accurate,
                         data-driven solutions.
@@ -191,101 +193,10 @@ export default function Index() {
                     </div>
                   </div>
                 </div>
+
               </div>
             </div>
-          </div>  */}
-
-          {/* <div className="py-8 md:py-15 px-4 md:px-30">
-  <div className="container mx-auto">
-    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-
-      <div data-aos="fade-up" data-aos-delay="300">
-        <div className="bg-[url('/images/cmission.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
-          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8">
-            <p className="text-sm md:text-base">
-              We aim to support Filipino corn farmers by providing real-time insights
-              for smarter, more efficient corn farming.
-            </p>
           </div>
-        </div>
-      </div>
-
-      <div data-aos="fade-up" data-aos-delay="600">
-        <div className="bg-[url('/images/cprinciple.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
-          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8">
-            <p className="text-sm md:text-base">
-              We use IoT and Data Analytics to simplify decision-making, promote sustainable
-              practices, and ensure accessible tools for all.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div data-aos="fade-up" data-aos-delay="900">
-        <div className="bg-[url('/images/cvalues.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
-          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
-          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8 mb-3">
-            <p className="text-sm md:text-base">
-              We value innovation, sustainability, and empowering farmers through accurate,
-              data-driven solutions.
-            </p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div> */}
-
-
-<div className="py-12 md:py-12 px-4 md:px-30 "> {/* Light green bg like image */}
-  <div className="container mx-auto">
-    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-
-      {/* Mission Box */}
-      <div className="mt-10" data-aos="fade-up" data-aos-delay="300">
-        <div className="bg-[url('/images/cmission.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
-          <h3 className="text-3xl md:text-[40px] font-bold">Mission.</h3>
-          <div className="mt-6 md:mt-8">
-            <p className="text-sm md:text-base">
-              We aim to support Filipino corn farmers by providing real-time insights
-              for smarter, more efficient corn farming.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Principle Box */}
-      <div className="mt-10" data-aos="fade-up" data-aos-delay="600">
-        <div className="bg-[url('/images/cprinciple.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
-          <h3 className="text-3xl md:text-[40px] font-bold">Principle.</h3>
-          <div className="mt-6 md:mt-8">
-            <p className="text-sm md:text-base">
-              We use IoT and Data Analytics to simplify decision-making, promote sustainable
-              practices, and ensure accessible tools for all.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Values Box */}
-      <div className="mt-10" data-aos="fade-up" data-aos-delay="900">
-        <div className="bg-[url('/images/cvalues.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
-          <h3 className="text-3xl md:text-[40px] font-bold">Values.</h3>
-          <div className="mt-6 md:mt-8 mb-3">
-            <p className="text-sm md:text-base">
-              We value innovation, sustainability, and empowering farmers through accurate,
-              data-driven solutions.
-            </p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
 
 
 
