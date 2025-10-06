@@ -93,12 +93,48 @@ export default function Index() {
 
 
           {/* ABOUT PART */}
-          <div data-aos="fade-up" data-aos-delay="200" className="relative -mt-12 pb-8 md:pb-4 ">
-            <div id="about-section" className="container mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
+          {/* <div data-aos="fade-up" data-aos-delay="200" className="relative rounded-full -mt-12 pb-8 md:pb-4 ">
+            <div id="about-section" className="container rounded-full  mx-auto px-10 md:px-20 lg:px-18 xl:px-75">
               <div onClick={() => navigate('/product')} className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-31 p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-maize-llgreen cursor-pointer">
-                <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
+                <div className="flex  flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
                   <img src="/images/smiley.png" alt="" className="w-12 h-12 md:w-14 md:h-14" />
-                  <div>
+                  <div className='rounded-full'>
+                    <h2 className="text-2xl  md:text-3xl font-bold mb-4 md:mb-6">
+                      Maximize your yields,<br />minimize your worries.
+                    </h2>
+                    <p className="text-[14px] md:text-[16px] lg:text-[24px] xl:text-[18px] opacity-90 md:mr-10">
+                      Maize Watch is a smart farming system that monitors real-time corn field
+                      conditions using IoT sensors and delivers data-driven recommendations
+                      through AI-powered prescriptive analytics—helping farmers grow
+                      healthier crops, efficiently and sustainably.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> */}
+
+          {/* ABOUT PART */}
+          <div 
+            data-aos="fade-up" 
+            data-aos-delay="200" 
+            className="relative rounded-3xl -mt-12 pb-8 md:pb-4"
+          >
+            <div 
+              id="about-section" 
+              className="container rounded-3xl mx-auto px-10 md:px-20 lg:px-18 xl:px-75"
+            >
+              <div 
+                onClick={() => navigate('/product')} 
+                className="bg-[url(/images/container2.png)] bg-cover bg-center text-white rounded-3xl p-6 md:p-23 pb-8 lg:pb-30 md:pb-25 hover:scale-99 transition-all ease-in-out duration-300 hover:text-maize-llgreen cursor-pointer"
+              >
+                <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6 cursor-pointer">
+                  <img 
+                    src="/images/smiley.png" 
+                    alt="" 
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-full" 
+                  />
+                  <div className="rounded-3xl">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">
                       Maximize your yields,<br />minimize your worries.
                     </h2>
@@ -114,7 +150,9 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="py-8 md:py-15 px-4 md:px-30">
+
+
+         {/* <div className="py-8 md:py-15 px-4 md:px-30">
             <div className="container mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
@@ -155,7 +193,101 @@ export default function Index() {
                 </div>
               </div>
             </div>
+          </div>  */}
+
+          {/* <div className="py-8 md:py-15 px-4 md:px-30">
+  <div className="container mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+
+      <div data-aos="fade-up" data-aos-delay="300">
+        <div className="bg-[url('/images/cmission.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Mission.</h3>
+          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8">
+            <p className="text-sm md:text-base">
+              We aim to support Filipino corn farmers by providing real-time insights
+              for smarter, more efficient corn farming.
+            </p>
           </div>
+        </div>
+      </div>
+
+      <div data-aos="fade-up" data-aos-delay="600">
+        <div className="bg-[url('/images/cprinciple.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Principle.</h3>
+          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8">
+            <p className="text-sm md:text-base">
+              We use IoT and Data Analytics to simplify decision-making, promote sustainable
+              practices, and ensure accessible tools for all.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div data-aos="fade-up" data-aos-delay="900">
+        <div className="bg-[url('/images/cvalues.png')] bg-cover bg-center p-6 md:p-10 rounded-xl text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen">
+          <h3 className="text-3xl md:text-[40px] font-bold mt-4">Values.</h3>
+          <div className="flex items-start gap-4 mt-4 md:mt-8 ml-2 md:ml-8 mr-4 md:mr-6 lg:mr-8 mb-3">
+            <p className="text-sm md:text-base">
+              We value innovation, sustainability, and empowering farmers through accurate,
+              data-driven solutions.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div> */}
+
+
+<div className="py-12 md:py-12 px-4 md:px-30 "> {/* Light green bg like image */}
+  <div className="container mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+
+      {/* Mission Box */}
+      <div className="mt-10" data-aos="fade-up" data-aos-delay="300">
+        <div className="bg-[url('/images/cmission.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+          <h3 className="text-3xl md:text-[40px] font-bold">Mission.</h3>
+          <div className="mt-6 md:mt-8">
+            <p className="text-sm md:text-base">
+              We aim to support Filipino corn farmers by providing real-time insights
+              for smarter, more efficient corn farming.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Principle Box */}
+      <div className="mt-10" data-aos="fade-up" data-aos-delay="600">
+        <div className="bg-[url('/images/cprinciple.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+          <h3 className="text-3xl md:text-[40px] font-bold">Principle.</h3>
+          <div className="mt-6 md:mt-8">
+            <p className="text-sm md:text-base">
+              We use IoT and Data Analytics to simplify decision-making, promote sustainable
+              practices, and ensure accessible tools for all.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Values Box */}
+      <div className="mt-10" data-aos="fade-up" data-aos-delay="900">
+        <div className="bg-[url('/images/cvalues.png')] bg-cover bg-center px-6 md:px-10 lg:px-12 pt-14 pb-10 rounded-[32px] text-white h-full transition-all duration-300 hover:opacity-90 hover:text-maize-dgreen overflow-visible">
+          <h3 className="text-3xl md:text-[40px] font-bold">Values.</h3>
+          <div className="mt-6 md:mt-8 mb-3">
+            <p className="text-sm md:text-base">
+              We value innovation, sustainability, and empowering farmers through accurate,
+              data-driven solutions.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
           <hr className="my-4 border-t border-maize-lgreen mt-10  mx-10 xl:mx-40" />
 
@@ -164,7 +296,7 @@ export default function Index() {
             <div className="container mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
-                <div className=" ml-10  space-y-6">
+                <div className=" ml-18  space-y-6">
                   <div className="flex items-center gap-3">
                     <div data-aos="fade-down" data-aos-delay="400" className="p-2 ">
                       <img src="/images/header.png" alt="Brain Icon" className="w-full h-full" />
@@ -175,31 +307,42 @@ export default function Index() {
                     ──────── &nbsp;&nbsp;&nbsp; We also offer a real-time app that helps corn farmers optimize crop yield through IoT sensor data. It monitors key environmental factors and provides actionable insights from our prescriptive analytics, enabling smarter farming decisions for better productivity and sustainability.
                   </p>
 
-                  <div data-aos="fade" data-aos-delay="500" className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90  ">
-                    <button onClick={() => navigate('/solutions')} className="cursor-pointer flex items-center gap-2 text-lg font-semibold text-maize-dgreen border-b-2 border-maize-dgreen hover:border-maize-lgreen hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1">
+                  <div data-aos="fade" data-aos-delay="500" 
+                    className="flex items-center gap-5 md:gap-70 lg:gap-20 xl:gap-90 relative z-20"
+                  >
+                    <button 
+                      onClick={() => navigate('/solutions')} 
+                      className="flex items-center gap-2 whitespace-nowrap text-lg font-semibold text-maize-dgreen border-b-2 border-maize-dgreen hover:border-maize-lgreen hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1"
+                    >
                       LEARN MORE
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </button>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 z-20 relative">
                       <button
                         onClick={handlePrevImage}
-                        className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-lgreen) hover:text-(--color-white) transition-all duration-300">
+                        className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-lgreen) hover:text-(--color-white) transition-all duration-300 z-20"
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
                       <button
                         onClick={handleNextImage}
-                        className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-lgreen) hover:text-(--color-white) transition-all duration-300">
+                        className="cursor-pointer w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-lgreen) hover:text-(--color-white) transition-all duration-300 z-20"
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
                     </div>
                   </div>
+
+
+
+
                 </div>
 
                 <div data-aos="fade-left" data-aos-delay="400" className="relative flex justify-center items-center">
@@ -336,7 +479,7 @@ export default function Index() {
 
       {aboutModalOpen && (
         <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
-          <div data-aos="fade-up" data-aos-delay="100" className="bg-maize-dgreen rounded-lg w-full max-w-lg mx-4 p-6 relative">
+          <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
             <button
               onClick={() => setAboutModalOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
@@ -377,7 +520,7 @@ export default function Index() {
 
       {privacyModalOpen && (
         <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
-          <div data-aos="fade-up" data-aos-delay="100" className="bg-maize-dgreen rounded-lg w-full max-w-lg mx-4 p-6 relative">
+          <div data-aos="fade-up" data-aos-delay="100" className="bg-(--color-dgreen) rounded-lg w-full max-w-lg mx-4 p-6 relative">
             <button
               onClick={() => setPrivacyModalOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
