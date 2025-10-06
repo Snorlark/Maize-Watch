@@ -134,6 +134,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         if (mounted) {
           setState(() {
             _isLoadingAnalytics = false;
+            _analyticsError = null; // Clear any previous errors
           });
         }
       } else {
@@ -141,6 +142,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         if (mounted) {
           setState(() {
             _isLoadingAnalytics = false;
+            _analyticsError = null; // Don't show error for missing cache
           });
         }
       }
@@ -153,7 +155,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       if (mounted) {
         setState(() {
           _isLoadingAnalytics = false;
-          _analyticsError = 'Failed to load cached data: $e';
+          _analyticsError = null; // Don't show error, just load fresh data
         });
       }
       
@@ -191,6 +193,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
             _analyticsError = null;
           });
         }
+      } else {
+        print('🌽 FarmDetail: No fresh analytics data received, trying fallback');
+        // Fallback to MonitoringBloc if HomeScreenService fails
+        _loadAnalyticsData();
       }
     } catch (e) {
       print('🌽 FarmDetail: Error loading fresh data: $e');
@@ -225,14 +231,23 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
       // Clear all caches first
       await OfflineCacheService.clearAnalyticsCache(farmId: widget.farm.id);
       
-      // Call the force sync endpoint
+      // Get auth token
+      final token = await SecureStorage.getToken();
+      if (token == null) {
+        print('🔄 FarmDetail: No auth token available, skipping force sync');
+        // Just load fresh data without force sync
+        _loadFreshDataInBackground();
+        return;
+      }
+      
+      // Call the force sync endpoint with timeout
       final response = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/${widget.farm.id}/sync'),
         headers: {
-          'Authorization': 'Bearer ${await SecureStorage.getToken()}',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         print('🔄 FarmDetail: Force sync successful');
@@ -240,18 +255,14 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         // Now load fresh data
         _loadFreshDataInBackground();
       } else {
-        print('🔄 FarmDetail: Force sync failed: ${response.statusCode}');
-        setState(() {
-          _isLoadingAnalytics = false;
-          _analyticsError = 'Failed to sync data from ThingSpeak';
-        });
+        print('🔄 FarmDetail: Force sync failed: ${response.statusCode} - ${response.body}');
+        // Don't show error, just load fresh data
+        _loadFreshDataInBackground();
       }
     } catch (e) {
       print('🔄 FarmDetail: Error during force refresh: $e');
-      setState(() {
-        _isLoadingAnalytics = false;
-        _analyticsError = 'Failed to refresh data: $e';
-      });
+      // Don't show error, just load fresh data
+      _loadFreshDataInBackground();
     }
   }
 
@@ -895,9 +906,16 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
               _analyticsError = null;
             });
           } else if (state.error != null) {
+            print('🔍 FarmDetailWidget received error via MonitoringBloc: ${state.error}');
             setState(() {
               _isLoadingAnalytics = false;
-              _analyticsError = state.error;
+              _analyticsError = null; // Don't show error, just keep loading
+            });
+            // Try to load data again after a short delay
+            Future.delayed(Duration(seconds: 2), () {
+              if (mounted) {
+                _loadFreshDataInBackground();
+              }
             });
           }
         },

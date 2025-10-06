@@ -12,7 +12,7 @@ import cron from 'node-cron';
 import connectDB, { getConnectionStatus } from './config/database';
 import { logger } from './utils/logger';
 import { initializeSocket } from './sockets/index';
-import SyncService from './services/syncService';
+import syncService from './services/syncService';
 
 // Import middleware
 import globalErrorHandler, { notFound, catchAsync } from './middleware/errorHandler';
@@ -141,8 +141,7 @@ async function startServer() {
     await connectDB();
     logger.info('Database connected successfully');
 
-    // Initialize sync service
-    const syncService = new SyncService();
+    // Sync service is already initialized as singleton
 
     // Start server
     server.listen(Number(PORT), '0.0.0.0', () => {
@@ -160,7 +159,7 @@ async function startServer() {
 }
 
 // Start automatic data synchronization
-function startDataSync(syncService: SyncService) {
+function startDataSync(syncService: any) {
   logger.info('🔄 Starting automatic data synchronization...');
   
   // Sync every 15 seconds

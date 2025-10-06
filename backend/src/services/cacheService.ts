@@ -323,9 +323,17 @@ export class CacheService {
    */
   static async clearThingSpeakCache(): Promise<void> {
     try {
-      // Clear all ThingSpeak related cache keys
-      const pattern = 'thingspeak:*';
-      await redisUtils.delPattern(pattern);
+      // Clear specific ThingSpeak cache keys
+      const keysToDelete = [
+        'thingspeak:data',
+        'thingspeak:last_sync',
+        'thingspeak:channels',
+      ];
+      
+      for (const key of keysToDelete) {
+        await redisUtils.del(key);
+      }
+      
       logger.info('Cleared all ThingSpeak cache');
     } catch (error) {
       logger.error('Cache clear ThingSpeak error:', error);

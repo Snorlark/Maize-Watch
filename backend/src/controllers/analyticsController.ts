@@ -7,7 +7,6 @@ import thingSpeakService from '../services/thingspeakService';
 import sensorService from '../services/sensorService';
 import syncService from '../services/syncService';
 import CacheService from '../services/cacheService';
-import SyncService from '../services/syncService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
@@ -1357,11 +1356,8 @@ export const forceSyncThingSpeakData = catchAsync(async (req: Request, res: Resp
   try {
     logger.info(`🔄 Force syncing ThingSpeak data for farm ${farmId} by user ${currentUser.id}`);
     
-    // Initialize sync service
-    const syncServiceInstance = new SyncService();
-    
-    // Force sync data for this specific farm
-    await syncServiceInstance.syncFarmData(farmId);
+            // Force sync data for this specific farm
+            await syncService.syncFarmData(farmId);
     
     // Clear any cached analytics data for this farm
     await CacheService.clearFarmAnalyticsCache(farmId);
