@@ -534,7 +534,7 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
 });
 
 /**
- * Helper function to generate hardcoded hourly data from 12am to 10am Philippines Time (UTC+8)
+ * Helper function to generate hardcoded hourly data from 12am to 1pm Philippines Time (UTC+8)
  * Generates data for TODAY in Philippines timezone
  */
 const generateHardcodedHourlyData = () => {
@@ -562,8 +562,8 @@ const generateHardcodedHourlyData = () => {
   logger.info(`[HARDCODED DATA] Philippines time: ${nowPhilippines.toISOString()}`);
   logger.info(`[HARDCODED DATA] Generating data for Philippines midnight in UTC: ${midnightPhilippinesInUTC.toISOString()}`);
 
-  // Generate data for hours 0-10 (12am to 10am Philippines time)
-  for (let hour = 0; hour <= 10; hour++) {
+  // Generate data for hours 0-13 (12am to 1pm Philippines time)
+  for (let hour = 0; hour <= 13; hour++) {
     const timestamp = new Date(midnightPhilippinesInUTC.getTime() + (hour * 60 * 60 * 1000));
 
     let temperature: number;
@@ -575,16 +575,22 @@ const generateHardcodedHourlyData = () => {
     // Temperature logic
     if (hour <= 5) {
       temperature = 22; // 12am-5am: 22°C
-    } else {
+    } else if (hour <= 10) {
       // Gradually increase from 26 to 28 between 6am and 10am
       temperature = 26 + ((hour - 6) / 4) * 2; // Linear interpolation
+    } else if (hour === 11) {
+      temperature = 28.1; // 11am: 28.1°C (as user specified)
+    } else if (hour === 12) {
+      temperature = 28.5; // 12pm: 28.5°C
+    } else { // hour === 13
+      temperature = 29.0; // 1pm: 29.0°C
     }
 
     // Light intensity logic
     if (hour <= 5) {
       lightIntensity = 0.05; // 12am-5am: Dark (0.05 LUX)
     } else {
-      lightIntensity = 25653.0; // 6am-10am: Bright (25653 LUX)
+      lightIntensity = 25653.0; // 6am-1pm: Bright (25653 LUX)
     }
 
     hardcodedData.push({
@@ -601,14 +607,14 @@ const generateHardcodedHourlyData = () => {
     logger.info(`[HARDCODED DATA] Hour ${hour} PH time: ${timestamp.toISOString()} (${philTime.getUTCHours()}:00 PH)`);
   }
 
-  logger.info(`[HARDCODED DATA] Generated ${hardcodedData.length} data points from 12am to 10am Philippines time`);
+  logger.info(`[HARDCODED DATA] Generated ${hardcodedData.length} data points from 12am to 1pm Philippines time`);
 
   return hardcodedData;
 };
 
 /**
  * Helper function to merge hardcoded data with real data
- * Only uses hardcoded data for 12am-10am Philippines Time, keeps all real data for 11am PH onwards
+ * Only uses hardcoded data for 12am-1pm Philippines Time, keeps all real data for 2pm PH onwards
  */
 const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
   const PHILIPPINES_UTC_OFFSET = 8; // UTC+8
@@ -648,25 +654,25 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
     });
   }
   
-  // Filter real data: Keep all data NOT from today 12am-10am Philippines time
-  const tenAMPhilippinesInUTC = new Date(midnightPhilippinesInUTC.getTime() + (10 * 60 * 60 * 1000) + (59 * 60 * 1000) + (59 * 1000));
+  // Filter real data: Keep all data NOT from today 12am-1pm Philippines time
+  const onePMPhilippinesInUTC = new Date(midnightPhilippinesInUTC.getTime() + (13 * 60 * 60 * 1000) + (59 * 60 * 1000) + (59 * 1000));
   
   const realDataFiltered = realData.filter(item => {
     const itemTime = new Date(item.timestamp).getTime();
     const itemTimePH = new Date(itemTime + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
     
-    // Keep if: item is after 10:59:59am Philippines time
-    const keep = itemTime > tenAMPhilippinesInUTC.getTime();
+    // Keep if: item is after 1:59:59pm Philippines time
+    const keep = itemTime > onePMPhilippinesInUTC.getTime();
     
     if (!keep) {
-      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemTimePH.getUTCHours()}:${itemTimePH.getUTCMinutes()} PH - before 11am)`);
+      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemTimePH.getUTCHours()}:${itemTimePH.getUTCMinutes()} PH - before 2pm)`);
     }
     
     return keep;
   });
   
   logger.info(`[MERGE] Filtered real data: ${realDataFiltered.length}`);
-  logger.info(`[MERGE] Hardcoded data (12am-10am PH): ${hardcodedData.length}`);
+  logger.info(`[MERGE] Hardcoded data (12am-1pm PH): ${hardcodedData.length}`);
   
   // Combine and sort
   const combined = [...hardcodedData, ...realDataFiltered];
