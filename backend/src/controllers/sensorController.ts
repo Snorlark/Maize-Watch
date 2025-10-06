@@ -534,23 +534,37 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
 });
 
 /**
- * Helper function to generate hardcoded hourly data from 12am to 10am
- * Generates data for TODAY only, from hour 0 (12am) to hour 10 (10am) in LOCAL timezone
+ * Helper function to generate hardcoded hourly data from 12am to 10am Philippines Time (UTC+8)
+ * Generates data for TODAY in Philippines timezone
  */
 const generateHardcodedHourlyData = () => {
   const hardcodedData = [];
-  const now = new Date();
+  const PHILIPPINES_UTC_OFFSET = 8; // UTC+8
   
-  // Create date for today at midnight in LOCAL timezone
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  // Get current time in UTC
+  const nowUTC = new Date();
   
-  logger.info('[HARDCODED DATA] Server time:', now.toISOString());
-  logger.info('[HARDCODED DATA] Generating data for today (local midnight):', today.toISOString());
+  // Calculate Philippines time (UTC+8)
+  const nowPhilippines = new Date(nowUTC.getTime() + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+  
+  // Get today's date in Philippines timezone
+  const todayPhilippines = new Date(Date.UTC(
+    nowPhilippines.getUTCFullYear(),
+    nowPhilippines.getUTCMonth(),
+    nowPhilippines.getUTCDate(),
+    0, 0, 0, 0
+  ));
+  
+  // Adjust back to UTC (subtract 8 hours to get Philippines midnight in UTC)
+  const midnightPhilippinesInUTC = new Date(todayPhilippines.getTime() - (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+  
+  logger.info(`[HARDCODED DATA] Server time (UTC): ${nowUTC.toISOString()}`);
+  logger.info(`[HARDCODED DATA] Philippines time: ${nowPhilippines.toISOString()}`);
+  logger.info(`[HARDCODED DATA] Generating data for Philippines midnight in UTC: ${midnightPhilippinesInUTC.toISOString()}`);
 
-  // Generate data for hours 0-10 (12am to 10am) in LOCAL timezone
+  // Generate data for hours 0-10 (12am to 10am Philippines time)
   for (let hour = 0; hour <= 10; hour++) {
-    const timestamp = new Date(today);
-    timestamp.setHours(hour, 0, 0, 0); // Set exact hour in LOCAL timezone
+    const timestamp = new Date(midnightPhilippinesInUTC.getTime() + (hour * 60 * 60 * 1000));
 
     let temperature: number;
     let lightIntensity: number;
@@ -582,58 +596,77 @@ const generateHardcodedHourlyData = () => {
       lightIntensity: Math.round(lightIntensity * 10) / 10
     });
     
-    logger.info(`[HARDCODED DATA] Hour ${hour}: ${timestamp.toISOString()} (${hour}:00 local)`);
+    // Calculate Philippines time for logging
+    const philTime = new Date(timestamp.getTime() + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+    logger.info(`[HARDCODED DATA] Hour ${hour} PH time: ${timestamp.toISOString()} (${philTime.getUTCHours()}:00 PH)`);
   }
 
-  logger.info(`[HARDCODED DATA] Generated ${hardcodedData.length} data points from 12am to 10am`);
+  logger.info(`[HARDCODED DATA] Generated ${hardcodedData.length} data points from 12am to 10am Philippines time`);
 
   return hardcodedData;
 };
 
 /**
  * Helper function to merge hardcoded data with real data
- * Only uses hardcoded data for 12am-10am LOCAL time, keeps all real data for 11am onwards
+ * Only uses hardcoded data for 12am-10am Philippines Time, keeps all real data for 11am PH onwards
  */
 const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayStart = today.getTime();
-  const todayEnd = todayStart + (24 * 60 * 60 * 1000);
-  const elevenAM = todayStart + (11 * 60 * 60 * 1000); // 11am today
+  const PHILIPPINES_UTC_OFFSET = 8; // UTC+8
   
-  logger.info('[MERGE] Current time:', now.toISOString());
-  logger.info('[MERGE] Today start (midnight):', new Date(todayStart).toISOString());
-  logger.info('[MERGE] 11am cutoff:', new Date(elevenAM).toISOString());
+  // Get current time in UTC
+  const nowUTC = new Date();
+  
+  // Calculate Philippines time
+  const nowPhilippines = new Date(nowUTC.getTime() + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+  
+  // Get today's date in Philippines timezone
+  const todayPhilippines = new Date(Date.UTC(
+    nowPhilippines.getUTCFullYear(),
+    nowPhilippines.getUTCMonth(),
+    nowPhilippines.getUTCDate(),
+    0, 0, 0, 0
+  ));
+  
+  // Adjust to UTC
+  const midnightPhilippinesInUTC = new Date(todayPhilippines.getTime() - (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+  const elevenAMPhilippinesInUTC = new Date(midnightPhilippinesInUTC.getTime() + (11 * 60 * 60 * 1000));
+  
+  logger.info(`[MERGE] Current UTC time: ${nowUTC.toISOString()}`);
+  logger.info(`[MERGE] Current PH time: ${nowPhilippines.toISOString()}`);
+  logger.info(`[MERGE] Today midnight PH (in UTC): ${midnightPhilippinesInUTC.toISOString()}`);
+  logger.info(`[MERGE] 11am PH cutoff (in UTC): ${elevenAMPhilippinesInUTC.toISOString()}`);
   logger.info(`[MERGE] Real data count: ${realData.length}`);
   logger.info(`[MERGE] Hardcoded data count: ${hardcodedData.length}`);
   
-  // Log all real data timestamps for debugging
+  // Log real data samples
   if (realData.length > 0) {
     logger.info('[MERGE] Real data sample (first 3):');
     realData.slice(0, 3).forEach(item => {
       const ts = new Date(item.timestamp);
-      logger.info(`  - ${item.timestamp} (${ts.getHours()}:${ts.getMinutes()})`);
+      const tsPH = new Date(ts.getTime() + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+      logger.info(`  - ${item.timestamp} (${tsPH.getUTCHours()}:${tsPH.getUTCMinutes()} PH)`);
     });
   }
   
-  // Filter real data: Keep all data NOT from today 12am-10am
+  // Filter real data: Keep all data NOT from today 12am-10am Philippines time
+  const tenAMPhilippinesInUTC = new Date(midnightPhilippinesInUTC.getTime() + (10 * 60 * 60 * 1000) + (59 * 60 * 1000) + (59 * 1000));
+  
   const realDataFiltered = realData.filter(item => {
     const itemTime = new Date(item.timestamp).getTime();
-    const itemHour = new Date(item.timestamp).getHours();
+    const itemTimePH = new Date(itemTime + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
     
-    // Keep if: not from today, OR from today but >= 11am
-    const isFromToday = itemTime >= todayStart && itemTime < todayEnd;
-    const keep = !isFromToday || itemTime >= elevenAM;
+    // Keep if: item is after 10:59:59am Philippines time
+    const keep = itemTime > tenAMPhilippinesInUTC.getTime();
     
     if (!keep) {
-      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemHour}:00 - before 11am)`);
+      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemTimePH.getUTCHours()}:${itemTimePH.getUTCMinutes()} PH - before 11am)`);
     }
     
     return keep;
   });
   
   logger.info(`[MERGE] Filtered real data: ${realDataFiltered.length}`);
-  logger.info(`[MERGE] Hardcoded data (12am-10am): ${hardcodedData.length}`);
+  logger.info(`[MERGE] Hardcoded data (12am-10am PH): ${hardcodedData.length}`);
   
   // Combine and sort
   const combined = [...hardcodedData, ...realDataFiltered];
@@ -648,10 +681,12 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
     logger.info(`  Last: ${sorted[sorted.length - 1].timestamp}`);
     const hourCounts: any = {};
     sorted.forEach(item => {
-      const hour = new Date(item.timestamp).getHours();
-      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      const ts = new Date(item.timestamp);
+      const tsPH = new Date(ts.getTime() + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
+      const hourPH = tsPH.getUTCHours();
+      hourCounts[hourPH] = (hourCounts[hourPH] || 0) + 1;
     });
-    logger.info('[MERGE] Data breakdown by hour:', JSON.stringify(hourCounts));
+    logger.info('[MERGE] Data breakdown by PH hour:', JSON.stringify(hourCounts));
   }
   
   return sorted;
