@@ -28,6 +28,7 @@ import SolutionsPage from '../web-public/src/pages/SolutionsPage';
 import ProductPage from '../web-public/src/pages/ProductPage';
 import HeaderMenuPage from '../web-public/src/pages/HeaderMenu';
 import GetAppPage from '../web-public/src/pages/GetApp';
+import KnowledgeHubPage from '../web-public/src/pages/KnowledgeHubPage';
 
 // Layout component for authenticated admin pages
 const AdminAuthenticatedLayout = () => {
@@ -54,7 +55,8 @@ const App: React.FC = () => {
         <Route path="/product" element={<ProductPage />} />
         <Route path="/header-menu" element={<HeaderMenuPage />} />
         <Route path="/getapp" element={<GetAppPage />} />
-
+        <Route path="/knowledge-hub" element={<KnowledgeHubPage />} />
+        
         {/* Admin Routes */}
         <Route path={`${ADMIN_PATH}`}>
           <Route index element={<Navigate to="login" replace />} />

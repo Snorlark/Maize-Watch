@@ -60,9 +60,24 @@ export default function HeaderMenuPage() {
                       <div className="text-(--color-dgreen) md:text-right">
   
                         <div>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">F.A.Qs</h3>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">App Run-Through</h3>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">Help</h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#faqs')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            F.A.Qs
+                          </h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#app-tutorial')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            App Run-Through
+                          </h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#help')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            Help
+                          </h3>
   
                         </div>
   
