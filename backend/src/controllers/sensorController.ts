@@ -535,15 +535,21 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
 
 /**
  * Helper function to generate hardcoded hourly data from 12am to 10am
+ * Generates data for TODAY only, from hour 0 (12am) to hour 10 (10am)
  */
 const generateHardcodedHourlyData = () => {
   const hardcodedData = [];
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Start at midnight
+  
+  // Set to midnight of today
+  today.setHours(0, 0, 0, 0);
+  
+  console.log('[HARDCODED DATA] Generating data for today:', today.toISOString().split('T')[0]);
 
+  // Generate data for hours 0-10 (12am to 10am)
   for (let hour = 0; hour <= 10; hour++) {
     const timestamp = new Date(today);
-    timestamp.setHours(hour);
+    timestamp.setHours(hour, 0, 0, 0); // Set exact hour with 0 minutes/seconds
 
     let temperature: number;
     let lightIntensity: number;
@@ -553,7 +559,7 @@ const generateHardcodedHourlyData = () => {
 
     // Temperature logic
     if (hour <= 5) {
-      temperature = 22;
+      temperature = 22; // 12am-5am: 22°C
     } else {
       // Gradually increase from 26 to 28 between 6am and 10am
       temperature = 26 + ((hour - 6) / 4) * 2; // Linear interpolation
@@ -561,9 +567,9 @@ const generateHardcodedHourlyData = () => {
 
     // Light intensity logic
     if (hour <= 5) {
-      lightIntensity = 0.05;
+      lightIntensity = 0.05; // 12am-5am: Dark (0.05 LUX)
     } else {
-      lightIntensity = 25653.0;
+      lightIntensity = 25653.0; // 6am-10am: Bright (25653 LUX)
     }
 
     hardcodedData.push({
@@ -576,33 +582,61 @@ const generateHardcodedHourlyData = () => {
     });
   }
 
+  console.log('[HARDCODED DATA] Generated', hardcodedData.length, 'data points from 12am to 10am');
+  console.log('[HARDCODED DATA] First entry:', hardcodedData[0].timestamp);
+  console.log('[HARDCODED DATA] Last entry:', hardcodedData[hardcodedData.length - 1].timestamp);
+
   return hardcodedData;
 };
 
 /**
  * Helper function to merge hardcoded data with real data
- * Only fills in missing hours from hardcoded data
+ * Only uses hardcoded data for 12am-10am, keeps all real data for 11am onwards
  */
 const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
-  const mergedMap = new Map<string, any>();
-
-  // Add all hardcoded data first (for 12am-10am)
-  hardcodedData.forEach(item => {
-    const hourKey = new Date(item.timestamp).getHours().toString();
-    mergedMap.set(hourKey, item);
+  const today = new Date();
+  const todayDateString = today.toISOString().split('T')[0]; // Get YYYY-MM-DD
+  
+  console.log('[MERGE] Today date:', todayDateString);
+  console.log('[MERGE] Real data count:', realData.length);
+  console.log('[MERGE] Hardcoded data count:', hardcodedData.length);
+  
+  // Filter real data to only keep data from 11am onwards today
+  const realDataFiltered = realData.filter(item => {
+    const itemDate = new Date(item.timestamp);
+    const itemDateString = itemDate.toISOString().split('T')[0];
+    const itemHour = itemDate.getHours();
+    
+    // Keep all data that's not from today, or data from today that's 11am or later
+    const keep = itemDateString !== todayDateString || itemHour >= 11;
+    if (!keep && itemDateString === todayDateString) {
+      console.log(`[MERGE] Filtering out real data from ${itemHour}:00 (before 11am)`);
+    }
+    return keep;
   });
-
-  // Override with real data if it exists
-  realData.forEach(item => {
-    const timestamp = new Date(item.timestamp);
-    const hourKey = timestamp.getHours().toString();
-    mergedMap.set(hourKey, item);
+  
+  // Filter hardcoded data to only include today's 12am-10am
+  const hardcodedFiltered = hardcodedData.filter(item => {
+    const itemDate = new Date(item.timestamp);
+    const itemDateString = itemDate.toISOString().split('T')[0];
+    return itemDateString === todayDateString;
   });
-
-  // Convert map to array and sort by timestamp
-  return Array.from(mergedMap.values()).sort((a, b) => 
+  
+  console.log('[MERGE] Filtered real data:', realDataFiltered.length);
+  console.log('[MERGE] Filtered hardcoded data:', hardcodedFiltered.length);
+  
+  // Combine and sort
+  const combined = [...hardcodedFiltered, ...realDataFiltered];
+  const sorted = combined.sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
+  
+  console.log('[MERGE] Combined data points:', sorted.length);
+  if (sorted.length > 0) {
+    console.log('[MERGE] Time range:', sorted[0].timestamp, 'to', sorted[sorted.length - 1].timestamp);
+  }
+  
+  return sorted;
 };
 
 /**
