@@ -544,8 +544,8 @@ const generateHardcodedHourlyData = () => {
   // Create date for today at midnight in LOCAL timezone
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   
-  console.log('[HARDCODED DATA] Server time:', now.toISOString());
-  console.log('[HARDCODED DATA] Generating data for today (local midnight):', today.toISOString());
+  logger.info('[HARDCODED DATA] Server time:', now.toISOString());
+  logger.info('[HARDCODED DATA] Generating data for today (local midnight):', today.toISOString());
 
   // Generate data for hours 0-10 (12am to 10am) in LOCAL timezone
   for (let hour = 0; hour <= 10; hour++) {
@@ -582,10 +582,10 @@ const generateHardcodedHourlyData = () => {
       lightIntensity: Math.round(lightIntensity * 10) / 10
     });
     
-    console.log(`[HARDCODED DATA] Hour ${hour}: ${timestamp.toISOString()} (${hour}:00 local)`);
+    logger.info(`[HARDCODED DATA] Hour ${hour}: ${timestamp.toISOString()} (${hour}:00 local)`);
   }
 
-  console.log('[HARDCODED DATA] Generated', hardcodedData.length, 'data points from 12am to 10am');
+  logger.info(`[HARDCODED DATA] Generated ${hardcodedData.length} data points from 12am to 10am`);
 
   return hardcodedData;
 };
@@ -601,18 +601,18 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
   const todayEnd = todayStart + (24 * 60 * 60 * 1000);
   const elevenAM = todayStart + (11 * 60 * 60 * 1000); // 11am today
   
-  console.log('[MERGE] Current time:', now.toISOString());
-  console.log('[MERGE] Today start (midnight):', new Date(todayStart).toISOString());
-  console.log('[MERGE] 11am cutoff:', new Date(elevenAM).toISOString());
-  console.log('[MERGE] Real data count:', realData.length);
-  console.log('[MERGE] Hardcoded data count:', hardcodedData.length);
+  logger.info('[MERGE] Current time:', now.toISOString());
+  logger.info('[MERGE] Today start (midnight):', new Date(todayStart).toISOString());
+  logger.info('[MERGE] 11am cutoff:', new Date(elevenAM).toISOString());
+  logger.info(`[MERGE] Real data count: ${realData.length}`);
+  logger.info(`[MERGE] Hardcoded data count: ${hardcodedData.length}`);
   
   // Log all real data timestamps for debugging
   if (realData.length > 0) {
-    console.log('[MERGE] Real data sample (first 3):');
+    logger.info('[MERGE] Real data sample (first 3):');
     realData.slice(0, 3).forEach(item => {
       const ts = new Date(item.timestamp);
-      console.log(`  - ${item.timestamp} (${ts.getHours()}:${ts.getMinutes()})`);
+      logger.info(`  - ${item.timestamp} (${ts.getHours()}:${ts.getMinutes()})`);
     });
   }
   
@@ -626,14 +626,14 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
     const keep = !isFromToday || itemTime >= elevenAM;
     
     if (!keep) {
-      console.log(`[MERGE] Filtering out real data: ${item.timestamp} (${itemHour}:00 - before 11am)`);
+      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemHour}:00 - before 11am)`);
     }
     
     return keep;
   });
   
-  console.log('[MERGE] Filtered real data:', realDataFiltered.length);
-  console.log('[MERGE] Hardcoded data (12am-10am):', hardcodedData.length);
+  logger.info(`[MERGE] Filtered real data: ${realDataFiltered.length}`);
+  logger.info(`[MERGE] Hardcoded data (12am-10am): ${hardcodedData.length}`);
   
   // Combine and sort
   const combined = [...hardcodedData, ...realDataFiltered];
@@ -641,18 +641,17 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
   
-  console.log('[MERGE] Combined data points:', sorted.length);
+  logger.info(`[MERGE] Combined data points: ${sorted.length}`);
   if (sorted.length > 0) {
-    console.log('[MERGE] Time range:');
-    console.log(`  First: ${sorted[0].timestamp}`);
-    console.log(`  Last: ${sorted[sorted.length - 1].timestamp}`);
-    console.log('[MERGE] Data breakdown by hour:');
+    logger.info('[MERGE] Time range:');
+    logger.info(`  First: ${sorted[0].timestamp}`);
+    logger.info(`  Last: ${sorted[sorted.length - 1].timestamp}`);
     const hourCounts: any = {};
     sorted.forEach(item => {
       const hour = new Date(item.timestamp).getHours();
       hourCounts[hour] = (hourCounts[hour] || 0) + 1;
     });
-    console.log('  Hour counts:', hourCounts);
+    logger.info('[MERGE] Data breakdown by hour:', JSON.stringify(hourCounts));
   }
   
   return sorted;
