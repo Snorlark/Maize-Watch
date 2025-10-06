@@ -1,50 +1,43 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import AOS from 'aos';
-import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { X } from "lucide-react";
 
-
-export default function ProductPage() {
+export default function KnowledgeHubPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-  
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
    useEffect(() => {
       AOS.init({ duration: 1000, once: true });
     }, []);
 
-
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-      
-      const images = [
-          '/images/Phealthycorn.png',
-          '/images/Pdetailedtables.png'
-      ];
-  
-      const handlePrevImage = () => {
-          setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-      };
-  
-      const handleNextImage = () => {
-          setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-      };
-  
-
+  // Handle anchor scrolling
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const hash = window.location.hash;
+    if (hash) {
+      const element = document.querySelector(hash);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }, 500);
+      }
+    }
   }, [pathname]);
+
   return (
     <>
       <body className="bg-(--color-white) min-h-screen">
         <main>
           <div className=" relative h-10 bg-cover bg-center flex items-center justify-center">
-            <nav className="bg-(--color-dgreen) fixed top-0 w-full container z-10 bg-transparent px-2 md:px-10 py-1 flex items-center justify-between">
+            <nav className="bg-(--color-dgreen) fixed top-0 w-full container z-10 bg-transparent  px-2 md:px-10 py-1 flex items-center justify-between">
               <div className="w-16 md:w-20 py-2 flex items-center">
                 <img
                   onClick={() => navigate('/')}
@@ -55,7 +48,7 @@ export default function ProductPage() {
               </div>
               <div>
                 <ul className="flex items-center font-bold space-x-4 md:space-x-15">
-                  <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Get App</button></li>
+                  <li><button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-7 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-green) ease-in duration-250">Get App</button></li>
                   <li><button>
                     <img
                       onClick={() => navigate('/header-menu')}
@@ -69,186 +62,201 @@ export default function ProductPage() {
             </nav>
           </div>
 
-          <div className="py-16 2xl:pt-20 px-4 md:px-20 mr-5">
-            <div className="container mx-auto px-4 md:px-20 lg:px-80">
-              <div className=" space-y-6">
-                <div className="flex items-center gap-3">
-                  <div data-aos="zoom-in" className="p-2 ">
-                    <img src="/images/header-product.png" alt="Brain Icon" className="w-full h-full" />
-                  </div>
-                </div>
-                <p data-aos="fade-up" data-aos-delay="200" className="py-5 xl:py-10  xl:text-lg">
-                 <b>Maize Watch</b>  offers a real-time, IoT-powered mobile and web application designed to revolutionize corn farming by turning raw environmental data into actionable insights. Using a network of smart sensors—monitoring temperature, humidity, soil moisture, light intensity, and soil pH—our system collects critical information from the field and transmits it instantly to the cloud via a SIM-enabled microcontroller.
-                </p>
-                <div className="items-center">
-                <button
-                    data-aos="fade" data-aos-delay="400"
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center  text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen) hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
-                  >
-                    {isOpen ? "LESS -" : "MORE +"}
-                  </button>
-
-                  {isOpen && (
-                    <div className="py-5 xl:text-lg">
-                      <p>
-                      Weather forecasts, crop growth modeling, and historical yield data are all incorporated to assist farmers in making data-driven decisions that optimize output while preserving resources. As this project seeks to increase crop yields, decrease resource waste, and advance sustainable agriculture methods, it serves as a guide for farming decisions. 
-                      </p>
-
-                      <br/>
-
-                      <p>By supporting data-informed farming in the face of climate change, this technology approach supports a number of Sustainable Development Goals (SDGs), such as Zero Hunger, Climate Action, Life on Land, and Sustainable Cities and Communities.</p>
-
+          <section className="py-16 px-4  2xl:pt-20  md:px-20 mr-5">
+            <div className="container mx-auto">
+              <div className="container mx-auto px-4 md:px-20 lg:px-80">
+                <div className=" space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div data-aos="zoom-in" className="p-2 ">
+                      <img src="/images/knowledge-hub-title.png" alt="Knowledge Hub Title" className="w-full h-full" />
                     </div>
-                  )}
+                  </div>
+                  <p data-aos="fade-up" data-aos-delay="200" className="pt-5">
+                    Welcome to our comprehensive Knowledge Hub where you can learn everything about Maize Watch. From getting started with the app to advanced farming techniques, this is your one-stop resource for maximizing your agricultural productivity.
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
-          {/* See the prototype */}
           <section className="py-16 px-4 md:px-20 ">
             <div className="container mx-auto px-4 md:px-20 lg:px-80">
-              <div className=" space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="py-2 ">
-                    <h2 className=" text-right text-3xl md:text-5xl font-bold text-(--color-dgreen)">See the prototype.</h2>
+              <div className="space-y-6">
+                <div className="inline-block items-center gap-3">
+                  <div className="pb-5">
+                    <h2 className="text-4xl md:text-6xl font-bold text-(--color-dgreen) mb-8">App Tutorial</h2>
                   </div>
-
-                </div>
-              </div>
-            </div>
-          </section>
-
-              <div className="container mx-auto 2xl:px-40 ">
-                <div data-aos="fade" data-aos-delay="200" className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                   
-                  <div className="px-15 2xl:pl-35 mx-auto  space-y-10">
-                    <div className="flex items-center gap-2">
-                      <div data-aos="fade-down" data-aos-delay="400" >
-                        <h2 className="text-5xl md:text-4xl font-bold text-(--color-dgreen)">Real-time Monitoring</h2>
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                      <h1 className="text-2xl md:text-4xl font-bold mb-4">Complete App Walkthrough</h1>
+                      <p className="text-sm md:text-base leading-relaxed mb-6">
+                        Watch our comprehensive 48-second tutorial that covers all the essential features of Maize Watch. Learn how to navigate the app, understand your farm data, and make the most of our AI-powered recommendations.
+                      </p>
+                      
+                      {/* App Run-Through Video */}
+                      <div className="relative bg-gray-800 rounded-lg overflow-hidden mb-4" style={{ aspectRatio: '16/9' }}>
+                        <video 
+                          className="w-full h-full object-cover"
+                          controls
+                          preload="metadata"
+                          poster="/images/video-poster.jpg"
+                        >
+                          <source src="/images/app-run-through.mp4" type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">What You'll Learn:</h3>
+                          <ul className="space-y-1">
+                            <li>• User registration and farm setup</li>
+                            <li>• Understanding live monitoring dashboard</li>
+                            <li>• Reading sensor data and status indicators</li>
+                            <li>• Using prescription recommendations</li>
+                            <li>• Managing farm details and growth stages</li>
+                            <li>• Configuring app settings</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">Key Features Covered:</h3>
+                          <ul className="space-y-1">
+                            <li>• Real-time weather and sensor data</li>
+                            <li>• Color-coded status indicators</li>
+                            <li>• AI-powered farm recommendations</li>
+                            <li>• Growth stage tracking (VE to R6)</li>
+                            <li>• Historical data visualization</li>
+                            <li>• Device and sensor management</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
-  
-                    <p data-aos="fade-right" data-aos-delay="400" className=" xl:py-8 text-sm md:text-base xl:text-lg max-w-xl">
-                      Monitor your corn crops in real time with IoT sensors—track temperature, soil moisture, humidity, pH level, and light intensity for healthier harvests. Get instant visibility into field conditions, enabling quick decisions on irrigation, soil care, and crop management to support optimal growth and yield.
-                    </p>
-                    
-                      
-                      <div className="pl-30 2xl:pl-35 flex gap-4">
-                        <button 
-                          onClick={handlePrevImage}
-                          className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button 
-                          onClick={handleNextImage}
-                          className="w-12 h-12 rounded-full border-2 border-(--color-dgreen) flex items-center justify-center hover:bg-(--color-llgreen) hover:text-white transition-discrete ease-in-out duration-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-(--color-dgreen)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                    
-                    </div>
-                  </div>
-                  
-                  <div data-aos="fade-left" data-aos-delay="400" className="relative flex justify-center items-center">
-                    <div className="bg-(--color-lgreen) w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-15 transition-discrete ease-in-out duration-500"></div>
-                    <img
-                      src={images[currentImageIndex]}
-                      alt="Maize Watch App Preview"
-                      className="relative w-[280px] md:w-[300px] mx-auto fade-out-left transition-discrete ease-in-out duration-500"
-                    />
                   </div>
                 </div>
-              </div>
-              <br/> <br/>
-              
-          <hr className="my-5 border-t border-(--color-lgreen) mt-20  mx-10 xl:mx-40" />
-
-          <section className=" py-12 px-4 md:px-20">
-            <div data-aos="fade" data-aos-delay="400"  className="max-w-5xl mx-auto space-y-6 text-center">
-              <h2 data-aos="fade-down" data-aos-delay="400" className="text-3xl md:text-4xl font-bold text-(--color-dgreen)">Learn and Grow.</h2>
-
-              <div className="flex flex-col items-center space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-md max-w-3xl w-full xl:my-15">
-                  <div data-aos="fade-right" data-aos-delay="400"  className="bg-(--color-dgreen) text-white p-10 flex items-center justify-center">
-                    <p className="text-lg font-semibold text-left">Want to understand how the app works?</p>
-                  </div>
-                  <div data-aos="fade-left" data-aos-delay="400"  className="bg-(--color-lgreen) text-white p-12 flex items-center justify-center">
-                    <p className="text-sm md:text-base text-left">
-                      Navigate through our <span className="underline">knowledge hub</span>, just click the learn more below.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => navigate('/knowledge-hub')}
-                  className="flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen)  hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
-                >
-                  LEARN MORE
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
               </div>
             </div>
           </section>
 
           <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
 
-          {/* <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-12">
-            <div className="container mx-auto max-w-6xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
-                <div className="space-y-3">
-                  <img src="/images/logo.png" alt="Maize Watch" className="h-10 md:h-12" />
-                  <div className="ml-7 flex gap-3">
+          {/* App Tutorial Section */}
+          <section id="app-tutorial" className="py-12 px-4 md:px-20">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-center px-4 md:px-20 lg:px-40">
+              <div data-aos="fade-right" data-aos-delay="400">
+                <h2 className="text-6xl font-bold text-(--color-dgreen) mb-8">Why Watch This Tutorial?</h2>
+                <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                  Our comprehensive tutorial is designed specifically for corn farmers who want to maximize their agricultural productivity. Whether you're new to precision agriculture or looking to optimize your existing farming practices, this walkthrough will help you understand how to leverage Maize Watch's advanced features to make data-driven decisions, reduce resource waste, and increase your crop yields.
+                </p>
+              </div>
+              <div data-aos="fade-left" data-aos-delay="400" className="flex justify-center">
+                <img
+                  src="/images/farmer.png" 
+                  alt="Farmer using mobile app"
+                  className="rounded-xl shadow-md w-full max-w-md object-cover"
+                />
+              </div>
+            </div>
+          </section>
 
-                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                      <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5" />
-                    </a>
-                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                      <img src="/images/github.png" alt="GitHub" className="h-5 w-5" />
-                    </a>
-                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                      <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5" />
-                    </a>
-                    <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                      <img src="/images/x.png" alt="X" className="h-5 w-5" />
-                    </a>
+          <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
+
+          {/* FAQs Section */}
+          <section id="faqs" className="py-16 px-4 md:px-20">
+            <div className="container mx-auto px-4 md:px-20 lg:px-80">
+              <div className="space-y-6">
+                <div className="inline-block items-center gap-3">
+                  <div className="pb-5">
+                    <h2 className="text-4xl md:text-6xl font-bold text-(--color-dgreen) mb-8">Frequently Asked Questions</h2>
                   </div>
-                </div>
-
-                <div className="mt-2 md:mt-0">
-                  <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Information</h4>
-                  <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
-                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">Privacy</a></li>
-                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">Terms of Use</a></li>
-                    <li><a href="#" className="hover:opacity-80 transition-all duration-300">About us</a></li>
-                  </ul>
-                </div>
-
-                <div className="mt-2 md:mt-0">
-                  <h4 className="font-semibold text-base md:text-lg mb-3 text-(--color-dgreen)">Contact Us</h4>
-                  <ul className="space-y-2 text-sm md:text-base text-(--color-dgreen)">
-                    <li>1234 Taft Avenue</li>
-                    <li>Malate, Manila 1004 Philippines</li>
-                    <li>Office: (02) 123-4567 (Mon-Fri)</li>
-                  </ul>
-                </div>
-
-                <div className="text-left md:text-right text-(--color-dgreen) text-xs md:text-sm mt-4 md:mt-12">
-                  © 2025 NOVU. All rights reserved.
+                  
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                      <h1 className="text-2xl md:text-4xl font-bold mb-4">Common Questions</h1>
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">How do I get started with Maize Watch?</h3>
+                          <p className="text-sm md:text-base leading-relaxed">
+                            Download the app, register with your phone number, verify your account, create your username and password, then register your farm and field details. The app will guide you through the setup process.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">What sensors do I need for my farm?</h3>
+                          <p className="text-sm md:text-base leading-relaxed">
+                            Maize Watch works with IoT sensors that monitor temperature, humidity, soil moisture, soil pH, and light intensity. You can purchase compatible sensors or use our recommended sensor packages.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">How often does the data update?</h3>
+                          <p className="text-sm md:text-base leading-relaxed">
+                            Sensor data updates every 15 seconds, providing real-time monitoring of your farm conditions. The app also syncs with weather services for comprehensive environmental data.
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">Is my farm data secure?</h3>
+                          <p className="text-sm md:text-base leading-relaxed">
+                            Yes, all data is encrypted and stored securely. You retain full ownership of your farm data, and we only use it to provide personalized insights and improve our services.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </footer> */}
+          </section>
 
-           <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-10">
+          <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
+
+          {/* Help Section */}
+          <section id="help" className="py-16 px-4 md:px-20">
+            <div className="container mx-auto px-4 md:px-20 lg:px-80">
+              <div className="space-y-6">
+                <div className="inline-block items-center gap-3">
+                  <div className="pb-5">
+                    <h2 className="text-4xl md:text-6xl font-bold text-(--color-dgreen) mb-8">Need Help?</h2>
+                  </div>
+                  
+                  <div data-aos="fade-up" data-aos-delay="300" className='py-5'>
+                    <div className="bg-[url('/images/container-solutions-2.png')] bg-cover bg-center text-white p-6 rounded-xl p-15">
+                      <h1 className="text-2xl md:text-4xl font-bold mb-4">Support Resources</h1>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">Contact Support</h3>
+                          <p className="text-sm md:text-base leading-relaxed mb-2">
+                            Get help from our support team:
+                          </p>
+                          <ul className="text-sm md:text-base space-y-1">
+                            <li>• Email: support@maize-watch.com</li>
+                            <li>• Phone: (02) 123-4567</li>
+                            <li>• Office Hours: Mon-Fri, 9AM-5PM</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">Quick Troubleshooting</h3>
+                          <p className="text-sm md:text-base leading-relaxed mb-2">
+                            Common solutions:
+                          </p>
+                          <ul className="text-sm md:text-base space-y-1">
+                            <li>• Check sensor connections</li>
+                            <li>• Verify internet connectivity</li>
+                            <li>• Restart the app</li>
+                            <li>• Update to latest version</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <hr className="my-4 border-t border-(--color-lgreen) mt-10  mx-10 xl:mx-40" />
+
+         <footer data-aos="fade-up" data-aos-delay="200" className="bg-(--color-white) py-6 px-4 md:px-10">
                <div className="container mx-auto max-w-6xl">
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
                    <div className="space-y-3">
@@ -305,7 +313,6 @@ export default function ProductPage() {
           <br />
         </main>
       </body>
-
       
  {aboutModalOpen && (
         <div data-aos="fade" className="fixed inset-0 bg-black bg-opacity-90 backdrop-blur-sm flex items-center justify-center z-50">
@@ -529,7 +536,7 @@ export default function ProductPage() {
                 <ul className="list-disc pl-6 space-y-1">
                   <li>Maize Watch provides data-based insights to support agricultural decisions. Final decisions regarding farming practices remain your responsibility.</li>
                   <li>We do not guarantee specific yield outcomes or profitability as agricultural success depends on many uncontrollable factors.</li>
-                  <li>The platform is provided “as-is” and “as available” without warranties of any kind.</li>
+                  <li>The platform is provided "as-is" and "as available" without warranties of any kind.</li>
                 </ul>
               </div>
 

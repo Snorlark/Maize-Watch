@@ -9,6 +9,7 @@ import SolutionsPage from './pages/SolutionsPage';
 import ProductPage from './pages/ProductPage';
 import HeaderMenuPage from './pages/HeaderMenu';
 import GetAppPage from './pages/GetApp';
+import KnowledgeHubPage from './pages/KnowledgeHubPage';
 
 const App: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const App: React.FC = () => {
       <Route path="/technology" element={<TechnologyPage />} />
       <Route path="/solutions" element={<SolutionsPage />} />
       <Route path="/product" element={<ProductPage />} />
+      <Route path="/knowledge-hub" element={<KnowledgeHubPage />} />
       <Route path="/header-menu" element={<HeaderMenuPage />} />
       <Route path="/getapp" element={<GetAppPage />} />
 
