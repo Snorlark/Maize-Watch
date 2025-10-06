@@ -535,21 +535,22 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
 
 /**
  * Helper function to generate hardcoded hourly data from 12am to 10am
- * Generates data for TODAY only, from hour 0 (12am) to hour 10 (10am)
+ * Generates data for TODAY only, from hour 0 (12am) to hour 10 (10am) in LOCAL timezone
  */
 const generateHardcodedHourlyData = () => {
   const hardcodedData = [];
-  const today = new Date();
+  const now = new Date();
   
-  // Set to midnight of today
-  today.setHours(0, 0, 0, 0);
+  // Create date for today at midnight in LOCAL timezone
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   
-  console.log('[HARDCODED DATA] Generating data for today:', today.toISOString().split('T')[0]);
+  console.log('[HARDCODED DATA] Server time:', now.toISOString());
+  console.log('[HARDCODED DATA] Generating data for today (local midnight):', today.toISOString());
 
-  // Generate data for hours 0-10 (12am to 10am)
+  // Generate data for hours 0-10 (12am to 10am) in LOCAL timezone
   for (let hour = 0; hour <= 10; hour++) {
     const timestamp = new Date(today);
-    timestamp.setHours(hour, 0, 0, 0); // Set exact hour with 0 minutes/seconds
+    timestamp.setHours(hour, 0, 0, 0); // Set exact hour in LOCAL timezone
 
     let temperature: number;
     let lightIntensity: number;
@@ -580,60 +581,78 @@ const generateHardcodedHourlyData = () => {
       soilPh: soilPh,
       lightIntensity: Math.round(lightIntensity * 10) / 10
     });
+    
+    console.log(`[HARDCODED DATA] Hour ${hour}: ${timestamp.toISOString()} (${hour}:00 local)`);
   }
 
   console.log('[HARDCODED DATA] Generated', hardcodedData.length, 'data points from 12am to 10am');
-  console.log('[HARDCODED DATA] First entry:', hardcodedData[0].timestamp);
-  console.log('[HARDCODED DATA] Last entry:', hardcodedData[hardcodedData.length - 1].timestamp);
 
   return hardcodedData;
 };
 
 /**
  * Helper function to merge hardcoded data with real data
- * Only uses hardcoded data for 12am-10am, keeps all real data for 11am onwards
+ * Only uses hardcoded data for 12am-10am LOCAL time, keeps all real data for 11am onwards
  */
 const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
-  const today = new Date();
-  const todayDateString = today.toISOString().split('T')[0]; // Get YYYY-MM-DD
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = today.getTime();
+  const todayEnd = todayStart + (24 * 60 * 60 * 1000);
+  const elevenAM = todayStart + (11 * 60 * 60 * 1000); // 11am today
   
-  console.log('[MERGE] Today date:', todayDateString);
+  console.log('[MERGE] Current time:', now.toISOString());
+  console.log('[MERGE] Today start (midnight):', new Date(todayStart).toISOString());
+  console.log('[MERGE] 11am cutoff:', new Date(elevenAM).toISOString());
   console.log('[MERGE] Real data count:', realData.length);
   console.log('[MERGE] Hardcoded data count:', hardcodedData.length);
   
-  // Filter real data to only keep data from 11am onwards today
+  // Log all real data timestamps for debugging
+  if (realData.length > 0) {
+    console.log('[MERGE] Real data sample (first 3):');
+    realData.slice(0, 3).forEach(item => {
+      const ts = new Date(item.timestamp);
+      console.log(`  - ${item.timestamp} (${ts.getHours()}:${ts.getMinutes()})`);
+    });
+  }
+  
+  // Filter real data: Keep all data NOT from today 12am-10am
   const realDataFiltered = realData.filter(item => {
-    const itemDate = new Date(item.timestamp);
-    const itemDateString = itemDate.toISOString().split('T')[0];
-    const itemHour = itemDate.getHours();
+    const itemTime = new Date(item.timestamp).getTime();
+    const itemHour = new Date(item.timestamp).getHours();
     
-    // Keep all data that's not from today, or data from today that's 11am or later
-    const keep = itemDateString !== todayDateString || itemHour >= 11;
-    if (!keep && itemDateString === todayDateString) {
-      console.log(`[MERGE] Filtering out real data from ${itemHour}:00 (before 11am)`);
+    // Keep if: not from today, OR from today but >= 11am
+    const isFromToday = itemTime >= todayStart && itemTime < todayEnd;
+    const keep = !isFromToday || itemTime >= elevenAM;
+    
+    if (!keep) {
+      console.log(`[MERGE] Filtering out real data: ${item.timestamp} (${itemHour}:00 - before 11am)`);
     }
+    
     return keep;
   });
   
-  // Filter hardcoded data to only include today's 12am-10am
-  const hardcodedFiltered = hardcodedData.filter(item => {
-    const itemDate = new Date(item.timestamp);
-    const itemDateString = itemDate.toISOString().split('T')[0];
-    return itemDateString === todayDateString;
-  });
-  
   console.log('[MERGE] Filtered real data:', realDataFiltered.length);
-  console.log('[MERGE] Filtered hardcoded data:', hardcodedFiltered.length);
+  console.log('[MERGE] Hardcoded data (12am-10am):', hardcodedData.length);
   
   // Combine and sort
-  const combined = [...hardcodedFiltered, ...realDataFiltered];
+  const combined = [...hardcodedData, ...realDataFiltered];
   const sorted = combined.sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
   
   console.log('[MERGE] Combined data points:', sorted.length);
   if (sorted.length > 0) {
-    console.log('[MERGE] Time range:', sorted[0].timestamp, 'to', sorted[sorted.length - 1].timestamp);
+    console.log('[MERGE] Time range:');
+    console.log(`  First: ${sorted[0].timestamp}`);
+    console.log(`  Last: ${sorted[sorted.length - 1].timestamp}`);
+    console.log('[MERGE] Data breakdown by hour:');
+    const hourCounts: any = {};
+    sorted.forEach(item => {
+      const hour = new Date(item.timestamp).getHours();
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+    console.log('  Hour counts:', hourCounts);
   }
   
   return sorted;
