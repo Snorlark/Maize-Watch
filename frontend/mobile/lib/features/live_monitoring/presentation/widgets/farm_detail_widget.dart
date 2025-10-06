@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart' as http;
 import 'package:mobile/features/authentication/presentation/bloc/authentication_bloc.dart';
 import 'package:mobile/features/farm/presentation/bloc/farm_bloc.dart';
 import 'package:mobile/core/services/home_screen_service.dart';
+import 'package:mobile/core/services/offline_cache_service.dart';
+import 'package:mobile/core/storage/secure_storage.dart';
+import 'package:mobile/core/config/environment.dart';
 import '../../../../generated/l10n.dart';
 import 'growth_progress_widget.dart';
 import 'historical_tab_widget.dart';
@@ -165,6 +169,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     print('🌽 FarmDetail: Loading fresh data in background for farm ${widget.farm.id}');
     
     try {
+      // Clear any existing cache first
+      await OfflineCacheService.clearAnalyticsCache(farmId: widget.farm.id);
+      print('🌽 FarmDetail: Cleared analytics cache');
+      
       // Use HomeScreenService to load fresh data (this will also cache it)
       final homeData = await HomeScreenService.getHomeScreenData(
         farmId: widget.farm.id,
@@ -175,6 +183,14 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
         print('🌽 FarmDetail: Received fresh analytics data from HomeScreenService');
         // Parse and display fresh data
         _parseAnalyticsData(homeData['analytics']);
+        
+        // Update UI immediately
+        if (mounted) {
+          setState(() {
+            _isLoadingAnalytics = false;
+            _analyticsError = null;
+          });
+        }
       }
     } catch (e) {
       print('🌽 FarmDetail: Error loading fresh data: $e');
@@ -192,6 +208,51 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
     context.read<MonitoringBloc>().add(
       LoadFarmAnalyticsEvent(farmId: widget.farm.id!),
     );
+  }
+
+  /// Force refresh data from ThingSpeak
+  void _forceRefreshData() async {
+    if (widget.farm.id == null || !mounted) return;
+
+    print('🔄 FarmDetail: Force refreshing data for farm ${widget.farm.id}');
+    
+    setState(() {
+      _isLoadingAnalytics = true;
+      _analyticsError = null;
+    });
+
+    try {
+      // Clear all caches first
+      await OfflineCacheService.clearAnalyticsCache(farmId: widget.farm.id);
+      
+      // Call the force sync endpoint
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/api/analytics/farms/${widget.farm.id}/sync'),
+        headers: {
+          'Authorization': 'Bearer ${await SecureStorage.getToken()}',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print('🔄 FarmDetail: Force sync successful');
+        
+        // Now load fresh data
+        _loadFreshDataInBackground();
+      } else {
+        print('🔄 FarmDetail: Force sync failed: ${response.statusCode}');
+        setState(() {
+          _isLoadingAnalytics = false;
+          _analyticsError = 'Failed to sync data from ThingSpeak';
+        });
+      }
+    } catch (e) {
+      print('🔄 FarmDetail: Error during force refresh: $e');
+      setState(() {
+        _isLoadingAnalytics = false;
+        _analyticsError = 'Failed to refresh data: $e';
+      });
+    }
   }
 
   void _parseAnalyticsData(Map<String, dynamic> analyticsData) {
@@ -900,6 +961,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                           onTap: widget.onBack,
                         ),
                         Spacer(),
+                        _buildCircleIconButton(
+                          icon: Icons.refresh,
+                          onTap: _forceRefreshData,
+                        ),
                       ],
                     ),
                   ),

@@ -21,7 +21,8 @@ import {
   getWeeklyData,
   getCurrentWeatherForecast,
   getWeatherForecast,
-  createTestSensorData
+  createTestSensorData,
+  forceSyncThingSpeakData
 } from '../controllers/analyticsController';
 import { authenticate, authorize } from '../middleware/auth';
 import {
@@ -78,5 +79,8 @@ router.get('/weather/forecast/:farmId', validateObjectId('farmId'), getWeatherFo
 
 // Test data endpoint for development
 router.post('/test-data', createTestSensorData);
+
+// Force sync ThingSpeak data endpoint
+router.post('/farms/:farmId/sync', validateObjectId('farmId'), forceSyncThingSpeakData);
 
 export default router;

@@ -352,4 +352,24 @@ class OfflineCacheService {
       return false;
     }
   }
+
+  // Clear analytics cache for a specific farm
+  static Future<void> clearAnalyticsCache({String? farmId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final authState = await _getCurrentUser();
+      if (authState == null) return;
+
+      final cacheKey = '${_analyticsKey}_${authState['id']}${farmId != null ? '_$farmId' : ''}';
+      await prefs.remove(cacheKey);
+      
+      // Also clear the timestamp
+      await prefs.remove('${_lastSyncKey}_analytics${farmId != null ? '_$farmId' : ''}');
+      
+      print('💾 OFFLINE CACHE: Cleared analytics cache${farmId != null ? ' for farm $farmId' : ''}');
+    } catch (e) {
+      print('💾 OFFLINE CACHE: Error clearing analytics cache: $e');
+    }
+  }
+
 }

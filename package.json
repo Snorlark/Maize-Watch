@@ -13,6 +13,7 @@
     "stop": "pm2 stop all"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "pm2": "^5.3.0"
   },
   "engines": {

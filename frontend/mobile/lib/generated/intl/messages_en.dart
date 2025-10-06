@@ -428,7 +428,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "delete_prescription_confirmation": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to delete this completed prescription? This action cannot be undone.",
     ),
-    "description": MessageLookupByLibrary.simpleMessage("Description"),
+    "description": MessageLookupByLibrary.simpleMessage(
+      "Maximize your yields, minimize your worries.",
+    ),
     "description_prescription": MessageLookupByLibrary.simpleMessage(
       "Description",
     ),
