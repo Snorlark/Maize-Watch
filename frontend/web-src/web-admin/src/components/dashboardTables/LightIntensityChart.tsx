@@ -414,10 +414,12 @@ const LightIntensityDashboard = () => {
         newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+        // Go back one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
+        // Go back one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
@@ -438,10 +440,12 @@ const LightIntensityDashboard = () => {
         newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        // Go forward one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
+        // Go forward one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);

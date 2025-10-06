@@ -460,10 +460,12 @@ if (period === 'monthly') chartXKey = 'month';
         newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Previous week
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1); // Previous month
+        // Go back one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1); // Previous year
+        // Go back one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
@@ -480,10 +482,12 @@ if (period === 'monthly') chartXKey = 'month';
         newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000); // Next week
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1); // Next month
+        // Go forward one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1); // Next year
+        // Go forward one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);

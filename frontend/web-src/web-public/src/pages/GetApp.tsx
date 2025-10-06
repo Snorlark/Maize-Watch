@@ -67,7 +67,7 @@ export default function GetAppPage() {
                         Maximize your yields, minimize your worries.
                     </p> <br/>
                         <div data-aos="fade-up" data-aos-delay="300"  className="mx-auto flex">
-                        <button onClick={() => { window.location.href = 'https://drive.google.com/uc?export=download&id=19fMF8gSzLgx8qjB4lMZzTpH-7wd1UBfq'; }} className="bg-(--color-green) text-(--color-white) px-4 md:px-7 w-40 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-dgreen) mx-5 ease-in-out duration-250 flex items-center justify-center gap-2">
+                        <button onClick={() => { window.location.href = 'https://drive.google.com/uc?export=download&id=1TRXUWDJ5fchT0WUs2YZoc16K2qx-NSIP'; }} className="bg-(--color-green) text-(--color-white) px-4 md:px-7 w-40 py-2 md:py-3 rounded-md text-base md:text-lg font-semibold cursor-pointer hover:bg-(--color-dgreen) mx-5 ease-in-out duration-250 flex items-center justify-center gap-2">
                             <FaAndroid className="text-xl" />
                             Android
                         </button> 

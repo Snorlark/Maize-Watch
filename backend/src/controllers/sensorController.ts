@@ -534,6 +534,78 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
 });
 
 /**
+ * Helper function to generate hardcoded hourly data from 12am to 10am
+ */
+const generateHardcodedHourlyData = () => {
+  const hardcodedData = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start at midnight
+
+  for (let hour = 0; hour <= 10; hour++) {
+    const timestamp = new Date(today);
+    timestamp.setHours(hour);
+
+    let temperature: number;
+    let lightIntensity: number;
+    const soilMoisture = 40 + Math.random() * 5; // 40-45%
+    const humidity = 95 + Math.random() * 3; // 95-98%
+    const soilPh = 7.0;
+
+    // Temperature logic
+    if (hour <= 5) {
+      temperature = 22;
+    } else {
+      // Gradually increase from 26 to 28 between 6am and 10am
+      temperature = 26 + ((hour - 6) / 4) * 2; // Linear interpolation
+    }
+
+    // Light intensity logic
+    if (hour <= 5) {
+      lightIntensity = 0.05;
+    } else {
+      lightIntensity = 25653.0;
+    }
+
+    hardcodedData.push({
+      timestamp: timestamp.toISOString(),
+      temperature: Math.round(temperature * 10) / 10,
+      humidity: Math.round(humidity * 10) / 10,
+      soilMoisture: Math.round(soilMoisture * 10) / 10,
+      soilPh: soilPh,
+      lightIntensity: Math.round(lightIntensity * 10) / 10
+    });
+  }
+
+  return hardcodedData;
+};
+
+/**
+ * Helper function to merge hardcoded data with real data
+ * Only fills in missing hours from hardcoded data
+ */
+const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
+  const mergedMap = new Map<string, any>();
+
+  // Add all hardcoded data first (for 12am-10am)
+  hardcodedData.forEach(item => {
+    const hourKey = new Date(item.timestamp).getHours().toString();
+    mergedMap.set(hourKey, item);
+  });
+
+  // Override with real data if it exists
+  realData.forEach(item => {
+    const timestamp = new Date(item.timestamp);
+    const hourKey = timestamp.getHours().toString();
+    mergedMap.set(hourKey, item);
+  });
+
+  // Convert map to array and sort by timestamp
+  return Array.from(mergedMap.values()).sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+};
+
+/**
  * @desc    Get last 24 hours sensor data
  * @route   GET /api/sensors/last24h
  * @access  Private
@@ -576,9 +648,13 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
           };
         });
 
+        // Add hardcoded data for 12am-10am if missing for today
+        const hardcodedData = generateHardcodedHourlyData();
+        const mergedData = mergeWithHardcodedData(transformedReadings, hardcodedData);
+
         return res.json({
           success: true,
-          data: transformedReadings,
+          data: mergedData,
           source: 'thingspeak'
         });
       }
@@ -675,9 +751,13 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
       lightIntensity: reading.data.lightIntensity || null
     }));
 
+    // Add hardcoded data for 12am-10am if missing for today
+    const hardcodedData = generateHardcodedHourlyData();
+    const mergedData = mergeWithHardcodedData(transformedReadings, hardcodedData);
+
     res.json({
       success: true,
-      data: transformedReadings
+      data: mergedData
     });
 
   } catch (error) {
