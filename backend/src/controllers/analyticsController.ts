@@ -7,6 +7,7 @@ import thingSpeakService from '../services/thingspeakService';
 import sensorService from '../services/sensorService';
 import syncService from '../services/syncService';
 import CacheService from '../services/cacheService';
+import SyncService from '../services/syncService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
@@ -1333,5 +1334,48 @@ export const getWeatherForecast = catchAsync(async (req: Request, res: Response)
   } catch (error) {
     logger.error('Error getting extended weather forecast:', error);
     throw new AppError('Failed to get weather forecast', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+});
+
+/**
+ * @desc    Force sync ThingSpeak data for a specific farm
+ * @route   POST /api/analytics/farms/:farmId/sync
+ * @access  Private
+ */
+export const forceSyncThingSpeakData = catchAsync(async (req: Request, res: Response) => {
+  const { farmId } = req.params;
+  const currentUser = (req as any).user;
+
+  // Verify access to farm
+  const farm = await farmService.getFarmById(farmId);
+  if (farm.userId.toString() !== currentUser.id && 
+      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
+  }
+
+  try {
+    logger.info(`🔄 Force syncing ThingSpeak data for farm ${farmId} by user ${currentUser.id}`);
+    
+    // Initialize sync service
+    const syncServiceInstance = new SyncService();
+    
+    // Force sync data for this specific farm
+    await syncServiceInstance.syncFarmData(farmId);
+    
+    // Clear any cached analytics data for this farm
+    await CacheService.clearFarmAnalyticsCache(farmId);
+    
+    logger.info(`✅ Force sync completed for farm ${farmId}`);
+    
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'ThingSpeak data synced successfully',
+      farmId: farmId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error(`❌ Force sync failed for farm ${farmId}:`, error);
+    throw new AppError('Failed to sync ThingSpeak data', HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 });

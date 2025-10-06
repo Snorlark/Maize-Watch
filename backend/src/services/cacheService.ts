@@ -306,6 +306,33 @@ export class CacheService {
   }
 
   /**
+   * Clear farm analytics cache
+   */
+  static async clearFarmAnalyticsCache(farmId: string): Promise<void> {
+    try {
+      const key = this.KEYS.FARM_ANALYTICS(farmId);
+      await redisUtils.del(key);
+      logger.info(`Cleared analytics cache for farm ${farmId}`);
+    } catch (error) {
+      logger.error('Cache clear farm analytics error:', error);
+    }
+  }
+
+  /**
+   * Clear all ThingSpeak data cache
+   */
+  static async clearThingSpeakCache(): Promise<void> {
+    try {
+      // Clear all ThingSpeak related cache keys
+      const pattern = 'thingspeak:*';
+      await redisUtils.delPattern(pattern);
+      logger.info('Cleared all ThingSpeak cache');
+    } catch (error) {
+      logger.error('Cache clear ThingSpeak error:', error);
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   static async getCacheStats(): Promise<any> {

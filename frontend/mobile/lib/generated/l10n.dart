@@ -69,9 +69,14 @@ class S {
     return Intl.message('Settings', name: 'settings', desc: '', args: []);
   }
 
-  /// `Description`
+  /// `Maximize your yields, minimize your worries.`
   String get description {
-    return Intl.message('Description', name: 'description', desc: '', args: []);
+    return Intl.message(
+      'Maximize your yields, minimize your worries.',
+      name: 'description',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Log In`

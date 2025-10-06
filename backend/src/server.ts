@@ -6,11 +6,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { createServer } from 'http';
+import cron from 'node-cron';
 
 // Import configurations and utilities
 import connectDB, { getConnectionStatus } from './config/database';
 import { logger } from './utils/logger';
 import { initializeSocket } from './sockets/index';
+import SyncService from './services/syncService';
 
 // Import middleware
 import globalErrorHandler, { notFound, catchAsync } from './middleware/errorHandler';
@@ -139,16 +141,51 @@ async function startServer() {
     await connectDB();
     logger.info('Database connected successfully');
 
+    // Initialize sync service
+    const syncService = new SyncService();
+
     // Start server
     server.listen(Number(PORT), '0.0.0.0', () => {
       logger.info(`🟢 Backend API listening on port ${PORT}`);
       logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`⚡ Ready to accept connections`);
+      
+      // Start automatic data sync from ThingSpeak
+      startDataSync(syncService);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);
   }
+}
+
+// Start automatic data synchronization
+function startDataSync(syncService: SyncService) {
+  logger.info('🔄 Starting automatic data synchronization...');
+  
+  // Sync every 15 seconds
+  cron.schedule('*/15 * * * * *', async () => {
+    try {
+      logger.info('🔄 Running scheduled ThingSpeak data sync...');
+      await syncService.syncAllFarmsData();
+      logger.info('✅ Scheduled sync completed successfully');
+    } catch (error) {
+      logger.error('❌ Scheduled sync failed:', error);
+    }
+  });
+  
+  // Also run an immediate sync on startup (after 30 seconds delay)
+  setTimeout(async () => {
+    try {
+      logger.info('🔄 Running initial ThingSpeak data sync...');
+      await syncService.syncAllFarmsData();
+      logger.info('✅ Initial sync completed successfully');
+    } catch (error) {
+      logger.error('❌ Initial sync failed:', error);
+    }
+  }, 30000); // 30 seconds delay
+  
+  logger.info('⏰ Data sync scheduled every 15 seconds');
 }
 
 // Graceful shutdown
