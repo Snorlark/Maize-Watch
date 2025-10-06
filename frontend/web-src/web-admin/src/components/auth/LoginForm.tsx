@@ -142,7 +142,11 @@ const LoginForm: React.FC = () => {
   // Reset to password step
   const backToPasswordStep = () => {
     setCurrentStep('password');
+    // Clear login fields when going back from OTP step
+    setUsernameOrEmail('');
+    setPassword('');
     setOtp('');
+    setEmail('');
     setCountdown(0);
     setResendCountdown(0);
     setError('');
@@ -184,6 +188,11 @@ const LoginForm: React.FC = () => {
     setError('');
     setSuccess('');
     setForgotEmail('');
+    // Clear login fields when starting forgot password flow
+    setUsernameOrEmail('');
+    setPassword('');
+    setOtp('');
+    setEmail('');
   };
 
   // Send forgot password OTP
@@ -275,12 +284,21 @@ const LoginForm: React.FC = () => {
         // Reset form and go back to login
         setTimeout(() => {
           setCurrentStep('password');
+          // Clear all login fields
+          setUsernameOrEmail('');
+          setPassword('');
+          setOtp('');
+          setEmail('');
+          // Clear all forgot password fields
           setForgotEmail('');
           setForgotOtp('');
           setNewPassword('');
           setConfirmPassword('');
           setError('');
           setSuccess('');
+          setCountdown(0);
+          setForgotResendCountdown(0);
+          setResendCountdown(0);
         }, 2000);
       } else {
         setError(result.message || 'Failed to reset password');
@@ -296,6 +314,12 @@ const LoginForm: React.FC = () => {
   // Back to login from forgot password flow
   const backToLogin = () => {
     setCurrentStep('password');
+    // Clear all login fields
+    setUsernameOrEmail('');
+    setPassword('');
+    setOtp('');
+    setEmail('');
+    // Clear all forgot password fields
     setForgotEmail('');
     setForgotOtp('');
     setNewPassword('');
@@ -304,6 +328,7 @@ const LoginForm: React.FC = () => {
     setSuccess('');
     setCountdown(0);
     setForgotResendCountdown(0);
+    setResendCountdown(0);
   };
 
   // Handle resend forgot password OTP
