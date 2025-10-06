@@ -114,7 +114,7 @@ export default function ProductPage() {
               <div className=" space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="py-2 ">
-                    <h2 className=" text-right text-3xl md:text-6xl font-bold text-(--color-dgreen)">See the prototype.</h2>
+                    <h2 className=" text-right text-3xl md:text-5xl font-bold text-(--color-dgreen)">See the prototype.</h2>
                   </div>
 
                 </div>
