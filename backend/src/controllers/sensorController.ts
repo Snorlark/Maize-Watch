@@ -871,12 +871,15 @@ export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: 
     );
     
     if (!historicalData || historicalData.length === 0) {
-      logger.warn('No historical data received from ThingSpeak');
+      logger.warn('No historical data received from ThingSpeak, using hardcoded data');
+      // Return hardcoded data when ThingSpeak has no data
+      const hardcodedData = generateHardcodedHourlyData();
       return res.json({
         success: true,
-        data: [],
-        message: 'No historical data available',
-        source: 'thingspeak'
+        data: hardcodedData,
+        count: hardcodedData.length,
+        message: 'Using hardcoded data (ThingSpeak unavailable)',
+        source: 'hardcoded'
       });
     }
 
@@ -895,13 +898,17 @@ export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: 
       entry_id: reading.entry_id // Include ThingSpeak entry ID for debugging
     })).reverse(); // Reverse to get chronological order
 
-    logger.info(`✅ Successfully fetched ${transformedData.length} historical readings from ThingSpeak`);
+    // Add hardcoded data for 12am-10am if missing for today
+    const hardcodedData = generateHardcodedHourlyData();
+    const mergedData = mergeWithHardcodedData(transformedData, hardcodedData);
+
+    logger.info(`✅ Successfully fetched ${mergedData.length} historical readings (including hardcoded data)`);
 
     res.json({
       success: true,
-      data: transformedData,
-      count: transformedData.length,
-      source: 'thingspeak',
+      data: mergedData,
+      count: mergedData.length,
+      source: 'thingspeak-merged',
       message: 'Historical data fetched successfully'
     });
 
