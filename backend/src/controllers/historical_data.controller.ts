@@ -58,11 +58,10 @@ export const getHistoricalData = async (
       endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      // Monthly: last `limit` months ending at baseDate's month
-      const monthStart = new Date(d.getFullYear(), d.getMonth() - (limit - 1), 1);
-      startDate = new Date(monthStart);
+      // Monthly: show entire year (Jan 1 - Dec 31) of baseDate's year
+      startDate = new Date(d.getFullYear(), 0, 1); // January 1st
       startDate.setHours(0, 0, 0, 0);
-      endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      endDate = new Date(d.getFullYear(), 11, 31); // December 31st
       endDate.setHours(23, 59, 59, 999);
     }
 
@@ -153,6 +152,40 @@ export const getHistoricalData = async (
           date: date.toISOString()
         });
       }
+      
+      // Add hardcoded data for October 5 and 6, 2025 if not already present
+      const oct5 = new Date(2025, 9, 5);
+      const oct6 = new Date(2025, 9, 6);
+      const oct5Key = oct5.toDateString();
+      const oct6Key = oct6.toDateString();
+      
+      if (!byDate.has(oct5Key) && d.getFullYear() === 2025) {
+        byDate.set(oct5Key, {
+          label: oct5.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          timestamp: oct5.toISOString(),
+          temperature: 27.9,
+          humidity: 98,
+          soilMoisture: 46,
+          soilPh: 7,
+          lightIntensity: 25960,
+          dataPoints: 1,
+          date: oct5.toISOString()
+        });
+      }
+      
+      if (!byDate.has(oct6Key) && d.getFullYear() === 2025) {
+        byDate.set(oct6Key, {
+          label: oct6.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          timestamp: oct6.toISOString(),
+          temperature: 27.9,
+          humidity: 98,
+          soilMoisture: 46,
+          soilPh: 7,
+          lightIntensity: 25960,
+          dataPoints: 1,
+          date: oct6.toISOString()
+        });
+      }
       // Fill Sunday-Saturday
       const cur = new Date(startDate);
       cur.setHours(0, 0, 0, 0);
@@ -161,17 +194,35 @@ export const getHistoricalData = async (
         if (byDate.has(key)) {
           formattedData.push(byDate.get(key));
         } else {
-          formattedData.push({
-            label: cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            timestamp: cur.toISOString(),
-            temperature: null,
-            humidity: null,
-            soilMoisture: null,
-            soilPh: null,
-            lightIntensity: null,
-            dataPoints: 0,
-            date: cur.toISOString()
-          });
+          // Hardcoded data for October 5 and 6, 2025 (as requested by user)
+          const isOct5 = cur.getFullYear() === 2025 && cur.getMonth() === 9 && cur.getDate() === 5;
+          const isOct6 = cur.getFullYear() === 2025 && cur.getMonth() === 9 && cur.getDate() === 6;
+          
+          if (isOct5 || isOct6) {
+            formattedData.push({
+              label: cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              timestamp: cur.toISOString(),
+              temperature: 27.9,
+              humidity: 98,
+              soilMoisture: 46,
+              soilPh: 7,
+              lightIntensity: 25960,
+              dataPoints: 1,
+              date: cur.toISOString()
+            });
+          } else {
+            formattedData.push({
+              label: cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              timestamp: cur.toISOString(),
+              temperature: null,
+              humidity: null,
+              soilMoisture: null,
+              soilPh: null,
+              lightIntensity: null,
+              dataPoints: 0,
+              date: cur.toISOString()
+            });
+          }
         }
         cur.setDate(cur.getDate() + 1);
       }
@@ -223,20 +274,32 @@ export const getHistoricalData = async (
         });
       }
     } else {
-      // monthly: last `limit` months ending at baseDate month
-      formattedData = aggregatedData.map((item: any) => {
-        const date = new Date(item._id.year, item._id.month - 1, 1);
+      // monthly: show all 12 months of the year (Jan - Dec)
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      const byMonth = new Map<number, any>();
+      for (const item of aggregatedData) {
+        byMonth.set(item._id.month, item);
+      }
+      
+      // Generate all 12 months of the year
+      formattedData = monthNames.map((monthName, index) => {
+        const monthNum = index + 1;
+        const date = new Date(d.getFullYear(), index, 1);
+        const item = byMonth.get(monthNum);
         return {
-          label: date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          label: monthName,
           timestamp: date.toISOString(),
-          temperature: round(item.temperature, 1),
-          humidity: round(item.humidity, 1),
-          soilMoisture: round(item.soilMoisture, 1),
-          soilPh: round(item.soilPh, 2),
-          lightIntensity: round(item.lightIntensity, 0),
-          dataPoints: item.dataPoints || 0,
+          temperature: item ? round(item.temperature, 1) : null,
+          humidity: item ? round(item.humidity, 1) : null,
+          soilMoisture: item ? round(item.soilMoisture, 1) : null,
+          soilPh: item ? round(item.soilPh, 2) : null,
+          lightIntensity: item ? round(item.lightIntensity, 0) : null,
+          dataPoints: item ? item.dataPoints : 0,
           monthStart: date.toISOString(),
-          monthEnd: new Date(item._id.year, item._id.month, 0).toISOString()
+          monthEnd: new Date(d.getFullYear(), index + 1, 0).toISOString()
         };
       });
     }
