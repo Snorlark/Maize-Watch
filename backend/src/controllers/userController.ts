@@ -51,7 +51,7 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
       // String format: address contains the region name
       { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
     ];
-    
+
     // If there was already a search query, combine it with regional filter
     if (search) {
       query.$and = [
@@ -129,6 +129,8 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
  * @access  Private/Admin
  */
 export const createUser = catchAsync(async (req: Request, res: Response) => {
+  logger.info("🔥 createUser controller VERSION 2 - with assignedRegion 🔥");
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -141,9 +143,11 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  // Optional: log raw body to confirm the field arrives
+  logger.info("RAW req.body.assignedRegion:", (req.body as any).assignedRegion);
+
   const currentUser = (req as any).user;
-  
-  // Extract only the fields we need for user creation
+
   const {
     username,
     email,
@@ -151,7 +155,8 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     fullName,
     contactNumber,
     address,
-    role
+    role,
+    assignedRegion, // ✅ include
   } = req.body;
 
   const userData = {
@@ -162,10 +167,14 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     contactNumber,
     address,
     role: role || 'user',
-    isActive: true // Set default values
+    isActive: true,
+    assignedRegion, // ✅ include
   };
 
-  logger.info(`Create user request started by admin: ${currentUser.username}`, { userData: { ...userData, password: '[HIDDEN]' } });
+  logger.info(`Create user request started by admin: ${currentUser.username}`, {
+    userData: { ...userData, password: '[HIDDEN]' }
+  });
+
 
   // Check if username already exists
   const existingUser = await User.findOne({ username: userData.username });
@@ -279,9 +288,9 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
   }
 
   // Remove system-managed fields that shouldn't be updated via this endpoint
-  const systemFields = ['createdAt', 'lastLogin', 'loginAttempts', 'lockUntil', 'refreshTokens', 
-                        'passwordResetToken', 'passwordResetExpires', 'emailVerificationToken', 
-                        'twoFactorSecret', '_id', '__v'];
+  const systemFields = ['createdAt', 'lastLogin', 'loginAttempts', 'lockUntil', 'refreshTokens',
+    'passwordResetToken', 'passwordResetExpires', 'emailVerificationToken',
+    'twoFactorSecret', '_id', '__v'];
   systemFields.forEach(field => {
     if (updateData[field]) {
       delete updateData[field];
@@ -371,7 +380,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
   // Regional admin can only request deletion (soft delete)
   if (currentUser.role === USER_ROLES.REGIONAL_ADMIN) {
     logger.info(`Regional admin requesting deletion for user: ${user.username}`);
-    
+
     user.deletionPending = true;
     user.deletionRequestedBy = currentUser.id;
     user.deletionRequestedAt = new Date();
@@ -413,7 +422,7 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
 
   // Admin and Super Admin can perform hard delete
   logger.info(`Performing hard delete for user: ${user.username}`);
-  
+
   // Activity Log: User Deletion (log before deletion)
   try {
     await ActivityLogService.createLog({
@@ -460,24 +469,24 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
  */
 export const getPendingDeletions = catchAsync(async (req: Request, res: Response) => {
   const currentUser = (req as any).user;
-  
+
   let query: any = { deletionPending: true };
-  
+
   // Regional admins can only see deletion requests they made
   if (currentUser.role === USER_ROLES.REGIONAL_ADMIN) {
     query.deletionRequestedBy = currentUser.id;
   }
-  
+
   const pendingDeletions = await User.find(query)
     .populate('deletionRequestedBy', 'username email fullName')
     .select('username email fullName role deletionRequestedAt deletionReason deletionRequestedBy')
     .sort({ deletionRequestedAt: -1 });
-  
+
   logger.info('Fetched pending deletions', {
     requestedBy: currentUser.id,
     count: pendingDeletions.length
   });
-  
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     data: { pendingDeletions }
@@ -492,21 +501,21 @@ export const getPendingDeletions = catchAsync(async (req: Request, res: Response
 export const approveDeletion = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const currentUser = (req as any).user;
-  
+
   // Only super_admin can approve
   if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Only super admin can approve deletion requests', HTTP_STATUS.FORBIDDEN);
   }
-  
+
   const user = await User.findById(id);
   if (!user) {
     throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
   }
-  
+
   if (!user.deletionPending) {
     throw new AppError('No pending deletion request for this user', HTTP_STATUS.BAD_REQUEST);
   }
-  
+
   // Activity Log: Deletion Approved
   try {
     await ActivityLogService.createLog({
@@ -531,16 +540,16 @@ export const approveDeletion = catchAsync(async (req: Request, res: Response) =>
   } catch (error) {
     logger.error('Failed to log deletion approval:', error);
   }
-  
+
   // Perform hard delete
   await User.findByIdAndDelete(id);
-  
+
   logger.info('Deletion approved and user deleted', {
     userId: user._id,
     approvedBy: currentUser.id,
     username: user.username
   });
-  
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Deletion request approved and user deleted'
@@ -556,28 +565,28 @@ export const rejectDeletion = catchAsync(async (req: Request, res: Response) => 
   const { id } = req.params;
   const { rejectionReason } = req.body;
   const currentUser = (req as any).user;
-  
+
   // Only super_admin can reject
   if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Only super admin can reject deletion requests', HTTP_STATUS.FORBIDDEN);
   }
-  
+
   const user = await User.findById(id);
   if (!user) {
     throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
   }
-  
+
   if (!user.deletionPending) {
     throw new AppError('No pending deletion request for this user', HTTP_STATUS.BAD_REQUEST);
   }
-  
+
   // Clear deletion fields
   user.deletionPending = false;
   user.deletionRequestedBy = undefined;
   user.deletionRequestedAt = undefined;
   user.deletionReason = undefined;
   await user.save();
-  
+
   // Activity Log: Deletion Rejected
   try {
     await ActivityLogService.createLog({
@@ -601,13 +610,13 @@ export const rejectDeletion = catchAsync(async (req: Request, res: Response) => 
   } catch (error) {
     logger.error('Failed to log deletion rejection:', error);
   }
-  
+
   logger.info('Deletion rejected', {
     userId: user._id,
     rejectedBy: currentUser.id,
     username: user.username
   });
-  
+
   res.status(HTTP_STATUS.OK).json({
     success: true,
     message: 'Deletion request rejected'
@@ -671,7 +680,7 @@ export const toggleUserStatus = catchAsync(async (req: Request, res: Response) =
  */
 export const getUserStats = catchAsync(async (req: Request, res: Response) => {
   const currentUser = (req as any).user;
-  
+
   // Build region filter for regional_admin
   let regionFilter: any = {};
   if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
@@ -682,7 +691,7 @@ export const getUserStats = catchAsync(async (req: Request, res: Response) => {
       ]
     };
   }
-  
+
   const stats = await User.aggregate([
     { $match: regionFilter },
     {

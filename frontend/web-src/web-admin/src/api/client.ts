@@ -133,16 +133,23 @@ export const userService = {
       if (!authService.isAuthenticated()) {
         throw new Error('Authentication required');
       }
+      console.log("SENDING createUser payload:", userData);
       const response = await apiClient.post('/users', userData);
+
       if (response.data?.success && response.data?.data?.user) {
         return response.data.data.user;
       } else {
         return response.data?.user || response.data;
       }
     } catch (error: any) {
+      console.log("CREATE USER FAILED");
+      console.log("status:", error?.response?.status);
+      console.log("data:", error?.response?.data);          // ✅ this is err.response.data
+      console.log("message:", error?.message);
       throw error;
     }
   },
+
 
   updateUser: async (id: string, userData: Partial<User>): Promise<User> => {
     try {

@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger';
 import { EMAIL_TEMPLATES } from '../utils/constants';
 
-interface EmailConfig {
+interface EmailConfig extends nodemailer.TransportOptions {
   host: string;
   port: number;
   secure: boolean;
@@ -10,6 +10,8 @@ interface EmailConfig {
     user: string;
     pass: string;
   };
+  debug?: boolean;
+  logger?: boolean;
 }
 
 interface EmailOptions {
@@ -37,14 +39,27 @@ class EmailService {
         user: process.env.EMAIL_USER || '',
         pass: process.env.EMAIL_PASS || '',
       },
+      debug: true, // Enable debug output
+      logger: true, // Log SMTP traffic
     };
+
+    logger.info('Creating email transporter with config:', {
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      user: config.auth.user ? 'set' : 'not set', // Don't log actual email/password
+    });
 
     this.transporter = nodemailer.createTransport(config);
 
     // Verify connection configuration
     this.transporter.verify((error, success) => {
       if (error) {
-        logger.error('Email service configuration error:', error);
+        logger.error('Email service configuration error:', {
+          message: error.message,
+          code: (error as any).code,
+          stack: error.stack,
+        });
       } else {
         logger.info('Email service is ready to send messages');
       }

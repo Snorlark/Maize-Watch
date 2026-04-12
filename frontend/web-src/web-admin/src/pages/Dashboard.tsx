@@ -180,10 +180,12 @@ const [totalUsers, setTotalUsers] = useState<number | null>(null);
           </div>
         </div>
 
-        {/* Recent Activity Widget */}
-        <div className="mb-8">
-          <RecentActivityWidget maxItems={5} refreshInterval={15000} />
-        </div>
+        {/* Recent Activity: super_admin only (admin / regional_admin use dashboard + data views) */}
+        {authService.isSuperAdmin() && (
+          <div className="mb-8">
+            <RecentActivityWidget maxItems={5} refreshInterval={15000} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 interface ProtectedRouteProps {
   requireAdmin?: boolean;
   requireRegionalAdmin?: boolean;
+  // Regional admin ONLY (plus super admin). Does NOT include admin.
+  requireRegionalAdminOnly?: boolean;
   requireSuperAdmin?: boolean;
   redirectPath?: string;
 }
@@ -12,6 +14,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAdmin = false,
   requireRegionalAdmin = false,
+  requireRegionalAdminOnly = false,
   requireSuperAdmin = false,
   redirectPath = '/admin-portal-xyz123/login'
 }) => {
@@ -27,6 +30,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Super Admin check
   if (requireSuperAdmin && user?.role !== 'super_admin') {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  // Regional Admin ONLY check (allows regional_admin and super_admin roles)
+  if (
+    requireRegionalAdminOnly &&
+    user?.role !== 'regional_admin' &&
+    user?.role !== 'super_admin'
+  ) {
     return <Navigate to="/unauthorized" replace />;
   }
 
