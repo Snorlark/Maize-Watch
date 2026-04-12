@@ -23,21 +23,21 @@ type SortField = 'farmName' | 'location' | 'assignedUser' | 'fieldsCount' | 'upd
 type ActiveTab = 'users' | 'farms' | 'pending';
 
 export default function AccountManagement() {
-  const { 
-    users, 
-    loading, 
-    error, 
+  const {
+    users,
+    loading,
+    error,
     errorType,
-    fetchUsers, 
-    addUser, 
+    fetchUsers,
+    addUser,
     updateUserById,
     currentUser,
     clearError
   } = useUserContext();
-  
+
   // State for tab management
   const [activeTab, setActiveTab] = useState<ActiveTab>('users');
-  
+
   // State for user modals
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
@@ -61,8 +61,8 @@ export default function AccountManagement() {
   const [pendingDeletions, setPendingDeletions] = useState<any[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
 
-  // Check if user has regional_admin, admin or super_admin role
-  const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  // Check if user has regional_admin or super_admin role (admin should not have access here)
+  const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'super_admin';
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // Filter out users with pending deletion
@@ -132,7 +132,7 @@ export default function AccountManagement() {
   useEffect(() => {
     // First set authChecked to true to indicate we've performed the check
     setAuthChecked(true);
-    
+
     // Only fetch users if the user has admin access
     if (hasAdminAccess) {
       fetchUsers();
@@ -192,19 +192,19 @@ export default function AccountManagement() {
       hasAdminAccess,
       reason
     });
-    
+
     setActionLoading(true);
     try {
       const result = await userService.deleteUser(currentEditUser._id, reason);
       console.log('Delete request processed:', result);
-      
+
       // Show appropriate success message
       if (currentUser?.role === 'regional_admin') {
         alert('✅ Deletion request submitted successfully! Your request is now pending super admin approval.');
       } else {
         alert('✅ User deleted successfully!');
       }
-      
+
       setIsDeleteModalOpen(false);
       await fetchUsers(); // Refresh user list
       await fetchPendingDeletions(); // Refresh pending deletions
@@ -216,7 +216,7 @@ export default function AccountManagement() {
         data: err.response?.data,
         code: err.code
       });
-      
+
       // Provide specific error messages based on error type
       let errorMessage = 'Failed to delete user';
       if (err.code === 'ECONNABORTED') {
@@ -230,7 +230,7 @@ export default function AccountManagement() {
       } else {
         errorMessage = `${errorMessage}: ${err.message}`;
       }
-      
+
       alert(errorMessage);
     } finally {
       setActionLoading(false);
@@ -244,7 +244,7 @@ export default function AccountManagement() {
 
   // Farm Management Functions
   // Filter farms based on search term
-  const filteredFarms = farms.filter(farm => 
+  const filteredFarms = farms.filter(farm =>
     (farm.farmName || farm.fieldName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (farm.location || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (getUserDisplayName(farm.userId) || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -253,10 +253,10 @@ export default function AccountManagement() {
   // Sort farms
   const sortedFarms = [...filteredFarms].sort((a, b) => {
     if (sortField === null || sortDirection === null) return 0;
-    
+
     let valueA: string | number;
     let valueB: string | number;
-    
+
     switch (sortField) {
       case 'farmName':
         valueA = (a.farmName || a.fieldName || '').toLowerCase();
@@ -281,7 +281,7 @@ export default function AccountManagement() {
       default:
         return 0;
     }
-    
+
     if (typeof valueA === 'string' && typeof valueB === 'string') {
       return sortDirection === 'asc' ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
     } else {
@@ -354,14 +354,14 @@ export default function AccountManagement() {
   }
 
   return (
-    <div 
+    <div
       className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
-      style={{ 
-        '--text-xs': '12px', 
-        '--text-sm': '14px', 
-        '--text-base': '16px', 
-        '--text-lg': '18px', 
-        '--text-xl': '20px' 
+      style={{
+        '--text-xs': '12px',
+        '--text-sm': '14px',
+        '--text-base': '16px',
+        '--text-lg': '18px',
+        '--text-xl': '20px'
       } as React.CSSProperties}
     >
       <main className="max-w-7xl mx-auto">
@@ -376,8 +376,8 @@ export default function AccountManagement() {
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
-            {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 
-             currentUser?.role === 'regional_admin' ? 'Regional Admin Access' : 'Admin Access'}
+              {currentUser?.role === 'super_admin' ? 'Super Admin Access' :
+                currentUser?.role === 'regional_admin' ? 'Regional Admin Access' : 'Admin Access'}
             </span>
           </div>
         </div>
@@ -387,11 +387,10 @@ export default function AccountManagement() {
           <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm">
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
-                activeTab === 'users'
+              className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${activeTab === 'users'
                   ? 'bg-[#456C2D] text-white shadow-sm'
                   : 'text-[#456C2D] hover:bg-[#F0F8E8]'
-              }`}
+                }`}
               style={{ fontSize: 'var(--text-sm)' }}
             >
               <Users className="w-4 h-4" />
@@ -401,11 +400,10 @@ export default function AccountManagement() {
             {hasAdminAccess && (
               <button
                 onClick={() => setActiveTab('farms')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
-                  activeTab === 'farms'
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${activeTab === 'farms'
                     ? 'bg-[#456C2D] text-white shadow-sm'
                     : 'text-[#456C2D] hover:bg-[#F0F8E8]'
-                }`}
+                  }`}
                 style={{ fontSize: 'var(--text-sm)' }}
               >
                 <Sprout className="w-4 h-4" />
@@ -413,7 +411,7 @@ export default function AccountManagement() {
               </button>
             )}
             {/* Regional admin and above can access Pending Deletions */}
-            {hasAdminAccess && (
+            {/* {hasAdminAccess && (
               <button
                 onClick={() => setActiveTab('pending')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer ${
@@ -431,7 +429,8 @@ export default function AccountManagement() {
                   </span>
                 )}
               </button>
-            )}
+            )} */}
+
           </div>
         </div>
 
@@ -440,11 +439,11 @@ export default function AccountManagement() {
           <>
             {/* User Table */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <UserTable 
-                users={activeUsers} 
-                loading={loading} 
-                onEdit={handleOpenEditModal} 
-                onDelete={handleOpenDeleteModal} 
+              <UserTable
+                users={activeUsers}
+                loading={loading}
+                onEdit={handleOpenEditModal}
+                onDelete={handleOpenDeleteModal}
               />
             </div>
 
@@ -467,7 +466,7 @@ export default function AccountManagement() {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-[#1E441E]">Pending Deletion Requests</h2>
                 <p className="text-[#456C2D] mt-2">
-                  {isSuperAdmin 
+                  {isSuperAdmin
                     ? 'Review and approve or reject user deletion requests from regional admins'
                     : 'View your submitted deletion requests awaiting super admin approval'}
                 </p>
@@ -539,7 +538,7 @@ export default function AccountManagement() {
                 <table className="min-w-full bg-white rounded-xl shadow-md overflow-hidden">
                   <thead className="bg-[#456C2D] text-[#F5F5DC]">
                     <tr>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
                         onClick={() => handleSort('farmName')}
                       >
@@ -548,7 +547,7 @@ export default function AccountManagement() {
                           {getSortIcon('farmName')}
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
                         onClick={() => handleSort('location')}
                       >
@@ -557,7 +556,7 @@ export default function AccountManagement() {
                           {getSortIcon('location')}
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
                         onClick={() => handleSort('assignedUser')}
                       >
@@ -566,7 +565,7 @@ export default function AccountManagement() {
                           {getSortIcon('assignedUser')}
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
                         onClick={() => handleSort('fieldsCount')}
                       >
@@ -575,7 +574,7 @@ export default function AccountManagement() {
                           {getSortIcon('fieldsCount')}
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left cursor-pointer hover:bg-[#5A7A3A] transition-colors"
                         onClick={() => handleSort('updatedAt')}
                       >

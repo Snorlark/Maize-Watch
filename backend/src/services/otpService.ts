@@ -38,6 +38,17 @@ class OTPService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + this.OTP_EXPIRY_MINUTES);
 
+    // Log OTP to console for testing
+    if (process.env.NODE_ENV !== 'production') {
+      const timeLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 60000);
+      console.log('\n' + '='.repeat(60));
+      console.log(`TEST OTP for ${email} (${type})`);
+      console.log('='.repeat(60));
+      console.log(`OTP: ${otp}`);
+      console.log(`Expires in: ${timeLeft} minutes`);
+      console.log('='.repeat(60) + '\n');
+    }
+
     // Store OTP data
     const emailKey = email.toLowerCase();
     const storageKey = `${emailKey}:${type}`;
