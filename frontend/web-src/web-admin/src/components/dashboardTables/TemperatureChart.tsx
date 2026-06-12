@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -36,151 +35,31 @@ import {
 import UnifiedExportModal from '../UnifiedExportModal';
 import { RefreshIndicator } from '../ui/refresh-indicator';
 import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
-import { format } from "date-fns";
 
-// Types
-interface DataItem {
-  [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
-  value: number | null;
-  dataPoints?: number;
-  threshold: {
-    min: number;
-    max: number;
-    critical: number;
-  };
-  day?: string;
-  week?: string;
-  month?: string;
-  timestamp?: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: any[];
-  error?: string;
-  message?: string;
-}
-
-interface WeeklyOverviewItem {
-  dayOfWeek: number;
-  date: string;
-  dayName: string;
-  timestamp: string;
-  hasData: boolean;
-  dataPoints: number;
-  measurements: {
-    temperature: number | null;
-    humidity: number | null;
-    soil_moisture: number | null;
-    soil_ph: number | null;
-    light_intensity: number | null;
-  };
-}
-
-// Update the SensorReading interface to match your historical API structure
-interface SensorReading {
-  timestamp: string;
-  temperature: number;
-  humidity?: number;
-  soilMoisture?: number; // Changed from soil_moisture
-  lightIntensity?: number; // Changed from light_intensity
-  soilPh?: number; // Changed from soil_ph
-  nitrogen?: number;
-  phosphorus?: number;
-  potassium?: number;
-  created_at?: string;
-}
-
-
-// Temperature thresholds
-const TEMPERATURE_THRESHOLDS = {
-  min: 20, // Minimum optimal temperature
-  max: 30, // Maximum optimal temperature
-  critical: 35, // Critical temperature
-};
-
-// Color constants
-const TEMPERATURE_COLORS = {
-  primary: "#F97316", // Orange-500
-  min: "#FDBA74", // Orange-300
-  max: "#EA580C", // Orange-600
-  critical: "#C2410C", // Orange-700
-  background: "#FFF7ED", // Orange-50
-  text: "#9A3412", // Orange-800
-  trend: {
-    up: "#22C55E", // Green-500
-    down: "#EF4444", // Red-500
-    neutral: "#6B7280", // Gray-500
-  }
-};
+// Import the updated configuration
+import { apiService } from "../../api/config";
+import { CHART_CONFIG } from "../../api/utils/chartConfig";
+import { dateUtils } from "../../api/utils/dateUtils";
 
 // Utility Functions
 const formatDateRange = (start: Date, end: Date): string => {
-  return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'Asia/Manila'
+  };
+  return `${start.toLocaleDateString('en-PH', options)} - ${end.toLocaleDateString('en-PH', options)}`;
 };
 
 const getStartOfWeek = (date: Date): Date => {
-  console.log('getStartOfWeek input:', {
-    inputDate: date.toISOString(),
-    inputLocalDate: date.toDateString(),
-    inputDay: date.getDay(),
-    inputDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()]
-  });
-  
-  // Create a new date in local time to avoid timezone issues
-  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const day = start.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
-  // Calculate days to subtract to get to Sunday
-  // If it's already Sunday (day === 0), we don't subtract anything
-  const daysToSubtract = day; 
-  
-  // Subtract days to get to Sunday
-  start.setDate(start.getDate() - daysToSubtract);
-  start.setHours(0, 0, 0, 0);
-  
-  console.log('getStartOfWeek calculation:', {
-    originalDay: day,
-    originalDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day],
-    daysSubtracted: daysToSubtract,
-    resultDate: start.toISOString(),
-    resultLocalDate: start.toDateString(),
-    resultDay: start.getDay(),
-    resultDayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][start.getDay()],
-    isSunday: start.getDay() === 0
-  });
-  
-  // Verify we got Sunday
-  if (start.getDay() !== 0) {
-    console.error('CRITICAL ERROR: getStartOfWeek did not return a Sunday!', {
-      expected: 0,
-      actual: start.getDay(),
-      date: start.toISOString()
-    });
-    
-    // Emergency fix: force to previous Sunday
-    const emergencyStart = new Date(start);
-    emergencyStart.setDate(start.getDate() - start.getDay());
-    emergencyStart.setHours(0, 0, 0, 0);
-    
-    console.log('Emergency fix applied:', {
-      originalResult: start.toISOString(),
-      emergencyResult: emergencyStart.toISOString(),
-      emergencyDay: emergencyStart.getDay()
-    });
-    
-    return emergencyStart;
-  }
-  
-  return start;
+  const daysFromSunday = date.getDay();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysFromSunday);
 };
 
-
 const getEndOfWeek = (date: Date): Date => {
-  const end = new Date(date);
-  end.setDate(date.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return end;
+  const startOfWeek = getStartOfWeek(date);
+  return new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + 6, 23, 59, 59, 999);
 };
 
 const getStartOfMonth = (date: Date): Date => {
@@ -195,15 +74,13 @@ const getWeeksInMonth = (date: Date): number => {
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
   const firstWeekday = firstDay.getDay();
+  const lastWeekday = lastDay.getDay();
   const daysInMonth = lastDay.getDate();
-  return Math.ceil((daysInMonth + firstWeekday) / 7);
-};
 
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
+  let weeks = Math.ceil((daysInMonth + firstWeekday) / 7);
+  if (lastWeekday < firstWeekday) weeks++;
+
+  return weeks;
 };
 
 const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[]; xKey: string; dateRange: string } => {
@@ -271,27 +148,48 @@ const getDefaultData = (period: string, baseDate?: Date): { chartData: DataItem[
   }
 };
 
+
+interface DataItem {
+  [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
+  value: number | null;
+  dataPoints?: number;
+  threshold: {
+    min: number;
+    max: number;
+    critical: number;
+  };
+  hour?: string;
+  day?: string;
+  week?: string;
+  month?: string;
+  timestamp?: string;
+}
+
+
+// Use temperature configuration from the updated config
+const TEMPERATURE_CONFIG = CHART_CONFIG.temperature;
+const TEMPERATURE_THRESHOLDS = TEMPERATURE_CONFIG.thresholds;
+const TEMPERATURE_COLORS = TEMPERATURE_CONFIG.colors;
+
 // Custom Tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     const value = payload[0].value;
-    const threshold = data.threshold;
     
     let status = "Normal";
     let statusColor = "text-green-600";
-    let statusIcon = <Thermometer className="w-4 h-4" />;
     
     if (value === null || value === 0) {
       status = "No Data";
       statusColor = "text-gray-600";
-    } else if (value < threshold.min) {
+    } else if (value < TEMPERATURE_THRESHOLDS.min) {
       status = "Too Cold";
       statusColor = "text-blue-600";
-    } else if (value > threshold.critical) {
+    } else if (value > TEMPERATURE_THRESHOLDS.critical) {
       status = "Critical";
-      statusColor = "text-purple-600";
-    } else if (value > threshold.max) {
+      statusColor = "text-red-600";
+    } else if (value > TEMPERATURE_THRESHOLDS.max) {
       status = "Too Hot";
       statusColor = "text-orange-600";
     }
@@ -300,13 +198,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <div className={`p-2 rounded-full ${TEMPERATURE_COLORS.background}`}>
-            <Thermometer className={`w-4 h-4 text-orange-800`} />
+            <Thermometer className={`w-4 h-4 ${TEMPERATURE_COLORS.text}`} />
           </div>
           <p className="font-semibold text-gray-800">{label}</p>
         </div>
-        <p className="text-orange-500">{`Temperature: ${value || 0}°C`}</p>
+        <p className="text-orange-500">{`Temperature: ${value ? value.toFixed(1) : '0.0'}°C`}</p>
         <p className={`${statusColor} text-sm flex items-center gap-1`}>
-          {statusIcon}
+          <Thermometer className="w-3 h-3" />
           {`Status: ${status}`}
         </p>
         {data.dataPoints !== undefined && (
@@ -314,9 +212,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         )}
         <div className="mt-2 text-xs text-gray-500">
           <p>Thresholds:</p>
-          <p className="text-orange-300">Min: {threshold.min}°C</p>
-          <p className="text-orange-600">Max: {threshold.max}°C</p>
-          <p className="text-orange-700">Critical: {threshold.critical}°C</p>
+          <p className="text-green-600">Min: {TEMPERATURE_THRESHOLDS.min}°C</p>
+          <p className="text-orange-600">Max: {TEMPERATURE_THRESHOLDS.max}°C</p>
+          <p className="text-red-600">Critical: {TEMPERATURE_THRESHOLDS.critical}°C</p>
         </div>
       </div>
     );
@@ -325,7 +223,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const calculateTrend = (data: DataItem[]): { trend: 'up' | 'down' | 'neutral'; percentage: number } => {
-  const validData = data.filter(item => item.value !== null && item.value !== 0);
+  const validData = data.filter((item: DataItem) => item.value !== null && item.value !== 0);
   if (validData.length < 2) {
     return { trend: 'neutral', percentage: 0 };
   }
@@ -366,7 +264,7 @@ const getStatusBadge = (value: number | null) => {
   }
 };
 
-type ViewType = 'line' | 'bar' | 'list' | 'tabular';
+type ViewType = 'line' | 'bar' | 'tabular';
 
 const periodOptions = [
   { label: 'Daily', value: 'daily', icon: <Calendar className="h-4 w-4 mr-1" /> },
@@ -375,9 +273,9 @@ const periodOptions = [
 ];
 
 const viewTypeOptions = [
-  { label: 'Line', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
-  { label: 'Bar', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
-  { label: 'Table', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
+  { label: 'Line View', value: 'line', icon: <LineChart className="h-4 w-4 mr-1" /> },
+  { label: 'Bar Chart', value: 'bar', icon: <BarChart3 className="h-4 w-4 mr-1" /> },
+  { label: 'Table View', value: 'tabular', icon: <Table className="h-4 w-4 mr-1" /> },
 ];
 
 // Main Component
@@ -393,16 +291,6 @@ const TemperatureDashboard = () => {
   const [xKey, setXKey] = useState<string>('day');
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // API Configuration
-  const API_CONFIG = {
-    baseUrl: 'https://maize-watch.onrender.com',
-    endpoints: {
-      historical: '/api/sensors/historical',
-      weekly: '/api/sensors/weekly-overview',
-      latest: '/api/sensors/latest'
-    }
-  };
-
   // Intelligent refresh hook
   const {
     isRefreshing,
@@ -414,332 +302,147 @@ const TemperatureDashboard = () => {
     enabled: true,
     onRefresh: () => fetchData(overview, selectedDate, true)
   });
+  // Add this inside the TemperatureDashboard component, after the state declarations
+const renderTableCell = (item: DataItem) => {
+  const value = item[xKey];
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value.toString();
+  }
+  return '';
+};
 
-  // Enhanced API call with better error handling and logging
-  const makeApiCall = async (url: string): Promise<ApiResponse> => {
-    console.log('Making API request to:', url);
-    
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        // Add timeout
-        signal: AbortSignal.timeout(30000) // 30 second timeout
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('API response received:', {
-        success: data.success,
-        dataLength: Array.isArray(data.data) ? data.data.length : 'Not an array',
-        dataType: typeof data.data,
-        firstItem: Array.isArray(data.data) && data.data.length > 0 ? data.data[0] : null,
-        structure: data
-      });
-
-      return data;
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  };
-
-const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
+  // Updated fetchData function to properly use your MongoDB API
+  const fetchData = async (
+  period: 'daily' | 'weekly' | 'monthly',
+  baseDate: Date = new Date(),
+  silent: boolean = false
+) => {
   if (!silent) {
     setIsLoading(true);
   }
   setError(null);
 
   try {
-    let url: string;
-    let startDate: Date;
-    let endDate: Date;
-    let useWeeklyOverview = false;
+    console.log(`[TemperatureDashboard] Fetching ${period} data`);
 
-    // Determine which endpoint and date range to use
+    // Determine the appropriate limit based on period
+    let limit = 7; // Default for daily (7 days)
     switch (period) {
-      case 'daily': {
-        startDate = getStartOfWeek(baseDate);
-        endDate = getEndOfWeek(startDate);
-        
-        // Use weekly-overview with date parameters for daily view
-        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.weekly}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
-        useWeeklyOverview = true;
+      case 'weekly':
+        limit = 4; // 4 weeks in a month
         break;
-      }
-      case 'weekly': {
-        startDate = getStartOfMonth(baseDate);
-        endDate = getEndOfMonth(baseDate);
-        
-        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.historical}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
+      case 'monthly':
+        limit = 12; // 12 months in a year
         break;
-      }
-      case 'monthly': {
-        startDate = new Date(baseDate.getFullYear(), 0, 1);
-        endDate = new Date(baseDate.getFullYear(), 11, 31, 23, 59, 59, 999);
-        
-        url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.historical}?startDate=${startDate.toISOString()}endDate=${endDate.toISOString()}`;
-        break;
-      }
-      default:
-        throw new Error('Invalid period specified');
     }
 
-    console.log(`Fetching ${period} data for date range:`, {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      url,
-      useWeeklyOverview
-    });
+      // Use your apiService to fetch historical data, passing baseDate to align ranges
+      const result = await apiService.fetchHistoricalData(period, limit, baseDate);
 
-    const result = await makeApiCall(url);
-
-    if (!result.success) {
-      throw new Error(result.error || result.message || 'Failed to fetch data');
+    if (!result.success || !result.data) {
+      throw new Error(result.message || 'Failed to fetch temperature data');
     }
 
-    let processedData: DataItem[] = [];
-    const rawData = result.data;
-
-    // Check if we have valid data
-    if (!rawData || !Array.isArray(rawData)) {
-      console.warn('Invalid data format received:', rawData);
-      processedData = getDefaultData(period, baseDate).chartData;
-    } else if (rawData.length === 0) {
-      console.warn('No data available for the selected period');
-      processedData = getDefaultData(period, baseDate).chartData;
-    } else {
-      // Process the data based on period and data source
-      processedData = await processDataByPeriod(rawData, period, baseDate, startDate, endDate, useWeeklyOverview);
-    }
-
-    console.log('Final processed data:', {
+    // ✅ Now safe to log + properly type 'item'
+    console.log(`[TemperatureDashboard] Received data:`, {
       period,
-      dataLength: processedData.length,
-      itemsWithData: processedData.filter(item => item.value !== null && item.value !== 0).length,
-      sampleItems: processedData.slice(0, 3)
+      dataLength: result.data.length,
+      hasTemperatureData: result.data.some((item: DataItem) => item.temperature !== null)
     });
 
-    setChartData(processedData);
-    setDateRange(formatDateRange(startDate, endDate));
-    setError(null);
+    // ✅ Map with explicit type
+    const processedData: DataItem[] = result.data.map((item: any) => ({
+      ...item,
+      value: item.temperature ?? null,
+      day: period === 'daily' ? item.label : undefined,
+      week: period === 'weekly' ? item.label : undefined,
+      month: period === 'monthly' ? item.label : undefined,
+      threshold: TEMPERATURE_THRESHOLDS,
+    }));
 
-  } catch (error) {
-    console.error(`Error fetching ${period} data:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    setError(`Failed to fetch data: ${errorMessage}`);
-    
-    // Set default data on error
-    const defaultData = getDefaultData(period, baseDate);
-    setChartData(defaultData.chartData);
-    setXKey(defaultData.xKey);
-    setDateRange(defaultData.dateRange);
-  } finally {
-    setIsLoading(false);
-  }
-};
 
-const processDataByPeriod = async (
-  rawData: any[], 
-  period: string, 
-  baseDate: Date,
-  startDate: Date,
-  endDate: Date,
-  useWeeklyOverview: boolean = false
-): Promise<DataItem[]> => {
-  console.log(`Processing ${rawData.length} records for ${period} view`, {
-    baseDate: baseDate.toISOString(),
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    useWeeklyOverview,
-    sampleData: rawData[0]
-  });
+      // Calculate date range for display
+      let displayRange = '';
+      if (result.data.length > 0) {
+        const firstItem = result.rawData?.[0];
+        const lastItem = result.rawData?.[result.rawData.length - 1];
+        
+        if (firstItem && lastItem) {
+          switch (period) {
+            case 'daily':
+              if (firstItem.date && lastItem.date) {
+                displayRange = formatDateRange(new Date(firstItem.date), new Date(lastItem.date));
+              }
+              break;
+            case 'weekly':
+              if (firstItem.weekStart && lastItem.weekEnd) {
+                displayRange = formatDateRange(new Date(firstItem.weekStart), new Date(lastItem.weekEnd));
+              }
+              break;
+            case 'monthly':
+              if (firstItem.monthStart && lastItem.monthEnd) {
+                displayRange = formatDateRange(new Date(firstItem.monthStart), new Date(lastItem.monthEnd));
+              }
+              break;
+          }
+        }
+      }
 
-  switch (period) {
-    case 'daily': {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      // Fallback to calculated range if not available from data
+      if (!displayRange) {
+        let startDate: Date, endDate: Date;
+        switch (period) {
+          case 'daily':
+            startDate = dateUtils.getStartOfWeek(baseDate);
+            endDate = dateUtils.getEndOfWeek(startDate);
+            break;
+          case 'weekly':
+            startDate = dateUtils.getStartOfMonth(baseDate);
+            endDate = dateUtils.getEndOfMonth(baseDate);
+            break;
+          case 'monthly':
+            startDate = new Date(baseDate.getFullYear(), 0, 1);
+            endDate = new Date(baseDate.getFullYear(), 11, 31);
+            break;
+          default:
+            startDate = baseDate;
+            endDate = baseDate;
+        }
+        displayRange = formatDateRange(startDate, endDate);
+      }
+
+      // Set the appropriate xKey for chart rendering
+      // Set the appropriate xKey for chart rendering
+// xKey by period
+let chartXKey = 'day';
+if (period === 'weekly') chartXKey = 'week';
+if (period === 'monthly') chartXKey = 'month';
+
+      setChartData(processedData);
+      setXKey(chartXKey);
+      setDateRange(displayRange);
+      setError(null);
+
+      console.log(`[TemperatureDashboard] Data processed successfully:`, {
+        chartDataLength: processedData.length,
+        xKey: chartXKey,
+        dateRange: displayRange,
+        temperatureValues: processedData.map(item => item.temperature)
+      });
+
+    } catch (error) {
+      console.error(`[TemperatureDashboard] Error fetching ${period} data:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to fetch temperature data: ${errorMessage}`);
       
-      if (useWeeklyOverview) {
-        // Process weekly-overview data structure
-        console.log('Processing weekly-overview data for daily view');
-        setXKey('day');
-        
-        // Filter the weekly overview data to only include items within our target date range
-        const filteredData = rawData.filter((item: WeeklyOverviewItem) => {
-          const itemDate = new Date(item.date);
-          return itemDate >= startDate && itemDate <= endDate;
-        });
-        
-        console.log('Filtered weekly overview data:', {
-          originalCount: rawData.length,
-          filteredCount: filteredData.length,
-          targetDateRange: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
-          filteredItems: filteredData.map(item => ({ date: item.date, dayName: item.dayName, temperature: item.measurements?.temperature }))
-        });
-        
-        return days.map(day => {
-          const dayData = filteredData.find((item: WeeklyOverviewItem) => item.dayName === day);
-          
-          const result = {
-            day,
-            value: dayData?.measurements?.temperature || null,
-            dataPoints: dayData?.dataPoints || 0,
-            threshold: TEMPERATURE_THRESHOLDS
-          };
-          
-          console.log(`Day ${day}:`, result);
-          return result;
-        });
-      } else {
-        // Process historical data structure for daily view
-        console.log('Processing historical data for daily view');
-        const dailyData = new Map<string, { sum: number; count: number; }>();
-        days.forEach(day => dailyData.set(day, { sum: 0, count: 0 }));
-
-        rawData.forEach((item: SensorReading) => {
-          if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
-            return;
-          }
-
-          const date = new Date(item.timestamp);
-          // Filter data to only include items within the specified date range
-          if (date < startDate || date > endDate) {
-            return;
-          }
-
-          const dayKey = days[date.getDay()];
-          const current = dailyData.get(dayKey);
-          
-          if (current) {
-            current.sum += item.temperature;
-            current.count++;
-          }
-        });
-
-        console.log('Daily data processing result:', Object.fromEntries(dailyData));
-        
-        setXKey('day');
-        return days.map(day => {
-          const data = dailyData.get(day)!;
-          return {
-            day,
-            value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-            dataPoints: data.count,
-            threshold: TEMPERATURE_THRESHOLDS
-          };
-        });
-      }
+      // Set empty data on error
+      setChartData([]);
+      setXKey('day');
+      setDateRange('No data available');
+    } finally {
+      setIsLoading(false);
     }
-
-    case 'weekly': {
-      const weeksInMonth = getWeeksInMonth(baseDate);
-      const weeklyData = new Map<string, { sum: number; count: number; }>();
-
-      // Initialize all weeks
-      for (let i = 1; i <= weeksInMonth; i++) {
-        weeklyData.set(`Week ${i}`, { sum: 0, count: 0 });
-      }
-
-      // Process historical data for weekly view
-      rawData.forEach((item: SensorReading) => {
-        if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
-          return;
-        }
-
-        const date = new Date(item.timestamp);
-        // Filter data to only include items within the specified date range
-        if (date < startDate || date > endDate) {
-          return;
-        }
-
-        // Check if the date falls within the target month
-        if (date.getMonth() !== baseDate.getMonth() || date.getFullYear() !== baseDate.getFullYear()) {
-          return;
-        }
-
-        const weekNumber = getWeekNumberInMonth(date);
-        const weekKey = `Week ${weekNumber}`;
-
-        if (weeklyData.has(weekKey)) {
-          const current = weeklyData.get(weekKey)!;
-          current.sum += item.temperature;
-          current.count++;
-        }
-      });
-
-      console.log('Weekly data processing result:', Object.fromEntries(weeklyData));
-
-      setXKey('week');
-      return Array.from(weeklyData.entries()).map(([week, data]) => ({
-        week,
-        value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-        dataPoints: data.count,
-        threshold: TEMPERATURE_THRESHOLDS
-      }));
-    }
-
-    case 'monthly': {
-      const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-      const monthlyData = new Map<string, { sum: number; count: number; }>();
-
-      // Initialize all months
-      monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0 }));
-
-      // Process historical data for monthly view
-      rawData.forEach((item: SensorReading) => {
-        if (!item.timestamp || typeof item.temperature !== 'number' || isNaN(item.temperature)) {
-          return;
-        }
-
-        const date = new Date(item.timestamp);
-        // Filter data to only include items within the specified date range
-        if (date < startDate || date > endDate) {
-          return;
-        }
-
-        // Check if the date falls within the target year
-        if (date.getFullYear() !== baseDate.getFullYear()) {
-          return;
-        }
-
-        const monthKey = monthNames[date.getMonth()];
-        const current = monthlyData.get(monthKey)!;
-        current.sum += item.temperature;
-        current.count++;
-      });
-
-      console.log('Monthly data processing result:', Object.fromEntries(monthlyData));
-
-      setXKey('month');
-      return monthNames.map(month => {
-        const data = monthlyData.get(month)!;
-        return {
-          month,
-          value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-          dataPoints: data.count,
-          threshold: TEMPERATURE_THRESHOLDS
-        };
-      });
-    }
-
-    default:
-      return getDefaultData(period, baseDate).chartData;
-  }
-};
+  };
 
   // Fetch data when overview or selectedDate changes
   useEffect(() => {
@@ -750,77 +453,84 @@ const processDataByPeriod = async (
     setOverview(newOverview);
   };
 
-const handlePreviousPeriod = () => {
-  let newDate: Date;
-  switch (overview) {
-    case 'daily':
-      // Move to the previous week's Sunday
-      const currentWeekStart = getStartOfWeek(selectedDate);
-      console.log('Previous period - current week start:', currentWeekStart.toISOString());
-      newDate = new Date(currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-      console.log('Previous period - new date:', newDate.toISOString());
-      break;
-    case 'weekly':
-      newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
-      break;
-    case 'monthly':
-      newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
-      break;
-    default:
-      newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
-  }
-  console.log('handlePreviousPeriod result:', { overview, oldDate: selectedDate.toISOString(), newDate: newDate.toISOString() });
-  setSelectedDate(newDate);
-};
+  const handlePreviousPeriod = () => {
+    let newDate: Date;
+    switch (overview) {
+      case 'daily':
+        newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000); // Previous week
+        break;
+      case 'weekly':
+        // Go back one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, selectedDate.getDate());
+        break;
+      case 'monthly':
+        // Go back one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), selectedDate.getDate());
+        break;
+      default:
+        newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
+    }
+    setSelectedDate(newDate);
+  };
 
+  const handleNextPeriod = () => {
+    const now = new Date();
+    
+    let newDate: Date;
+    switch (overview) {
+      case 'daily':
+        newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000); // Next week
+        break;
+      case 'weekly':
+        // Go forward one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
+        break;
+      case 'monthly':
+        // Go forward one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), selectedDate.getDate());
+        break;
+      default:
+        newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
+    }
 
-const handleNextPeriod = () => {
-  const now = new Date();
-  
-  let newDate: Date;
-  switch (overview) {
-    case 'daily':
-      // Move to the next week's Sunday
-      const currentWeekStart = getStartOfWeek(selectedDate);
-      newDate = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'weekly':
-      newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
-      break;
-    case 'monthly':
-      newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
-      break;
-    default:
-      newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
-  }
-
-  // Don't navigate to future dates
-  if (newDate > now) {
-    newDate = now;
-  }
-  console.log('handleNextPeriod:', { overview, selectedDate, newDate, now });
-  setSelectedDate(newDate);
-};
+    // Don't navigate to future dates beyond current time
+    if (newDate > now) {
+      newDate = now;
+    }
+    setSelectedDate(newDate);
+  };
 
   const handleExport = () => {
     setShowExportModal(true);
   };
 
   const renderSummary = () => {
-    const validData = chartData.filter(item => item.value !== null && item.value !== 0);
+    // const validData = chartData.filter((item: ChartDataItem) => item.temperature !== null && item.temperature !== 0);
+    const validData = chartData.filter(
+  (item: DataItem) =>
+    item.temperature !== null &&
+    item.temperature !== undefined &&
+    item.temperature !== 0
+);
+    
     if (validData.length === 0) {
       return (
-        <div className="mt-4 p-4 bg-muted rounded-lg">
-          <p className="text-sm text-muted-foreground">No temperature data available for the selected period</p>
-          <p className="text-xs text-muted-foreground mt-2">
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600">No temperature data available for the selected period</p>
+          <p className="text-xs text-gray-500 mt-2">
             Try selecting a different time period or check if sensors are collecting data.
           </p>
         </div>
       );
     }
 
-    const currentValue = validData[validData.length - 1].value as number;
-    const averageValue = validData.reduce((sum, item) => sum + (item.value as number), 0) / validData.length;
+    const currentValue = validData[validData.length - 1].temperature as number;
+    const averageValue = validData.reduce(
+  (sum, item: DataItem) => sum + (item.temperature as number),
+  0
+) / validData.length;
+    const maxValue = Math.max(...validData.map(item => item.temperature as number));
+    const minValue = Math.min(...validData.map(item => item.temperature as number));
     const trend = calculateTrend(validData);
 
     let status = 'Normal';
@@ -838,44 +548,64 @@ const handleNextPeriod = () => {
 
     return (
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-card rounded-lg border">
-          <h3 className="text-sm font-medium text-muted-foreground">Current Status</h3>
+        <div className="p-4 bg-white rounded-lg border">
+          <h3 className="text-sm font-medium text-gray-500">Current Status</h3>
           <p className={`text-xl lg:text-2xl font-bold ${statusColor}`}>{status}</p>
-          <p className="text-sm text-muted-foreground">Current: {currentValue.toFixed(1)}°C</p>
+          <p className="text-sm text-gray-500">Current: {currentValue.toFixed(1)}°C</p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
-          <h3 className="text-sm font-medium text-muted-foreground">Average</h3>
-          <p className="text-xl lg:text-2xl font-bold">{averageValue.toFixed(1)}°C</p>
-          <p className="text-sm text-muted-foreground">Based on {validData.length} data points</p>
+        <div className="p-4 bg-white rounded-lg border">
+          <h3 className="text-sm font-medium text-gray-500">Statistics</h3>
+          <p className="text-lg font-semibold">Avg: {averageValue.toFixed(1)}°C</p>
+          <p className="text-sm text-gray-500">Min: {minValue.toFixed(1)}°C | Max: {maxValue.toFixed(1)}°C</p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
-          <h3 className="text-sm font-medium text-muted-foreground">Trend</h3>
+        <div className="p-4 bg-white rounded-lg border">
+          <h3 className="text-sm font-medium text-gray-500">Trend</h3>
           <div className="flex items-center gap-2">
-            <span className={`text-xl lg:text-2xl font-bold ${trend.trend === 'up' ? 'text-green-600' :
-                trend.trend === 'down' ? 'text-red-600' :
-                  'text-gray-600'
-              }`}>
+            <span className={`text-xl font-bold ${
+              trend.trend === 'up' ? 'text-green-600' :
+              trend.trend === 'down' ? 'text-red-600' :
+              'text-gray-600'
+            }`}>
               {trend.trend === 'up' ? '↑' : trend.trend === 'down' ? '↓' : '→'}
             </span>
-            <p className="text-xl lg:text-2xl font-bold">
+            <p className="text-lg font-semibold">
               {trend.percentage > 0 ? `${trend.percentage}%` : 'Stable'}
             </p>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-500">
             {trend.trend === 'up' ? 'Increasing' :
               trend.trend === 'down' ? 'Decreasing' :
                 'No significant change'}
           </p>
         </div>
-        <div className="p-4 bg-card rounded-lg border">
-          <h3 className="text-sm font-medium text-muted-foreground">Thresholds</h3>
-          <p className="text-sm">Min: {TEMPERATURE_THRESHOLDS.min}°C</p>
-          <p className="text-sm">Max: {TEMPERATURE_THRESHOLDS.max}°C</p>
-          <p className="text-sm text-red-600">Critical: {TEMPERATURE_THRESHOLDS.critical}°C</p>
+        <div className="p-4 bg-white rounded-lg border">
+          <h3 className="text-sm font-medium text-gray-500">Data Quality</h3>
+          <p className="text-lg font-semibold">{validData.length} readings</p>
+          <p className="text-sm text-gray-500">
+            {Math.round((validData.length / chartData.length) * 100)}% coverage
+          </p>
         </div>
       </div>
     );
   };
+
+  // Small legend for threshold guideline colors
+  const ThresholdLegend = () => (
+    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#22C55E' }} />
+        <span>Min</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#F59E0B' }} />
+        <span>Max</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: '#EF4444' }} />
+        <span>Critical</span>
+      </div>
+    </div>
+  );
 
   const renderChart = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
@@ -887,20 +617,36 @@ const handleNextPeriod = () => {
       </Alert>
     );
 
-    const displayData = chartData.map(item => ({
-      ...item,
-      value: item.value ?? 0,
-      threshold: TEMPERATURE_THRESHOLDS
-    }));
+    if (chartData.length === 0) {
+      return (
+        <div className="h-[300px] sm:h-[400px] flex items-center justify-center">
+          <div className="text-center">
+            <Thermometer className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-600">No data available</p>
+            <p className="text-sm text-gray-500">Try selecting a different time period</p>
+          </div>
+        </div>
+      );
+    }
+
+    const displayData = (chartData.length === 0 ?
+      getDefaultData(overview, selectedDate).chartData :
+      chartData.filter(item => item.value !== null && item.value !== undefined)
+        .map(item => ({
+          ...item,
+          value: Number(item.value), // Ensure value is always a number
+          threshold: TEMPERATURE_THRESHOLDS
+        })));
+
 
     if (viewType === 'tabular') {
       return (
-        <div className="overflow-x-auto max-h-[300px] sm:max-h-[500px]">
+        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {xKey === 'day' ? 'Day' : xKey === 'week' ? 'Week' : 'Month'}
+                  {overview.charAt(0).toUpperCase() + overview.slice(1)}
                 </th>
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Temperature (°C)
@@ -908,19 +654,25 @@ const handleNextPeriod = () => {
                 <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Data Points
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {displayData.map((item, index) => (
+              {displayData.map((item: DataItem, index: number) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {renderTableCell(item)}
+                  {renderTableCell(item)}
                   </td>
-                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.value ? item.value.toFixed(1) : '0.0'}°C
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {item.value?.toFixed(1) ?? '0.0'}°C
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                    {getStatusBadge(item.value)}
+                  {getStatusBadge(item.value!)}
+                  </td>
+                  <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {item.dataPoints}
                   </td>
                 </tr>
               ))}
@@ -931,279 +683,268 @@ const handleNextPeriod = () => {
     }
 
     const thresholdLines = [
-      <ReferenceLine key="min" y={TEMPERATURE_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" label={{ value: 'Min', position: 'right', fill: 'green' }} />,
-      <ReferenceLine key="max" y={TEMPERATURE_THRESHOLDS.max} stroke="orange" strokeDasharray="3 3" label={{ value: 'Max', position: 'right', fill: 'orange' }} />,
-      <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
+      <ReferenceLine key="min" y={TEMPERATURE_THRESHOLDS.min} stroke="#22C55E" strokeDasharray="3 3" />,
+      <ReferenceLine key="max" y={TEMPERATURE_THRESHOLDS.max} stroke="#F59E0B" strokeDasharray="3 3" />,
+      <ReferenceLine key="critical" y={TEMPERATURE_THRESHOLDS.critical} stroke="#EF4444" strokeDasharray="3 3" />,
     ];
+    // Responsive chart margins and settings similar to SoilMoistureChart
+    const chartMargins = {
+      top: 20,
+      right: 20,
+      left: 10,
+      bottom: window.innerWidth < 640 ? 40 : 60,
+    };
 
     if (viewType === 'line') {
       return (
-        <div className="h-[300px] sm:h-[400px] lg:h-[500px] p-2 sm:p-4 mb-4">
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] w-full p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={displayData}
-              margin={{ top: 20, right: 15, left: 10, bottom: 60 }}
-            >
+            <LineChart data={displayData} margin={chartMargins}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey={xKey}
-                height={80}
-                tick={{ fontSize: 10 }}
+                height={window.innerWidth < 640 ? 50 : 80}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                 angle={window.innerWidth < 640 ? -45 : 0}
                 textAnchor={window.innerWidth < 640 ? 'end' : 'middle'}
-                dy={10}
+                dy={window.innerWidth < 640 ? 5 : 10}
                 padding={{ left: 20, right: 20 }}
-                interval="preserveStartEnd"
+                interval={window.innerWidth < 640 ? 1 : 0}
               />
               <YAxis
                 domain={[0, 50]}
-                tick={{ fontSize: 10 }}
-                tickFormatter={(value) => `${value}°C`}
-                width={50}
+                tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                tickFormatter={(value: number) => `${value}°C`}
+                width={window.innerWidth < 640 ? 50 : 60}
                 tickMargin={5}
                 axisLine={{ stroke: '#666' }}
                 tickLine={{ stroke: '#666' }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend
+                verticalAlign="top"
+                align="left"
+                layout="horizontal"
+                height={36}
+                wrapperStyle={{ width: '100%', fontSize: window.innerWidth < 640 ? 12 : 14 }}
+              />
               <Line
                 type="monotoneX"
                 dataKey="value"
-                name="Temperature"
-                stroke="#F97316"
+                name="Temp"
+                stroke={TEMPERATURE_COLORS.primary}
                 strokeWidth={2}
-                dot={{ fill: '#fff', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: '#fff', stroke: '#F97316', strokeWidth: 2 }}
-                connectNulls={false}
+                dot={{ fill: '#fff', strokeWidth: 2, r: window.innerWidth < 640 ? 3 : 4 }}
+                activeDot={{ r: window.innerWidth < 640 ? 5 : 6, fill: '#fff', stroke: TEMPERATURE_COLORS.primary, strokeWidth: 2 }}
+                connectNulls={true}
                 isAnimationActive={true}
                 animationDuration={500}
               />
               {thresholdLines}
             </LineChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
 
     if (viewType === 'bar') {
       return (
-        <div className="h-[300px] sm:h-[400px] lg:h-[500px] p-2 sm:p-4 mb-4">
+        <div className="h-[300px] sm:h-[400px] lg:h-[450px] w-full p-2 sm:p-4 mb-4">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={displayData}
-              margin={{ top: 20, right: 15, left: 10, bottom: 60 }}
-            >
+            <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey={xKey}
                 height={80}
-                tick={{ fontSize: 10 }}
-                angle={window.innerWidth < 640 ? -45 : 0}
-                textAnchor={window.innerWidth < 640 ? 'end' : 'middle'}
-                dy={10}
-                padding={{ left: 20, right: 20 }}
-                interval="preserveStartEnd"
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor={'end'}
+                interval={0}
               />
               <YAxis
                 domain={[0, 50]}
-                tick={{ fontSize: 10 }}
-                tickFormatter={(value) => `${value}°C`}
-                width={50}
-                tickMargin={5}
-                axisLine={{ stroke: '#666' }}
-                tickLine={{ stroke: '#666' }}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value: number) => `${value}°C`}
+                width={60}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" height={36} />
+              <Legend
+                verticalAlign="top"
+                align="left"
+                layout="horizontal"
+                wrapperStyle={{ width: '100%', fontSize: window.innerWidth < 640 ? 12 : 14 }}
+              />
               <Bar
                 dataKey="value"
-                name="Temperature"
-                fill="#F97316"
+                name="Temp"
+                fill={TEMPERATURE_COLORS.primary}
                 radius={[4, 4, 0, 0]}
               />
               {thresholdLines}
             </BarChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
     return null;
   };
-
-  const renderTableCell = (item: DataItem) => {
-    const value = item[xKey];
-    if (typeof value === 'string' || typeof value === 'number') {
-      return value.toString();
-    }
-    return '';
-  };
-
+  
   return (
-    <div className="w-full max-w-7xl mx-auto overflow-x-hidden">
-      <Card className="w-full">
-        <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
-                  <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Temperature Dashboard</h1>
-                  <p className="text-sm text-muted-foreground truncate">{dateRange}</p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviousPeriod}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    <span className="hidden xs:inline">
-                      {overview === 'daily' ? 'Prev Week' :
-                        overview === 'weekly' ? 'Prev Month' :
-                          'Prev Year'}
+    <Card className="w-full mx-auto max-w-7xl">
+      <CardHeader className="px-4 sm:px-6">
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+              <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Temperature Dashboard</h1>
+              <p className="text-sm text-gray-500 truncate">{dateRange}</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPeriod}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+              >
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPeriod}
+                className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
+              >
+                Next
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="flex items-center justify-center text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </div>
+      </CardHeader>
+      
+      <CardContent className="px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-4 gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+          <div className="relative">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-[180px] justify-between">
+                  <div className="flex items-center">
+                    {periodOptions.find(option => option.value === overview)?.icon || <Calendar className="h-4 w-4 mr-2" />}
+                    <span className="hidden sm:inline">
+                      {periodOptions.find(option => option.value === overview)?.label || "Select period"}
                     </span>
-                    <span className="xs:hidden">Prev</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPeriod}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    <span className="hidden xs:inline">
-                      {overview === 'daily' ? 'Next Week' :
-                        overview === 'weekly' ? 'Next Month' :
-                          'Next Year'}
+                    <span className="sm:hidden">
+                      {overview ? overview.charAt(0).toUpperCase() + overview.slice(1) : "Period"}
                     </span>
-                    <span className="xs:hidden">Next</span>
-                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-                  </Button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="flex items-center justify-center text-xs sm:text-sm px-2 sm:px-3"
-                >
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  <span className="hidden sm:inline">Export Data</span>
-                  <span className="sm:hidden">Export</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 ml-2" />
                 </Button>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between mb-3 gap-3">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-              <div className="relative">
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px] justify-between">
-                      <div className="flex items-center">
-                        {periodOptions.find(option => option.value === overview)?.icon || <Calendar className="h-4 w-4 mr-2" />}
-                        <span className="hidden sm:inline">
-                          {periodOptions.find(option => option.value === overview)?.label || "Select period"}
-                        </span>
-                        <span className="sm:hidden">
-                          {overview ? overview.charAt(0).toUpperCase() + overview.slice(1) : "Period"}
-                        </span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    sideOffset={5}
-                    className="z-50 min-w-[180px]"
-                    avoidCollisions={true}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={5}
+                className="z-50 min-w-[180px]"
+                avoidCollisions={true}
+              >
+                {periodOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => handleOverviewChange(option.value as 'daily' | 'weekly' | 'monthly')}
                   >
-                    {periodOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => handleOverviewChange(option.value as 'daily' | 'weekly' | 'monthly')}
-                      >
-                        <div className="flex items-center">
-                          {option.icon}
-                          <span className="ml-2">{option.label}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-              <div className="relative">
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full sm:w-[180px] justify-between">
-                      <div className="flex items-center">
-                        {viewType === 'line' ? <LineChart className="h-4 w-4 mr-2" /> :
-                          viewType === 'bar' ? <BarChart3 className="h-4 w-4 mr-2" /> :
-                            <Table className="h-4 w-4 mr-2" />}
-                        <span className="hidden sm:inline">
-                          {viewType.charAt(0).toUpperCase() + viewType.slice(1)} View
-                        </span>
-                        <span className="sm:hidden">
-                          {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
-                        </span>
-                      </div>
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="start"
-                    sideOffset={5}
-                    className="z-50 min-w-[180px]"
-                    avoidCollisions={true}
+          <div className="relative">
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-[180px] justify-between">
+                  <div className="flex items-center">
+                    {viewTypeOptions.find(option => option.value === viewType)?.icon || <LineChart className="h-4 w-4 mr-2" />}
+                    <span className="hidden sm:inline">
+                      {viewTypeOptions.find(option => option.value === viewType)?.label || "Select view"}
+                    </span>
+                    <span className="sm:hidden">
+                      {viewType === 'line' ? 'Line' : viewType === 'bar' ? 'Bar' : 'Table'}
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={5}
+                className="z-50 min-w-[180px]"
+                avoidCollisions={true}
+              >
+                {viewTypeOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setViewType(option.value as ViewType)}
                   >
-                    {viewTypeOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => setViewType(option.value as ViewType)}
-                      >
-                        <div className="flex items-center">
-                          {option.icon}
-                          <span className="ml-2">{option.label}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            <div className="flex justify-center sm:justify-end">
-              <RefreshIndicator
-                isRefreshing={isRefreshing}
-                lastRefreshTime={lastRefreshTime}
-                autoRefreshEnabled={autoRefreshEnabled}
-                onToggleAutoRefresh={toggleAutoRefresh}
-              />
-            </div>
+                    <div className="flex items-center">
+                      {option.icon}
+                      <span className="ml-2">{option.label}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
 
-          <div ref={chartRef} className="h-[300px] sm:h-[400px] lg:h-[450px] mb-2">
-            {renderChart()}
-          </div>
-          {renderSummary()}
-        </CardContent>
-        <UnifiedExportModal
-          isOpen={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          currentOverview={overview}
-          chartData={chartData}
-          chartRef={chartRef}
-          chartType="temperature"
-          dateRange={dateRange}
-        />
-      </Card>
-    </div>
+        <div className="flex justify-center sm:justify-end">
+          <RefreshIndicator
+            isRefreshing={isRefreshing}
+            lastRefreshTime={lastRefreshTime}
+            autoRefreshEnabled={autoRefreshEnabled}
+            onToggleAutoRefresh={toggleAutoRefresh}
+          />
+        </div>
+      </div>
+
+      <div ref={chartRef} className="mb-4">
+        {renderChart()}
+      </div>
+      
+      {renderSummary()}
+      </CardContent>
+      
+      <UnifiedExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        currentOverview={overview}
+        chartData={chartData}
+        chartRef={chartRef}
+        chartType="temperature"
+        dateRange={dateRange}
+      />
+    </Card>
   );
 };
 

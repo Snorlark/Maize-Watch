@@ -2,15 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceLine, Legend } from 'recharts';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
-import { Calendar, Download, Clock, BarChart3, Table, Sun, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Download, BarChart3, Table, Sun, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import UnifiedExportModal from '../UnifiedExportModal';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import {
@@ -21,6 +14,7 @@ import {
 } from "../ui/dropdown-menu";
 import { RefreshIndicator } from '../ui/refresh-indicator';
 import { useIntelligentRefresh } from '../../hooks/useIntelligentRefresh';
+import { apiService } from '../../api/config';
 
 // Types
 interface DataItem {
@@ -271,21 +265,12 @@ const getWeeksInMonth = (date: Date): number => {
   if (lastWeekday < firstWeekday) weeks++;
 
   return weeks;
-};
-
-const getWeekNumberInMonth = (date: Date): number => {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const firstWeekday = firstDay.getDay();
-  const dayOfMonth = date.getDate();
-
-  // Calculate week number (1-based)
-  return Math.ceil((dayOfMonth + firstWeekday) / 7);
-};
+}
 
 // Update the main component
 const LightIntensityDashboard = () => {
   const [viewType, setViewType] = useState<ViewType>('line');
-  const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [overview, setOverview] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [chartData, setChartData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -307,17 +292,9 @@ const LightIntensityDashboard = () => {
     onRefresh: () => fetchData(overview, selectedDate, true)
   });
 
-  // API Configuration
-  const API_CONFIG = {
-    baseUrl: import.meta.env.VITE_API_URL || 'https://maize-watch.onrender.com',
-    endpoints: {
-      historical: '/api/sensors/historical',
-      weekly: '/api/sensors/weekly-overview',
-      latest: '/api/sensors/latest'
-    }
-  };
+  // Using unified apiService for MongoDB-backed historical data
 
-  // Update the fetchData function
+  // Update the fetchData function to use MongoDB-backed apiService
   const fetchData = async (period: string, baseDate: Date = new Date(), silent: boolean = false) => {
     if (!silent) {
       setIsLoading(true);
@@ -325,236 +302,78 @@ const LightIntensityDashboard = () => {
     setError(null);
 
     try {
-      // Convert baseDate to Philippine time
-      const phDate = new Date(baseDate.getTime() + (8 * 60 * 60 * 1000));
-      let startDate: Date;
-      let endDate: Date;
-      let endpoint: string;
-      let params: Record<string, string> = {};
-
+      // Determine limit based on period
+      let limit = 7;
       switch (period) {
-        case 'daily': {
-          // For daily view, get data for the week containing the selected date
-          startDate = getStartOfWeek(phDate);
-          endDate = getEndOfWeek(startDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          console.log('Daily view - Week range:', {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            phDate: phDate.toISOString()
-          });
+        case 'weekly':
+          limit = 4;
           break;
-        }
-        case 'weekly': {
-          // For weekly view, get data for the month containing the selected date
-          startDate = getStartOfMonth(phDate);
-          endDate = getEndOfMonth(phDate);
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
+        case 'monthly':
+          limit = 12;
           break;
-        }
-        case 'monthly': {
-          // For monthly view, get data for the entire year
-          startDate = new Date(phDate.getFullYear(), 0, 1); // January 1st
-          endDate = new Date(phDate.getFullYear(), 11, 31, 23, 59, 59, 999); // December 31st
-          endpoint = API_CONFIG.endpoints.historical;
-          params.startDate = startDate.toISOString();
-          params.endDate = endDate.toISOString();
-          break;
-        }
-        default:
-          throw new Error('Invalid period specified');
       }
 
-      const url = `${API_CONFIG.baseUrl}${endpoint}?${new URLSearchParams(params)}`;
-      console.log(`Making API request to ${url} for ${period} view`);
-
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+      const result = await apiService.fetchHistoricalData(period as 'daily' | 'weekly' | 'monthly', limit, baseDate);
+      if (!result.success || !result.data) {
+        throw new Error(result.message || 'Failed to fetch light intensity data');
       }
 
-      const result = await response.json();
-      console.log(`API response for ${period} view:`, {
-        success: result.success,
-        dataLength: result.data?.length,
-        firstItem: result.data?.[0],
-        lastItem: result.data?.[result.data?.length - 1]
-      });
+      const processedData: DataItem[] = result.data.map((item: any) => ({
+        ...item,
+        value: item.lightIntensity ?? null,
+        day: period === 'daily' ? item.label : undefined,
+        week: period === 'weekly' ? item.label : undefined,
+        month: period === 'monthly' ? item.label : undefined,
+        threshold: LIGHT_INTENSITY_THRESHOLDS,
+      }));
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch data');
-      }
-
-      let processedData: DataItem[] = [];
-      const rawData = result.data;
-
-      // Handle empty or invalid data
-      if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
-        console.warn(`No data available for ${period} view`);
-        processedData = getDefaultData(period, phDate).chartData;
-      } else {
-        // Filter data to only include entries within our date range
-        const filteredData = rawData.filter((item: any) => {
-          const itemDate = new Date(item.timestamp);
-          const isInRange = itemDate >= startDate && itemDate <= endDate;
-          if (!isInRange) {
-            console.log('Filtered out item:', {
-              timestamp: item.timestamp,
-              itemDate: itemDate.toISOString(),
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString()
-            });
-          }
-          return isInRange;
-        });
-
-        console.log(`Filtered data for ${period} view:`, {
-          totalItems: rawData.length,
-          filteredItems: filteredData.length,
-          firstFilteredItem: filteredData[0],
-          lastFilteredItem: filteredData[filteredData.length - 1]
-        });
-
+      // Determine date range display
+      let displayRange = '';
+      if (result.data.length > 0) {
+        const firstItem = result.data[0];
+        const lastItem = result.data[result.data.length - 1];
         switch (period) {
-          case 'daily': {
-            // Process daily data for the week
-            const dailyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-            // Initialize all days
-            days.forEach(day => dailyData.set(day, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const dayKey = days[date.getDay()];
-              const current = dailyData.get(dayKey)!;
-              if (typeof item.lightIntensity === 'number' && !isNaN(item.lightIntensity)) {
-                current.sum += item.lightIntensity;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            console.log('Daily data processing:', {
-              totalDays: dailyData.size,
-              daysWithData: Array.from(dailyData.entries())
-                .filter(([_, data]) => data.count > 0)
-                .map(([day, data]) => ({
-                  day,
-                  count: data.count,
-                  average: data.sum / data.count
-                }))
-            });
-
-            processedData = days.map(day => {
-              const data = dailyData.get(day)!;
-              return {
-                day,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: LIGHT_INTENSITY_THRESHOLDS
-              };
-            });
-            setXKey('day');
+          case 'daily':
+            if (firstItem.date && lastItem.date) displayRange = formatDateRange(new Date(firstItem.date), new Date(lastItem.date));
             break;
-          }
-          case 'weekly': {
-            // Process weekly data for the month
-            const weeksInMonth = getWeeksInMonth(phDate);
-            const weeklyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-
-            // Initialize all weeks
-            for (let i = 1; i <= weeksInMonth; i++) {
-              weeklyData.set(`Week ${i}`, { sum: 0, count: 0, dates: [] });
-            }
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const weekNumber = getWeekNumberInMonth(date);
-              const weekKey = `Week ${weekNumber}`;
-
-              if (weeklyData.has(weekKey)) {
-                const current = weeklyData.get(weekKey)!;
-                if (typeof item.lightIntensity === 'number' && !isNaN(item.lightIntensity)) {
-                  current.sum += item.lightIntensity;
-                  current.count++;
-                  current.dates.push(date.toISOString());
-                }
-              }
-            });
-
-            processedData = Array.from(weeklyData.entries()).map(([week, data]) => ({
-              week,
-              value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-              dataPoints: data.count,
-              threshold: LIGHT_INTENSITY_THRESHOLDS
-            }));
-            setXKey('week');
+          case 'weekly':
+            if (firstItem.weekStart && lastItem.weekEnd) displayRange = formatDateRange(new Date(firstItem.weekStart), new Date(lastItem.weekEnd));
             break;
-          }
-          case 'monthly': {
-            // Process monthly data for the year
-            const monthlyData = new Map<string, { sum: number; count: number; dates: string[] }>();
-            const monthNames = [
-              "January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"
-            ];
-
-            // Initialize all months
-            monthNames.forEach(month => monthlyData.set(month, { sum: 0, count: 0, dates: [] }));
-
-            filteredData.forEach((item: any) => {
-              if (!item || typeof item !== 'object') return;
-
-              const date = new Date(item.timestamp);
-              const monthKey = monthNames[date.getMonth()];
-              const current = monthlyData.get(monthKey)!;
-              if (typeof item.lightIntensity === 'number' && !isNaN(item.lightIntensity)) {
-                current.sum += item.lightIntensity;
-                current.count++;
-                current.dates.push(date.toISOString());
-              }
-            });
-
-            processedData = monthNames.map(month => {
-              const data = monthlyData.get(month)!;
-              return {
-                month,
-                value: data.count > 0 ? parseFloat((data.sum / data.count).toFixed(2)) : null,
-                dataPoints: data.count,
-                threshold: LIGHT_INTENSITY_THRESHOLDS
-              };
-            });
-            setXKey('month');
+          case 'monthly':
+            if (firstItem.monthStart && lastItem.monthEnd) displayRange = formatDateRange(new Date(firstItem.monthStart), new Date(firstItem.monthEnd));
             break;
-          }
         }
       }
+      if (!displayRange) {
+        let startDate: Date, endDate: Date;
+        switch (period) {
+          case 'daily':
+            startDate = getStartOfWeek(baseDate);
+            endDate = getEndOfWeek(startDate);
+            break;
+          case 'weekly':
+            startDate = getStartOfMonth(baseDate);
+            endDate = getEndOfMonth(baseDate);
+            break;
+          case 'monthly':
+            startDate = new Date(baseDate.getFullYear(), 0, 1);
+            endDate = new Date(baseDate.getFullYear(), 11, 31);
+            break;
+          default:
+            startDate = baseDate; endDate = baseDate;
+        }
+        displayRange = formatDateRange(startDate, endDate);
+      }
 
-      console.log(`Final processed data for ${period} view:`, {
-        dataLength: processedData.length,
-        dataWithValues: processedData.filter(item => item.value !== null).length,
-        firstItem: processedData[0],
-        lastItem: processedData[processedData.length - 1]
-      });
+      // xKey by period
+      let chartXKey = 'day';
+      if (period === 'weekly') chartXKey = 'week';
+      if (period === 'monthly') chartXKey = 'month';
 
       setChartData(processedData);
-      setDateRange(formatDateRange(startDate, endDate));
+      setXKey(chartXKey);
+      setDateRange(displayRange);
+      setError(null);
     } catch (error) {
       console.error(`Error fetching ${period} data:`, error);
       setError("Failed to fetch data. Please try again later.");
@@ -595,10 +414,12 @@ const LightIntensityDashboard = () => {
         newDate = new Date(selectedDate.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+        // Go back one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1);
+        // Go back one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000);
@@ -619,10 +440,12 @@ const LightIntensityDashboard = () => {
         newDate = new Date(selectedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
       case 'weekly':
-        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1);
+        // Go forward one month for weekly view (shows weeks within that month)
+        newDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, selectedDate.getDate());
         break;
       case 'monthly':
-        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1);
+        // Go forward one year for monthly view (shows all 12 months of that year)
+        newDate = new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), selectedDate.getDate());
         break;
       default:
         newDate = new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000);
@@ -708,22 +531,37 @@ const LightIntensityDashboard = () => {
     );
   };
 
+  // Small legend for threshold guideline colors
+  const ThresholdLegend = () => (
+    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-600">
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'green' }} />
+        <span>Min</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'orange' }} />
+        <span>Max</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="inline-block w-5 border-t-2" style={{ borderColor: 'red' }} />
+        <span>Critical</span>
+      </div>
+    </div>
+  );
+
   // Update the renderChart function to ensure value is always a number
   const renderChart = () => {
     if (isLoading) return <Skeleton className="h-[300px] sm:h-[400px] w-full" />;
     if (error) return <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>;
 
-    // Always show chart even with empty data
-    const displayData = (chartData.length === 0 ?
-      getDefaultData(overview, selectedDate).chartData :
-      chartData.map(item => ({
-        ...item,
-        value: item.value ?? 0, // Use nullish coalescing to handle null values
-        threshold: LIGHT_INTENSITY_THRESHOLDS
-      }))).map(item => ({
-        ...item,
-        value: Number(item.value) // Ensure value is always a number
-      }));
+      const displayData = (chartData.length === 0 ?
+        getDefaultData(overview, selectedDate).chartData :
+        chartData.filter(item => item.value !== null && item.value !== undefined)
+          .map(item => ({
+            ...item,
+            value: Number(item.value), // Ensure value is always a number
+            threshold: LIGHT_INTENSITY_THRESHOLDS
+          })));
 
     if (viewType === 'tabular') {
       return (
@@ -752,7 +590,7 @@ const LightIntensityDashboard = () => {
                     {item.value?.toFixed(1) ?? '0.0'} lux
                   </td>
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
-                    {getStatusBadge(item.value)}
+                    {getStatusBadge(item.value!)}
                   </td>
                 </tr>
               ))}
@@ -763,9 +601,9 @@ const LightIntensityDashboard = () => {
     }
 
     const thresholdLines = [
-      <ReferenceLine key="min" y={LIGHT_INTENSITY_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" label={{ value: 'Min', position: 'right', fill: 'green' }} />,
-      <ReferenceLine key="max" y={LIGHT_INTENSITY_THRESHOLDS.max} stroke="orange" strokeDasharray="3 3" label={{ value: 'Max', position: 'right', fill: 'orange' }} />,
-      <ReferenceLine key="critical" y={LIGHT_INTENSITY_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" label={{ value: 'Critical', position: 'right', fill: 'red' }} />,
+      <ReferenceLine key="min" y={LIGHT_INTENSITY_THRESHOLDS.min} stroke="green" strokeDasharray="3 3" />,
+      <ReferenceLine key="max" y={LIGHT_INTENSITY_THRESHOLDS.max} stroke="orange" strokeDasharray="3 3" />,
+      <ReferenceLine key="critical" y={LIGHT_INTENSITY_THRESHOLDS.critical} stroke="red" strokeDasharray="3 3" />,
     ];
 
     // Customize X-axis labels based on view type and screen size
@@ -840,6 +678,7 @@ const LightIntensityDashboard = () => {
               {thresholdLines}
             </LineChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }
@@ -888,6 +727,7 @@ const LightIntensityDashboard = () => {
               {thresholdLines}
             </BarChart>
           </ResponsiveContainer>
+          <ThresholdLegend />
         </div>
       );
     }

@@ -1,4 +1,5 @@
 import React from "react";
+import apiClient from "../api/client";
 import { jsPDF } from "jspdf";
 import * as htmlToImage from "html-to-image";
 import Papa from "papaparse";
@@ -37,6 +38,42 @@ const CHART_CONFIGS = {
   }
 };
 
+// Load an image from public path and return a data URL for embedding in PDF
+const loadImageAsDataUrl = async (path: string): Promise<string> => {
+  try {
+    const res = await fetch(path, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('Failed to load image:', path, e);
+    throw e;
+  }
+};
+
+// Try multiple public paths to find the logo and return a data URL
+const loadLogoDataUrl = async (): Promise<string | null> => {
+  const candidates = [
+    '/maizewatch.png',
+    '/maizewatch.png',
+    'maizewatch.png'
+  ];
+  for (const path of candidates) {
+    try {
+      const dataUrl = await loadImageAsDataUrl(path);
+      if (dataUrl && dataUrl.startsWith('data:image')) return dataUrl;
+    } catch (_) {
+      // continue trying other paths
+    }
+  }
+  return null;
+};
+
 // Data point interface
 interface ChartDataPoint {
   [key: string]: string | number | null | { min: number; max: number; critical: number } | undefined;
@@ -51,6 +88,9 @@ interface ChartDataPoint {
   week?: string;
   month?: string;
   timestamp?: string;
+  dataPoints?: number;
+  periodDescription?: string;
+  exportType?: string;
 }
 
 type DateRange = {
@@ -62,6 +102,9 @@ interface ExportOptions {
   format: 'pdf' | 'csv' | 'svg';
   chartType: 'temperature' | 'humidity' | 'soilMoisture' | 'soilPh' | 'lightIntensity';
   currentOverview: 'hourly' | 'daily' | 'weekly' | 'monthly';
+  exportType?: 'predefined' | 'custom';
+  timeFrame?: 'day' | 'week' | 'month' | 'year';
+  customDateRange?: { startDate: string; endDate: string };
   dateRange?: DateRange;
   includeChartImage?: boolean;
   includeTabularData?: boolean;
@@ -88,28 +131,26 @@ const calculateStatistics = (data: ChartDataPoint[]) => {
   };
 };
 
-// Helper function to get status based on thresholds
-const getStatus = (value: number, thresholds: { min: number; max: number; critical: number }): string => {
-  if (value < thresholds.min) return "Low";
-  if (value > thresholds.max) return "High";
-  if (value > thresholds.critical) return "Critical";
-  return "Normal";
-};
 
 // Helper function to generate standardized filename
-const generateFilename = (chartType: string, format: string, overview: string, dateRange?: DateRange, customRange?: { startDate: Date; endDate: Date }) => {
+const generateFilename = (chartType: string, format: string, options: ExportOptions) => {
   const config = CHART_CONFIGS[chartType as keyof typeof CHART_CONFIGS];
   const shortName = config.shortName;
   const now = new Date();
   const timestamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
   
-  let period = overview;
-  if (customRange) {
-    const start = customRange.startDate.toISOString().split('T')[0];
-    const end = customRange.endDate.toISOString().split('T')[0];
+  let period: string = options.currentOverview;
+  
+  if (options.customDateRange) {
+    const start = new Date(options.customDateRange.startDate).toISOString().split('T')[0];
+    const end = new Date(options.customDateRange.endDate).toISOString().split('T')[0];
     period = `${start}_to_${end}`;
-  } else if (dateRange && dateRange.from && dateRange.to) {
-    period = `${dateRange.from}_to_${dateRange.to}`;
+  } else if (options.timeFrame) {
+    period = options.timeFrame;
+  } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+    const start = new Date(options.dateRange.from).toISOString().split('T')[0];
+    const end = new Date(options.dateRange.to).toISOString().split('T')[0];
+    period = `${start}_to_${end}`;
   }
   
   return `MaizeWatch_${shortName}_${period}_${timestamp}.${format}`;
@@ -126,18 +167,203 @@ const formatDateForDisplay = (date: Date): string => {
   });
 };
 
+// Helper function to calculate predefined date ranges
+const calculatePredefinedRange = (timeFrame: 'day' | 'week' | 'month' | 'year'): { start: Date; end: Date } => {
+  const end = new Date();
+  const start = new Date();
+
+  switch (timeFrame) {
+    case 'day':
+      start.setDate(end.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case 'week':
+      start.setDate(end.getDate() - 7);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case 'month':
+      start.setMonth(end.getMonth() - 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case 'year':
+      start.setFullYear(end.getFullYear() - 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+      break;
+    default:
+      start.setDate(end.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+  }
+
+  return { start, end };
+};
+
+// Enhanced function to create filtered data based on export options
+const createFilteredDataForExport = (
+  originalData: ChartDataPoint[],
+  options: ExportOptions
+): { data: ChartDataPoint[]; actualRange: { start: Date; end: Date } | null } => {
+  
+  // For PREDEFINED exports, use the current chart data as-is
+  // This ensures the export matches exactly what the user sees in the chart
+  if (options.exportType === 'predefined') {
+    console.log('Predefined export: using current chart data as-is');
+    console.log('Current overview:', options.currentOverview);
+    console.log('Chart data:', originalData);
+    
+    // Add descriptive information about what period this represents
+    let periodDescription: string;
+    switch (options.currentOverview) {
+      case 'daily':
+        periodDescription = 'Current Week (Sunday to Saturday)';
+        break;
+      case 'weekly': 
+        periodDescription = 'Current Month (Week 1 to Week 5)';
+        break;
+      case 'monthly':
+        periodDescription = 'Current Year (January to December)';
+        break;
+      default:
+        periodDescription = 'Current Period';
+    }
+    
+    // Add metadata to describe the current period being exported
+    const enhancedData = originalData.map((item) => ({
+      ...item,
+      periodDescription,
+      exportType: 'predefined_current_view'
+    }));
+
+    return { 
+      data: enhancedData, 
+      actualRange: null // No specific date range for predefined - it's the current view
+    };
+  }
+
+  // For CUSTOM exports, we need to handle date range filtering
+  if (options.exportType === 'custom' && options.customDateRange) {
+    const targetStart = new Date(options.customDateRange.startDate);
+    const targetEnd = new Date(options.customDateRange.endDate);
+    targetEnd.setHours(23, 59, 59, 999);
+    
+    console.log('Custom export: filtering data for date range', {
+      start: targetStart.toISOString(),
+      end: targetEnd.toISOString()
+    });
+
+    // For custom date ranges, we'll create synthetic data based on the selected range
+    // This is more complex and depends on how your chart data is structured
+    const enhancedData = originalData.map((item, index) => {
+      // Add synthetic timestamp within the custom range for display
+      const rangeDurationMs = targetEnd.getTime() - targetStart.getTime();
+      const itemTimestamp = new Date(targetStart.getTime() + (index / originalData.length) * rangeDurationMs);
+      
+      return {
+        ...item,
+        timestamp: itemTimestamp.toISOString(),
+        exportType: 'custom_date_range'
+      };
+    });
+
+    return { 
+      data: enhancedData, 
+      actualRange: { start: targetStart, end: targetEnd }
+    };
+  }
+
+  // Default: return original data
+  console.log('Default export: using original data');
+  return { data: originalData, actualRange: null };
+};
+
+// Fetch real data for custom date range from backend and map to ChartDataPoint[]
+const fetchCustomRangeData = async (
+  chartType: ExportOptions["chartType"],
+  startISO: string,
+  endISO: string
+): Promise<ChartDataPoint[]> => {
+  try {
+    const response = await apiClient.get("/api/sensors/historical", {
+      params: { startDate: startISO, endDate: endISO },
+    });
+
+    const payload = response.data?.data ?? response.data;
+    const readings: any[] = Array.isArray(payload) ? payload : payload?.readings || [];
+
+    const valueKeyMap: Record<string, string> = {
+      temperature: "temperature",
+      humidity: "humidity",
+      soilMoisture: "soilMoisture",
+      soilPh: "soilPh",
+      lightIntensity: "lightIntensity",
+    };
+    const key = valueKeyMap[chartType] || "temperature";
+
+    // Build daily buckets for the full range (inclusive)
+    const start = new Date(startISO);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endISO);
+    end.setHours(23, 59, 59, 999);
+
+    const dayKey = (d: Date) => `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+
+    const buckets = new Map<string, { sum: number; count: number }>();
+
+    readings.forEach((r) => {
+      if (!r || !r.timestamp) return;
+      const ts = new Date(r.timestamp);
+      if (ts < start || ts > end) return;
+      const data = r.data || r;
+      const v = typeof data[key] === 'number' ? data[key] : null;
+      if (v === null || Number.isNaN(v)) return;
+      const k = dayKey(ts);
+      const cur = buckets.get(k) || { sum: 0, count: 0 };
+      cur.sum += v;
+      cur.count += 1;
+      buckets.set(k, cur);
+    });
+
+    // Produce a row for every day in the range, fill N/A when empty
+    const result: ChartDataPoint[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const k = dayKey(cursor);
+      const b = buckets.get(k);
+      const avg = b && b.count > 0 ? Number((b.sum / b.count).toFixed(2)) : null;
+      const ts = new Date(cursor);
+      // set to noon to avoid TZ edge cases when rendering
+      ts.setHours(12, 0, 0, 0);
+      result.push({
+        day: k,
+        timestamp: ts.toISOString(),
+        value: avg,
+        dataPoints: b?.count || 0,
+      } as ChartDataPoint);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return result;
+  } catch (err) {
+    console.error("Failed to fetch custom range data:", err);
+    return [];
+  }
+};
 /**
  * Export to PDF with professional formatting
  */
 const exportToPdf = async (
   chartData: ChartDataPoint[],
   xKey: string,
-  title: string,
+  _title: string,
   options: ExportOptions,
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const pdf = new jsPDF("portrait", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -146,21 +372,27 @@ const exportToPdf = async (
     
     let yCursor = margin;
     
-    // Add Maize Watch logo
-    try {
-      const logoWidth = 50;
-      const logoX = margin;
-      pdf.addImage("/maizewatch.png", "PNG", logoX, yCursor, logoWidth, 12);
-      yCursor += 20;
-    } catch (error) {
-      console.warn("Could not add logo to PDF:", error);
-      yCursor += 15;
+    // Add Maize Watch logo (try multiple public paths)
+    {
+      const dataUrl = await loadLogoDataUrl();
+      if (dataUrl) {
+        const logoWidth = 40; // mm
+        const logoHeight = 12; // tuned height
+        const logoX = (pageWidth - logoWidth) / 2;
+        pdf.addImage(dataUrl, 'PNG', logoX, yCursor, logoWidth, logoHeight, undefined, 'FAST');
+        // Extra space between logo and title
+        yCursor += logoHeight + 10;
+      } else {
+        console.warn('maizewatch.png not found in public paths');
+        yCursor += 8;
+      }
     }
     
     // Add report header
     pdf.setFontSize(20);
-    pdf.setTextColor(37, 99, 235);
-    pdf.text(title, pageWidth / 2, yCursor, { align: "center" });
+    // Maize Watch green #456C2D
+    pdf.setTextColor(69, 108, 45);
+    pdf.text(config.title, pageWidth / 2, yCursor, { align: "center" });
     yCursor += 10;
     
     // Add report metadata
@@ -168,9 +400,23 @@ const exportToPdf = async (
     pdf.setTextColor(75, 85, 99);
     
     // Date range information
-    let dateRangeText = `${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)} Report`;
-    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
-      dateRangeText += ` - ${options.dateRange.from} to ${options.dateRange.to}`;
+    let dateRangeText = `Report`;
+    
+    if (options.customDateRange) {
+      const start = new Date(options.customDateRange.startDate).toLocaleDateString();
+      const end = new Date(options.customDateRange.endDate).toLocaleDateString();
+      dateRangeText += ` - Custom Range: ${start} to ${end}`;
+    } else if (options.exportType === 'predefined' && options.dateRange && options.dateRange.from && options.dateRange.to) {
+      const start = new Date(options.dateRange.from).toLocaleDateString();
+      const end = new Date(options.dateRange.to).toLocaleDateString();
+      dateRangeText += ` - ${start} to ${end}`;
+    } else if (options.timeFrame) {
+      const range = calculatePredefinedRange(options.timeFrame);
+      dateRangeText += ` - Last ${options.timeFrame} (${range.start.toLocaleDateString()} to ${range.end.toLocaleDateString()})`;
+    } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      const start = new Date(options.dateRange.from).toLocaleDateString();
+      const end = new Date(options.dateRange.to).toLocaleDateString();
+      dateRangeText += ` - ${start} to ${end}`;
     }
     
     pdf.text(dateRangeText, pageWidth / 2, yCursor, { align: "center" });
@@ -216,7 +462,7 @@ const exportToPdf = async (
     // Calculate statistics
     const stats = calculateStatistics(chartData);
     
-    // Add statistics section with proper spacing
+    // Add statistics section
     if (stats) {
       // Check if we need a new page for statistics
       if (yCursor + 60 > pageHeight - 50) {
@@ -232,7 +478,6 @@ const exportToPdf = async (
       pdf.setFontSize(11);
       pdf.setTextColor(75, 85, 99);
       
-      // Statistics in a more compact layout
       const statY = yCursor;
       pdf.text(`Average: ${stats.average.toFixed(2)} ${config.unit}`, margin, statY);
       pdf.text(`Minimum: ${stats.min.toFixed(2)} ${config.unit}`, margin + 70, statY);
@@ -240,7 +485,9 @@ const exportToPdf = async (
       yCursor += 8;
       
       pdf.text(`Total Records: ${stats.count}`, margin, yCursor);
-      pdf.text(`Sum: ${stats.total.toFixed(2)} ${config.unit}`, margin + 70, yCursor);
+      if (stats.count > 0) {
+        pdf.text(`Sum: ${stats.total.toFixed(2)} ${config.unit}`, margin + 70, yCursor);
+      }
       yCursor += 20;
     }
     
@@ -260,12 +507,8 @@ const exportToPdf = async (
       // Table settings
       const startY = yCursor;
       const rowHeight = 8;
-      const headers = [
-        xKey.charAt(0).toUpperCase() + xKey.slice(1), 
-        `${config.fieldName} (${config.unit})`, 
-        "Status"
-      ];
-      const columnWidths = [contentWidth * 0.3, contentWidth * 0.5, contentWidth * 0.2];
+      const headers = ["Period", `${config.fieldName} (${config.unit})`];
+      const columnWidths = [contentWidth * 0.6, contentWidth * 0.4];
       
       // Draw table header
       pdf.setFillColor(240, 240, 240);
@@ -283,9 +526,9 @@ const exportToPdf = async (
         xPos += columnWidths[index];
       });
       
-      // Draw table rows (limit to first 25 rows for better fit)
+      // Draw table rows (limit to first 30 rows for better fit)
       let yPos = startY + rowHeight;
-      const dataToShow = chartData.slice(0, 25);
+      const dataToShow = chartData.slice(0, 30);
       
       dataToShow.forEach((dataPoint, index) => {
         // Check if we need a new page
@@ -315,37 +558,28 @@ const exportToPdf = async (
         xPos = margin;
         pdf.setFontSize(9);
         
-        // X-axis value
-        const xValue = dataPoint[xKey] || dataPoint.timestamp || '';
-        pdf.text(String(xValue), xPos + 2, yPos + 5.5);
+        // Period value
+        const periodValue = dataPoint[xKey] || dataPoint.day || dataPoint.week || dataPoint.month || 'N/A';
+        pdf.text(String(periodValue), xPos + 2, yPos + 5.5);
         xPos += columnWidths[0];
         
         // Value
         const value = dataPoint.value;
         const valueText = value !== null ? `${value.toFixed(1)} ${config.unit}` : 'N/A';
         pdf.text(valueText, xPos + 2, yPos + 5.5);
-        xPos += columnWidths[1];
-        
-        // Status
-        if (value !== null && dataPoint.threshold) {
-          const status = getStatus(value, dataPoint.threshold);
-          pdf.text(status, xPos + 2, yPos + 5.5);
-        } else {
-          pdf.text('N/A', xPos + 2, yPos + 5.5);
-        }
         
         yPos += rowHeight;
       });
       
       // Add note if data was truncated
-      if (chartData.length > 25) {
+      if (chartData.length > 30) {
         if (yPos + 10 > pageHeight - 30) {
           pdf.addPage();
           yPos = margin;
         }
         pdf.setFontSize(8);
         pdf.setTextColor(107, 114, 128);
-        pdf.text(`Note: Showing first 25 of ${chartData.length} records. Full data available in CSV export.`, margin, yPos + 5);
+        pdf.text(`Note: Showing first 30 of ${chartData.length} records. Full data available in CSV export.`, margin, yPos + 5);
       }
     }
     
@@ -353,16 +587,17 @@ const exportToPdf = async (
     const footerY = pageHeight - 15;
     pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
-    pdf.text("Maize Watch - Smart Agriculture Monitoring System", pageWidth / 2, footerY, { align: "center" });
+    pdf.text("Maize Watch - Smart Agriculture Monitoring System", pageWidth / 2, footerY);
     
     // Save the PDF with standardized filename
-    const filename = generateFilename(options.chartType, 'pdf', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'pdf', options);
     pdf.save(filename);
   } catch (error) {
     console.error("Error exporting to PDF:", error);
     throw error;
   }
 };
+
 
 /**
  * Export to SVG with professional formatting
@@ -379,7 +614,7 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
     
     // Create download link with standardized filename
     const link = document.createElement("a");
-    const filename = generateFilename(options.chartType, 'svg', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'svg', options);
     link.download = filename;
     link.href = dataUrl;
     link.click();
@@ -390,70 +625,139 @@ const exportToSvg = async (chartNode: HTMLElement, options: ExportOptions) => {
 };
 
 /**
- * Export to CSV with professional formatting
+ * Export to CSV with professional formatting and restored statistics
  */
 const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     
     // Determine xKey based on current overview
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
     
-    // Create the main data rows
-    const dataRows = chartData.map(item => {
-      const xValue = item[xKey] || item.timestamp || '';
-      const value = item.value;
-      const valueText = value !== null ? value.toFixed(2) : 'N/A';
-      
-      const csvRow: Record<string, string> = {
-        [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: xValue,
-        [`${config.fieldName} (${config.unit})`]: valueText
-      };
-      
-      if (value !== null && item.threshold) {
-        csvRow['Status'] = getStatus(value, item.threshold);
-      } else {
-        csvRow['Status'] = 'N/A';
-      }
-      
-      return csvRow;
-    });
-    
-    // Calculate statistics
+    // Calculate statistics first
     const stats = calculateStatistics(chartData);
     
-    // Create summary analytics section
+    // Create the main data rows
+    const dataRows = chartData.map(item => {
+      // Format date properly for CSV
+      let periodValue = item[xKey] || item.day || item.week || item.month || 'N/A';
+      
+      // If it's a date string, format it properly
+      if (periodValue && typeof periodValue === 'string') {
+        // Check if it's a date string (YYYY-MM-DD format)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(periodValue)) {
+          const date = new Date(periodValue + 'T00:00:00');
+          periodValue = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+        }
+        // If it's an ISO timestamp, format it as date
+        else if (item.timestamp && typeof item.timestamp === 'string') {
+          const date = new Date(item.timestamp);
+          periodValue = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          });
+        }
+      }
+      
+      const value = item.value;
+      const valueText = value !== null ? value.toFixed(2) : 'N/A';
+      const csvRow: Record<string, string> = {
+        [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: String(periodValue),
+        [`${config.fieldName} (${config.unit})`]: valueText
+      };
+      // Removed Data Points column as requested
+      return csvRow;
+    });
+
+    // Create comprehensive summary section
     const summaryRows = [
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'SUMMARY ANALYTICS' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'MAIZE WATCH EXPORT SUMMARY' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
       { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Report Details' },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Chart Type: ${config.title}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Period: ${options.currentOverview.charAt(0).toUpperCase() + options.currentOverview.slice(1)}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Year: ${new Date().getFullYear()}` },
-      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Generated: ${formatDateForDisplay(new Date())}` }
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'REPORT DETAILS:' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sensor Type: ${config.fieldName}` },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Format: CSV` }
     ];
-    
-    // Add date range if available
-    if (options.dateRange && options.dateRange.from && options.dateRange.to) {
-      summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Date Range: ${options.dateRange.from} to ${options.dateRange.to}` });
-    }
-    
-    summaryRows.push({ [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' });
-    
-    // Add statistics if available
-    if (stats) {
+
+    // Add export-specific range information
+    if (options.exportType === 'custom' && options.customDateRange) {
+      const start = new Date(options.customDateRange.startDate);
+      const end = new Date(options.customDateRange.endDate);
       summaryRows.push(
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'Statistics' },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Records: ${stats.count}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Average ${config.fieldName}: ${stats.average.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Minimum ${config.fieldName}: ${stats.min.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Maximum ${config.fieldName}: ${stats.max.toFixed(2)} ${config.unit}` },
-        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Sum ${config.fieldName}: ${stats.total.toFixed(2)} ${config.unit}` }
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Custom Date Range` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Range Duration: ${Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))} days` }
+      );
+    } else if (options.exportType === 'predefined') {
+      // Prefer chart's current dateRange if provided to match UI "Current Chart Info"
+      if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+        const start = new Date(options.dateRange.from);
+        const end = new Date(options.dateRange.to);
+        summaryRows.push(
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Predefined Range` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` }
+        );
+      } else if (options.timeFrame) {
+        const range = calculatePredefinedRange(options.timeFrame);
+        summaryRows.push(
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Predefined Range` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Time Frame: Last ${options.timeFrame}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Start Date: ${range.start.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` },
+          { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `End Date: ${range.end.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` }
+        );
+      }
+    } else if (options.dateRange && options.dateRange.from && options.dateRange.to) {
+      summaryRows.push(
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Export Type: Chart Default Range` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Date Range: ${options.dateRange.from} to ${options.dateRange.to}` }
       );
     }
+
+    // Add generation info
+    summaryRows.push(
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'GENERATION INFO:' },
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Generated: ${formatDateForDisplay(new Date())}` },
+     
+      { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' }
+    );
+    
+    // Add comprehensive statistics if available
+    if (stats) {
+      summaryRows.push(
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'STATISTICAL ANALYSIS' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '=================================' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'DATA OVERVIEW:' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Data Records: ${chartData.length}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Valid Measurements: ${stats.count}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Missing/Invalid: ${chartData.length - stats.count}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Data Completeness: ${((stats.count / chartData.length) * 100).toFixed(1)}%` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: '' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: 'MEASUREMENT STATISTICS:' },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Average ${config.fieldName}: ${stats.average.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Minimum ${config.fieldName}: ${stats.min.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Maximum ${config.fieldName}: ${stats.max.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Total Sum: ${stats.total.toFixed(3)} ${config.unit}` },
+        { [xKey.charAt(0).toUpperCase() + xKey.slice(1)]: `Range (Max - Min): ${(stats.max - stats.min).toFixed(3)} ${config.unit}` }
+      );
+
+      // Remove threshold/status sections per request
+    }
+
+    
     
     // Combine data and summary
     const csvData = [...dataRows, ...summaryRows];
@@ -471,7 +775,7 @@ const exportToCsv = (chartData: ChartDataPoint[], options: ExportOptions) => {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const filename = generateFilename(options.chartType, 'csv', options.currentOverview, options.dateRange, undefined);
+    const filename = generateFilename(options.chartType, 'csv', options);
     link.download = filename;
     link.href = url;
     link.click();
@@ -496,14 +800,35 @@ const exportChartData = async (
   chartRef?: React.RefObject<HTMLDivElement | null>
 ) => {
   try {
-    const config = CHART_CONFIGS[options.chartType];
+    console.log('Export Options:', options);
+    console.log('Original Chart Data:', chartData);
+    
+    const config = CHART_CONFIGS[options.chartType as keyof typeof CHART_CONFIGS];
     const xKey = options.currentOverview === 'hourly' ? 'hour' : 
                  options.currentOverview === 'daily' ? 'day' : 
                  options.currentOverview === 'weekly' ? 'week' : 'month';
     
+    let processedData: ChartDataPoint[] = [];
+
+    if (options.exportType === 'custom' && options.customDateRange) {
+      const startISO = new Date(options.customDateRange.startDate).toISOString();
+      const endDate = new Date(options.customDateRange.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      const endISO = endDate.toISOString();
+      const fetched = await fetchCustomRangeData(options.chartType, startISO, endISO);
+      processedData = fetched.length > 0 ? fetched : chartData;
+    } else {
+      // Create filtered/synthetic data based on export modal selections
+      const { data } = createFilteredDataForExport(chartData, options);
+      processedData = data;
+    }
+    
+    console.log('Processed Data for Export:', processedData);
+    console.log('Export Format:', format);
+
     switch (format) {
       case 'pdf':
-        await exportToPdf(chartData, xKey, config.title, options, chartRef);
+        await exportToPdf(processedData, xKey, config.title, options, chartRef);
         break;
       case 'svg':
         if (chartRef?.current) {
@@ -513,7 +838,7 @@ const exportChartData = async (
         }
         break;
       case 'csv':
-        exportToCsv(chartData, options);
+        exportToCsv(processedData, options);
         break;
       default:
         throw new Error(`Unsupported format: ${format}`);
@@ -524,5 +849,5 @@ const exportChartData = async (
   }
 };
 
-export type { ChartDataPoint, DateRange, ExportOptions };
-export { exportChartData }; 
+export type { ChartDataPoint, ExportOptions };
+export { exportChartData };

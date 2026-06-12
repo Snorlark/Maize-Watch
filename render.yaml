@@ -1,36 +1,108 @@
 services:
-  # Main Application (Node.js + Python)
   - type: web
-    name: maize-watch-app
-    env: docker
-    plan: starter
-    dockerfilePath: ./Dockerfile
+    name: maize-watch-backend
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    rootDir: backend
     envVars:
       - key: NODE_ENV
         value: production
-      - key: FLASK_ENV
-        value: production
       - key: PORT
-        value: 10000
+        value: 8080
+      - key: FRONTEND_URL
+        value: https://maize-watch-frontend.onrender.com
+      - key: BACKEND_URL
+        value: https://maize-watch-backend.onrender.com
+      - key: MOBILE_APP_URL
+        value: https://maize-watch-frontend.onrender.com
+      - key: MONGODB_URI
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
       - key: MONGO_URI
         value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
-      - key: ANALYTICS_SERVICE_URL
-        value: http://localhost:8000
-      - key: THINGSPEAK_CHANNEL_ID
-        value: 3083651
-      - key: THINGSPEAK_API_KEY
-        value: YOUR_THINGSPEAK_API_KEY
+      - key: MONGODB_IOT_URI
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
+      - key: MONGO_DB_NAME
+        value: maize_watch
       - key: JWT_SECRET
-        generateValue: true
-      - key: ENCRYPTION_KEY
-        generateValue: true
-      - key: PYTHONUNBUFFERED
-        value: 1
-      - key: ANALYTICS_V2_PATH
-        value: /app/analytics_v2
-      - key: PYTHON_PATH
-        value: python3
+        value: superSecretKey123!@#
+      - key: JWT_REFRESH_SECRET
+        value: 32f9125cbb7ea7932d01e031717ea6c9d2a1fcb7e0d4567c98c897483a209c2b
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
+      - key: REDIS_URL
+        value: redis://localhost:6379
+      - key: REDIS_PASSWORD
+        value: ""
+      - key: REDIS_DB
+        value: "0"
+      - key: THINGSPEAK_API_KEY
+        value: EA3FK5WA4X7787ZS
+      - key: THINGSPEAK_CHANNEL_ID
+        value: "3083651"
+      - key: THINGSPEAK_URL
+        value: https://api.thingspeak.com/channels/3083651/feeds.json?api_key=EA3FK5WA4X7787ZS
+      - key: THINGSPEAK_READ_API_KEY
+        value: I33WO1DMIHVA0EQY
+      - key: THINGSPEAK_WRITE_API_KEY
+        value: EA3FK5WA4X7787ZS
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USER
+        value: maizewatch@gmail.com
+      - key: EMAIL_PASS
+        value: odswqblzacdcsdsc
+      - key: EMAIL_FROM
+        value: noreply@maizewatch.com
+      - key: TWILIO_ACCOUNT_SID
+        value: ACc7280ff61bfde7398fa6f120c15372eb
+      - key: TWILIO_AUTH_TOKEN
+        value: b44ecef6a29f9e0d716a82a17f03107e
+      - key: TWILIO_VERIFY_SERVICE_ID
+        value: VA5c992aa8b161f1d8a01c09cfd19e5964
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_FILE_SIZE
+        value: "5242880"
+      - key: ALLOWED_FILE_TYPES
+        value: jpg,jpeg,png,pdf
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: SESSION_SECRET
+        value: your_session_secret_here
+      - key: CORS_ORIGINS
+        value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com
+      - key: RATE_LIMIT_DISABLE
+        value: "true"
       - key: ENABLE_PYTHON_ANALYTICS
-        value: true
-      # Note: REDIS_URL is not set, so Redis features will be disabled
-      # This prevents Redis connection errors in production
+        value: "false"
+      - key: LOG_LEVEL
+        value: info
+
+  - type: web
+    name: maize-watch-frontend
+    env: static
+    buildCommand: cd frontend/web-src/web-public && npm run build
+    staticPublishPath: frontend/web-src/web-public/dist
+    rootDir: .
+    envVars:
+      - key: VITE_API_URL
+        value: https://maize-watch-backend.onrender.com/api
+
+  - type: web
+    name: maize-watch-admin
+    env: static
+    buildCommand: cd frontend/web-src/web-admin && npm run build
+    staticPublishPath: frontend/web-src/web-admin/dist
+    rootDir: .
+    envVars:
+      - key: VITE_API_URL
+        value: https://maize-watch-backend.onrender.com/api

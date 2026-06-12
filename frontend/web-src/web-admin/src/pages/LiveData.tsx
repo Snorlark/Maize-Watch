@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
 import Footer from '../components/Footer'
-import { FaThermometerHalf, FaMountain } from 'react-icons/fa'
+import { FaThermometerHalf } from 'react-icons/fa'
 import { IoWaterOutline } from 'react-icons/io5'
 import { BsSun } from 'react-icons/bs'
-import { Activity, Gauge, AlertTriangle, Clock, RefreshCw } from 'lucide-react'
+import { Activity, Gauge, AlertTriangle, Clock, MapPin, ChevronDown, RefreshCw, Droplets, TestTube } from 'lucide-react'
+import { sensorService } from '../api/config'
+import apiClient from '../api/client'
 
 interface SensorData {
   _id: string;
@@ -19,7 +20,6 @@ interface SensorData {
   };
 }
 
-// Add new interface for sensor status
 interface SensorStatus {
   temperature: boolean;
   humidity: boolean;
@@ -28,10 +28,26 @@ interface SensorStatus {
   light_level: boolean;
 }
 
+interface Farm {
+  _id: string;
+  fieldName: string;
+  location: string;
+  soilType: string;
+  plantingDate: string;
+  growthStage: string;
+  deviceId?: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const LiveData: React.FC = () => {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+  const [farmsLoading, setFarmsLoading] = useState(true);
   const [sensorStatus, setSensorStatus] = useState<SensorStatus>({
     temperature: false,
     humidity: false,
@@ -39,54 +55,288 @@ const LiveData: React.FC = () => {
     soil_ph: false,
     light_level: false
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Fetch farms on component mount
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchFarms = async () => {
       try {
-        const response = await axios.get('https://maize-watch.onrender.com/api/sensors/latest');
-        console.log('Full API response:', response.data);
+        const response = await apiClient.get('/api/farms');
         
-        if (response.data && response.data.data) {
-          const raw = response.data.data;
-          
-          // Update sensor status based on data availability
-          setSensorStatus({
-            temperature: raw.temperature !== null && raw.temperature !== undefined,
-            humidity: raw.humidity !== null && raw.humidity !== undefined,
-            soil_moisture: raw.soilMoisture !== null && raw.soilMoisture !== undefined,
-            soil_ph: raw.soilPh !== null && raw.soilPh !== undefined,
-            light_level: raw.lightIntensity !== null && raw.lightIntensity !== undefined
-          });
-
-          const transformedData: SensorData = {
-            _id: '',
-            field_id: '',
-            timestamp: raw.timestamp,
-            measurements: {
-              temperature: raw.temperature,
-              humidity: raw.humidity,
-              soil_moisture: raw.soilMoisture,
-              soil_ph: raw.soilPh,
-              light_level: raw.lightIntensity,
-            },
-          };
-
-          setSensorData(transformedData);
+        if (response.data?.success && response.data?.data?.farms) {
+          const farmsData = response.data.data.farms;
+          setFarms(farmsData);
+          if (farmsData.length > 0) {
+            setSelectedFarm(farmsData[0]);
+          }
+        } else if (response.data?.farms) {
+          setFarms(response.data.farms);
+          if (response.data.farms.length > 0) {
+            setSelectedFarm(response.data.farms[0]);
+          }
         } else {
-          setError('No sensor data received from API');
+          setFarms([]);
+          setSelectedFarm(null);
         }
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch sensor data');
-        setLoading(false);
-        console.error('Error fetching data:', err);
+      } catch (err: any) {
+        setFarms([]);
+        setSelectedFarm(null);
+      } finally {
+        setFarmsLoading(false);
       }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
+    fetchFarms();
   }, []);
+
+  // Fetch sensor data function
+  const fetchData = async (silent: boolean = false) => {
+    if (!sensorData && !silent) {
+      setLoading(true);
+    }
+    if (!silent) {
+      setIsRefreshing(true);
+    }
+    setError(null);
+      
+    try {
+      let result;
+      try {
+        result = await sensorService.getThingSpeakLiveData();
+        if (result.success && (!result.data || Object.keys(result.data).length === 0)) {
+          throw new Error('ThingSpeak returned empty data');
+        }
+      } catch {
+        result = await sensorService.getLatestSensorData(selectedFarm?._id);
+      }
+      
+      if (result.success && result.data) {
+        const raw = result.data;
+        const currentTime = new Date();
+        let actualTimestamp = null;
+        
+        if (raw.created_at) {
+          actualTimestamp = raw.created_at;
+        } else if (raw.timestamp) {
+          actualTimestamp = raw.timestamp;
+        } else if (raw.entry_id && raw.field1) {
+          actualTimestamp = new Date().toISOString();
+        }
+        
+        const dataTime = actualTimestamp ? new Date(actualTimestamp) : new Date();
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const isDataFresh = timeDiffMinutes <= 30;
+        
+        setSensorStatus({
+          temperature: (raw.temperature !== null && raw.temperature !== undefined) && isDataFresh,
+          humidity: (raw.humidity !== null && raw.humidity !== undefined) && isDataFresh,
+          soil_moisture: (raw.soilMoisture !== null && raw.soilMoisture !== undefined) && isDataFresh,
+          soil_ph: (raw.soilPh !== null && raw.soilPh !== undefined) && isDataFresh,
+          light_level: (raw.lightIntensity !== null && raw.lightIntensity !== undefined) && isDataFresh
+        });
+
+        const transformedData: SensorData = {
+          _id: raw._id || 'sensor-reading',
+          field_id: selectedFarm?._id || 'general',
+          timestamp: actualTimestamp || new Date().toISOString(),
+          measurements: {
+            temperature: raw.temperature || 0,
+            humidity: raw.humidity || 0,
+            soil_moisture: raw.soilMoisture || 0,
+            soil_ph: raw.soilPh || 0,
+            light_level: raw.lightIntensity || 0,
+          },
+        };
+
+        setSensorData(transformedData);
+        setError(null);
+      } else {
+        throw new Error(result.error || 'Failed to fetch sensor data');
+      }
+    } catch {
+      if (!sensorData) {
+        const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00';
+        const mockData: SensorData = {
+          _id: 'mock-sensor-001',
+          field_id: selectedFarm?._id || 'mock-field',
+          timestamp: thingSpeakTimestamp,
+          measurements: {
+            temperature: 25.5,
+            humidity: 65,
+            soil_moisture: 45,
+            soil_ph: 6.8,
+            light_level: 750,
+          },
+        };
+        
+        const currentTime = new Date();
+        const dataTime = new Date(thingSpeakTimestamp);
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const isDataFresh = timeDiffMinutes <= 30;
+        
+        setSensorData(mockData);
+        setSensorStatus({
+          temperature: isDataFresh,
+          humidity: isDataFresh,
+          soil_moisture: isDataFresh,
+          soil_ph: isDataFresh,
+          light_level: isDataFresh
+        });
+      }
+      
+      setError('Unable to fetch live sensor data - showing demo data');
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (farmsLoading) return;
+    fetchData();
+    const interval = setInterval(() => fetchData(true), 30000);
+    return () => clearInterval(interval);
+  }, [farmsLoading, selectedFarm]);
+
+  const handleRefresh = () => {
+    setSensorData(null);
+    setSensorStatus({
+      temperature: false,
+      humidity: false,
+      soil_moisture: false,
+      soil_ph: false,
+      light_level: false
+    });
+    fetchData(false);
+  };
+
+  // Safety check for measurements and provide default values
+  const measurements = {
+    temperature: sensorData?.measurements?.temperature ?? 0,
+    humidity: sensorData?.measurements?.humidity ?? 0,
+    soil_moisture: sensorData?.measurements?.soil_moisture ?? 0,
+    soil_ph: sensorData?.measurements?.soil_ph ?? 0,
+    light_level: sensorData?.measurements?.light_level ?? 0,
+  };
+
+  // Replace the alerts section with sensor status
+  const renderSensorStatus = () => (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Gauge className="w-6 h-6 text-[#456C2D]" />
+        <h3 className="font-semibold text-[#356B2C]" style={{ fontSize: 'var(--text-lg)' }}>Sensor Status</h3>
+      </div>
+      <div className="space-y-4">
+        {/* Temperature Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <FaThermometerHalf className={`w-4 h-4 ${sensorStatus.temperature ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.temperature ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Temperature</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.temperature ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.temperature ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Soil Moisture Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Droplets className={`w-4 h-4 ${sensorStatus.soil_moisture ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.soil_moisture ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.soil_moisture ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.soil_moisture ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Humidity Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <IoWaterOutline className={`w-4 h-4 ${sensorStatus.humidity ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.humidity ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.humidity ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.humidity ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Soil pH Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <TestTube className={`w-4 h-4 ${sensorStatus.soil_ph ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.soil_ph ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil pH</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.soil_ph ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.soil_ph ? 'Online' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Light Intensity Sensor */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-3">
+            <BsSun className={`w-4 h-4 ${sensorStatus.light_level ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`w-3 h-3 rounded-full ${sensorStatus.light_level ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            sensorStatus.light_level ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {sensorStatus.light_level ? 'Online' : 'Offline'}
+          </span>
+        </div>
+      </div>
+
+      {/* Last Update */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex flex-col gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-xs)' }}>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>Last updated: {sensorData ? new Date(sensorData.timestamp).toLocaleString('en-US', {
+              year: 'numeric',
+              month: '2-digit', 
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              timeZoneName: 'short'
+            }) : 'Never'}</span>
+          </div>
+          {sensorData && (() => {
+            const now = new Date();
+            const dataTime = new Date(sensorData.timestamp);
+            const diffMinutes = (now.getTime() - dataTime.getTime()) / (1000 * 60);
+            const diffHours = diffMinutes / 60;
+            
+            if (diffMinutes < 60) {
+              return (
+                <div className="text-xs text-gray-500">
+                  Data age: {diffMinutes.toFixed(0)} minutes ago
+                </div>
+              );
+            } else {
+              return (
+                <div className="text-xs text-red-500">
+                  Data age: {diffHours.toFixed(1)} hours ago (Stale)
+                </div>
+              );
+            }
+          })()}
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) return (
     <div 
@@ -105,40 +355,10 @@ const LiveData: React.FC = () => {
           <span className="ml-3" style={{ fontSize: 'var(--text-lg)' }}>Loading sensor data...</span>
         </div>
       </main>
-      <Footer />
     </div>
   );
 
-  if (error) return (
-    <div 
-      className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
-      style={{ 
-        '--text-xs': '12px', 
-        '--text-sm': '14px', 
-        '--text-base': '16px', 
-        '--text-lg': '18px', 
-        '--text-xl': '20px' 
-      } as React.CSSProperties}
-    >
-      <main className="max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          <div className="flex items-center justify-between">
-            <span className="font-medium">Error: {error}</span>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              style={{ fontSize: 'var(--text-sm)' }}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-
-  if (!sensorData) return (
+  if (error && !sensorData) return (
     <div 
       className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
       style={{ 
@@ -159,110 +379,6 @@ const LiveData: React.FC = () => {
     </div>
   );
 
-  // Safety check for measurements and provide default values
-  const measurements = {
-    temperature: sensorData?.measurements?.temperature ?? 0,
-    humidity: sensorData?.measurements?.humidity ?? 0,
-    soil_moisture: sensorData?.measurements?.soil_moisture ?? 0,
-    soil_ph: sensorData?.measurements?.soil_ph ?? 0,
-    light_level: sensorData?.measurements?.light_level ?? 0,
-  };
-
-  // Replace the alerts section with sensor status
-  const renderSensorStatus = () => (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Gauge className="w-6 h-6 text-[#456C2D]" />
-        <h2 className="font-semibold text-[#1E441E]" style={{ fontSize: 'var(--text-xl)' }}>Sensor Status</h2>
-      </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
-          <div className="flex items-center gap-3">
-            <FaThermometerHalf className="text-[#e74c3c] text-lg" />
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Temperature Sensor</span>
-          </div>
-          <span className={`px-3 py-1 rounded-full font-medium ${
-            sensorStatus.temperature 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`} style={{ fontSize: 'var(--text-xs)' }}>
-            {sensorStatus.temperature ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
-          <div className="flex items-center gap-3">
-            <IoWaterOutline className="text-[#2d67c4] text-lg" />
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Humidity Sensor</span>
-          </div>
-          <span className={`px-3 py-1 rounded-full font-medium ${
-            sensorStatus.humidity 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`} style={{ fontSize: 'var(--text-xs)' }}>
-            {sensorStatus.humidity ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
-          <div className="flex items-center gap-3">
-            <FaMountain className="text-[#7a5c2d] text-lg" />
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture Sensor</span>
-          </div>
-          <span className={`px-3 py-1 rounded-full font-medium ${
-            sensorStatus.soil_moisture 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`} style={{ fontSize: 'var(--text-xs)' }}>
-            {sensorStatus.soil_moisture ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
-          <div className="flex items-center gap-3">
-            <FaMountain className="text-[#7a5c2d] text-lg" />
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Soil pH Sensor</span>
-          </div>
-          <span className={`px-3 py-1 rounded-full font-medium ${
-            sensorStatus.soil_ph 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`} style={{ fontSize: 'var(--text-xs)' }}>
-            {sensorStatus.soil_ph ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-[#F5F9F1] rounded-lg">
-          <div className="flex items-center gap-3">
-            <BsSun className="text-[#deb83c] text-lg" />
-            <span className="font-medium text-[#356B2C]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity Sensor</span>
-          </div>
-          <span className={`px-3 py-1 rounded-full font-medium ${
-            sensorStatus.light_level 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`} style={{ fontSize: 'var(--text-xs)' }}>
-            {sensorStatus.light_level ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-[#B8D4A8]">
-        <div className="flex items-center justify-between" style={{ fontSize: 'var(--text-sm)' }}>
-          <div className="flex items-center gap-2 text-[#4A7C59]">
-            <Clock className="w-4 h-4" />
-            <span>Last Updated:</span>
-          </div>
-          <span className="font-medium text-[#356B2C]">
-            {sensorData?.timestamp 
-              ? new Date(sensorData.timestamp).toLocaleTimeString() 
-              : 'N/A'}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div 
       className="bg-[#E6F0D3] min-h-screen font-sans text-[#356B2C] px-4 sm:px-6 lg:px-8 pt-6 pb-8"
@@ -277,134 +393,178 @@ const LiveData: React.FC = () => {
       <main className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-bold text-[#1E441E] mb-2 flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
-            <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
-            Live Data
-          </h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h1 className="font-bold text-[#1E441E] flex items-center gap-3" style={{ fontSize: 'var(--text-xl)' }}>
+                <Activity className="w-8 h-8 sm:w-10 sm:h-10 text-[#456C2D]" />
+                Live Sensor Data
+              </h1>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-[#456C2D] text-white rounded-lg hover:bg-[#356B2C] disabled:opacity-50 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          
           <p className="text-[#456C2D]" style={{ fontSize: 'var(--text-base)' }}>
-            Real-time monitoring of your farm's environmental conditions
+            Real-time monitoring of environmental conditions
           </p>
-          <div className="mt-3 flex items-center gap-3">
+          
+          {/* Farm Selector */}
+          <div className="mt-4 p-4 bg-white rounded-lg border border-[#B8D4A8]">
+            <label className="block text-sm font-medium text-[#456C2D] mb-2">
+              <MapPin className="w-4 h-4 inline mr-1" />
+              Select Farm
+            </label>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative">
+                <select
+                  value={selectedFarm?._id || ''}
+                  onChange={(e) => {
+                    const farm = farms.find(f => f._id === e.target.value);
+                    setSelectedFarm(farm || null);
+                  }}
+                  className="appearance-none bg-white border border-[#B8D4A8] rounded-lg px-4 py-2 pr-8 text-[#356B2C] focus:outline-none focus:ring-2 focus:ring-[#456C2D] focus:border-transparent min-w-[200px] cursor-pointer disabled:cursor-not-allowed"
+                  style={{ fontSize: 'var(--text-sm)' }}
+                  disabled={farms.length === 0}
+                >
+                  {farms.length === 0 ? (
+                    <option value="">No farms available</option>
+                  ) : (
+                    <>
+                      <option value="">General Sensor Data (Default)</option>
+                      {farms.map((farm) => (
+                        <option key={farm._id} value={farm._id}>
+                          {farm.fieldName} - {farm.location}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#456C2D] pointer-events-none" />
+              </div>
+              {selectedFarm && (
+                <div className="text-xs text-[#4A7C59]">
+                  <span className="font-medium">Growth Stage:</span> {selectedFarm.growthStage} | 
+                  <span className="font-medium ml-2">Soil:</span> {selectedFarm.soilType}
+                  {selectedFarm.deviceId && (
+                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                      Device Connected
+                    </span>
+                  )}
+                </div>
+              )}
+              {farms.length === 0 && (
+                <div className="text-xs text-[#4A7C59]">
+                  <span className="font-medium">Status:</span> No farms configured yet. Contact admin to add farms.
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
               Real-time Monitoring
             </span>
-            <div className="flex items-center gap-2 text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>Auto-refreshing every 3 seconds</span>
-            </div>
+            {selectedFarm && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#8B4513] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
+                <MapPin className="w-3 h-3 mr-1" />
+                {selectedFarm.fieldName}
+              </span>
+            )}
+            {error && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-orange-100 text-orange-800" style={{ fontSize: 'var(--text-sm)' }}>
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Demo Mode
+              </span>
+            )}
           </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Left Column - Temperature and Sensor Status */}
-          <div className="w-full lg:w-1/3 space-y-6">
-            {/* Temperature Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-red-50 rounded-lg">
-              <FaThermometerHalf className="text-[#e74c3c] text-3xl" />
-                </div>
-                <div>
-                  <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>TEMPERATURE</div>
-                  <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.temperature}°C</div>
-                </div>
-              </div>
-            </div>
-
+          {/* Left Column - Sensor Status Only */}
+          <div className="w-full lg:w-1/3">
             {/* Sensor Status */}
             {renderSensorStatus()}
           </div>
 
-          {/* Right Column - Sensor Readings Grid */}
+          {/* Right Column - All Sensor Readings Grid */}
           <div className="w-full lg:w-2/3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Soil Moisture */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-center">
-                  <div className="p-3 bg-orange-50 rounded-lg w-fit mx-auto mb-4">
-                    <FaMountain className="text-3xl text-[#7a5c2d]" />
+            <div className="space-y-6">
+              {/* Top Row - Temperature and Humidity */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Temperature */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-red-50 rounded-lg">
+                      <FaThermometerHalf className="text-[#e74c3c] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>TEMPERATURE</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.temperature}°C</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil Moisture</p>
-                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_moisture}</div>
-              <span className={`inline-block ${
-                measurements.soil_moisture < 30 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-              } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                {measurements.soil_moisture < 30 ? 'Low Moisture' : 'Good Condition'}
-              </span>            
                 </div>
-            </div>
 
-            {/* Soil Ph Level */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-center">
-                  <div className="p-3 bg-purple-50 rounded-lg w-fit mx-auto mb-4">
-                    <FaMountain className="text-3xl text-[#7a5c2d]" />
+                {/* Humidity */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <IoWaterOutline className="text-[#2563eb] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>HUMIDITY</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.humidity}%</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59] mb-2" style={{ fontSize: 'var(--text-sm)' }}>Soil pH Level</p>
-                  <div className="font-bold text-[#356B2C] mb-3" style={{ fontSize: '32px' }}>{measurements.soil_ph}</div>
-              <span className={`inline-block ${
-                measurements.soil_ph > 7 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-              } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                {measurements.soil_ph < 7 ? 'Good Condition' : 'Soil pH indicates alkalinity'}
-              </span>          
                 </div>
-            </div>
+              </div>
 
-            {/* Humidity */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                <IoWaterOutline className="text-2xl text-[#2d67c4]" />
+              {/* Middle Row - Soil Moisture and Soil pH */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Soil Moisture */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-cyan-50 rounded-lg">
+                      <Droplets className="text-[#0891b2] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>SOIL MOISTURE</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.soil_moisture}%</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Humidity</p>
-              </div>
-                <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
-                <div 
-                    className="bg-[#2d67c4] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.humidity, 100)}%`, fontSize: 'var(--text-sm)' }}
-                >
-                  {measurements.humidity}%
                 </div>
-              </div>
-              <div className="text-center">
-                <span className={`inline-block ${
-                  measurements.humidity < 40 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                  {measurements.humidity < 40 ? 'Too Low' : 'Good Condition'}
-                </span>
-              </div>
-            </div>
 
-            {/* Light Intensity */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-yellow-50 rounded-lg">
-                <BsSun className="text-2xl text-[#deb83c]" />
+                {/* Soil pH Level */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 rounded-lg">
+                      <TestTube className="text-[#7c3aed] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>SOIL pH LEVEL</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.soil_ph}</div>
+                    </div>
                   </div>
-                  <p className="font-medium text-[#4A7C59]" style={{ fontSize: 'var(--text-sm)' }}>Light Intensity</p>
-              </div>
-                <div className="relative w-full h-12 bg-gray-200 rounded-full overflow-hidden mb-3">
-                <div 
-                    className="bg-[#deb83c] h-full rounded-full flex items-center justify-center text-white font-semibold transition-all duration-300"
-                    style={{ width: `${Math.min(measurements.light_level / 10, 100)}%`, fontSize: 'var(--text-sm)' }}
-                >
-                  {measurements.light_level} LUX
                 </div>
               </div>
-              <div className="text-center">
-                <span className={`inline-block ${
-                  measurements.light_level < 50 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                } font-medium px-3 py-1 rounded-full`} style={{ fontSize: 'var(--text-xs)' }}>
-                  {measurements.light_level < 50 ? 'Low Light' : 'Best Condition'}
-                </span>
+
+              {/* Bottom Row - Light Intensity (centered) */}
+              <div className="flex justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-6 w-full sm:w-1/2">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-yellow-50 rounded-lg">
+                      <BsSun className="text-[#eab308] text-3xl" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-[#4A7C59] mb-1" style={{ fontSize: 'var(--text-sm)' }}>LIGHT INTENSITY</div>
+                      <div className="font-bold text-[#356B2C]" style={{ fontSize: '32px' }}>{measurements.light_level} LUX</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

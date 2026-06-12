@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService, { User } from '../api/services/authService';
-import * as jwt_decode from 'jwt-decode'; // Changed to named import
-import SessionExpirationModal from '../components/SessionExpirationModal';
+import * as jwt_decode from 'jwt-decode';
 
 // Define token payload type
 interface TokenPayload {
   userId: string;
-  username: string; // Added username to the TokenPayload
+  username: string;
   role: string;
   exp: number;
 }
@@ -16,7 +15,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }>;
+  verifyOTP: (email: string, otp: string) => Promise<boolean>;
+  resendLoginOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
+  sendForgotPasswordOTP: (email: string) => Promise<{ success: boolean; message?: string }>;
+  verifyForgotPasswordOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   resetInactivityTimer: () => void;
   refreshUserData: () => void;
@@ -56,22 +60,17 @@ export const isSuperAdmin = (userRole: string): boolean => {
 
 // Inactivity timeout in milliseconds (15 minutes = 900000ms)
 const INACTIVITY_TIMEOUT = 900000;
-// Warning timeout (2 minutes before expiration = 120000ms)
-const WARNING_TIMEOUT = 120000;
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
-  const [warningTimer, setWarningTimer] = useState<NodeJS.Timeout | null>(null);
-  const [showSessionModal, setShowSessionModal] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes in seconds
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   // Function to decode and validate token
   const parseToken = (token: string): User | null => {
     try {
-      const decoded = jwt_decode.jwtDecode<TokenPayload>(token); // Using named import
+      const decoded = jwt_decode.jwtDecode<TokenPayload>(token);
       
       // Check if token is expired
       const currentTime = Date.now() / 1000;
@@ -82,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Return user data from token
       return {
         userId: decoded.userId,
-        username: decoded.username, // Include username from token
+        username: decoded.username,
         role: decoded.role
       };
     } catch (error) {
@@ -93,27 +92,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Start the inactivity timer
   const startInactivityTimer = () => {
-    // Clear any existing timers
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-    if (warningTimer) {
-      clearTimeout(warningTimer);
+    // Clear any existing timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
     }
     
-    // Set warning timer (2 minutes before expiration)
-    const warningTimerInstance = setTimeout(() => {
-      setShowSessionModal(true);
-      setTimeRemaining(120); // 2 minutes
-    }, INACTIVITY_TIMEOUT - WARNING_TIMEOUT);
-    
-    // Set inactivity timer (full timeout)
-    const inactivityTimerInstance = setTimeout(() => {
+    // Set inactivity timer (full timeout - direct logout)
+    inactivityTimerRef.current = setTimeout(() => {
+      console.log('Session expired due to inactivity (15 minutes)');
       logout();
     }, INACTIVITY_TIMEOUT);
     
-    setWarningTimer(warningTimerInstance);
-    setInactivityTimer(inactivityTimerInstance);
+    console.log('Inactivity timer started - will expire in 15 minutes');
   };
 
   // Reset the inactivity timer
@@ -121,23 +111,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user) {
       startInactivityTimer();
     }
-  };
-
-  // Handle session extension
-  const handleExtendSession = () => {
-    setShowSessionModal(false);
-    resetInactivityTimer();
-  };
-
-  // Handle session logout
-  const handleSessionLogout = () => {
-    setShowSessionModal(false);
-    logout();
-  };
-
-  // Close session modal
-  const handleCloseSessionModal = () => {
-    setShowSessionModal(false);
   };
 
   useEffect(() => {
@@ -180,11 +153,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Cleanup
       return () => {
-        if (inactivityTimer) {
-          clearTimeout(inactivityTimer);
-        }
-        if (warningTimer) {
-          clearTimeout(warningTimer);
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
         }
         
         activityEvents.forEach(event => {
@@ -194,9 +164,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [user]);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; requiresOTP?: boolean; email?: string; message?: string; data?: any }> => {
     try {
-      const response = await authService.login({ username, password });
+      const response = await authService.login(username, password);
+      
+      if (response.success) {
+        // Check if OTP is required
+        if ((response as any).requiresOTP) {
+          
+          return {
+            success: true,
+            requiresOTP: true,
+            data: (response as any).data, 
+            message: response.message
+          };
+        }
+        
+        // Complete login (no OTP required)
+        if (response.data?.user) {
+          setUser(response.data.user);
+          startInactivityTimer();
+          return { success: true };
+        }
+      }
+      
+      return { 
+        success: false, 
+        message: response.message || 'Login failed' 
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        message: 'Login failed. Please try again.' 
+      };
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string): Promise<boolean> => {
+    try {
+      const response = await authService.verifyLoginOTP(email, otp);
       if (response.success && response.data?.user) {
         setUser(response.data.user);
         startInactivityTimer();
@@ -204,23 +211,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Verify OTP error:', error);
       return false;
+    }
+  };
+
+  const resendLoginOTP = async (email: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.sendLoginOTP(email);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Resend login OTP error:', error);
+      return { success: false, message: 'Failed to resend OTP. Please try again.' };
     }
   };
 
   const logout = () => {
     authService.logout();
     setUser(null);
-    setShowSessionModal(false);
     
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      setInactivityTimer(null);
-    }
-    if (warningTimer) {
-      clearTimeout(warningTimer);
-      setWarningTimer(null);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
     }
     
     // Redirect to login page
@@ -237,11 +249,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const value = {
+  // Forgot password methods
+  const sendForgotPasswordOTP = async (email: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.sendForgotPasswordOTP(email);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Send forgot password OTP error:', error);
+      return { success: false, message: 'Failed to send OTP. Please try again.' };
+    }
+  };
+
+  const verifyForgotPasswordOTP = async (email: string, otp: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.verifyForgotPasswordOTP(email, otp);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Verify forgot password OTP error:', error);
+      return { success: false, message: 'Failed to verify OTP. Please try again.' };
+    }
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.resetPassword(email, otp, newPassword);
+      return { success: response.success, message: response.message };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { success: false, message: 'Failed to reset password. Please try again.' };
+    }
+  };
+
+  const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     loading,
     login,
+    verifyOTP,
+    resendLoginOTP,
+    sendForgotPasswordOTP,
+    verifyForgotPasswordOTP,
+    resetPassword,
     logout,
     resetInactivityTimer,
     refreshUserData
@@ -250,13 +298,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <SessionExpirationModal
-        isOpen={showSessionModal}
-        onClose={handleCloseSessionModal}
-        onExtendSession={handleExtendSession}
-        onLogout={handleSessionLogout}
-        timeRemaining={timeRemaining}
-      />
     </AuthContext.Provider>
   );
 };

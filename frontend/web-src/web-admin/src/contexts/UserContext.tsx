@@ -8,6 +8,7 @@ import authService from '../api/services/authService';
 interface UserContextType {
   users: User[];
   farmers: User[]; // Farmers filtered from users
+  totalUsersCount: number; // Total count of users
   loading: boolean;
   error: string | null;
   errorType: 'network' | 'backend' | 'auth' | 'general' | null;
@@ -33,10 +34,12 @@ interface UserProviderProps {
 export function UserProvider({ children }: UserProviderProps) {
   const { user, isAuthenticated } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'network' | 'backend' | 'auth' | 'general' | null>(null);
   const [fetchTriggered, setFetchTriggered] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   
   // Current user is directly from AuthContext (no conversion needed)
   const currentUser = user;
@@ -44,11 +47,16 @@ export function UserProvider({ children }: UserProviderProps) {
   // Compute isAdmin for backward compatibility (only admin role)
   const isAdmin = user?.role === 'admin';
 
-  // New property to check for both admin and super_admin access
-  const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin';
+  // New property to check for regional_admin, admin and super_admin access
+  const hasAdminAccess = user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin';
 
   // Derive farmers from users whenever users change
   const farmers = users.filter(user => user.role === 'user' || user.role === 'farmer');
+  
+  // Update total users count whenever users array changes
+  useEffect(() => {
+    setTotalUsersCount(users.length);
+  }, [users]);
 
   // Fetch users only when explicitly called 
   // or when component is mounted with valid admin user
@@ -63,23 +71,22 @@ export function UserProvider({ children }: UserProviderProps) {
     } else if (!hasAdminAccess) {
       // Clear users array when not admin or super_admin
       setUsers([]);
-      setLoading(false);
     }
   }, [isAuthenticated, hasAdminAccess]);
 
   // Function to fetch all users
   const fetchUsers = async () => {
+    // Debounce: prevent rapid successive calls
+    const now = Date.now();
+    if (now - lastFetchTime < 5000) { // 5 second debounce
+      console.log('Fetch users debounced - too soon since last call');
+      return;
+    }
+    setLastFetchTime(now);
+
     // Verify authentication state before attempting to fetch
     if (!isAuthenticated) {
       setError("Authentication required");
-      setErrorType('auth');
-      setLoading(false);
-      return;
-    }
-    
-    // Immediately return if not admin or super_admin to prevent unauthorized requests
-    if (!hasAdminAccess) {
-      setError("Unauthorized: Admin privileges required");
       setErrorType('auth');
       setLoading(false);
       return;
@@ -102,12 +109,18 @@ export function UserProvider({ children }: UserProviderProps) {
       const fetchedUsers = await userService.getUsers();
       setUsers(fetchedUsers);
     } catch (err: any) {
-      console.error('Error in fetchUsers:', err);
+      // Only log non-timeout errors to reduce console noise
+      if (err.code !== 'ECONNABORTED') {
+        console.error('Error in fetchUsers:', err);
+      }
       
       // Determine error type based on the error
       if (err.code === 'ECONNABORTED' || err.message?.includes('Network Error')) {
-        setError('Connection timeout. Please check your internet connection.');
-        setErrorType('network');
+        // Don't set error state for timeouts if users are already loaded
+        if (users.length === 0) {
+          setError('Connection timeout. Please check your internet connection.');
+          setErrorType('network');
+        }
       } else if (err.response?.status >= 500) {
         setError('Server error. Please try again later.');
         setErrorType('backend');
@@ -205,6 +218,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const contextValue: UserContextType = {
     users,
     farmers,
+    totalUsersCount,
     loading,
     error,
     errorType,

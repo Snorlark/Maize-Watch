@@ -114,7 +114,7 @@ export default function ProductPage() {
               <div className=" space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="py-2 ">
-                    <h2 className=" text-right text-3xl md:text-6xl font-bold text-(--color-dgreen)">See the prototype.</h2>
+                    <h2 className=" text-right text-3xl md:text-5xl font-bold text-(--color-dgreen)">See the prototype.</h2>
                   </div>
 
                 </div>
@@ -187,7 +187,7 @@ export default function ProductPage() {
                 </div>
 
                 <button
-                  onClick={() => navigate('/technology')}
+                  onClick={() => navigate('/knowledge-hub')}
                   className="flex items-center gap-2 text-lg font-semibold text-(--color-dgreen) border-b-2 border-(--color-dgreen)  hover:border-(--color-lgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
                 >
                   LEARN MORE

@@ -25,11 +25,22 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOpen, onC
   // Load user data when modal opens
   useEffect(() => {
     if (isOpen && user) {
+      // Handle address field - convert object to string if needed
+      let addressString = '';
+      if (typeof user.address === 'string') {
+        addressString = user.address;
+      } else if (user.address && typeof user.address === 'object') {
+        // Convert address object to string format
+        const addr = user.address as { region?: string; province?: string; municipality?: string; barangay?: string };
+        const parts = [addr.barangay, addr.municipality, addr.province, addr.region].filter(Boolean);
+        addressString = parts.join(', ');
+      }
+      
       setFormData({
         username: user.username || '',
         fullName: user.fullName || '',
         contactNumber: user.contactNumber || '',
-        address: user.address || '',
+        address: addressString,
         email: user.email || ''
       });
       setError(null);

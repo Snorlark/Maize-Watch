@@ -49,7 +49,7 @@ class _SplashScreenState extends State<SplashScreen>
       // Initialize session first, then check authentication
       context.read<AuthenticationBloc>().add(InitializeSessionEvent());
       context.read<AuthenticationBloc>().add(CheckAuthStatusEvent());
-      
+
       // Start analytics loading early for better performance
       _startAnalyticsLoading();
     });
@@ -59,13 +59,14 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         // Check if user is authenticated but just having network issues
         final authState = context.read<AuthenticationBloc>().state;
-        if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
-          print("🌽 Splash: User is authenticated but analytics timeout - going to home screen for offline access");
+        if (authState.status == AuthenticationStatus.authenticated &&
+            authState.user != null) {
+          print(
+            "🌽 Splash: User is authenticated but analytics timeout - going to home screen for offline access",
+          );
           _navigateTo(const HomeScreen());
         } else {
-          _showErrorAndNavigate(
-            S.of(context).connection_timeout,
-          );
+          _showErrorAndNavigate(S.of(context).connection_timeout);
         }
       }
     });
@@ -112,27 +113,32 @@ class _SplashScreenState extends State<SplashScreen>
     _analyticsTimer = Timer(const Duration(milliseconds: 1000), () {
       if (mounted) {
         final authState = context.read<AuthenticationBloc>().state;
-        if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {
+        if (authState.status == AuthenticationStatus.authenticated &&
+            authState.user != null) {
           print("🌽 Splash: Pre-loading analytics for better performance");
           // Start analytics loading in background
-          context.read<FarmBloc>().add(GetUserFarmsEvent(userId: authState.user!.id));
-          
+          context.read<FarmBloc>().add(
+            GetUserFarmsEvent(userId: authState.user!.id),
+          );
+
           // Listen for farm loading completion and then load analytics
           _listenForFarmLoadingAndLoadAnalytics();
         }
       }
     });
   }
-  
+
   void _listenForFarmLoadingAndLoadAnalytics() {
     // Listen to FarmBloc stream to know when farms are loaded
     context.read<FarmBloc>().stream.listen((farmState) {
       if (mounted && farmState is FarmsLoaded && farmState.farms.isNotEmpty) {
-        print("🌽 Splash: Farms loaded, pre-loading monitoring analytics for all farms and fields");
-        
+        print(
+          "🌽 Splash: Farms loaded, pre-loading monitoring analytics for all farms and fields",
+        );
+
         // Load analytics for all farms and their fields
         _loadAnalyticsForAllFarms(farmState.farms);
-        
+
         // Also load latest readings for immediate display
         Timer(const Duration(milliseconds: 500), () {
           if (mounted) {
@@ -140,66 +146,76 @@ class _SplashScreenState extends State<SplashScreen>
             context.read<MonitoringBloc>().add(LoadLatestReadingsEvent());
           }
         });
-        
+
         // Listen for analytics loading completion
         _listenForAnalyticsLoading();
       }
     });
   }
-  
+
   /// Load analytics for all farms and their fields to ensure prescriptions are available immediately
   void _loadAnalyticsForAllFarms(List<Farm> farms) async {
     try {
       print("🌽 Splash: Loading analytics for ${farms.length} farms");
-      
+
       // Load analytics for each farm
       for (final farm in farms) {
         if (farm.id != null) {
-          print("🌽 Splash: Loading analytics for farm: ${farm.id} (${farm.farmName})");
-          
+          print(
+            "🌽 Splash: Loading analytics for farm: ${farm.id} (${farm.farmName})",
+          );
+
           // Load farm-level analytics
-          context.read<MonitoringBloc>().add(LoadFarmAnalyticsEvent(farmId: farm.id!));
-          
+          context.read<MonitoringBloc>().add(
+            LoadFarmAnalyticsEvent(farmId: farm.id!),
+          );
+
           // Load field-specific analytics for each field in this farm
           for (final field in farm.fields) {
-            print("🌽 Splash: Loading field-specific analytics for field: ${field.fieldName}");
-            
+            print(
+              "🌽 Splash: Loading field-specific analytics for field: ${field.fieldName}",
+            );
+
             // Load field-specific analytics for this field
             context.read<MonitoringBloc>().add(
               LoadWeeklyDataEvent(
-                farmId: farm.id!, 
+                farmId: farm.id!,
                 fieldId: field.fieldName,
-                weekOffset: 0
-              )
+                weekOffset: 0,
+              ),
             );
           }
         }
       }
-      
+
       print("🌽 Splash: Completed loading analytics for all farms and fields");
     } catch (e) {
       print("🌽 Splash: Error loading analytics for all farms: $e");
     }
   }
-  
+
   void _listenForAnalyticsLoading() {
     // Listen to MonitoringBloc stream to know when analytics are loaded
     context.read<MonitoringBloc>().stream.listen((monitoringState) {
       if (mounted && monitoringState.farmAnalytics != null) {
-        print("🌽 Splash: Analytics loaded successfully, navigating to home screen");
+        print(
+          "🌽 Splash: Analytics loaded successfully, navigating to home screen",
+        );
         // Cancel timeout timer since we have data
         _timeoutTimer?.cancel();
         // Navigate to home screen with loaded data
         _navigateTo(const HomeScreen());
       }
     });
-    
+
     // Fallback: If analytics don't load within 5 seconds, navigate anyway
     Timer(const Duration(seconds: 5), () {
       if (mounted) {
         final monitoringState = context.read<MonitoringBloc>().state;
         if (monitoringState.farmAnalytics == null) {
-          print("🌽 Splash: Analytics loading timeout, navigating to home screen anyway");
+          print(
+            "🌽 Splash: Analytics loading timeout, navigating to home screen anyway",
+          );
           _timeoutTimer?.cancel();
           _navigateTo(const HomeScreen());
         }
@@ -240,8 +256,8 @@ class _SplashScreenState extends State<SplashScreen>
     return MultiBlocListener(
       listeners: [
         BlocListener<AuthenticationBloc, AuthenticationState>(
-      listener: (context, state) {
-        if (state.status == AuthenticationStatus.authenticated) {
+          listener: (context, state) {
+            if (state.status == AuthenticationStatus.authenticated) {
               // After authentication, request user's farms before deciding where to go
               if (!_requestedFarms && state.user != null) {
                 _requestedFarms = true;
@@ -287,9 +303,9 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                 }
               }
-        } else if (state.status == AuthenticationStatus.unauthenticated) {
-          // Navigate to landing screen if not authenticated
-          print("🔍 Splash: User not authenticated, navigating to landing");
+            } else if (state.status == AuthenticationStatus.unauthenticated) {
+              // Navigate to landing screen if not authenticated
+              print("🔍 Splash: User not authenticated, navigating to landing");
               _timeoutTimer?.cancel();
               _navigateTo(const LandingScreen());
             } else if (state.status == AuthenticationStatus.failure) {
@@ -309,7 +325,9 @@ class _SplashScreenState extends State<SplashScreen>
               print("🌽 Splash: FarmsLoaded. hasFarms=$hasFarms");
               setState(() {
                 _statusMessage =
-                    hasFarms ? S.of(context).welcome_back : S.of(context).setting_up_your_farm;
+                    hasFarms
+                        ? S.of(context).welcome_back
+                        : S.of(context).setting_up_your_farm;
               });
 
               // Stop rotation animation
@@ -331,19 +349,23 @@ class _SplashScreenState extends State<SplashScreen>
               _timeoutTimer?.cancel(); // Cancel timeout when we get a response
               _farmLoadingTimer?.cancel(); // Cancel farm loading timeout
               _isLoadingFarms = false;
-              
+
               // Check if it's an authentication error
               if (state.message.contains('Authentication expired') ||
                   state.message.contains('Please log in again') ||
                   state.message.contains('401') ||
                   state.message.contains('Unauthorized')) {
-                print("🚨 Splash: Authentication expired - redirecting to landing");
+                print(
+                  "🚨 Splash: Authentication expired - redirecting to landing",
+                );
                 _showErrorAndNavigate(S.of(context).session_expired);
               } else if (state.message.contains('Network error') ||
-                         state.message.contains('Server error') ||
-                         state.message.contains('internet connection')) {
+                  state.message.contains('Server error') ||
+                  state.message.contains('internet connection')) {
                 // Network/server errors should go to home screen for offline access
-                print("🚨 Splash: Network/Server error - going to home screen for offline access");
+                print(
+                  "🚨 Splash: Network/Server error - going to home screen for offline access",
+                );
                 _navigateTo(const HomeScreen());
               } else {
                 // Only redirect to farm registration for legitimate "no farms found" scenarios

@@ -23,9 +23,9 @@ export const useAdmin = (redirectOnFailure = true) => {
         return;
       }
 
-      // Check if user is admin
+      // Check if user is regional_admin, admin or super_admin
       const user = authService.getCurrentUser();
-      const hasAdminRole = user?.role === 'admin';
+      const hasAdminRole = user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin';
       
       setIsAdmin(hasAdminRole);
       setLoading(false);
@@ -44,9 +44,11 @@ export const useAdmin = (redirectOnFailure = true) => {
 // Add to your existing auth utilities
 export const hasRole = (userRole: string, requiredRole: string): boolean => {
   const roleHierarchy: Record<string, number> = {
+    'user': 1,
     'farmer': 1,
-    'admin': 2,
-    'super_admin': 3
+    'regional_admin': 2,
+    'admin': 3,
+    'super_admin': 4
   };
   
   const userLevel = roleHierarchy[userRole] || 0;

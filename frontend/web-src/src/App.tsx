@@ -15,6 +15,7 @@ import AdminNotFound from '../web-admin/src/pages/NotFound';
 // Admin Pages
 import Dashboard from '../web-admin/src/pages/Dashboard';
 import AccountManagement from '../web-admin/src/pages/AccountManagement';
+import FarmAssignmentManagement from '../web-admin/src/pages/FarmAssignmentManagement';
 import LiveData from '../web-admin/src/pages/LiveData';
 import DataHistory from '../web-admin/src/pages/DataHistory'; 
 import ActivityLogPage from '../web-admin/src/pages/ActivityLog'; 
@@ -27,6 +28,7 @@ import SolutionsPage from '../web-public/src/pages/SolutionsPage';
 import ProductPage from '../web-public/src/pages/ProductPage';
 import HeaderMenuPage from '../web-public/src/pages/HeaderMenu';
 import GetAppPage from '../web-public/src/pages/GetApp';
+import KnowledgeHubPage from '../web-public/src/pages/KnowledgeHubPage';
 
 // Layout component for authenticated admin pages
 const AdminAuthenticatedLayout = () => {
@@ -44,6 +46,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
+      <UserProvider>
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Index />} />
@@ -52,7 +55,8 @@ const App: React.FC = () => {
         <Route path="/product" element={<ProductPage />} />
         <Route path="/header-menu" element={<HeaderMenuPage />} />
         <Route path="/getapp" element={<GetAppPage />} />
-
+        <Route path="/knowledge-hub" element={<KnowledgeHubPage />} />
+        
         {/* Admin Routes */}
         <Route path={`${ADMIN_PATH}`}>
           <Route index element={<Navigate to="login" replace />} />
@@ -68,8 +72,15 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Admin-only routes */}
-          <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
+          {/* Regional Admin and above routes */}
+          <Route element={<ProtectedRoute requireRegionalAdmin={true} redirectPath="login" />}>
+            <Route element={<AdminAuthenticatedLayout />}>
+              <Route path="activity-logs" element={<ActivityLogPage />} />
+            </Route>
+          </Route>
+
+          {/* Account Management: Regional Admin ONLY (plus Super Admin) */}
+          <Route element={<ProtectedRoute requireRegionalAdminOnly={true} redirectPath="login" />}>
             <Route element={<AdminAuthenticatedLayout />}>
               <Route
                 path="accountmanagement"
@@ -82,17 +93,14 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Super Admin-only route */}
-          <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="login" />}>
-            <Route element={<AdminAuthenticatedLayout />}>
-              <Route path="activity-logs" element={<ActivityLogPage />} />
-            </Route>
-          </Route>
-
           {/* Admin Logs route */}
           <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
             <Route element={<AdminAuthenticatedLayout />}>
               <Route path="logs" element={<AdminLogs />} />
+              <Route 
+                path="farm-assignments" 
+                element={<FarmAssignmentManagement />} 
+              />
             </Route>
           </Route>
 
@@ -100,6 +108,7 @@ const App: React.FC = () => {
           <Route path="*" element={<AdminNotFound />} />
         </Route>
       </Routes>
+      </UserProvider>
     </AuthProvider>
   );
 };

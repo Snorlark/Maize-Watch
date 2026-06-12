@@ -32,9 +32,9 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <Routes>
-        {/* Public Routes */}
-        <Route index element={<Navigate to="login" replace />} />
-        <Route path="login" element={<LoginForm />} />
+        {/* Public Routes - Updated for new admin portal path */}
+        <Route index element={<Navigate to="admin-portal-xyz123/login" replace />} />
+        <Route path="admin-portal-xyz123/login" element={<LoginForm />} />
         <Route path="unauthorized" element={<Unauthorized />} />
 
         {/* Protected Routes that require authentication */}
@@ -46,8 +46,15 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Admin-only routes */}
-        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
+        {/* Regional Admin and above routes */}
+        <Route element={<ProtectedRoute requireRegionalAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="activity-logs" element={<ActivityLogPage />} />
+          </Route>
+        </Route>
+
+        {/* Account Management: Regional Admin ONLY (plus Super Admin) */}
+        <Route element={<ProtectedRoute requireRegionalAdminOnly={true} redirectPath="admin-portal-xyz123/login" />}>
           <Route element={<AuthenticatedLayout />}>
             <Route
               path="accountmanagement"
@@ -60,15 +67,8 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Super Admin-only route */}
-        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="login" />}>
-          <Route element={<AuthenticatedLayout />}>
-            <Route path="activity-logs" element={<ActivityLogPage />} />
-          </Route>
-        </Route>
-
         {/* Admin Logs route */}
-        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
+        <Route element={<ProtectedRoute requireAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
           <Route element={<AuthenticatedLayout />}>
             <Route path="logs" element={<AdminLogs />} />
           </Route>

@@ -47,7 +47,7 @@ export default function HeaderMenuPage() {
                 <div className="lg:mt-0 md:flex md:flex-col md:items-end">
                   
                   <button onClick={() => navigate('/getapp')} className="bg-(--color-lgreen) text-(--color-white) px-4 md:px-8 py-2 md:py-4 rounded-md text-base md:text-2xl xl:text-4xl font-semibold cursor-pointer hover:bg-(--color-green) ease-in-out duration-250">Get App Now</button>
-                  <button onClick={() => navigate('/admin-portal-xyz123')} className="mt-10 flex items-center text:1xl md:text-2xl font-bold text-(--color-dgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">Admin</button>
+                  {/* <button onClick={() => navigate('/admin-portal-xyz123')} className="mt-10 flex items-center text:1xl md:text-2xl font-bold text-(--color-dgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">Admin</button> */}
                   <button
                       onClick={() => setIsOpen(!isOpen)}
                       className="mt-10 flex items-center text:1xl md:text-2xl font-bold text-(--color-dgreen) hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
@@ -60,9 +60,24 @@ export default function HeaderMenuPage() {
                       <div className="text-(--color-dgreen) md:text-right">
   
                         <div>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">F.A.Qs</h3>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">App Run-Through</h3>
-                          <h3 className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer">Help</h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#faqs')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            F.A.Qs
+                          </h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#app-tutorial')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            App Run-Through
+                          </h3>
+                          <h3 
+                            onClick={() => navigate('/knowledge-hub#help')} 
+                            className="text-base md:text-[20px] xl:mt-5 font-medium hover:text-(--color-lgreen) transition-all ease-in-out duration-300 pb-1 cursor-pointer"
+                          >
+                            Help
+                          </h3>
   
                         </div>
   
@@ -72,16 +87,16 @@ export default function HeaderMenuPage() {
                   <div className="mt-10 flex gap-4">
   
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/instagram.png" alt="Instagram" className="h-5 w-5  md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/instagram.png" alt="Instagram" className="h-5 w-5  md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/github.png" alt="GitHub" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/github.png" alt="GitHub" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/linkedin.png" alt="LinkedIn" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/linkedin.png" alt="LinkedIn" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                       <a href="#" className="text-(--color-dgreen) hover:opacity-80 transition-all duration-300">
-                        <img src="/web-public/public/images/x.png" alt="X" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
+                        <img src="/images/x.png" alt="X" className="h-5 w-5 md:h-7 md:w-7  lg:h-10 lg:w-10" />
                       </a>
                   </div>
                 </div>
