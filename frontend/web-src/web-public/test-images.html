@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Test</title>
+</head>
+<body>
+    <h1>Image Loading Test</h1>
+    <p>Testing if images load correctly:</p>
+    
+    <h2>Logo Image:</h2>
+    <img src="/images/logo.png" alt="Logo" style="border: 2px solid red; max-width: 200px;">
+    
+    <h2>Background Image:</h2>
+    <div style="background-image: url('/images/background.png'); width: 300px; height: 200px; border: 2px solid blue; background-size: cover;"></div>
+    
+    <h2>Small Logo:</h2>
+    <img src="/images/smalllogo.png" alt="Small Logo" style="border: 2px solid green; max-width: 100px;">
+    
+    <h2>Main Logo:</h2>
+    <img src="/images/mainlogo.png" alt="Main Logo" style="border: 2px solid purple; max-width: 200px;">
+    
+    <h2>Maize Watch Logo:</h2>
+    <img src="/maizewatchlogo.png" alt="Maize Watch Logo" style="border: 2px solid orange; max-width: 200px;">
+    
+    <script>
+        // Test if images load
+        const images = document.querySelectorAll('img');
+        images.forEach((img, index) => {
+            img.onload = () => console.log(`Image ${index + 1} loaded successfully`);
+            img.onerror = () => console.error(`Image ${index + 1} failed to load:`, img.src);
+        });
+    </script>
+</body>
+</html>

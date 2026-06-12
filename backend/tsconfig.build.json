@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/tests/**/*",
+    "node_modules/express-rate-limit/tsconfig.json"
+  ]
+}
