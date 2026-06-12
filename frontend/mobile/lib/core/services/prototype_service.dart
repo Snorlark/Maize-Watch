@@ -1,0 +1,183 @@
+import 'package:dio/dio.dart';
+import 'package:mobile/core/config/environment.dart';
+import 'package:mobile/generated/l10n.dart';
+
+class PrototypeService {
+  static final Dio _dio = Dio();
+
+  /// Validate if a prototype ID exists and is available
+  static Future<Map<String, dynamic>> validatePrototype(String prototypeId) async {
+    try {
+      final response = await _dio.post(
+        '${AppConfig.baseUrl}/api/prototypes/validate',
+        data: {'prototype_id': prototypeId},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to validate prototype: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return {
+          'success': false,
+          'message': S.current.prototype_id_not_found,
+          'available': false,
+        };
+      } else if (e.response?.statusCode == 400) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? S.current.invalid_prototype_id,
+          'available': false,
+        };
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  /// Register a prototype ID to the current user
+  static Future<Map<String, dynamic>> registerPrototype(String prototypeId, String token) async {
+    try {
+      final response = await _dio.post(
+        '${AppConfig.baseUrl}/api/prototypes/register',
+        data: {'prototype_id': prototypeId},
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to register prototype: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? 'Prototype registration failed',
+        };
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  /// Get available prototypes
+  static Future<Map<String, dynamic>> getAvailablePrototypes() async {
+    try {
+      final response = await _dio.get(
+        '${AppConfig.baseUrl}/api/prototypes/available',
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to get available prototypes: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  /// Get user's registered prototypes
+  static Future<Map<String, dynamic>> getUserPrototypes(String token) async {
+    try {
+      print('🔧 PrototypeService: Making API call to ${AppConfig.baseUrl}/api/prototypes/user');
+      print('🔧 PrototypeService: Token length: ${token.length}');
+      
+      final response = await _dio.get(
+        '${AppConfig.baseUrl}/api/prototypes/user',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      print('🔧 PrototypeService: Response status: ${response.statusCode}');
+      print('🔧 PrototypeService: Response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to get user prototypes: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      print('🔧 PrototypeService: DioException - Status: ${e.response?.statusCode}, Message: ${e.message}');
+      print('🔧 PrototypeService: Response data: ${e.response?.data}');
+      
+      if (e.response?.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      print('🔧 PrototypeService: General exception: $e');
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  /// Unsync a prototype from a field
+  static Future<Map<String, dynamic>> unsyncPrototype(String prototypeId, String fieldId, String token) async {
+    try {
+      final response = await _dio.post(
+        '${AppConfig.baseUrl}/api/prototypes/unsync',
+        data: {
+          'prototype_id': prototypeId,
+          'field_id': fieldId,
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception('Failed to unsync prototype: ${response.statusMessage}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? 'Prototype unsync failed',
+        };
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else if (e.response?.statusCode == 404) {
+        return {
+          'success': false,
+          'message': 'Prototype or field not found',
+        };
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+}

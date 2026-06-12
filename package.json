@@ -1,0 +1,43 @@
+{
+  "name": "maize-watch-fullstack",
+  "version": "1.0.0",
+  "description": "Maize-Watch IoT Agriculture Monitoring System - Full Stack Deployment",
+  "main": "scripts/start.sh",
+  "scripts": {
+    "start": "chmod +x scripts/start.sh && ./scripts/start.sh",
+    "build": "echo 'Docker handles the build process'",
+    "dev": "echo 'Use individual services for development'",
+    "logs": "pm2 logs",
+    "status": "pm2 status",
+    "restart": "pm2 restart all",
+    "stop": "pm2 stop all"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "pm2": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "agriculture",
+    "iot",
+    "monitoring",
+    "docker",
+    "fullstack",
+    "nodejs",
+    "python",
+    "analytics"
+  ],
+  "author": "Maize-Watch Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Snorlark/Maize-Watch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Snorlark/Maize-Watch/issues"
+  },
+  "homepage": "https://github.com/Snorlark/Maize-Watch#readme"
+}
