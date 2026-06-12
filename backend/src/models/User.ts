@@ -396,9 +396,8 @@ userSchema.statics.findByCredentials = async function (login, password) {
     await user.resetLoginAttempts();
   }
 
-  // Update last login
-  user.lastLogin = new Date();
-  await user.save();
+  // Update last login without triggering full validation on incomplete legacy documents
+  await this.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });
 
   return user;
 };

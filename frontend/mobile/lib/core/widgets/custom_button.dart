@@ -36,15 +36,11 @@ class _CustomButtonState extends State<CustomButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final navBarHeight =
-        55.0 + (bottomPadding > 0 ? bottomPadding : kAppMediumPadding);
-
     return Container(
-      height: navBarHeight,
+      height: 70.0,
       padding: EdgeInsets.symmetric(
         horizontal: kAppLargePadding,
-        vertical: kAppSmallPadding + (bottomPadding > 0 ? bottomPadding : 0),
+        vertical: kAppSmallPadding,
       ),
       child: GestureDetector(
         onTapDown: _handleTapDown,

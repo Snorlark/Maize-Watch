@@ -12,7 +12,7 @@ import cron from 'node-cron';
 import connectDB, { getConnectionStatus } from './config/database';
 import { logger } from './utils/logger';
 import { initializeSocket } from './sockets/index';
-import SyncService from './services/syncService';
+import syncService, { SyncService } from './services/syncService';
 
 // Import middleware
 import globalErrorHandler, { notFound, catchAsync } from './middleware/errorHandler';
@@ -141,9 +141,6 @@ async function startServer() {
     await connectDB();
     logger.info('Database connected successfully');
 
-    // Initialize sync service
-    const syncService = new SyncService();
-
     // Start server
     server.listen(Number(PORT), '0.0.0.0', () => {
       logger.info(`🟢 Backend API listening on port ${PORT}`);
@@ -166,14 +163,14 @@ function startDataSync(syncService: SyncService) {
   // Sync every 15 seconds
   cron.schedule('*/15 * * * * *', async () => {
     try {
-      logger.info('🔄 Running scheduled ThingSpeak data sync...');
+      logger.debug('🔄 Running scheduled ThingSpeak data sync...');
       await syncService.syncAllFarmsData();
-      logger.info('✅ Scheduled sync completed successfully');
+      logger.debug('✅ Scheduled sync completed successfully');
     } catch (error) {
       logger.error('❌ Scheduled sync failed:', error);
     }
   });
-  
+
   // Also run an immediate sync on startup (after 30 seconds delay)
   setTimeout(async () => {
     try {

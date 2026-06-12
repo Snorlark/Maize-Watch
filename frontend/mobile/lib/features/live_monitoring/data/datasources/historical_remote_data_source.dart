@@ -115,12 +115,13 @@ class HistoricalRemoteDataSourceImpl implements HistoricalRemoteDataSource {
     for (int i = 6; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       dailyData.add({
-        'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format
-        'temperature': 25.0 + (i * 2.0), // Varying temperature
-        'humidity': 60.0 + (i * 3.0),    // Varying humidity
-        'soilMoisture': 45.0 + (i * 1.5), // Varying soil moisture
-        'soilPh': 6.5 + (i * 0.1),       // Varying pH
-        'lightIntensity': 800.0 + (i * 50.0), // Varying light
+        'date': date.toIso8601String().split('T')[0],
+        'temperature': 25.0 + (i * 2.0),
+        'humidity': 60.0 + (i * 3.0),
+        'soilMoisture': 45.0 + (i * 1.5),
+        'soilPh': 6.5 + (i * 0.1),
+        'lightIntensity': 800.0 + (i * 50.0),
+        'readingCount': 7,
       });
     }
     

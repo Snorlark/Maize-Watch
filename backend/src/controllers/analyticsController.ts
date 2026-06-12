@@ -7,7 +7,6 @@ import thingSpeakService from '../services/thingspeakService';
 import sensorService from '../services/sensorService';
 import syncService from '../services/syncService';
 import CacheService from '../services/cacheService';
-import SyncService from '../services/syncService';
 import { AppError, catchAsync } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { HTTP_STATUS, USER_ROLES } from '../utils/constants';
@@ -1046,7 +1045,7 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
     }
     
     // Check cache first
-    const cacheKey = `weekly_data_${farmId}_${fieldId || 'all'}`;
+    const cacheKey = `weekly_data_${farmId}_${fieldId || 'all'}_offset${req.query.weekOffset || '0'}`;
     const cached = await CacheService.get(cacheKey);
     if (cached) {
       logger.info(`Cache hit for weekly data: ${cacheKey}`);
@@ -1056,10 +1055,25 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       });
     }
 
-    // Get historical data for the past 7 days from MongoDB using aggregation
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 7);
+    // Get historical data for the requested 7-day window
+    // weekOffset = 0 means current week, -1 = last week, -2 = 2 weeks ago, etc.
+    const weekOffsetParam = parseInt((req.query.weekOffset as string) || '0', 10);
+    const offsetDays = isNaN(weekOffsetParam) ? 0 : weekOffsetParam * 7;
+
+    // All date arithmetic in Philippines time (UTC+8)
+    const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+    const nowManila = new Date(Date.now() + MANILA_OFFSET_MS);
+    const todayManilaYear = nowManila.getUTCFullYear();
+    const todayManilaMonth = nowManila.getUTCMonth(); // 0-indexed
+    const todayManilaDay = nowManila.getUTCDate();
+
+    const endManilaDay = todayManilaDay + offsetDays;
+    // Manila 23:59:59.999 = same calendar date at 15:59:59.999 UTC
+    const endDate = new Date(Date.UTC(todayManilaYear, todayManilaMonth, endManilaDay, 15, 59, 59, 999));
+    // Manila 00:00:00 = previous UTC day at 16:00:00
+    const startDate = new Date(Date.UTC(todayManilaYear, todayManilaMonth, endManilaDay - 6, 0, 0, 0, 0) - MANILA_OFFSET_MS);
+
+    logger.info(`Weekly data date window: ${startDate.toISOString()} to ${endDate.toISOString()} (weekOffset: ${weekOffsetParam})`);
     
     // Get all sensors for the farm first
     const sensors = await sensorService.getSensorsByFarm(farmId);
@@ -1079,9 +1093,9 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       {
         $group: {
           _id: {
-            year: { $year: '$timestamp' },
-            month: { $month: '$timestamp' },
-            day: { $dayOfMonth: '$timestamp' }
+            year: { $year: { date: '$timestamp', timezone: 'Asia/Manila' } },
+            month: { $month: { date: '$timestamp', timezone: 'Asia/Manila' } },
+            day: { $dayOfMonth: { date: '$timestamp', timezone: 'Asia/Manila' } }
           },
           temperature: { $avg: '$data.temperature' },
           humidity: { $avg: '$data.humidity' },
@@ -1098,17 +1112,57 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
 
     const aggregatedData = await SensorReading.aggregate(aggregationPipeline);
     
-    // If no readings from MongoDB, try to get from ThingSpeak
+    // If no readings from MongoDB, try to get from ThingSpeak using the farm's prototype channels
     let historicalData = [];
     if (aggregatedData.length === 0) {
-      logger.info('No MongoDB data found, fetching from ThingSpeak...');
-      const thingSpeakData = await thingSpeakService.getHistoricalData(7 * 24 * 60); // 7 days in minutes
+      logger.info('No MongoDB data found, fetching from ThingSpeak with date range...');
+
+      // Get prototypes for this farm to use the correct ThingSpeak channel
+      const Prototype = require('../models/Prototype').default;
+      const farmForPrototype = await farmService.getFarmById(farmId);
+      const prototypes = await Prototype.find({ registeredBy: farmForPrototype.userId });
+
+      let thingSpeakData: any[] = [];
+      if (prototypes && prototypes.length > 0) {
+        for (const prototype of prototypes) {
+          try {
+            const channelData = await thingSpeakService.fetchHistoricalDataFromThingSpeakChannel(
+              prototype.channel_id,
+              7 * 24 * 60,
+              startDate.toISOString() as any,
+              endDate.toISOString() as any
+            );
+            if (channelData && channelData.length > 0) {
+              thingSpeakData = thingSpeakData.concat(channelData);
+            }
+          } catch (err) {
+            logger.warn(`Failed to fetch historical data for prototype ${prototype.prototype_id}:`, err);
+          }
+        }
+      }
+
+      if (thingSpeakData.length === 0) {
+        // Last resort: try the default ThingSpeak channel with the correct date range
+        try {
+          const defaultChannelId = process.env.THINGSPEAK_CHANNEL_ID;
+          if (defaultChannelId) {
+            thingSpeakData = await thingSpeakService.fetchHistoricalDataFromThingSpeakChannel(
+              defaultChannelId,
+              7 * 24 * 60,
+              startDate.toISOString() as any,
+              endDate.toISOString() as any
+            ) || [];
+          }
+        } catch (_) {}
+      }
+
       if (thingSpeakData && thingSpeakData.length > 0) {
         // Convert ThingSpeak data to daily format
         const thingSpeakByDay: { [key: string]: { temperature: number[], humidity: number[], soilMoisture: number[], soilPh: number[], lightIntensity: number[] } } = {};
         for (const dataPoint of thingSpeakData) {
           const date = new Date(dataPoint.timestamp);
-          const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+          const manilaDate = new Date(date.getTime() + MANILA_OFFSET_MS);
+          const dayKey = `${manilaDate.getUTCFullYear()}-${manilaDate.getUTCMonth() + 1}-${manilaDate.getUTCDate()}`;
           
           if (!thingSpeakByDay[dayKey]) {
             thingSpeakByDay[dayKey] = {
@@ -1145,23 +1199,26 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
     }
     
     // Generate daily data for the week using aggregated data
+    // Use endDate (already offset by weekOffset) as the anchor, not today
     const dailyData = [];
-    const now = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-      
-      const dayData = aggregatedData.find(d => 
-        d._id.year === date.getFullYear() && 
-        d._id.month === date.getMonth() + 1 && 
-        d._id.day === date.getDate()
+      // Build the Manila calendar date for this slot
+      const manilaDayObj = new Date(Date.UTC(todayManilaYear, todayManilaMonth, endManilaDay - i));
+      const year = manilaDayObj.getUTCFullYear();
+      const month = manilaDayObj.getUTCMonth() + 1;
+      const day = manilaDayObj.getUTCDate();
+      const dateStr = manilaDayObj.toISOString().split('T')[0]; // e.g. "2025-10-06"
+
+      const dayData = aggregatedData.find(d =>
+        d._id.year === year &&
+        d._id.month === month &&
+        d._id.day === day
       );
-      
+
       if (dayData && dayData.count > 0) {
         dailyData.push({
-          date: date.toISOString().split('T')[0],
+          date: dateStr,
           temperature: Math.round(dayData.temperature * 100) / 100,
           humidity: Math.round(dayData.humidity * 100) / 100,
           soilMoisture: Math.round(dayData.soilMoisture * 100) / 100,
@@ -1172,7 +1229,7 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       } else {
         // Add empty data for days with no readings
         dailyData.push({
-          date: date.toISOString().split('T')[0],
+          date: dateStr,
           temperature: null,
           humidity: null,
           soilMoisture: null,
@@ -1357,11 +1414,8 @@ export const forceSyncThingSpeakData = catchAsync(async (req: Request, res: Resp
   try {
     logger.info(`🔄 Force syncing ThingSpeak data for farm ${farmId} by user ${currentUser.id}`);
     
-    // Initialize sync service
-    const syncServiceInstance = new SyncService();
-    
     // Force sync data for this specific farm
-    await syncServiceInstance.syncFarmData(farmId);
+    await syncService.syncFarmData(farmId);
     
     // Clear any cached analytics data for this farm
     await CacheService.clearFarmAnalyticsCache(farmId);

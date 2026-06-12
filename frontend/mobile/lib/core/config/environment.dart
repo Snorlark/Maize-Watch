@@ -1,7 +1,7 @@
 enum Environment { development, staging, production }
 
 class AppConfig {
-  static Environment _environment = Environment.production;
+  static Environment _environment = Environment.development;
 
   static Environment get environment => _environment;
 
@@ -12,7 +12,7 @@ class AppConfig {
   static String get baseUrl {
     switch (_environment) {
       case Environment.development:
-        return 'http://10.145.164.206:8080';
+        return 'http://192.168.100.75:10000';
       case Environment.staging:
         return 'https://maize-watch-app.onrender.com';
       case Environment.production:
@@ -20,7 +20,7 @@ class AppConfig {
     }
   }
 
-  static String get apiVersion => '/api/';
+  static String get apiVersion => '/api';
 
   static String get fullApiUrl => '$baseUrl$apiVersion';
 

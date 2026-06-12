@@ -155,7 +155,14 @@ class FarmRemoteDataSourceImpl implements FarmRemoteDataSource {
         print('🚨 Farm creation failed with status: ${response.statusCode}');
         final responseBody = json.decode(response.body);
         print('🚨 Error response: ${json.encode(responseBody)}');
-        throw ServerException(responseBody['message'] ?? 'Failed to create farm');
+        String errorMessage = responseBody['message'] ?? 'Failed to create farm';
+        final errors = responseBody['errors'];
+        if (errors is List && errors.isNotEmpty) {
+          // Backend sends either 'msg' (express-validator) or 'message'
+          final firstError = errors[0];
+          errorMessage = (firstError['msg'] ?? firstError['message'] ?? errorMessage) as String;
+        }
+        throw ServerException(errorMessage);
       }
     } catch (e) {
       if (e is ServerException) rethrow;

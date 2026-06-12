@@ -4,8 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mobile/features/live_monitoring/presentation/screens/live_monitoring_screen.dart';
 import 'package:mobile/features/settings/presentation/screens/account_screen.dart';
-import 'package:icons_flutter/icons_flutter.dart';
-
 import 'package:mobile/generated/l10n.dart';
 
 import '../../../features/authentication/presentation/bloc/authentication_bloc.dart';
@@ -18,6 +16,8 @@ import '../../widgets/offline_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  static final ValueNotifier<bool> farmDetailOpen = ValueNotifier(false);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         },
         child: OfflineIndicator(
-          showPersistentIndicator: true,
+          showPersistentIndicator: false,
           child: Scaffold(
             body: SafeArea(
               child: PageView(
@@ -151,32 +151,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 },
               ),
             ),
-          bottomNavigationBar: Container(
-            decoration: const BoxDecoration(color: MAIZE_BOTTOM_OVERLAY),
-            child: SafeArea(
-              child: CurvedNavigationBar(
-                index: _currentIndex,
-                backgroundColor: MAIZE_PRIMARY_LIGHT,
-                color: MAIZE_PRIMARY,
-                height: 60.h,
-                items: <Widget>[
-                  Icon(
-                    Icons.checklist,
-                    color: _currentIndex == 0 ? Colors.white : MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(32),
-                  ),
-                  Icon(
-                    FlutterIcons.corn_mco,
-                    color: _currentIndex == 1 ? Colors.white : MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(32),
-                  ),
-                  Icon(
-                    Icons.person,
-                    color: _currentIndex == 2 ? Colors.white : MAIZE_PRIMARY_LIGHT,
-                    size: ScreenUtil().setSp(32),
-                  ),
-                ],
-                onTap: _onTappedBar,
+          bottomNavigationBar: ValueListenableBuilder<bool>(
+            valueListenable: HomeScreen.farmDetailOpen,
+            builder: (ctx, isOpen, child) => isOpen ? const SizedBox() : child!,
+            child: Container(
+              decoration: const BoxDecoration(color: MAIZE_BOTTOM_OVERLAY),
+              child: SafeArea(
+                child: CurvedNavigationBar(
+                  index: _currentIndex,
+                  backgroundColor: MAIZE_PRIMARY_LIGHT,
+                  color: MAIZE_PRIMARY,
+                  height: 60.h > 75.0 ? 75.0 : 60.h,
+                  items: <Widget>[
+                    Icon(
+                      Icons.checklist,
+                      color: _currentIndex == 0 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                      size: ScreenUtil().setSp(32),
+                    ),
+                    Icon(
+                      Icons.agriculture,
+                      color: _currentIndex == 1 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                      size: ScreenUtil().setSp(32),
+                    ),
+                    Icon(
+                      Icons.person,
+                      color: _currentIndex == 2 ? Colors.white : MAIZE_PRIMARY_LIGHT,
+                      size: ScreenUtil().setSp(32),
+                    ),
+                  ],
+                  onTap: _onTappedBar,
+                ),
               ),
             ),
           ),

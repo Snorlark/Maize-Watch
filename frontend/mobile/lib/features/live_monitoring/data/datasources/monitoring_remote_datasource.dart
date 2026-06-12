@@ -33,7 +33,8 @@ class MonitoringRemoteDataSourceImpl implements MonitoringRemoteDataSource {
         throw ServerException('Failed to get farms');
       }
 
-      final farms = farmsResponse.data['data'] as List;
+      final responseData = farmsResponse.data['data'];
+      final farms = (responseData is Map ? responseData['farms'] : responseData) as List;
       if (farms.isEmpty) {
         print('🔍 MonitoringDataSource: No farms found');
         return [];

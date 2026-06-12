@@ -4,13 +4,13 @@ import farmService from './farmService';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-class SyncService {
+export class SyncService {
   /**
    * Sync ThingSpeak data to MongoDB for all farms
    */
   async syncAllFarmsData(): Promise<void> {
     try {
-      logger.info('Starting sync of ThingSpeak data for all farms...');
+      logger.debug('Starting sync of ThingSpeak data for all farms...');
       
       // Get all farms
       const farms = await farmService.getFarmsByOwner('');
@@ -35,21 +35,21 @@ class SyncService {
    */
   async syncFarmData(farmId: string): Promise<void> {
     try {
-      logger.info(`Starting sync for farm ${farmId}`);
+      logger.debug(`Starting sync for farm ${farmId}`);
       const farm = await farmService.getFarmById(farmId);
       if (!farm) {
         throw new Error(`Farm ${farmId} not found`);
       }
 
-      logger.info(`Found farm: ${farm.farmName} for user: ${farm.userId}`);
+      logger.debug(`Found farm: ${farm.farmName} for user: ${farm.userId}`);
 
       // Get prototype data for this farm
       const Prototype = require('../models/Prototype').default;
       const prototypes = await Prototype.find({ registeredBy: farm.userId });
-      logger.info(`Found ${prototypes.length} prototypes for user ${farm.userId}`);
-      
+      logger.debug(`Found ${prototypes.length} prototypes for user ${farm.userId}`);
+
       if (!prototypes || prototypes.length === 0) {
-        logger.warn(`No prototypes found for farm ${farmId}`);
+        logger.debug(`No prototypes found for farm ${farmId}`);
         return;
       }
 
@@ -58,22 +58,21 @@ class SyncService {
       for (const field of farm.fields) {
         for (const sensor of field.sensors) {
           totalSensors++;
-          
-          // Debug logging
-          logger.info(`Processing sensor: ${sensor.deviceID}, prototypeId: ${sensor.prototypeId}, type: ${typeof sensor.prototypeId}`);
-          logger.info(`Available prototypes: ${prototypes.map((p: any) => p.prototype_id).join(', ')}`);
-          
+
+          logger.debug(`Processing sensor: ${sensor.deviceID}, prototypeId: ${sensor.prototypeId}`);
+          logger.debug(`Available prototypes: ${prototypes.map((p: any) => p.prototype_id).join(', ')}`);
+
           // Find the prototype for this sensor (assuming sensor has prototypeId)
           const prototype = prototypes.find((p: any) => p.prototype_id === sensor.prototypeId);
           if (!prototype) {
-            logger.warn(`No prototype found for sensor ${(sensor as any)._id} with prototypeId ${sensor.prototypeId}`);
+            logger.debug(`No prototype found for sensor ${(sensor as any)._id} with prototypeId ${sensor.prototypeId}`);
             continue;
           }
 
           // Get data from the specific prototype's channel
-          logger.info(`Fetching data for prototype ${prototype.prototype_id} with channel ${prototype.channel_id} and API key ${prototype.api_key}`);
+          logger.debug(`Fetching data for prototype ${prototype.prototype_id} with channel ${prototype.channel_id}`);
           const thingSpeakData = await thingSpeakService.getLatestData(prototype.channel_id, prototype.api_key);
-          logger.info(`Received ThingSpeak data: ${JSON.stringify(thingSpeakData)}`);
+          logger.debug(`Received ThingSpeak data: ${JSON.stringify(thingSpeakData)}`);
           
           if (!thingSpeakData) {
             logger.warn(`No ThingSpeak data available for prototype ${prototype.prototype_id} (channel ${prototype.channel_id})`);
@@ -89,44 +88,32 @@ class SyncService {
             soilPh: thingSpeakData.soilPh
           };
 
-          // Also record readings in the SensorReading collection for analytics
+          // Record reading in SensorReading collection for analytics
+          // Use the embedded sensor's _id directly — sensors are embedded in Farm, not a separate Sensor model
           try {
             const SensorReading = require('../models/SensorReading').default;
-            
-            // Find the sensor associated with this prototype
-            const Sensor = require('../models/Sensor').default;
-            const sensor = await Sensor.findOne({ 
-              sensorId: prototype.prototype_id,
-              farm: farm._id 
+            const sensorReading = new SensorReading({
+              sensor: (sensor as any)._id,
+              farm: farm._id,
+              field_id: field.fieldName,
+              timestamp: new Date(),
+              data: {
+                temperature: thingSpeakData.temperature,
+                humidity: thingSpeakData.humidity,
+                soilMoisture: thingSpeakData.soilMoisture,
+                pH: thingSpeakData.soilPh,
+                lightIntensity: thingSpeakData.lightIntensity
+              },
+              metadata: {
+                source: 'thingspeak',
+                quality: 'good',
+                processed: false,
+                anomaly: false,
+                calibrated: true
+              }
             });
-            
-            if (sensor) {
-              const sensorReading = new SensorReading({
-                sensor: sensor._id,
-                farm: farm._id,
-                field_id: field.fieldName,
-                timestamp: new Date(),
-                data: {
-                  temperature: thingSpeakData.temperature,
-                  humidity: thingSpeakData.humidity,
-                  soilMoisture: thingSpeakData.soilMoisture,
-                  pH: thingSpeakData.soilPh,
-                  lightIntensity: thingSpeakData.lightIntensity
-                },
-                metadata: {
-                  source: 'thingspeak',
-                  quality: 'good',
-                  processed: false,
-                  anomaly: false,
-                  calibrated: true
-                }
-              });
-              
-              await sensorReading.save();
-              logger.info(`Recorded sensor reading for prototype ${prototype.prototype_id} (channel ${prototype.channel_id}) in field ${field.fieldName}`);
-            } else {
-              logger.warn(`No sensor found for prototype ${prototype.prototype_id} in farm ${farm._id}`);
-            }
+            await sensorReading.save();
+            logger.debug(`Recorded sensor reading for prototype ${prototype.prototype_id} in field ${field.fieldName}`);
           } catch (error) {
             logger.warn(`Could not record reading for prototype ${prototype.prototype_id}:`, error);
           }

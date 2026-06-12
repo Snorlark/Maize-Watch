@@ -46,5 +46,21 @@
     "syncInterval": 30,
     "dataCollectionEnabled": true,
     "analyticsEnabled": true
+  },
+  "682564760dffb990e1493858": {
+    "notificationsEnabled": true,
+    "vibrationOnly": false,
+    "language": "en",
+    "sensorStatus": {
+      "ldr": false,
+      "ph": false,
+      "dht": false,
+      "soil": false
+    },
+    "darkMode": false,
+    "autoSync": true,
+    "syncInterval": 30,
+    "dataCollectionEnabled": true,
+    "analyticsEnabled": true
   }
 }
