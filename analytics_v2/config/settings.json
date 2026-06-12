@@ -1,0 +1,57 @@
+{
+  "system": {
+    "name": "Corn Growth Monitoring System",
+    "version": "1.0.0",
+    "timezone": "Asia/Manila"
+  },
+  "timing": {
+    "delivery_hour":7,
+    "delivery_minute": 30,
+    "processing_start_delay": 10,
+    "processing_interval_minutes": 5
+  },
+  "thresholds": {
+    "stress_levels": {
+      "mild": [10, 20],
+      "moderate": [20, 35],
+      "severe": 35
+    }
+  },
+  "forecasting": {
+    "stable_period_days": 3,
+    "volatile_period_days": 7,
+    "volatility_threshold": 0.15
+  },
+  "database": {
+    "mongodb_uri": "env:MONGODB_URI",
+    "database_name": "maizewatch",
+    "collections": {
+      "historical_weather": "historical_weather",
+      "growth_stages": "growth_stages", 
+      "daily_recommendations": "daily_recommendations",
+      "stress_assessments": "stress_assessments",
+      "system_config": "system_config",
+      "sensor_readings": "sensor_readings",
+      "farms": "farms",
+      "users": "users"
+    }
+  },
+  "thingspeak": {
+    "base_url": "https://api.thingspeak.com/channels/",
+    "channel_id": "env:THINGSPEAK_CHANNEL_ID",
+    "read_api_key": "env:THINGSPEAK_READ_API_KEY",
+    "fields": {
+      "temperature": "field1",
+      "humidity": "field2", 
+      "soil_moisture": "field3",
+      "soil_ph": "field4",
+      "light_intensity": "field5"
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/corn_system.log",
+    "max_file_size": "10MB",
+    "backup_count": 5
+  }
+}

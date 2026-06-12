@@ -1,0 +1,55 @@
+/* shared/base.css - Common styles for both applications */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+
+  --color-*: initial;
+  --color-white: #DFE8D1;
+  --color-rwhite: #FBFFF5;
+  --color-lgreen: #72AB50;
+  --color-llgreen: #a4dd83;
+  --color-green: #45843A;
+  --color-dgreen: #2C4C2B;
+  --color-red: #c94343;
+  --color-lred: #ebc6c6;
+
+
+
+
+  --color-bermuda: #78dcca;
+
+}
+/* Global font family */
+* {
+  font-family: 'Montserrat', sans-serif;
+  box-sizing: border-box;
+}
+
+/* Base reset and typography */
+:root {
+  font-family: 'Montserrat', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+/* Common button styles */
+.btn-base {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}

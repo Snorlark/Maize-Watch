@@ -1,0 +1,36 @@
+services:
+  # Main Application (Node.js + Python)
+  - type: web
+    name: maize-watch-app
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        value: mongodb+srv://larksigmuondbabao:aKO5hHmP0ZZYQPfp@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+      - key: ANALYTICS_SERVICE_URL
+        value: http://localhost:8000
+      - key: THINGSPEAK_CHANNEL_ID
+        value: 3083651
+      - key: THINGSPEAK_API_KEY
+        value: YOUR_THINGSPEAK_API_KEY
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: ANALYTICS_V2_PATH
+        value: /app/analytics_v2
+      - key: PYTHON_PATH
+        value: python3
+      - key: ENABLE_PYTHON_ANALYTICS
+        value: true
+      # Note: REDIS_URL is not set, so Redis features will be disabled
+      # This prevents Redis connection errors in production
