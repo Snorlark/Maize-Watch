@@ -163,9 +163,8 @@ class AuthService {
         createdAt: new Date(),
       });
 
-      // Update last login
-      user.lastLogin = new Date();
-      await user.save();
+      // Update last login and refresh tokens without triggering full validation
+      await user.save({ validateBeforeSave: false });
 
       logger.info(`User logged in: ${user.username}`, {
         userId: user._id,
@@ -182,6 +181,12 @@ class AuthService {
         message: "Login successful",
       };
     } catch (error) {
+      if (error instanceof Error && error.message === "Invalid credentials") {
+        throw new AppError("Invalid username or password", 401);
+      }
+      if (error instanceof Error && error.message.includes("temporarily locked")) {
+        throw new AppError(error.message, 403);
+      }
       logger.error("Login error:", error instanceof Error ? error.message : String(error));
       throw error;
     }

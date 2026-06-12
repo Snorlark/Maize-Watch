@@ -26,6 +26,8 @@ class _SplashScreenState extends State<SplashScreen>
   String _statusMessage = 'Initializing...';
   Timer? _timeoutTimer;
   Timer? _farmLoadingTimer;
+  Timer? _initTimer;
+  Timer? _analyticsTimer;
   bool _isLoadingFarms = false;
 
   @override
@@ -37,7 +39,8 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 8),
     )..repeat();
 
-    Timer(const Duration(milliseconds: 4500), () async {
+    _initTimer = Timer(const Duration(milliseconds: 4500), () async {
+      if (!mounted) return;
       _rotationController.stop();
       setState(() {
         _statusMessage = S.of(context).checking_authentication;
@@ -80,6 +83,8 @@ class _SplashScreenState extends State<SplashScreen>
     _rotationController.dispose();
     _timeoutTimer?.cancel();
     _farmLoadingTimer?.cancel();
+    _initTimer?.cancel();
+    _analyticsTimer?.cancel();
     super.dispose();
   }
 
@@ -104,7 +109,7 @@ class _SplashScreenState extends State<SplashScreen>
   // Start analytics loading early for better performance
   void _startAnalyticsLoading() {
     // Pre-load analytics in the background to improve performance
-    Timer(const Duration(milliseconds: 1000), () {
+    _analyticsTimer = Timer(const Duration(milliseconds: 1000), () {
       if (mounted) {
         final authState = context.read<AuthenticationBloc>().state;
         if (authState.status == AuthenticationStatus.authenticated && authState.user != null) {

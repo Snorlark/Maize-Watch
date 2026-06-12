@@ -98,64 +98,6 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
   }
 
   String _getOptimalRange(String parameter) {
-    // Get optimal ranges from analytics data if available
-    if (widget.analyticsData != null) {
-      // Try different possible locations for optimal ranges
-      final stressAnalysis = widget.analyticsData!['stress_analysis'] as Map<String, dynamic>?;
-      final recommendations = widget.analyticsData!['recommendations'] as List<dynamic>?;
-      final prescriptive = widget.analyticsData!['prescriptive'] as Map<String, dynamic>?;
-      
-      // Check stress analysis first
-      if (stressAnalysis != null) {
-        final paramData = stressAnalysis[parameter] as Map<String, dynamic>?;
-        if (paramData != null) {
-          final optimalRange = paramData['optimal_range'] as List<dynamic>?;
-          if (optimalRange != null && optimalRange.length >= 2) {
-            final min = optimalRange[0];
-            final max = optimalRange[1];
-            if (min != null && max != null) {
-              return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
-            }
-          }
-        }
-      }
-      
-      // Check prescriptive data for optimal ranges
-      if (prescriptive != null) {
-        final optimalRanges = prescriptive['optimal_ranges'] as Map<String, dynamic>?;
-        if (optimalRanges != null) {
-          final range = optimalRanges[parameter] as Map<String, dynamic>?;
-          if (range != null) {
-            final min = range['min'] as num?;
-            final max = range['max'] as num?;
-            if (min != null && max != null) {
-              return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
-            }
-          }
-        }
-      }
-      
-      // Check recommendations for parameter-specific optimal ranges
-      if (recommendations != null) {
-        for (final rec in recommendations) {
-          if (rec is Map<String, dynamic>) {
-            final recParam = rec['parameter'] as String?;
-            if (recParam == parameter) {
-              final optimalRange = rec['optimal_range'] as Map<String, dynamic>?;
-              if (optimalRange != null) {
-                final min = optimalRange['min'] as num?;
-                final max = optimalRange['max'] as num?;
-                if (min != null && max != null) {
-                  return '${min.toStringAsFixed(1)}-${max.toStringAsFixed(1)}';
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    // Fallback to default ranges
     switch (parameter) {
       case 'temperature':
         return '20-30°C';
@@ -401,22 +343,6 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
       },
       child: Column(
         children: [
-              // Debug info (remove in production)
-              Container(
-                margin: EdgeInsets.only(bottom: 20.h),
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(
-                  color: MAIZE_ACCENT.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Text(
-                  'Data points: ${weeklyData.length}',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
               
               ParameterWidget(
                 title: 'Temperature',

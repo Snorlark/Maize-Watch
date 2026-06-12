@@ -27,7 +27,6 @@ dependencies:
   get_it: ^7.6.4
   google_fonts: ^6.3.0
   http: ^1.1.0
-  icons_flutter: ^0.0.5
   intl: any
   latlong2: ^0.9.1
   lottie: ^3.3.1

@@ -11,6 +11,7 @@ class GrowthProgressWidget extends StatefulWidget {
   final List<SensorReading>? historicalData;
   final DateTime plantingDate;
   final VoidCallback? onStageChange;
+  final void Function(int days)? onDaysCalculated;
 
   const GrowthProgressWidget({
     super.key,
@@ -18,6 +19,7 @@ class GrowthProgressWidget extends StatefulWidget {
     this.historicalData,
     required this.plantingDate,
     this.onStageChange,
+    this.onDaysCalculated,
   });
 
   @override
@@ -32,14 +34,13 @@ class _StageProgressPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..strokeWidth = 4.0
-          ..strokeCap = StrokeCap.round;
+    final paint = Paint()
+      ..strokeWidth = 4.0
+      ..strokeCap = StrokeCap.round;
 
     final progressWidth = size.width * progress;
 
-    // Draw background track
+    // Background track
     paint.color = Colors.white.withOpacity(0.3);
     canvas.drawLine(
       Offset(0, size.height / 2),
@@ -47,7 +48,7 @@ class _StageProgressPainter extends CustomPainter {
       paint,
     );
 
-    // Draw progress track
+    // Progress track
     paint.color = Colors.white;
     canvas.drawLine(
       Offset(0, size.height / 2),
@@ -68,63 +69,16 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
   double _currentProgress = 0.0;
   int _currentStageIndex = 0;
 
-  int _daysToNextStage = -1;
-
   final List<Map<String, dynamic>> cornStages = [
-    {
-      "stage": "VE",
-      "progress": 0.10,
-      "name": "Emergence",
-      "description": "Seedling emergence visible above ground",
-    },
-    {
-      "stage": "V3",
-      "progress": 0.25,
-      "name": "3rd Leaf",
-      "description": "Three visible leaf collars",
-    },
-    {
-      "stage": "V6",
-      "progress": 0.40,
-      "name": "6th Leaf",
-      "description": "Six visible leaf collars",
-    },
-    {
-      "stage": "V8",
-      "progress": 0.55,
-      "name": "8th Leaf",
-      "description": "Eight visible leaf collars",
-    },
-    {
-      "stage": "V12",
-      "progress": 0.70,
-      "name": "12th Leaf",
-      "description": "Twelve visible leaf collars",
-    },
-    {
-      "stage": "VT",
-      "progress": 0.80,
-      "name": "Tasseling",
-      "description": "Tassel fully emerged",
-    },
-    {
-      "stage": "R1",
-      "progress": 0.85,
-      "name": "Silking",
-      "description": "Silks visible on most plants",
-    },
-    {
-      "stage": "R3",
-      "progress": 0.90,
-      "name": "Milk Stage",
-      "description": "Kernels contain milky fluid",
-    },
-    {
-      "stage": "R6",
-      "progress": 1.0,
-      "name": "Maturity",
-      "description": "Physiological maturity reached",
-    },
+    {"stage": "VE",  "progress": 0.10, "name": "Emergence"},
+    {"stage": "V3",  "progress": 0.25, "name": "3rd Leaf"},
+    {"stage": "V6",  "progress": 0.40, "name": "6th Leaf"},
+    {"stage": "V8",  "progress": 0.55, "name": "8th Leaf"},
+    {"stage": "V12", "progress": 0.70, "name": "12th Leaf"},
+    {"stage": "VT",  "progress": 0.80, "name": "Tasseling"},
+    {"stage": "R1",  "progress": 0.85, "name": "Silking"},
+    {"stage": "R3",  "progress": 0.90, "name": "Milk Stage"},
+    {"stage": "R6",  "progress": 1.0,  "name": "Maturity"},
   ];
 
   @override
@@ -134,7 +88,6 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
     _controller.addListener(() {
       setState(() => _currentProgress = _controller.value);
     });
-
     Future.delayed(Duration.zero, _updateBasedOnGrowthStage);
   }
 
@@ -164,7 +117,6 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
       }
     }
 
-
     setState(() {
       _currentStageIndex = stageIndex;
       _isLoading = false;
@@ -176,44 +128,35 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
       );
     });
 
-    if (widget.historicalData?.isNotEmpty ?? false) _calculateGrowthTrend();
+    if (widget.historicalData?.isNotEmpty ?? false) {
+      _calculateGrowthTrend();
+    } else {
+      final days = _calculateDaysToNextStage();
+      widget.onDaysCalculated?.call(days);
+    }
     widget.onStageChange?.call();
   }
 
-
   void _calculateGrowthTrend() {
-    double sumOfChanges = 0.0;
     for (int i = 1; i < widget.historicalData!.length; i++) {
-      final prev = widget.historicalData![i - 1];
-      final curr = widget.historicalData![i];
-      final prevAvg =
-          (prev.temperature +
-              prev.soilMoisture +
-              prev.humidity +
-              prev.lightIntensity) /
-          4;
-      final currAvg =
-          (curr.temperature +
-              curr.soilMoisture +
-              curr.humidity +
-              curr.lightIntensity) /
-          4;
-      sumOfChanges += currAvg - prevAvg;
+      // trend calculation reserved for future use
     }
-    setState(() {
-      _daysToNextStage = _calculateDaysToNextStage();
-    });
+    final days = _calculateDaysToNextStage();
+    widget.onDaysCalculated?.call(days);
   }
 
   int _calculateDaysToNextStage() {
     final daysFromPlanting =
         DateTime.now().difference(widget.plantingDate).inDays;
-    final stageDurations = [7, 14, 21, 14, 7, 30];
+    final stageDurations = [7, 14, 21, 14, 7, 30, 14, 14, 30];
     int totalDays = 0;
-    for (int i = 0; i <= _currentStageIndex; i++)
+    for (int i = 0; i <= _currentStageIndex && i < stageDurations.length; i++) {
       totalDays += stageDurations[i];
+    }
+    final nextDurationIndex = _currentStageIndex + 1;
+    if (nextDurationIndex >= stageDurations.length) return -1;
     final remaining =
-        (totalDays + stageDurations[_currentStageIndex + 1]) - daysFromPlanting;
+        (totalDays + stageDurations[nextDurationIndex]) - daysFromPlanting;
     return remaining > 0 ? remaining : 1;
   }
 
@@ -223,122 +166,37 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0),
+      return SizedBox(
+        height: 220.h,
+        child: Center(
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0),
+        ),
       );
     }
 
     return Container(
-      margin: EdgeInsets.only(top: kAppLargeGap),
       padding: EdgeInsets.symmetric(
         horizontal: 20.w,
-        vertical: kAppLargePadding,
+        vertical: 12.h,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Compact progress bar with white styling
+          // 1. Corn Lottie animation at the top
           SizedBox(
-            height: 50.h,
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 24.h,
-                  left: 0,
-                  right: 0,
-                  child: CustomPaint(
-                    painter: _StageProgressPainter(
-                      progress: _currentProgress,
-                      stageCount: cornStages.length,
-                    ),
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(cornStages.length, (i) {
-                    final isActive = i == _currentStageIndex;
-                    final isPassed = i < _currentStageIndex;
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: isActive ? 18.w : 14.w,
-                          height: isActive ? 18.h : 14.h,
-                          decoration: BoxDecoration(
-                            color:
-                                isActive
-                                    ? Colors.white
-                                    : isPassed
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                            border:
-                                isActive
-                                    ? Border.all(
-                                      color: Colors.white.withOpacity(0.5),
-                                      width: 2,
-                                    )
-                                    : null,
-                          ),
-                          child:
-                              isActive || isPassed
-                                  ? Icon(
-                                    isPassed ? Icons.check : Icons.circle,
-                                    color:
-                                        isActive
-                                            ? MAIZE_PRIMARY
-                                            : Colors.white.withOpacity(0.7),
-                                    size: 8.sp,
-                                  )
-                                  : null,
-                        ),
-                        verticalSpace(8),
-                        Text(
-                          cornStages[i]["stage"],
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color:
-                                isActive
-                                    ? Colors.white
-                                    : Colors.white.withOpacity(0.7),
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ],
+            height: 130.h,
+            width: 130.w,
+            child: Lottie.asset(
+              'assets/lottie/corn_growth.json',
+              controller: _controller,
+              fit: BoxFit.contain,
+              onLoaded: _onLottieLoaded,
             ),
           ),
 
-          if (_daysToNextStage > 0) ...[
-            verticalSpace(20),
-            Container(
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.schedule, size: 16.sp, color: Colors.white),
-                  horizontalSpace(8),
-                  Text(
-                    'Next stage in ~$_daysToNextStage days',
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          // Header with stage info - positioned higher for hero layout
+          verticalSpace(8),
+
+          // 2. Stage badge + Day counter
           Row(
             children: [
               Container(
@@ -375,19 +233,80 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
             ],
           ),
 
-          // Lottie animation - larger for hero section
-          Center(
-            child: SizedBox(
-              height: 160.h,
-              width: 160.w,
-              child: Lottie.asset(
-                'assets/lottie/corn_growth.json',
-                controller: _controller,
-                fit: BoxFit.contain,
-                onLoaded: _onLottieLoaded,
-              ),
+          verticalSpace(12),
+
+          // 3. Stage progress bar
+          SizedBox(
+            height: 50.h,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 24.h,
+                  left: 0,
+                  right: 0,
+                  child: CustomPaint(
+                    painter: _StageProgressPainter(
+                      progress: _currentProgress,
+                      stageCount: cornStages.length,
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(cornStages.length, (i) {
+                    final isActive = i == _currentStageIndex;
+                    final isPassed = i < _currentStageIndex;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: isActive ? 18.w : 14.w,
+                          height: isActive ? 18.h : 14.h,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? Colors.white
+                                : isPassed
+                                    ? Colors.white
+                                    : Colors.white.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                            border: isActive
+                                ? Border.all(
+                                    color: Colors.white.withOpacity(0.5),
+                                    width: 2,
+                                  )
+                                : null,
+                          ),
+                          child: isActive || isPassed
+                              ? Icon(
+                                  isPassed ? Icons.check : Icons.circle,
+                                  color: isActive
+                                      ? MAIZE_PRIMARY
+                                      : Colors.white.withOpacity(0.7),
+                                  size: 8.sp,
+                                )
+                              : null,
+                        ),
+                        verticalSpace(8),
+                        Text(
+                          cornStages[i]["stage"],
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: isActive
+                                ? Colors.white
+                                : Colors.white.withOpacity(0.7),
+                            fontWeight: isActive
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ],
             ),
           ),
+
         ],
       ),
     );
@@ -408,4 +327,3 @@ class _GrowthProgressWidgetState extends State<GrowthProgressWidget>
     super.dispose();
   }
 }
-

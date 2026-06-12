@@ -103,6 +103,16 @@ export const redisUtils = {
     return await redis.del(key);
   },
 
+  // Delete by pattern
+  delPattern: async (pattern: string): Promise<number> => {
+    if (!redis) return 0;
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      return await redis.del(...keys);
+    }
+    return 0;
+  },
+
   // Check if key exists
   exists: async (key: string): Promise<boolean> => {
     if (!redis) return false;

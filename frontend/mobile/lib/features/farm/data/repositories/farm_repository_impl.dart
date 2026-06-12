@@ -23,8 +23,8 @@ class FarmRepositoryImpl implements FarmRepository {
         final farmModel = FarmModel.fromEntity(farm);
         final result = await remoteDataSource.createFarm(farmModel);
         return Right(result);
-      } on ServerException {
-        return Left(ServerFailure());
+      } on ServerException catch (e) {
+        return Left(ServerFailure(e.message));
       } catch (_) {
         return Left(NetworkFailure());
       }

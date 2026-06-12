@@ -562,8 +562,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
       }
     }
 
-    // Fallback to a default location if empty
-    if (userLocation.isEmpty) {
+    // Fallback if empty or too short (backend requires min 5 chars)
+    if (userLocation.trim().length < 5) {
       userLocation = 'Philippines';
     }
 

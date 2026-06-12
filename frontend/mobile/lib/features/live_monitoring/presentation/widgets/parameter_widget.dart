@@ -67,70 +67,29 @@ class _ParameterWidgetState extends State<ParameterWidget> {
     }
   }
 
-  double getCurrentValue() {
-    // Use provided currentValue if available, otherwise fall back to liveData
-    if (widget.currentValue != null) {
-      return widget.currentValue!;
-    }
-    
-    if (liveData == null) return 0.0;
-    
-    // Handle both direct measurements and nested measurements structure
-    Map<String, dynamic> measurements;
-    
-    if (liveData!.containsKey('measurements')) {
-      measurements = liveData!['measurements'] ?? {};
-    } else {
-      measurements = liveData!;
-    }
-    
-    // Map the parameter names to match the API response
-    String apiParameter = widget.parameter;
-    if (widget.parameter == 'soilMoisture') {
-      apiParameter = 'soilMoisture';
-    } else if (widget.parameter == 'lightIntensity') {
-      apiParameter = 'lightIntensity';
-    } else if (widget.parameter == 'soilPh') {
-      apiParameter = 'soilPh';
-    }
-    
-    final value = measurements[apiParameter];
-    
-    if (value == null) {
-      print('No value found for parameter: $apiParameter in measurements: $measurements');
-      return 0.0;
-    }
-    
-    print('Raw value for ${widget.parameter}: $value (type: ${value.runtimeType})');
-    
-    // Convert to double with better error handling
-    double parsedValue = 0.0;
-    try {
-      if (value is num) {
-        parsedValue = value.toDouble();
-      } else if (value is String) {
-        parsedValue = double.tryParse(value) ?? 0.0;
-      }
-    } catch (e) {
-      print('Error parsing value for ${widget.parameter}: $e');
-      parsedValue = 0.0;
-    }
-    
-    print('Parsed value for ${widget.parameter}: $parsedValue');
-    
-    // Special handling for different parameters
+  double? getCurrentValue() {
+    if (widget.currentValue != null) return widget.currentValue;
+
+    // Use the most recent (last) data point, not the oldest (first)
+    final recentItem = widget.data.isNotEmpty ? widget.data.last : null;
+    if (recentItem == null) return null;
+
+    final measurements = recentItem['measurements'];
+    if (measurements == null) return null;
+
+    final raw = measurements[widget.parameter];
+    if (raw == null) return null;
+
+    final v = raw is num ? raw.toDouble() : double.tryParse(raw.toString());
+    if (v == null) return null;
+
     switch (widget.parameter) {
-      case 'soilPh':
-        // Return 0.0 if soil pH is 0 or null
-        return parsedValue == 0 ? 0.0 : parsedValue;
       case 'soilMoisture':
-        // Convert soil moisture to percentage if needed
-        return parsedValue > 100 ? parsedValue / 10 : parsedValue;
+        return v > 100 ? v / 10 : v;
       case 'lightIntensity':
-        // Ensure light intensity is within reasonable range
-        return parsedValue.clamp(0, 10000);
+        return v.clamp(0, 10000);
       default:
-        return parsedValue;
+        return v;
     }
   }
 
@@ -143,33 +102,27 @@ class _ParameterWidgetState extends State<ParameterWidget> {
       if (item['hasData'] == true) {
         final measurements = item['measurements'];
         if (measurements != null) {
-          final value = measurements[widget.parameter];
-          if (value != null) {
-            // Special handling for different parameters
-            switch (widget.parameter) {
-              case 'soilPh':
-                if (value != 0) {
-                  sum += value.toDouble();
-                  count++;
-                }
-                break;
-              case 'soilMoisture':
-                double moistureValue = value.toDouble();
-                // Convert to percentage if needed
-                if (moistureValue > 100) {
-                  moistureValue = moistureValue / 10;
-                }
-                sum += moistureValue;
-                count++;
-                break;
-              case 'lightIntensity':
-                sum += value.toDouble().clamp(0, 10000);
-                count++;
-                break;
-              default:
-                sum += value.toDouble();
-                count++;
-            }
+          final rawValue = measurements[widget.parameter];
+          if (rawValue == null) continue;
+          double value = rawValue is num ? rawValue.toDouble() : double.tryParse(rawValue.toString()) ?? 0.0;
+
+          switch (widget.parameter) {
+            case 'soilPh':
+              // Skip zero readings — means sensor has no data
+              if (value > 0) { sum += value; count++; }
+              break;
+            case 'soilMoisture':
+              double moistureValue = value > 100 ? value / 10 : value;
+              sum += moistureValue;
+              count++;
+              break;
+            case 'lightIntensity':
+              // Skip zero readings — means sensor has no data
+              if (value > 0) { sum += value.clamp(0, 10000); count++; }
+              break;
+            default:
+              sum += value;
+              count++;
           }
         }
       }
@@ -181,14 +134,19 @@ class _ParameterWidgetState extends State<ParameterWidget> {
   String getTrend() {
     if (widget.data.length < 2) return 'stable';
 
-    final recent = widget.data.sublist(widget.data.length - 3);
+    final recentStart = (widget.data.length - 3).clamp(0, widget.data.length);
+    final recent = widget.data.sublist(recentStart);
     if (recent.length < 2) return 'stable';
 
-    double firstValue = (recent.first['measurements'][widget.parameter] ?? 0.0).toDouble();
-    double lastValue = (recent.last['measurements'][widget.parameter] ?? 0.0).toDouble();
+    final rawFirst = recent.first['measurements']?[widget.parameter];
+    final rawLast = recent.last['measurements']?[widget.parameter];
+    if (rawFirst == null || rawLast == null) return 'stable';
 
-    double change = ((lastValue - firstValue) / firstValue * 100).abs();
+    final firstValue = (rawFirst as num).toDouble();
+    final lastValue = (rawLast as num).toDouble();
+    if (firstValue == 0) return 'stable';
 
+    final change = ((lastValue - firstValue) / firstValue * 100).abs();
     if (change < 5) return 'stable';
     return lastValue > firstValue ? 'increasing' : 'decreasing';
   }
@@ -221,6 +179,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
   Widget build(BuildContext context) {
     final currentValue = getCurrentValue();
     final averageValue = getAverageValue();
+    final hasCurrentValue = currentValue != null && currentValue > 0;
 
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -297,7 +256,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
               Expanded(
                 child: _buildValueCard(
                   'Current',
-                  currentValue,
+                  hasCurrentValue ? currentValue : null,
                   widget.unit,
                   widget.color,
                 ),
@@ -306,7 +265,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
               Expanded(
                 child: _buildValueCard(
                   '7-Day Avg',
-                  averageValue,
+                  averageValue > 0 ? averageValue : null,
                   widget.unit,
                   MAIZE_ACCENT,
                 ),
@@ -322,31 +281,24 @@ class _ParameterWidgetState extends State<ParameterWidget> {
     );
   }
 
-  Widget _buildValueCard(
-      String label, double value, String unit, Color valueColor) {
+  Widget _buildValueCard(String label, double? value, String unit, Color valueColor) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: valueColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12.r),        
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
           SizedBox(height: 4.h),
           Text(
-            '${value.toStringAsFixed(1)} $unit',
+            value != null ? '${value.toStringAsFixed(1)} $unit' : '— $unit',
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
-              color: valueColor,
+              color: value != null ? valueColor : Colors.grey[400]!,
             ),
           ),
         ],
@@ -355,137 +307,114 @@ class _ParameterWidgetState extends State<ParameterWidget> {
   }
 
   Widget _buildWeeklyChart() {
-    if (widget.data.isEmpty) {
+    final List<dynamic> chartData = widget.data;
+
+    if (chartData.isEmpty) {
       return Container(
         height: 100.h,
         alignment: Alignment.center,
-        child: Text(
-          'No data available',
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: Colors.grey[600],
-          ),
-        ),
+        child: Text('No data available', style: TextStyle(fontSize: 14.sp, color: Colors.grey[500])),
       );
     }
 
-    // Debug: Log the actual data being used for charts
-    print('🔍 ParameterWidget: Building chart for ${widget.parameter}');
-    print('🔍 Data points: ${widget.data.length}');
-    for (int i = 0; i < widget.data.length && i < 3; i++) {
-      final item = widget.data[i];
-      final value = item['measurements']?[widget.parameter] ?? 'null';
-      print('🔍 Data point $i: $value');
-    }
-
-    // Find min and max values for scaling
+    // Collect valid (non-null) values for this parameter to compute Y-scale
     double minValue = double.infinity;
     double maxValue = double.negativeInfinity;
+    int validCount = 0;
 
-    List<double> values = [];
-    for (var item in widget.data) {
-      final value = (item['measurements'][widget.parameter] ?? 0.0).toDouble();
-      values.add(value);
-      if (value < minValue) minValue = value;
-      if (value > maxValue) maxValue = value;
+    for (var item in chartData) {
+      final rawVal = item['measurements']?[widget.parameter];
+      if (rawVal == null) continue;
+      double value = rawVal is num ? rawVal.toDouble() : double.tryParse(rawVal.toString()) ?? double.nan;
+      if (value.isNaN) continue;
+      // Apply soilMoisture normalisation for scale purposes
+      if (widget.parameter == 'soilMoisture' && value > 100) value /= 10;
+      minValue = value < minValue ? value : minValue;
+      maxValue = value > maxValue ? value : maxValue;
+      validCount++;
     }
 
-    // Handle zero values correctly
-    double range = maxValue - minValue;
-    bool allZeroValues = values.every((v) => v == 0.0);
-    
-    if (range == 0) {
-      if (allZeroValues) {
-        // All values are zero - show a flat line at zero
-        minValue = -0.1;
-        maxValue = 0.1;
-        print('🔍 All values are zero for ${widget.parameter}');
-      } else {
-        // All values are the same but not zero
-        minValue = values.first - 0.5;
-        maxValue = values.first + 0.5;
-      }
-    } else {
-      // Add small padding only if there's actual variation
-      double padding = range * 0.1;
-      minValue -= padding;
-      maxValue += padding;
+    if (validCount == 0) {
+      return Container(
+        height: 100.h,
+        alignment: Alignment.center,
+        child: Text('No sensor readings this week',
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey[500])),
+      );
     }
-    
-    print('🔍 Chart range for ${widget.parameter}: $minValue to $maxValue (values: $values)');
 
-    return Container(
-      height: 120.h,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Weekly Trend',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: MAIZE_ACCENT,
-                ),
-              ),
-              if (allZeroValues) ...[
-                SizedBox(width: 8.w),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4.r),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    'No Data',
-                    style: TextStyle(
-                      fontSize: 10.sp,
-                      color: Colors.orange.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Container(
-            height: 80.h,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: WeeklyChartPainter(
-                values: values,
-                minValue: minValue,
-                  maxValue: maxValue,
-                  color: widget.color,
-                  data: widget.data,
-                  optimalRange: widget.optimalRange,
-                  showThreshold: showThreshold,
-                  parameter: widget.parameter,
-                  weekStart: getWeekStart(),
-                ),
-              ),
+    // Smart Y-scale: parameter-aware padding and physical floor
+    final double range = maxValue - minValue;
+    final double paddingAmount = range == 0 ? _paramPadding() : range * 0.2;
+    minValue = (minValue - paddingAmount).clamp(_paramFloor(), double.infinity);
+    maxValue = maxValue + paddingAmount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Weekly Trend',
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: MAIZE_ACCENT),
             ),
-        ],
-      ),
+            SizedBox(width: 6.w),
+            Text(
+              '($validCount day${validCount != 1 ? 's' : ''})',
+              style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
+        SizedBox(
+          height: 90.h,
+          width: double.infinity,
+          child: CustomPaint(
+            painter: WeeklyChartPainter(
+              values: const [],
+              minValue: minValue,
+              maxValue: maxValue,
+              color: widget.color,
+              data: chartData,
+              optimalRange: widget.optimalRange,
+              showThreshold: showThreshold,
+              parameter: widget.parameter,
+              weekStart: getWeekStart(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  // Get the start of the calendar week (Sunday) for the current week offset
+  double _paramFloor() {
+    switch (widget.parameter) {
+      case 'soilPh': return 4.0;
+      case 'temperature': return 0.0;
+      default: return 0.0;
+    }
+  }
+
+  double _paramPadding() {
+    switch (widget.parameter) {
+      case 'temperature': return 2.0;
+      case 'soilPh': return 0.5;
+      case 'lightIntensity': return 50.0;
+      default: return 5.0;
+    }
+  }
+
+  // Get the start of the calendar week (Sunday) for the current week offset, in local time.
   DateTime getWeekStart() {
-    final now = DateTime.now();
-    // Get current week's Sunday
+    final now = DateTime.now().toLocal();
     int daysFromSunday = now.weekday == 7 ? 0 : now.weekday;
     final currentWeekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysFromSunday));
-    // Apply week offset
     return currentWeekStart.add(Duration(days: widget.weekOffset * 7));
   }
 }
 
 class WeeklyChartPainter extends CustomPainter {
-  final List<double> values;
+  final List<double> values; // kept for API compatibility, unused in drawing
   final double minValue;
   final double maxValue;
   final Color color;
@@ -495,7 +424,7 @@ class WeeklyChartPainter extends CustomPainter {
   final String parameter;
   final DateTime weekStart;
 
-  WeeklyChartPainter({
+  const WeeklyChartPainter({
     required this.values,
     required this.minValue,
     required this.maxValue,
@@ -507,184 +436,183 @@ class WeeklyChartPainter extends CustomPainter {
     required this.weekStart,
   });
 
-  String _getDayLabel(int dayIndex) {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days[dayIndex];
+  // Reserve bottom space for day labels
+  static const double _labelAreaHeight = 18.0;
+  // Horizontal padding so edge labels don't clip
+  static const double _hPad = 16.0;
+
+  double _xForDay(int day, double width) =>
+      _hPad + (day / 6.0) * (width - 2 * _hPad);
+
+  double _yForValue(double value, double chartHeight) {
+    final range = maxValue - minValue;
+    if (range == 0) return chartHeight / 2;
+    return chartHeight - ((value - minValue) / range * chartHeight).clamp(0.0, chartHeight);
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (values.isEmpty) return;
+    final chartH = size.height - _labelAreaHeight;
+    if (chartH <= 0) return;
 
-    // Calculate the actual range of values
-    double actualMin = minValue;
-    double actualMax = maxValue;
-    
-    // For light intensity, ensure the range is appropriate
-    if (parameter == 'lightIntensity') {
-      actualMin = 0;
-      actualMax = 10000;
-    }
+    final double valueRange = maxValue - minValue;
 
+    // --- Threshold lines ---
     if (showThreshold) {
-      // Parse optimal range and draw threshold lines
-      List<double> thresholds = _parseOptimalRange(optimalRange);
-      double lowerThreshold = thresholds[0];
-      double upperThreshold = thresholds[1];
-
-      // Ensure thresholds are within the visible range
-      if (parameter == 'lightIntensity') {
-        lowerThreshold = lowerThreshold.clamp(0, 10000);
-        upperThreshold = upperThreshold.clamp(0, 10000);
-      }
-
-      final thresholdPaint = Paint()
-        ..color = Colors.grey.withOpacity(0.3)
+      final thresholds = _parseOptimalRange(optimalRange);
+      final threshPaint = Paint()
+        ..color = Colors.grey.withOpacity(0.35)
         ..strokeWidth = 1
         ..style = PaintingStyle.stroke;
+      final tp = TextPainter(textDirection: TextDirection.ltr);
 
-      // Draw threshold lines and labels
-      double upperY = size.height - ((upperThreshold - actualMin) / (actualMax - actualMin)) * size.height;
-      double lowerY = size.height - ((lowerThreshold - actualMin) / (actualMax - actualMin)) * size.height;
-      
-      // Ensure Y coordinates are within bounds
-      upperY = upperY.clamp(0, size.height);
-      lowerY = lowerY.clamp(0, size.height);
-      
-      canvas.drawLine(Offset(0, upperY), Offset(size.width, upperY), thresholdPaint);
-      canvas.drawLine(Offset(0, lowerY), Offset(size.width, lowerY), thresholdPaint);
+      for (int t = 0; t < 2; t++) {
+        final tv = thresholds[t];
+        if (tv < minValue || tv > maxValue) continue;
+        final ty = _yForValue(tv, chartH);
+        canvas.drawLine(Offset(_hPad, ty), Offset(size.width - _hPad, ty), threshPaint);
 
-      // Draw threshold labels with better positioning
-      final textPainter = TextPainter(textDirection: TextDirection.ltr);
-      
-      // Upper threshold label
-      textPainter.text = TextSpan(
-        text: upperThreshold.toStringAsFixed(1),
-        style: TextStyle(color: Colors.grey[600], fontSize: 10.sp),
-      );
-      textPainter.layout();
-      
-      // Position upper label above the line if there's space, otherwise below
-      double upperLabelY = upperY - textPainter.height - 2;
-      if (upperLabelY < 0) {
-        upperLabelY = upperY + 2;
-      }
-      textPainter.paint(canvas, Offset(size.width - textPainter.width - 4, upperLabelY));
-
-      // Lower threshold label
-      textPainter.text = TextSpan(
-        text: lowerThreshold.toStringAsFixed(1),
-        style: TextStyle(color: Colors.grey[600], fontSize: 10.sp),
-      );
-      textPainter.layout();
-      
-      // Position lower label below the line if there's space, otherwise above
-      double lowerLabelY = lowerY + 2;
-      if (lowerLabelY + textPainter.height > size.height) {
-        lowerLabelY = lowerY - textPainter.height - 2;
-      }
-      textPainter.paint(canvas, Offset(size.width - textPainter.width - 4, lowerLabelY));
-    }
-
-    // Create a map to store values for each day (Sunday = 0, Saturday = 6)
-    Map<int, double> dayValues = {};
-    
-    // Process data points and map them to days of the week
-    for (var item in data) {
-      final timestamp = DateTime.parse(item['timestamp']);
-      final value = (item['measurements'][parameter] ?? 0.0).toDouble();
-      
-      // Calculate which day of the week this timestamp falls on within our target week
-      final daysDiff = timestamp.difference(weekStart).inDays;
-      if (daysDiff >= 0 && daysDiff < 7) {
-        dayValues[daysDiff] = value;
+        tp.text = TextSpan(
+          text: tv.toStringAsFixed(1),
+          style: TextStyle(color: Colors.grey[500], fontSize: 9.5.sp),
+        );
+        tp.layout();
+        double labelY = t == 1 ? ty - tp.height - 1 : ty + 2;
+        labelY = labelY.clamp(0, chartH - tp.height);
+        tp.paint(canvas, Offset(size.width - _hPad - tp.width - 2, labelY));
       }
     }
 
-    // Draw the chart
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
+    // --- Build day→value map (null = no sensor reading that day) ---
+    final Map<int, double> dayValues = {};
+    final wsDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
 
-    final fillPaint = Paint()
-      ..color = color.withOpacity(0.1)
-      ..style = PaintingStyle.fill;
+    for (final item in data) {
+      final rawTs = item['timestamp'] as String?;
+      if (rawTs == null) continue;
+      final parsed = DateTime.parse(rawTs.contains('T') ? rawTs : '${rawTs}T00:00:00');
+      final ts = parsed.toLocal(); // convert to device local time so day labels match the user's timezone
+      final daysDiff = DateTime(ts.year, ts.month, ts.day).difference(wsDate).inDays;
+      if (daysDiff < 0 || daysDiff > 6) continue;
 
-    final pointPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+      final rawVal = item['measurements']?[parameter];
+      if (rawVal == null) continue;
+      double v = rawVal is num ? rawVal.toDouble() : double.tryParse(rawVal.toString()) ?? double.nan;
+      if (v.isNaN) continue;
+      if (parameter == 'soilMoisture' && v > 100) v /= 10;
+      dayValues[daysDiff] = v;
+    }
 
-    final path = Path();
-    final fillPath = Path();
-
-    double range = actualMax - actualMin;
-    if (range == 0) range = 1;
-
-    // Create line path for each day (Sunday to Saturday)
+    // --- Build ordered screen points for existing days only ---
+    final List<Offset> pts = [];
     for (int i = 0; i < 7; i++) {
-      double x = (i / 6) * size.width;
-      double y = size.height;
-      
-      if (dayValues.containsKey(i)) {
-        double value = dayValues[i]!.clamp(actualMin, actualMax);
-        y = size.height - ((value - actualMin) / range) * size.height;
-      }
-
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
-      } else {
-        path.lineTo(x, y);
-        fillPath.lineTo(x, y);
-      }
+      if (!dayValues.containsKey(i)) continue;
+      final v = dayValues[i]!.clamp(minValue, maxValue);
+      pts.add(Offset(_xForDay(i, size.width), _yForValue(v, chartH)));
     }
 
-    // Complete the fill path
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
+    if (pts.isEmpty) {
+      // Draw "no data" label in chart area
+      final tp = TextPainter(textDirection: TextDirection.ltr)
+        ..text = TextSpan(
+          text: 'No readings',
+          style: TextStyle(color: Colors.grey[400], fontSize: 11.sp),
+        )
+        ..layout();
+      tp.paint(canvas, Offset((size.width - tp.width) / 2, (chartH - tp.height) / 2));
+    } else if (pts.length == 1) {
+      final dotPaint = Paint()..color = color..style = PaintingStyle.fill;
+      canvas.drawCircle(pts.first, 4, dotPaint);
+      final linePaint = Paint()..color = color..strokeWidth = 2..style = PaintingStyle.stroke;
+      canvas.drawLine(Offset(pts.first.dx - 12, pts.first.dy), Offset(pts.first.dx + 12, pts.first.dy), linePaint);
+    } else {
+      // --- Fill area (smooth, using same control points) ---
+      final fillPath = _buildSmoothPath(pts);
+      fillPath.lineTo(pts.last.dx, chartH);
+      fillPath.lineTo(pts.first.dx, chartH);
+      fillPath.close();
+      canvas.drawPath(fillPath, Paint()..color = color.withOpacity(0.12)..style = PaintingStyle.fill);
 
-    // Draw the filled area and line
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, paint);
-
-    // Draw points for days with data
-    for (int i = 0; i < 7; i++) {
-      if (dayValues.containsKey(i)) {
-        double x = (i / 6) * size.width;
-        double value = dayValues[i]!.clamp(actualMin, actualMax);
-        double y = size.height - ((value - actualMin) / range) * size.height;
-        canvas.drawCircle(Offset(x, y), 3, pointPaint);
-      }
-    }
-
-    // Draw day labels (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    
-    for (int i = 0; i < 7; i++) {
-      double x = (i / 6) * size.width;
-      
-      textPainter.text = TextSpan(
-        text: _getDayLabel(i),
-        style: TextStyle(color: Colors.grey[600], fontSize: 10.sp),
+      // --- Smooth line ---
+      canvas.drawPath(
+        _buildSmoothPath(pts),
+        Paint()..color = color..strokeWidth = 2.2..style = PaintingStyle.stroke..strokeCap = StrokeCap.round,
       );
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height + 4));
+
+      // --- Data points ---
+      final dotPaint = Paint()..color = color..style = PaintingStyle.fill;
+      final dotBg = Paint()..color = Colors.white..style = PaintingStyle.fill;
+      for (final pt in pts) {
+        canvas.drawCircle(pt, 4, dotBg);
+        canvas.drawCircle(pt, 3, dotPaint);
+      }
+    }
+
+    // --- Y-axis scale labels (min/max) ---
+    if (valueRange > 0) {
+      final tp = TextPainter(textDirection: TextDirection.ltr);
+      tp.text = TextSpan(
+        text: maxValue.toStringAsFixed(1),
+        style: TextStyle(color: Colors.grey[400], fontSize: 9.sp),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(0, 0));
+
+      tp.text = TextSpan(
+        text: minValue.toStringAsFixed(1),
+        style: TextStyle(color: Colors.grey[400], fontSize: 9.sp),
+      );
+      tp.layout();
+      tp.paint(canvas, Offset(0, chartH - tp.height));
+    }
+
+    // --- Day labels ---
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    for (int i = 0; i < 7; i++) {
+      final hasData = dayValues.containsKey(i);
+      tp.text = TextSpan(
+        text: dayNames[i],
+        style: TextStyle(
+          color: hasData ? color.withOpacity(0.8) : Colors.grey[400],
+          fontSize: 9.5.sp,
+          fontWeight: hasData ? FontWeight.w600 : FontWeight.normal,
+        ),
+      );
+      tp.layout();
+      final x = _xForDay(i, size.width);
+      tp.paint(canvas, Offset((x - tp.width / 2).clamp(0, size.width - tp.width), chartH + 4));
     }
   }
 
-  List<double> _parseOptimalRange(String range) {
-    String cleanRange = range.replaceAll(RegExp(r'[^0-9.-]'), '');
-    List<String> parts = cleanRange.split('-');
-    
-    if (parts.length == 2) {
-      return [double.parse(parts[0].trim()), double.parse(parts[1].trim())];
+  /// Catmull-Rom spline path through [points].
+  Path _buildSmoothPath(List<Offset> points) {
+    final path = Path();
+    path.moveTo(points[0].dx, points[0].dy);
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = i > 0 ? points[i - 1] : points[i];
+      final p1 = points[i];
+      final p2 = points[i + 1];
+      final p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
+      final cp1 = Offset(p1.dx + (p2.dx - p0.dx) / 6, p1.dy + (p2.dy - p0.dy) / 6);
+      final cp2 = Offset(p2.dx - (p3.dx - p1.dx) / 6, p2.dy - (p3.dy - p1.dy) / 6);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, p2.dx, p2.dy);
     }
-    
+    return path;
+  }
+
+  List<double> _parseOptimalRange(String range) {
+    // e.g. "20-30°C", "6.0-7.5", "50-70%"
+    final nums = RegExp(r'\d+\.?\d*').allMatches(range).map((m) => double.parse(m.group(0)!)).toList();
+    if (nums.length >= 2) return [nums[0], nums[1]];
     return [0.0, 100.0];
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(WeeklyChartPainter old) =>
+      old.minValue != minValue ||
+      old.maxValue != maxValue ||
+      old.data != data ||
+      old.showThreshold != showThreshold ||
+      old.weekStart != weekStart;
 }

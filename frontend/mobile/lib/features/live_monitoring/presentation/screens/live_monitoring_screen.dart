@@ -19,6 +19,7 @@ import '../widgets/farm_detail_widget.dart';
 import '../widgets/growth_stage_lottie.dart';
 import '../../../authentication/presentation/bloc/authentication_bloc.dart';
 import '../../domain/entities/sensor_reading.dart';
+import '../../../../core/presentation/home/home_screen.dart';
 
 class LiveMonitoringScreen extends StatefulWidget {
   const LiveMonitoringScreen({super.key});
@@ -36,6 +37,7 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   final NotificationService _notificationService = NotificationService();
   Set<String> _notifiedPrescriptions = {};
   List<Map<String, dynamic>> _cachedTasks = [];
+  List<SensorReading> _farmDetailReadings = const [];
   
   // Analytics caching
   Map<String, dynamic>? _cachedAnalytics;
@@ -396,20 +398,29 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
         _selectedFarm = null;
         _selectedField = null;
       });
+      HomeScreen.farmDetailOpen.value = false;
       _animationController.forward();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: MAIZE_PRIMARY_LIGHT.withOpacity(0.5),
-        body: _selectedFarm != null ? _buildFarmDetailView() : _buildHomeView(),
+    return BlocListener<MonitoringBloc, MonitoringState>(
+      listenWhen: (prev, curr) => prev.latestReadings != curr.latestReadings,
+      listener: (context, state) {
+        if (_selectedFarm != null && mounted) {
+          setState(() => _farmDetailReadings = state.latestReadings);
+        }
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: Colors.transparent,
+        ),
+        child: Scaffold(
+          extendBodyBehindAppBar: true,
+          backgroundColor: MAIZE_PRIMARY_LIGHT.withOpacity(0.5),
+          body: _selectedFarm != null ? _buildFarmDetailView() : _buildHomeView(),
+        ),
       ),
     );
   }
@@ -1218,7 +1229,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
             _selectedFarm = farm;
             _selectedField = farm.fields.isNotEmpty ? farm.fields.first : null;
           });
-          
+          HomeScreen.farmDetailOpen.value = true;
+
           // Reload analytics data for the selected farm
           if (farm.id != null) {
             context.read<MonitoringBloc>().add(
@@ -1361,28 +1373,24 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
   }
 
   Widget _buildFarmDetailView() {
-    return BlocBuilder<MonitoringBloc, MonitoringState>(
-      builder: (context, monitoringState) {
-        return FadeTransition(
-          opacity: _fadeAnimation,
-          child: FarmDetailWidget(
-            farm:
-                _selectedFarm ??
-                Farm(
-                  userId: '',
-                  farmName: S.of(context).default_farm,
-                  location: '',
-                  fields: [],
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                ),
-            sensorReadings: monitoringState.latestReadings,
-            onBack: _goBackToMap,
-            selectedField: _selectedField,
-            sensors: [],
-          ),
-        );
-      },
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: FarmDetailWidget(
+        farm:
+            _selectedFarm ??
+            Farm(
+              userId: '',
+              farmName: S.of(context).default_farm,
+              location: '',
+              fields: [],
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+        sensorReadings: _farmDetailReadings,
+        onBack: _goBackToMap,
+        selectedField: _selectedField,
+        sensors: [],
+      ),
     );
   }
 
@@ -2421,7 +2429,8 @@ class _LiveMonitoringScreenState extends State<LiveMonitoringScreen>
           _selectedFarm = farm;
           _selectedField = field;
         });
-        
+        HomeScreen.farmDetailOpen.value = true;
+
         // Reload analytics data for the selected field
         if (farm.id != null) {
           context.read<MonitoringBloc>().add(

@@ -16,16 +16,12 @@ class HistoricalRepositoryImpl implements HistoricalRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getWeeklyData(String farmId, {String? fieldId, int? weekOffset}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await remoteDataSource.getWeeklyData(farmId, fieldId: fieldId, weekOffset: weekOffset);
-        return Right(result);
-      } on ServerException {
-        return Left(ServerFailure());
-      } catch (_) {
-        return Left(NetworkFailure());
-      }
-    } else {
+    try {
+      final result = await remoteDataSource.getWeeklyData(farmId, fieldId: fieldId, weekOffset: weekOffset);
+      return Right(result);
+    } on ServerException {
+      return Left(ServerFailure());
+    } catch (_) {
       return Left(NetworkFailure());
     }
   }

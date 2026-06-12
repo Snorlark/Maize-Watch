@@ -51,6 +51,7 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   Map<String, dynamic>? _stressAnalysis; // Store stress analysis data
   bool _isLoadingAnalytics = false;
   String? _analyticsError;
+  int _daysToNextStage = -1;
 
   @override
   void initState() {
@@ -877,27 +878,32 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   @override
   Widget build(BuildContext context) {
     return BlocListener<MonitoringBloc, MonitoringState>(
-        listener: (context, state) async {
+        listener: (context, state) {
           if (state.farmAnalytics != null) {
             final analyticsData = state.farmAnalytics!;
-            print('🔍 FarmDetailWidget received analytics via MonitoringBloc: $analyticsData');
-            
-            setState(() {
-              _isLoadingAnalytics = false;
-              _analyticsError = null;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _parseAnalyticsData(analyticsData);
+              setState(() {
+                _isLoadingAnalytics = false;
+                _analyticsError = null;
+              });
             });
-
-            // Parse analytics data from MonitoringBloc
-            _parseAnalyticsData(analyticsData);
           } else if (state.isLoading) {
-            setState(() {
-              _isLoadingAnalytics = true;
-              _analyticsError = null;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              setState(() {
+                _isLoadingAnalytics = true;
+                _analyticsError = null;
+              });
             });
           } else if (state.error != null) {
-            setState(() {
-              _isLoadingAnalytics = false;
-              _analyticsError = state.error;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              setState(() {
+                _isLoadingAnalytics = false;
+                _analyticsError = state.error;
+              });
             });
           }
         },
@@ -960,7 +966,10 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
                           icon: Icons.arrow_back,
                           onTap: widget.onBack,
                         ),
-                        Spacer(),
+                        const Spacer(),
+                        if (_daysToNextStage > 0)
+                          _buildNextStageChip(),
+                        const Spacer(),
                         _buildCircleIconButton(
                           icon: Icons.refresh,
                           onTap: _forceRefreshData,
@@ -979,8 +988,6 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
   Widget _buildHeroSection() {
     return Container(
       width: double.infinity,
-      height: 370.h, // Adjusted height for the growth progress widget
-      padding: EdgeInsets.only(bottom: 24.h),
       decoration: BoxDecoration(
         color: MAIZE_PRIMARY,
         borderRadius: BorderRadius.only(
@@ -988,27 +995,34 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           bottomRight: Radius.circular(30.r),
         ),
       ),
-      child: Stack(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Growth progress widget
-          Center(
-            child: GrowthProgressWidget(
-              currentGrowthStage:
-                  widget.selectedField?.growthStage ??
-                  (widget.farm.fields.isNotEmpty
-                      ? widget.farm.fields.first.growthStage
-                      : 'VE'),
-              plantingDate:
-                  widget.selectedField?.plantingDate ??
-                  (widget.farm.fields.isNotEmpty
-                      ? widget.farm.fields.first.plantingDate
-                      : DateTime.now()),
-              historicalData: widget.sensorReadings,
-              onStageChange: () {
-                setState(() {});
-              },
-            ),
+          SizedBox(height: 56.h), // clearance for the Positioned header row
+          GrowthProgressWidget(
+            currentGrowthStage:
+                widget.selectedField?.growthStage ??
+                (widget.farm.fields.isNotEmpty
+                    ? widget.farm.fields.first.growthStage
+                    : 'VE'),
+            plantingDate:
+                widget.selectedField?.plantingDate ??
+                (widget.farm.fields.isNotEmpty
+                    ? widget.farm.fields.first.plantingDate
+                    : DateTime.now()),
+            historicalData: widget.sensorReadings,
+            onStageChange: () {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() {});
+              });
+            },
+            onDaysCalculated: (days) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) setState(() => _daysToNextStage = days);
+              });
+            },
           ),
+          SizedBox(height: 80.h), // bottom space for field card overlap via Transform.translate
         ],
       ),
     );
@@ -1035,6 +1049,38 @@ class _FarmDetailWidgetState extends State<FarmDetailWidget>
           ],
         ),
         child: Icon(icon, color: MAIZE_ACCENT, size: 20.sp),
+      ),
+    );
+  }
+
+  Widget _buildNextStageChip() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.schedule, size: 14.sp, color: MAIZE_PRIMARY),
+          SizedBox(width: 6.w),
+          Text(
+            '~$_daysToNextStage days',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: MAIZE_PRIMARY,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

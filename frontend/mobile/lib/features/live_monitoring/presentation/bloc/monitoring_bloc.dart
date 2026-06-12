@@ -153,11 +153,10 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     LoadWeeklyDataEvent event,
     Emitter<MonitoringState> emit,
   ) async {
+    // Keep existing weeklyData visible while loading so the chart doesn't flash to "no data"
     emit(state.copyWith(isLoading: true, error: null));
 
     try {
-      print('🔍 Bloc: Loading weekly data for farm: ${event.farmId}, field: ${event.fieldId}');
-      
       final result = await _getWeeklyData(GetWeeklyDataParams(
         farmId: event.farmId,
         fieldId: event.fieldId,
@@ -166,77 +165,47 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
 
       result.fold(
         (failure) {
-          print('❌ Bloc: Weekly data error: ${failure.message}');
-          // Always show fallback data instead of errors
-          print('🔄 Showing fallback data due to error: ${failure.message}');
-          final fallbackData = _generateFallbackWeeklyData();
           emit(state.copyWith(
             isLoading: false,
-            weeklyData: fallbackData,
+            weeklyData: [],
+            error: failure.message,
+          ));
+        },
+        (weeklyData) {
+          final List<Map<String, dynamic>> formattedData = [];
+          if (weeklyData['dailyData'] != null) {
+            for (var dayData in weeklyData['dailyData']) {
+              // Only include days where at least one sensor has data
+              if (dayData['readingCount'] != null && (dayData['readingCount'] as num) > 0) {
+                formattedData.add({
+                  'timestamp': dayData['date'],
+                  'hasData': true,
+                  'measurements': {
+                    // Keep null for missing sensors — the chart must not treat null as 0
+                    'temperature': (dayData['temperature'] as num?)?.toDouble(),
+                    'humidity': (dayData['humidity'] as num?)?.toDouble(),
+                    'soilMoisture': (dayData['soilMoisture'] as num?)?.toDouble(),
+                    'soilPh': (dayData['soilPh'] as num?)?.toDouble(),
+                    'lightIntensity': (dayData['lightIntensity'] as num?)?.toDouble(),
+                  },
+                });
+              }
+            }
+          }
+          emit(state.copyWith(
+            isLoading: false,
+            weeklyData: formattedData,
             error: null,
           ));
         },
-      (weeklyData) {
-        // Convert the weekly data to the expected format
-        final List<Map<String, dynamic>> formattedData = [];
-        if (weeklyData['dailyData'] != null) {
-          for (var dayData in weeklyData['dailyData']) {
-            formattedData.add({
-              'timestamp': dayData['date'],
-              'hasData': true,
-              'measurements': {
-                'temperature': dayData['temperature'],
-                'humidity': dayData['humidity'],
-                'soilMoisture': dayData['soilMoisture'],
-                'soilPh': dayData['soilPh'],
-                'lightIntensity': dayData['lightIntensity'],
-              },
-            });
-          }
-        }
-        
-        emit(state.copyWith(
-          isLoading: false,
-          weeklyData: formattedData,
-          error: null,
-        ));
-      },
-    );
+      );
     } catch (e) {
-      print('❌ Bloc: Unexpected error loading weekly data: $e');
-      
-      // Always show fallback data instead of errors
-      print('🔄 Showing fallback data due to unexpected error: $e');
-      final fallbackData = _generateFallbackWeeklyData();
       emit(state.copyWith(
         isLoading: false,
-        weeklyData: fallbackData,
-        error: null,
+        weeklyData: [],
+        error: 'Failed to load weekly data. Please retry.',
       ));
     }
-  }
-
-  List<Map<String, dynamic>> _generateFallbackWeeklyData() {
-    // Generate 7 days of sample data for demonstration
-    final List<Map<String, dynamic>> fallbackData = [];
-    final now = DateTime.now();
-    
-    for (int i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      fallbackData.add({
-        'timestamp': date.toIso8601String(),
-        'hasData': true,
-        'measurements': {
-          'temperature': 25.0 + (i * 2.0), // Varying temperature
-          'humidity': 60.0 + (i * 3.0),    // Varying humidity
-          'soilMoisture': 45.0 + (i * 1.5), // Varying soil moisture
-          'soilPh': 6.5 + (i * 0.1),       // Varying pH
-          'lightIntensity': 800.0 + (i * 50.0), // Varying light
-        },
-      });
-    }
-    
-    return fallbackData;
   }
 
   Future<void> _onLoadLatestData(
@@ -259,12 +228,9 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     ClearErrorEvent event,
     Emitter<MonitoringState> emit,
   ) async {
-    print('🔄 ClearErrorEvent: Showing fallback data due to timeout');
-    final fallbackData = _generateFallbackWeeklyData();
     emit(state.copyWith(
       isLoading: false,
-      weeklyData: fallbackData,
-      error: null,
+      error: 'Request timed out. Pull down to retry.',
     ));
   }
 }
