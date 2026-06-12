@@ -175,6 +175,15 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
     userData: { ...userData, password: '[HIDDEN]' }
   });
 
+  // Role assignment restrictions (mirrors updateUser)
+  if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    if (userData.role === USER_ROLES.ADMIN || userData.role === USER_ROLES.SUPER_ADMIN) {
+      throw new AppError('Insufficient permissions to assign this role', HTTP_STATUS.FORBIDDEN);
+    }
+    if (userData.role === USER_ROLES.REGIONAL_ADMIN && currentUser.role !== USER_ROLES.ADMIN) {
+      throw new AppError('Insufficient permissions to assign regional admin role', HTTP_STATUS.FORBIDDEN);
+    }
+  }
 
   // Check if username already exists
   const existingUser = await User.findOne({ username: userData.username });
@@ -263,6 +272,18 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
+  const targetUser = await User.findById(id);
+  if (!targetUser) {
+    throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
+  }
+
+  // Prevent non-super-admins from modifying admin or super_admin accounts
+  if (currentUser.id !== id && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    if (targetUser.role === USER_ROLES.ADMIN || targetUser.role === USER_ROLES.SUPER_ADMIN) {
+      throw new AppError('Insufficient permissions to modify this user', HTTP_STATUS.FORBIDDEN);
+    }
+  }
+
   // Prevent non-super-admins from updating to admin or super_admin
   // Regional admins can only assign user/farmer roles
   if (updateData.role && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
@@ -290,9 +311,10 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
   // Remove system-managed fields that shouldn't be updated via this endpoint
   const systemFields = ['createdAt', 'lastLogin', 'loginAttempts', 'lockUntil', 'refreshTokens',
     'passwordResetToken', 'passwordResetExpires', 'emailVerificationToken',
-    'twoFactorSecret', '_id', '__v'];
+    'twoFactorSecret', '_id', '__v',
+    'deletionPending', 'deletionRequestedBy', 'deletionRequestedAt', 'deletionReason'];
   systemFields.forEach(field => {
-    if (updateData[field]) {
+    if (field in updateData) {
       delete updateData[field];
       logger.info(`System field ${field} removed from update data`, { userId: id });
     }
@@ -514,6 +536,16 @@ export const approveDeletion = catchAsync(async (req: Request, res: Response) =>
 
   if (!user.deletionPending) {
     throw new AppError('No pending deletion request for this user', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Prevent approving deletion of your own account
+  if (currentUser.id === id) {
+    throw new AppError('Cannot approve deletion of your own account', HTTP_STATUS.BAD_REQUEST);
+  }
+
+  // Prevent deleting super admin (same guard as deleteUser)
+  if (user.role === USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Cannot delete super admin user', HTTP_STATUS.FORBIDDEN);
   }
 
   // Activity Log: Deletion Approved
