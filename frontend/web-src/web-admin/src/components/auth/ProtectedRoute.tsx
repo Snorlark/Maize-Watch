@@ -6,6 +6,7 @@ interface ProtectedRouteProps {
   requireAdmin?: boolean;
   requireRegionalAdmin?: boolean;
   // Regional admin ONLY (plus super admin). Does NOT include admin.
+  // Deprecated alias: use requireSuperAdmin instead. Kept for route compatibility.
   requireRegionalAdminOnly?: boolean;
   requireSuperAdmin?: boolean;
   redirectPath?: string;
@@ -33,10 +34,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Regional Admin ONLY check (allows regional_admin and super_admin roles)
+  // Super Admin only — user management, farm assignments, activity logs
   if (
     requireRegionalAdminOnly &&
-    user?.role !== 'regional_admin' &&
     user?.role !== 'super_admin'
   ) {
     return <Navigate to="/unauthorized" replace />;

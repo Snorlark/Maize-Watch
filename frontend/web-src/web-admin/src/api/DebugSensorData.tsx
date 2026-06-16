@@ -85,7 +85,7 @@ const DebugSensorData: React.FC = () => {
 
       // 6. Test Debug Endpoint
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8080/api" : "https://maize-watch-web-backend.onrender.com")}/debug`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001/api" : "https://maize-watch-web-backend.onrender.com")}/debug`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

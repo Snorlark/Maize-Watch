@@ -5,7 +5,7 @@ import authService from '../api/services/authService'; // Import your auth servi
 
 // Use environment variable for API URL, with fallbacks
 // Always compute base WITHOUT '/api', then append '/api' exactly once
-const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (import.meta.env.DEV ? "http://localhost:8080" : "https://maize-watch-web-backend.onrender.com");
+const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (import.meta.env.DEV ? "http://localhost:3001" : "https://maize-watch-web-backend.onrender.com");
 const API_BASE = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
 

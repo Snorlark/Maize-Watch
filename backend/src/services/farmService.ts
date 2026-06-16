@@ -1,6 +1,7 @@
 import Farm, { IFarm } from '../models/Farm';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { USER_ROLES } from '../utils/constants';
 import User from '../models/User';
 import Sensor from '../models/Sensor';
 import SensorReading from '../models/SensorReading';
@@ -128,17 +129,76 @@ class FarmService {
    * If ownerId is undefined, returns all farms (for super_admin)
    * If regionalFilter is provided, filters farms by location containing the region
    */
+  /**
+   * Build a MongoDB query matching users in an assigned region.
+   */
+  buildRegionUserQuery(assignedRegion: string): Record<string, unknown> {
+    return {
+      $or: [
+        { 'address.region': assignedRegion },
+        { address: { $regex: assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+      ]
+    };
+  }
+
+  /**
+   * Check whether a user record belongs to the given region.
+   */
+  isUserInRegion(user: { address?: { region?: string } | string }, assignedRegion: string): boolean {
+    if (user.address && typeof user.address === 'object' && user.address.region === assignedRegion) {
+      return true;
+    }
+    const addressStr = typeof user.address === 'string' ? user.address : '';
+    const regex = new RegExp(assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return regex.test(addressStr);
+  }
+
+  /**
+   * Determine if the current user can access a farm (read).
+   */
+  async canUserAccessFarm(currentUser: { id: string; role: string; assignedRegion?: string }, farm: IFarm): Promise<boolean> {
+    const farmUserId = (farm.userId as { _id?: { toString(): string } })?._id
+      ? (farm.userId as { _id: { toString(): string } })._id.toString()
+      : farm.userId.toString();
+
+    if (farmUserId === currentUser.id) return true;
+    if (currentUser.role === USER_ROLES.SUPER_ADMIN || currentUser.role === USER_ROLES.ADMIN) return true;
+
+    if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+      const owner = await User.findById(farmUserId).select('address').lean();
+      if (!owner) return false;
+      return this.isUserInRegion(owner, currentUser.assignedRegion);
+    }
+
+    return false;
+  }
+
+  /**
+   * Get farms accessible to the current user based on role.
+   */
+  async getFarmsForUser(currentUser: { id: string; role: string; assignedRegion?: string }): Promise<IFarm[]> {
+    if (currentUser.role === USER_ROLES.SUPER_ADMIN || currentUser.role === USER_ROLES.ADMIN) {
+      return this.getFarmsByOwner(undefined);
+    }
+    if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+      return this.getFarmsByOwner(undefined, currentUser.assignedRegion);
+    }
+    return this.getFarmsByOwner(currentUser.id);
+  }
+
   async getFarmsByOwner(ownerId?: string, regionalFilter?: string): Promise<IFarm[]> {
     try {
-      let query: any = {};
+      let query: Record<string, unknown> = {};
       
       if (ownerId !== undefined) {
         query.userId = ownerId;
       }
       
-      // Apply regional filter if provided
+      // Regional admins see farms owned by users in their assigned region
       if (regionalFilter) {
-        query.location = { $regex: regionalFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
+        const usersInRegion = await User.find(this.buildRegionUserQuery(regionalFilter)).select('_id');
+        const userIds = usersInRegion.map((u) => u._id);
+        query.userId = { $in: userIds };
       }
       
       const farms = await Farm.find(query);

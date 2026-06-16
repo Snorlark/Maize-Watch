@@ -14,7 +14,7 @@ import {
   approveDeletion,
   rejectDeletion
 } from '../controllers/userController';
-import { authenticate, authorize, requireRegionalAdmin } from '../middleware/auth';
+import { authenticate, authorize, requireSuperAdmin } from '../middleware/auth';
 import {
   validateUserRegistration,
   validateUserUpdate,
@@ -29,29 +29,29 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Get all users (Regional Admin and above)
-router.get('/', requireRegionalAdmin, validatePagination, getUsers);
+// Get all users (Super Admin only)
+router.get('/', requireSuperAdmin, validatePagination, getUsers);
 
-// Create new user (Regional Admin and Super Admin only)
-router.post('/', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), ...validateUserRegistration, handleValidationErrors, createUser);
+// Create new user (Super Admin only)
+router.post('/', requireSuperAdmin, ...validateUserRegistration, handleValidationErrors, createUser);
 
-// Search users (Regional Admin and Super Admin only)
-router.get('/search', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), searchUsers);
+// Search users (Super Admin only)
+router.get('/search', requireSuperAdmin, searchUsers);
 
-// Get user statistics (Regional Admin and Super Admin only)
-router.get('/stats', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), getUserStats);
+// Get user statistics (Super Admin only)
+router.get('/stats', requireSuperAdmin, getUserStats);
 
-// Get pending deletion requests (Regional Admin and Super Admin only)
-router.get('/pending-deletions', authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), getPendingDeletions);
+// Get pending deletion requests (Super Admin only)
+router.get('/pending-deletions', requireSuperAdmin, getPendingDeletions);
 
 // Get user by ID
 router.get('/:id', validateObjectId('id'), getUserById);
 
-// Update user profile (Regional Admin and above)
-router.put('/:id', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), validateUserUpdate, updateUser);
+// Update user profile (Super Admin only)
+router.put('/:id', validateObjectId('id'), requireSuperAdmin, validateUserUpdate, updateUser);
 
-// Delete user (Regional Admin and above)
-router.delete('/:id', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), deleteUser);
+// Delete user (Super Admin only)
+router.delete('/:id', validateObjectId('id'), requireSuperAdmin, deleteUser);
 
 // Approve deletion request (Super Admin only)
 router.post('/:id/approve-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), approveDeletion);
@@ -59,8 +59,8 @@ router.post('/:id/approve-deletion', validateObjectId('id'), authorize(USER_ROLE
 // Reject deletion request (Super Admin only)
 router.post('/:id/reject-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), rejectDeletion);
 
-// Toggle user status (Regional Admin and above)
-router.patch('/:id/status', validateObjectId('id'), authorize(USER_ROLES.REGIONAL_ADMIN, USER_ROLES.SUPER_ADMIN), toggleUserStatus);
+// Toggle user status (Super Admin only)
+router.patch('/:id/status', validateObjectId('id'), requireSuperAdmin, toggleUserStatus);
 
 // Update user preferences
 router.put('/:id/preferences', validateObjectId('id'), updateUserPreferences);

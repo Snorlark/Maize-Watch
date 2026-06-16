@@ -72,16 +72,10 @@ const App: React.FC = () => {
             </Route>
           </Route>
 
-          {/* Regional Admin and above routes */}
-          <Route element={<ProtectedRoute requireRegionalAdmin={true} redirectPath="login" />}>
+          {/* Super Admin only: user management, activity logs, farm assignments */}
+          <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="login" />}>
             <Route element={<AdminAuthenticatedLayout />}>
               <Route path="activity-logs" element={<ActivityLogPage />} />
-            </Route>
-          </Route>
-
-          {/* Account Management: Regional Admin ONLY (plus Super Admin) */}
-          <Route element={<ProtectedRoute requireRegionalAdminOnly={true} redirectPath="login" />}>
-            <Route element={<AdminAuthenticatedLayout />}>
               <Route
                 path="accountmanagement"
                 element={
@@ -90,17 +84,7 @@ const App: React.FC = () => {
                   </UserProvider>
                 }
               />
-            </Route>
-          </Route>
-
-          {/* Admin Logs route */}
-          <Route element={<ProtectedRoute requireAdmin={true} redirectPath="login" />}>
-            <Route element={<AdminAuthenticatedLayout />}>
-              <Route path="logs" element={<AdminLogs />} />
-              <Route 
-                path="farm-assignments" 
-                element={<FarmAssignmentManagement />} 
-              />
+              <Route path="farm-assignments" element={<FarmAssignmentManagement />} />
             </Route>
           </Route>
 

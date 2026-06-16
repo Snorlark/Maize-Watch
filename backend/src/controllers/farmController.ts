@@ -116,12 +116,10 @@ export const getFarmById = catchAsync(async (req: Request, res: Response) => {
   const farmUserId = farm.userId._id ? farm.userId._id.toString() : farm.userId.toString();
   logger.info(`Access control check: farmUserId=${farmUserId}, currentUser.id=${currentUser.id}, currentUser.role=${currentUser.role}`);
   
-  const isOwner = farmUserId === currentUser.id;
-  const isAdmin = currentUser.role === USER_ROLES.ADMIN || currentUser.role === USER_ROLES.SUPER_ADMIN;
+  const canAccess = await farmService.canUserAccessFarm(currentUser, farm);
+  logger.info(`Access control: canAccess=${canAccess}`);
   
-  logger.info(`Access control: isOwner=${isOwner}, isAdmin=${isAdmin}`);
-  
-  if (!isOwner && !isAdmin) {
+  if (!canAccess) {
     logger.warn(`Access denied: User ${currentUser.id} cannot access farm ${farm._id}`);
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
@@ -159,11 +157,17 @@ export const updateFarm = catchAsync(async (req: Request, res: Response) => {
   // Get farm to check ownership
   const existingFarm = await farmService.getFarmById(id);
 
-  // Check if user owns the farm or is admin/regional_admin
   const existingFarmUserId = existingFarm.userId._id ? existingFarm.userId._id.toString() : existingFarm.userId.toString();
-  if (existingFarmUserId !== currentUser.id && 
+  const isReassignment = updateData.userId && String(updateData.userId) !== existingFarmUserId;
+
+  if (isReassignment && currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+    throw new AppError('Only super admins can reassign farms', HTTP_STATUS.FORBIDDEN);
+  }
+
+  // Check if user owns the farm or is admin/regional_admin
+  if (existingFarmUserId !== currentUser.id &&
       currentUser.role !== USER_ROLES.REGIONAL_ADMIN &&
-      currentUser.role !== USER_ROLES.ADMIN && 
+      currentUser.role !== USER_ROLES.ADMIN &&
       currentUser.role !== USER_ROLES.SUPER_ADMIN) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
@@ -192,24 +196,11 @@ export const getTotalFarms = async (req: Request, res: Response) => {
   try {
     const currentUser = (req as any).user;
     let total;
-    
-    // For regional_admin, filter farms by users in their assigned region
-    if (currentUser && currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
-      // First get users in the assigned region
-      const User = require('../models/User').default;
-      const usersInRegion = await User.find({
-        $or: [
-          { 'address.region': currentUser.assignedRegion },
-          { address: { $regex: currentUser.assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
-        ]
-      }).select('_id');
-      
-      const userIds = usersInRegion.map((u: any) => u._id);
-      
-      // Count farms owned by users in this region
-      total = await Farm.countDocuments({ userId: { $in: userIds } });
+
+    if (currentUser) {
+      const farms = await farmService.getFarmsForUser(currentUser);
+      total = farms.length;
     } else {
-      // For super_admin and admin, count all farms
       total = await Farm.countDocuments();
     }
     
@@ -268,10 +259,7 @@ export const getFarmAnalytics = catchAsync(async (req: Request, res: Response) =
   // Get farm to check ownership
   const farm = await farmService.getFarmById(id);
 
-  // Check if user owns the farm or is admin
-  if (farm.userId._id.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+  if (!await farmService.canUserAccessFarm(currentUser, farm)) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 

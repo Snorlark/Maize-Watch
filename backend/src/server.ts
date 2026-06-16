@@ -112,18 +112,39 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration
-const allowedOrigins = [
+const defaultOrigins = [
   "http://localhost:3000", // React default
   "http://localhost:5173", // Vite default
+  "http://localhost:3001", // Backend dev port (8080 often used by Apache/EDB on Windows)
   "https://maize-watch-rdcy.onrender.com",
   "https://www.maize-watch.com",
-  "https://maize-watch-web-backend.onrender.com", // Production frontend
-  process.env.FRONTEND_URL, // Environment variable for flexibility
-].filter((origin): origin is string => Boolean(origin));
+  "https://maize-watch-web-backend.onrender.com",
+];
+
+const envOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? []),
+];
+
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins].filter(Boolean))];
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (
+      allowedOrigins.includes(origin) ||
+      (process.env.NODE_ENV !== "production" && localDevOriginPattern.test(origin))
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 
@@ -220,7 +241,7 @@ app.use(notFound);
 app.use(globalErrorHandler);
 
 // Server startup
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   try {

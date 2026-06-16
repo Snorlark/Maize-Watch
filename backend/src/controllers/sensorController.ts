@@ -29,7 +29,7 @@ export const createSensor = catchAsync(async (req: Request, res: Response) => {
   const currentUser = (req as any).user;
   const sensorData = req.body;
 
-  // Verify user owns the farm
+  // Verify user owns the farm (write access — regional admins are view-only)
   const farm = await farmService.getFarmById(sensorData.farm);
   if (farm.userId._id.toString() !== currentUser.id && 
       currentUser.role !== USER_ROLES.ADMIN && 
@@ -55,11 +55,9 @@ export const getSensorsByFarm = catchAsync(async (req: Request, res: Response) =
   const { farmId } = req.params;
   const currentUser = (req as any).user;
 
-  // Verify user owns the farm
+  // Verify user can view sensors for this farm
   const farm = await farmService.getFarmById(farmId);
-  if (farm.userId._id.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+  if (!await farmService.canUserAccessFarm(currentUser, farm)) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
@@ -82,11 +80,9 @@ export const getSensorById = catchAsync(async (req: Request, res: Response) => {
 
   const sensor = await sensorService.getSensorById(id);
   
-  // Verify user owns the farm
+  // Verify user can access the sensor's farm
   const farm = await farmService.getFarmById(sensor.farm._id.toString());
-  if (farm.userId._id.toString() !== currentUser.id && 
-      currentUser.role !== USER_ROLES.ADMIN && 
-      currentUser.role !== USER_ROLES.SUPER_ADMIN) {
+  if (!await farmService.canUserAccessFarm(currentUser, farm)) {
     throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
 
@@ -337,16 +333,11 @@ export const getLatestReadingsByFarm = catchAsync(async (req: Request, res: Resp
   const { farmId } = req.params;
   const currentUser = (req as any).user;
 
-  // Super admins can access any farm, even if it doesn't exist in the system
-  if (currentUser.role !== USER_ROLES.SUPER_ADMIN) {
-    // For non-super-admins, verify user owns the farm
-    const farm = await farmService.getFarmById(farmId);
-    if (farm.userId._id.toString() !== currentUser.id && 
-        currentUser.role !== USER_ROLES.ADMIN) {
-      throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
-    }
+  // Super admins can access any farm; others must have regional/ownership access
+  const farm = await farmService.getFarmById(farmId);
+  if (!await farmService.canUserAccessFarm(currentUser, farm)) {
+    throw new AppError('Access denied', HTTP_STATUS.FORBIDDEN);
   }
-  // Note: Super admins skip farm ownership verification entirely
 
   const readings = await sensorService.getLatestReadingsByFarm(farmId);
 
@@ -369,8 +360,8 @@ export const getHistoricalReadings = catchAsync(async (req: Request, res: Respon
     throw new AppError('Start date and end date are required', HTTP_STATUS.BAD_REQUEST);
   }
 
-  // Get all farms owned by the user
-  const farms = await farmService.getFarmsByOwner(currentUser.id);
+  // Get farms accessible to the user (own, regional, or all for admin roles)
+  const farms = await farmService.getFarmsForUser(currentUser);
   const farmIds = farms.map((f: any) => f._id.toString());
 
   // Fetch readings for these farms within range
@@ -444,8 +435,8 @@ export const getLatestSensorReading = catchAsync(async (req: Request, res: Respo
         .populate('farm', 'fieldName')
         .lean();
     } else {
-      // Get user's farms first
-      const userFarms = await farmService.getFarmsByOwner(currentUser.id);
+      // Get accessible farms for the user (own, regional, or all for admin roles)
+      const userFarms = await farmService.getFarmsForUser(currentUser);
       const farmIds = userFarms.map((farm: any) => farm._id);
 
       if (farmIds.length === 0) {
@@ -773,8 +764,8 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
         .limit(100) // Limit to prevent too much data
         .lean();
     } else {
-      // Get user's farms first
-      const userFarms = await farmService.getFarmsByOwner(currentUser.id);
+      // Get accessible farms for the user (own, regional, or all for admin roles)
+      const userFarms = await farmService.getFarmsForUser(currentUser);
       const farmIds = userFarms.map((farm: any) => farm._id);
 
       if (farmIds.length === 0) {
