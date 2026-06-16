@@ -13,11 +13,10 @@ export default defineConfig({
   publicDir: 'public', // Explicitly set public directory
   server: {
     proxy: {
-      // Proxy all /api requests to your live backend
       '/api': {
-        target: 'https://maize-watch-rdcy.onrender.com',
+        target: process.env.VITE_API_URL || 'http://localhost:3001',
         changeOrigin: true,
-        secure: true,
+        secure: false,
       }
     },
     // Ensure static files are served correctly

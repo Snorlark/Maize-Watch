@@ -46,16 +46,10 @@ const App: React.FC = () => {
           </Route>
         </Route>
 
-        {/* Regional Admin and above routes */}
-        <Route element={<ProtectedRoute requireRegionalAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
+        {/* Super Admin only: user management, activity logs */}
+        <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
           <Route element={<AuthenticatedLayout />}>
             <Route path="activity-logs" element={<ActivityLogPage />} />
-          </Route>
-        </Route>
-
-        {/* Account Management: Regional Admin ONLY (plus Super Admin) */}
-        <Route element={<ProtectedRoute requireRegionalAdminOnly={true} redirectPath="admin-portal-xyz123/login" />}>
-          <Route element={<AuthenticatedLayout />}>
             <Route
               path="accountmanagement"
               element={

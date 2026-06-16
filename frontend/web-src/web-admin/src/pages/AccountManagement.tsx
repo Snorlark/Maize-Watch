@@ -61,8 +61,8 @@ export default function AccountManagement() {
   const [pendingDeletions, setPendingDeletions] = useState<any[]>([]);
   const [pendingLoading, setPendingLoading] = useState(true);
 
-  // Check if user has regional_admin or super_admin role (admin should not have access here)
-  const hasAdminAccess = currentUser?.role === 'regional_admin' || currentUser?.role === 'super_admin';
+  // Super Admin only — user management and farm assignments
+  const hasAdminAccess = currentUser?.role === 'super_admin';
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
   // Filter out users with pending deletion
@@ -376,8 +376,7 @@ export default function AccountManagement() {
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC]" style={{ fontSize: 'var(--text-sm)' }}>
-              {currentUser?.role === 'super_admin' ? 'Super Admin Access' :
-                currentUser?.role === 'regional_admin' ? 'Regional Admin Access' : 'Admin Access'}
+              {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Restricted Access'}
             </span>
           </div>
         </div>

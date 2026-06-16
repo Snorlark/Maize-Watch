@@ -6,7 +6,7 @@ import type { User } from '../api/services/authService';
 // Environment configuration
 const isDevelopment = import.meta.env.DEV;
 // Build RAW base without '/api', then append '/api' exactly once
-const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (isDevelopment ? 'http://localhost:8080' : 'https://maize-watch-web-backend.onrender.com');
+const RAW_BASE = (import.meta.env.VITE_API_URL as string) || (isDevelopment ? 'http://localhost:3001' : 'https://maize-watch-web-backend.onrender.com');
 const API_BASE_URL = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 
 // Create axios instance with base configuration

@@ -23,8 +23,8 @@ export default function FarmAssignmentManagement() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Check if user has admin access
-  const hasAdminAccess = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  // Super Admin only — farm assignment management
+  const hasAdminAccess = currentUser?.role === 'super_admin';
 
   // Create a map of users for quick lookup
   const userMap = new Map(users.map(user => [user._id || '', user]));
@@ -189,7 +189,7 @@ export default function FarmAssignmentManagement() {
           </p>
           <div className="mt-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-[#456C2D] text-[#F5F5DC] text-sm">
-              {currentUser?.role === 'super_admin' ? 'Super Admin Access' : 'Admin Access'}
+              Super Admin Access
             </span>
           </div>
         </div>

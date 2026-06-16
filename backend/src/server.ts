@@ -72,9 +72,39 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const defaultOrigins = [
+  "http://localhost:3000", // React default
+  "http://localhost:5173", // Vite default
+  "http://localhost:3001", // Backend dev port (8080 often used by Apache/EDB on Windows)
+  "https://maize-watch-rdcy.onrender.com",
+  "https://www.maize-watch.com",
+  "https://maize-watch-web-backend.onrender.com",
+];
+
+const envOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? []),
+];
+
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins].filter(Boolean))];
+const localDevOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (
+      allowedOrigins.includes(origin) ||
+      (process.env.NODE_ENV !== "production" && localDevOriginPattern.test(origin))
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 // Compression middleware
@@ -108,13 +138,13 @@ app.get('/health', (req, res) => {
       heapTotal: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
     }
   };
-  
+
   try {
     // You can add more checks here:
     // - Database connection
     // - Redis connection
     // - External API availability
-    
+
     res.status(200).json(healthcheck);
   } catch (error) {
     healthcheck.message = error instanceof Error ? error.message : 'Unknown error';
@@ -130,9 +160,7 @@ app.use('/api', apiRoutes);
 app.use(notFound);
 app.use(globalErrorHandler);
 
-// ==========================================
-// PORT CONFIGURATION (UPDATED!)
-// ==========================================
+// Server startup
 const PORT = process.env.PORT || 3001;
 
 async function startServer() {
@@ -146,7 +174,7 @@ async function startServer() {
       logger.info(`🟢 Backend API listening on port ${PORT}`);
       logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`⚡ Ready to accept connections`);
-      
+
       // Start automatic data sync from ThingSpeak
       startDataSync(syncService);
     });
@@ -159,7 +187,7 @@ async function startServer() {
 // Start automatic data synchronization
 function startDataSync(syncService: SyncService) {
   logger.info('🔄 Starting automatic data synchronization...');
-  
+
   // Sync every 15 seconds
   cron.schedule('*/15 * * * * *', async () => {
     try {
@@ -181,7 +209,7 @@ function startDataSync(syncService: SyncService) {
       logger.error('❌ Initial sync failed:', error);
     }
   }, 30000); // 30 seconds delay
-  
+
   logger.info('⏰ Data sync scheduled every 15 seconds');
 }
 

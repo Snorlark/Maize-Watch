@@ -18,11 +18,9 @@ export default function sensorHandler(io: SocketIOServer, socket: AuthenticatedS
     try {
       const { farmId } = data;
       
-      // Verify user has access to the farm
+      // Verify user has access to the farm (read)
       const farm = await farmService.getFarmById(farmId);
-      if (farm.userId._id.toString() !== socket.userId && 
-          socket.user?.role !== USER_ROLES.ADMIN && 
-          socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
+      if (!await farmService.canUserAccessFarm(socket.user!, farm)) {
         socket.emit('error', { message: 'Access denied to farm' });
         return;
       }
@@ -70,9 +68,7 @@ export default function sensorHandler(io: SocketIOServer, socket: AuthenticatedS
       const sensor = await sensorService.getSensorById(sensorId);
       const farm = await farmService.getFarmById(sensor.farm._id.toString());
       
-      if (farm.userId._id.toString() !== socket.userId && 
-          socket.user?.role !== USER_ROLES.ADMIN && 
-          socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
+      if (!await farmService.canUserAccessFarm(socket.user!, farm)) {
         socket.emit('error', { message: 'Access denied to sensor' });
         return;
       }
@@ -193,11 +189,9 @@ export default function sensorHandler(io: SocketIOServer, socket: AuthenticatedS
     try {
       const { farmId } = data;
       
-      // Verify access to farm
+      // Verify access to farm (read)
       const farm = await farmService.getFarmById(farmId);
-      if (farm.userId._id.toString() !== socket.userId && 
-          socket.user?.role !== USER_ROLES.ADMIN && 
-          socket.user?.role !== USER_ROLES.SUPER_ADMIN) {
+      if (!await farmService.canUserAccessFarm(socket.user!, farm)) {
         socket.emit('error', { message: 'Access denied to farm' });
         return;
       }

@@ -2,6 +2,7 @@ import Farm, { IFarm } from '../models/Farm';
 import Field from '../models/Field';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { USER_ROLES } from '../utils/constants';
 import User from '../models/User';
 import Sensor from '../models/Sensor';
 import SensorReading from '../models/SensorReading';
@@ -78,7 +79,7 @@ class FarmService {
 
       // Handle legacy owner field
       const userId = farmData.userId || farmData.owner;
-      
+
       if (!userId) {
         logger.error('🚨 User ID is missing from farm data', { farmData });
         throw new AppError('User ID is required', HTTP_STATUS.BAD_REQUEST);
@@ -93,22 +94,22 @@ class FarmService {
         throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
       }
 
-      logger.info('✅ User found', { 
-        userId, 
-        userFullName: user.fullName, 
-        userEmail: user.email 
+      logger.info('✅ User found', {
+        userId,
+        userFullName: user.fullName,
+        userEmail: user.email
       });
 
       // Check if user already has a farm (users can only have one farm with multiple fields)
       const existingFarm = await Farm.findOne({ userId });
-      
+
       if (existingFarm) {
-        logger.info('🔄 User already has a farm, adding fields to existing farm', { 
+        logger.info('🔄 User already has a farm, adding fields to existing farm', {
           existingFarmId: existingFarm._id,
           existingFarmName: existingFarm.farmName,
           newFieldsCount: farmData.fields?.length || 0
         });
-        
+
         // Add new fields to existing farm
         if (farmData.fields && farmData.fields.length > 0) {
           // Ensure growthStage is set for each field
@@ -118,20 +119,20 @@ class FarmService {
           }));
           existingFarm.fields.push(...fieldsToAdd);
           await existingFarm.save();
-          
+
           logger.info('✅ Fields added to existing farm successfully', {
             farmId: existingFarm._id,
             totalFieldsCount: existingFarm.fields.length,
             addedFieldsCount: farmData.fields.length
           });
-          
+
           return existingFarm;
         } else {
           logger.info('ℹ️ No new fields to add to existing farm', {
             farmId: existingFarm._id,
             existingFieldsCount: existingFarm.fields.length
           });
-          
+
           return existingFarm;
         }
       }
@@ -196,7 +197,7 @@ class FarmService {
 
       logger.info('💾 Saving farm to database');
       await farm.save();
-      
+
       logger.info('✅ Farm created successfully with new structure', {
         farmId: farm._id,
         userId,
@@ -207,8 +208,8 @@ class FarmService {
 
       return farm;
     } catch (error) {
-      logger.error('🚨 Error creating farm', { 
-        error: error instanceof Error ? error.message : 'Unknown error', 
+      logger.error('🚨 Error creating farm', {
+        error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         farmData: JSON.stringify(farmData, null, 2)
       });
@@ -224,11 +225,11 @@ class FarmService {
   async getFarmById(farmId: string): Promise<IFarm> {
     try {
       const farm = await Farm.findById(farmId);
-      
+
       if (!farm) {
         throw new AppError('Farm not found', HTTP_STATUS.NOT_FOUND);
       }
-      
+
       return farm;
     } catch (error) {
       if (error instanceof AppError) {
@@ -244,12 +245,88 @@ class FarmService {
    * @param userId - User ID (optional for admin)
    * @returns Promise<IFarm[]>
    */
-  async getFarmsByOwner(userId?: string): Promise<IFarm[]> {
+  /**
+   * Build a MongoDB query matching users in an assigned region.
+   */
+  buildRegionUserQuery(assignedRegion: string): Record<string, unknown> {
+    return {
+      $or: [
+        { 'address.region': assignedRegion },
+        { address: { $regex: assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
+      ]
+    };
+  }
+
+  /**
+   * Check whether a user record belongs to the given region.
+   */
+  isUserInRegion(user: { address?: { region?: string } | string }, assignedRegion: string): boolean {
+    if (user.address && typeof user.address === 'object' && user.address.region === assignedRegion) {
+      return true;
+    }
+    const addressStr = typeof user.address === 'string' ? user.address : '';
+    const regex = new RegExp(assignedRegion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    return regex.test(addressStr);
+  }
+
+  /**
+   * Determine if the current user can access a farm (read).
+   */
+  async canUserAccessFarm(currentUser: { id: string; role: string; assignedRegion?: string }, farm: IFarm): Promise<boolean> {
+    const farmUserId = (farm.userId as { _id?: { toString(): string } })?._id
+      ? (farm.userId as { _id: { toString(): string } })._id.toString()
+      : farm.userId.toString();
+
+    if (farmUserId === currentUser.id) return true;
+    if (currentUser.role === USER_ROLES.SUPER_ADMIN || currentUser.role === USER_ROLES.ADMIN) return true;
+
+    if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+      const owner = await User.findById(farmUserId).select('address').lean();
+      if (!owner) return false;
+      return this.isUserInRegion(owner, currentUser.assignedRegion);
+    }
+
+    return false;
+  }
+
+  /**
+   * Get farms accessible to the current user based on role.
+   */
+  async getFarmsForUser(currentUser: { id: string; role: string; assignedRegion?: string }): Promise<IFarm[]> {
+    if (currentUser.role === USER_ROLES.SUPER_ADMIN || currentUser.role === USER_ROLES.ADMIN) {
+      return this.getFarmsByOwner(undefined);
+    }
+    if (currentUser.role === USER_ROLES.REGIONAL_ADMIN && currentUser.assignedRegion) {
+      return this.getFarmsByOwner(undefined, currentUser.assignedRegion);
+    }
+    return this.getFarmsByOwner(currentUser.id);
+  }
+
+  async getFarmsByOwner(ownerId?: string, regionalFilter?: string): Promise<IFarm[]> {
     try {
-      const query = userId ? { userId } : {};
-      const farms = await Farm.find(query)
-        .sort({ createdAt: -1 });
-      
+      let query: Record<string, unknown> = {};
+
+      if (ownerId !== undefined) {
+        query.userId = ownerId;
+      }
+
+      // Regional admins see farms owned by users in their assigned region
+      if (regionalFilter) {
+        const usersInRegion = await User.find(this.buildRegionUserQuery(regionalFilter)).select('_id');
+        const userIds = usersInRegion.map((u) => u._id);
+        query.userId = { $in: userIds };
+      }
+
+      const farms = await Farm.find(query);
+
+      if (ownerId === undefined && !regionalFilter) {
+        logger.info(`Fetching all farms for super_admin: ${farms.length} farms found`);
+      } else if (regionalFilter) {
+        logger.info(`Fetching farms for region ${regionalFilter}: ${farms.length} farms found`);
+      } else {
+        logger.info(`Fetching farms for user ${ownerId}: ${farms.length} farms found`);
+      }
+
       return farms;
     } catch (error) {
       logger.error('Error fetching farms by owner', { error: error instanceof Error ? error.message : 'Unknown error', userId });
@@ -270,16 +347,16 @@ class FarmService {
         { $set: updateData },
         { new: true, runValidators: true }
       ).populate('userId', 'fullName email username');
-      
+
       if (!farm) {
         throw new AppError('Farm not found', HTTP_STATUS.NOT_FOUND);
       }
-      
+
       logger.info('Farm updated successfully', {
         farmId: farm._id,
         updatedFields: Object.keys(updateData)
       });
-      
+
       return farm;
     } catch (error) {
       if (error instanceof AppError) {
@@ -377,19 +454,19 @@ class FarmService {
 
         // Calculate averages
         if (conditions.temperature.length > 0) {
-          analytics.averageConditions.temperature = 
+          analytics.averageConditions.temperature =
             conditions.temperature.reduce((a, b) => a + b, 0) / conditions.temperature.length;
         }
         if (conditions.humidity.length > 0) {
-          analytics.averageConditions.humidity = 
+          analytics.averageConditions.humidity =
             conditions.humidity.reduce((a, b) => a + b, 0) / conditions.humidity.length;
         }
         if (conditions.soilMoisture.length > 0) {
-          analytics.averageConditions.soilMoisture = 
+          analytics.averageConditions.soilMoisture =
             conditions.soilMoisture.reduce((a, b) => a + b, 0) / conditions.soilMoisture.length;
         }
         if (conditions.pH.length > 0) {
-          analytics.averageConditions.pH = 
+          analytics.averageConditions.pH =
             conditions.pH.reduce((a, b) => a + b, 0) / conditions.pH.length;
         }
 
@@ -424,13 +501,13 @@ class FarmService {
   ): Promise<IFarm[]> {
     try {
       const query: any = {};
-      
+
       if (region || province || municipality) {
         const locationParts = [];
         if (municipality) locationParts.push(municipality);
         if (province) locationParts.push(province);
         if (region) locationParts.push(region);
-        
+
         query.location = { $regex: locationParts.join('|'), $options: 'i' };
       }
 
@@ -499,18 +576,18 @@ class FarmService {
   async linkDeviceToFarm(farmId: string, deviceId: string, macAddress?: string): Promise<IFarm> {
     try {
       // Check if device is already linked to another farm
-      const existingFarm = await Farm.findOne({ 
-        deviceId, 
-        _id: { $ne: farmId } 
+      const existingFarm = await Farm.findOne({
+        deviceId,
+        _id: { $ne: farmId }
       });
-      
+
       if (existingFarm) {
         throw new AppError(`Device already linked to farm ${farmId}`, 400);
       }
 
       const farm = await Farm.findByIdAndUpdate(
         farmId,
-        { 
+        {
           deviceId,
           deviceMacAddress: macAddress,
           deviceRegisteredAt: new Date(),
@@ -543,11 +620,11 @@ class FarmService {
     try {
       const farm = await Farm.findByIdAndUpdate(
         farmId,
-        { 
-          $unset: { 
-            deviceId: 1, 
-            deviceMacAddress: 1, 
-            deviceRegisteredAt: 1 
+        {
+          $unset: {
+            deviceId: 1,
+            deviceMacAddress: 1,
+            deviceRegisteredAt: 1
           },
           updatedAt: new Date()
         },
@@ -611,7 +688,7 @@ class FarmService {
   private calculateEstimatedYield(farm: IFarm): any {
     // Simplified yield calculation for farm-level aggregation
     const baseYield = 8.5; // Average corn yield
-    
+
     return {
       estimated: baseYield.toFixed(2),
       unit: 'tons/hectare',
@@ -630,21 +707,21 @@ class FarmService {
 
   private identifyRiskFactors(farm: IFarm): string[] {
     const risks: string[] = [];
-    
+
     // Basic risk assessment for farm-level aggregation
     risks.push('Weather variability');
-    
+
     return risks;
   }
 
   private generateRecommendations(farm: IFarm): string[] {
     const recommendations: string[] = [];
-    
+
     // Basic recommendations for farm-level management
     recommendations.push('Monitor field conditions regularly');
     recommendations.push('Maintain proper irrigation schedules');
     recommendations.push('Check sensor data for anomalies');
-    
+
     return recommendations;
   }
 }

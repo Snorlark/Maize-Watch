@@ -14,7 +14,7 @@ interface UserContextType {
   errorType: 'network' | 'backend' | 'auth' | 'general' | null;
   currentUser: User | null;
   isAdmin: boolean;
-  hasAdminAccess: boolean; // New property for both admin and super_admin
+  hasAdminAccess: boolean; // Super Admin only — user management
   fetchUsers: () => Promise<void>;
   addUser: (userData: Omit<User, "_id">) => Promise<User>;
   updateUserById: (id: string, userData: Partial<User>) => Promise<User>;
@@ -47,8 +47,8 @@ export function UserProvider({ children }: UserProviderProps) {
   // Compute isAdmin for backward compatibility (only admin role)
   const isAdmin = user?.role === 'admin';
 
-  // New property to check for regional_admin, admin and super_admin access
-  const hasAdminAccess = user?.role === 'regional_admin' || user?.role === 'admin' || user?.role === 'super_admin';
+  // User management is restricted to super_admin
+  const hasAdminAccess = user?.role === 'super_admin';
 
   // Derive farmers from users whenever users change
   const farmers = users.filter(user => user.role === 'user' || user.role === 'farmer');

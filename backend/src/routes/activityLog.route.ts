@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { authenticate, requireRegionalAdmin } from '../middleware/auth';
+import { authenticate, requireSuperAdmin } from '../middleware/auth';
 import { isAdmin, clearUserViewLogs, getViewLogStats } from '../middleware/activityLog.middleware';
 import ActivityLogService from '../services/activityLog.service';
 import { UserRole, Action, Resource } from '../models/activityLog.model';
@@ -32,7 +32,7 @@ interface StatsRequest extends Omit<Request, 'query'> {
 }
 
 // Get activity logs with filters and pagination
-router.get('/', authenticate, requireRegionalAdmin, async (req: LogsRequest, res: Response) => {
+router.get('/', authenticate, requireSuperAdmin, async (req: LogsRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -66,12 +66,6 @@ router.get('/', authenticate, requireRegionalAdmin, async (req: LogsRequest, res
       }).filter(([_, value]) => value !== undefined)
     );
     
-    // For regional_admin users, exclude super_admin actions
-    const currentUser = (req as any).user;
-    if (currentUser && currentUser.role === 'regional_admin') {
-      filters.excludeSuperAdmin = 'true';
-    }
-
     // Use consolidated view logs if requested and action is VIEW
     let result;
     if (consolidated && (!filters.action || filters.action === Action.VIEW)) {
@@ -95,7 +89,7 @@ router.get('/', authenticate, requireRegionalAdmin, async (req: LogsRequest, res
 });
 
 // Get activity statistics
-router.get('/stats', authenticate, requireRegionalAdmin, async (req: StatsRequest, res: Response) => {
+router.get('/stats', authenticate, requireSuperAdmin, async (req: StatsRequest, res: Response) => {
   try {
     const days = parseInt(req.query.days as string) || 30;
     
@@ -192,7 +186,7 @@ router.post('/clear-view-cache', authenticate, async (req: Request, res: Respons
 });
 
 // Get current view log statistics (admin only - for debugging/monitoring)
-router.get('/view-cache-stats', authenticate, requireRegionalAdmin, async (req: Request, res: Response) => {
+router.get('/view-cache-stats', authenticate, requireSuperAdmin, async (req: Request, res: Response) => {
   try {
     const stats = getViewLogStats();
     

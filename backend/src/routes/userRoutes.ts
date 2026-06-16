@@ -10,7 +10,7 @@ import {
   getUserActivity,
   searchUsers
 } from '../controllers/userController';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, requireSuperAdmin } from '../middleware/auth';
 import {
   validateUserUpdate,
   validateObjectId,
@@ -24,54 +24,38 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Get all users (Admin only)
-router.get('/', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), validatePagination, getUsers);
+// Get all users (Super Admin only)
+router.get('/', requireSuperAdmin, validatePagination, getUsers);
 
-// Search users (Admin only)
-router.get('/search', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), searchUsers);
+// Create new user (Super Admin only)
+router.post('/', requireSuperAdmin, ...validateUserRegistration, handleValidationErrors, createUser);
 
-// Get user statistics (Admin only)
-router.get('/stats', authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getUserStats);
+// Search users (Super Admin only)
+router.get('/search', requireSuperAdmin, searchUsers);
+
+// Get user statistics (Super Admin only)
+router.get('/stats', requireSuperAdmin, getUserStats);
+
+// Get pending deletion requests (Super Admin only)
+router.get('/pending-deletions', requireSuperAdmin, getPendingDeletions);
 
 // Get user by ID
 router.get('/:id', validateObjectId('id'), getUserById);
 
-// Update user profile - using proper validation
-router.put('/:id', validateObjectId('id'), (req, res, next) => {
-  // Simple validation
-  const { fullName, contactNumber, address } = req.body;
-  
-  if (fullName && (typeof fullName !== 'string' || fullName.length < 2 || fullName.length > 100)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Full name must be between 2 and 100 characters'
-    });
-  }
-  
-  if (contactNumber && !/^09\d{9}$/.test(contactNumber)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide a valid Philippine mobile number'
-    });
-  }
-  
-  if (address && typeof address === 'object') {
-    if (!address.region || !address.province || !address.municipality || !address.barangay) {
-      return res.status(400).json({
-        success: false,
-        message: 'Address must include region, province, municipality, and barangay'
-      });
-    }
-  }
-  
-  next();
-}, updateUser);
+// Update user profile (Super Admin only)
+router.put('/:id', validateObjectId('id'), requireSuperAdmin, validateUserUpdate, updateUser);
 
-// Delete user (Admin only)
-router.delete('/:id', validateObjectId('id'), authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), deleteUser);
+// Delete user (Super Admin only)
+router.delete('/:id', validateObjectId('id'), requireSuperAdmin, deleteUser);
 
-// Toggle user status (Admin only)
-router.patch('/:id/status', validateObjectId('id'), authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), toggleUserStatus);
+// Approve deletion request (Super Admin only)
+router.post('/:id/approve-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), approveDeletion);
+
+// Reject deletion request (Super Admin only)
+router.post('/:id/reject-deletion', validateObjectId('id'), authorize(USER_ROLES.SUPER_ADMIN), rejectDeletion);
+
+// Toggle user status (Super Admin only)
+router.patch('/:id/status', validateObjectId('id'), requireSuperAdmin, toggleUserStatus);
 
 // Update user preferences
 router.put('/:id/preferences', validateObjectId('id'), updateUserPreferences);
