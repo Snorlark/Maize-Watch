@@ -77,11 +77,8 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     final result = await _getLatestReadings();
 
     result.fold(
-      (failure) =>
-          emit(state.copyWith(isLoading: false, error: failure.message)),
-      (readings) => emit(
-        state.copyWith(isLoading: false, latestReadings: readings, error: null),
-      ),
+      (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
+      (readings) => emit(state.copyWith(isLoading: false, latestReadings: readings, clearError: true)),
     );
   }
 
@@ -94,15 +91,8 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     final result = await _getHistoricalReadings(event.farmId, event.days);
 
     result.fold(
-      (failure) =>
-          emit(state.copyWith(isLoading: false, error: failure.message)),
-      (readings) => emit(
-        state.copyWith(
-          isLoading: false,
-          historicalReadings: readings,
-          error: null,
-        ),
-      ),
+      (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
+      (readings) => emit(state.copyWith(isLoading: false, historicalReadings: readings, clearError: true)),
     );
   }
 
@@ -127,9 +117,7 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
 
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
-      (weatherData) => emit(
-        state.copyWith(isLoading: false, weatherData: weatherData, error: null),
-      ),
+      (weatherData) => emit(state.copyWith(isLoading: false, weatherData: weatherData, clearError: true)),
     );
   }
 
@@ -143,9 +131,7 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
 
     result.fold(
       (failure) => emit(state.copyWith(isLoading: false, error: failure.message)),
-      (analytics) => emit(
-        state.copyWith(isLoading: false, farmAnalytics: analytics, error: null),
-      ),
+      (analytics) => emit(state.copyWith(isLoading: false, farmAnalytics: analytics, clearError: true)),
     );
   }
 
@@ -153,8 +139,9 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
     LoadWeeklyDataEvent event,
     Emitter<MonitoringState> emit,
   ) async {
-    // Keep existing weeklyData visible while loading so the chart doesn't flash to "no data"
-    emit(state.copyWith(isLoading: true, error: null));
+    // Use isLoadingWeekly — completely independent of the shared isLoading flag.
+    // Clear weeklyData so the widget always shows a spinner (not stale data from a different week).
+    emit(state.copyWith(isLoadingWeekly: true, clearWeeklyError: true, clearWeeklyData: true));
 
     try {
       final result = await _getWeeklyData(GetWeeklyDataParams(
@@ -166,22 +153,20 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
       result.fold(
         (failure) {
           emit(state.copyWith(
-            isLoading: false,
+            isLoadingWeekly: false,
             weeklyData: [],
-            error: failure.message,
+            weeklyError: failure.message,
           ));
         },
         (weeklyData) {
           final List<Map<String, dynamic>> formattedData = [];
           if (weeklyData['dailyData'] != null) {
             for (var dayData in weeklyData['dailyData']) {
-              // Only include days where at least one sensor has data
               if (dayData['readingCount'] != null && (dayData['readingCount'] as num) > 0) {
                 formattedData.add({
                   'timestamp': dayData['date'],
                   'hasData': true,
                   'measurements': {
-                    // Keep null for missing sensors — the chart must not treat null as 0
                     'temperature': (dayData['temperature'] as num?)?.toDouble(),
                     'humidity': (dayData['humidity'] as num?)?.toDouble(),
                     'soilMoisture': (dayData['soilMoisture'] as num?)?.toDouble(),
@@ -193,17 +178,17 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
             }
           }
           emit(state.copyWith(
-            isLoading: false,
+            isLoadingWeekly: false,
             weeklyData: formattedData,
-            error: null,
+            clearWeeklyError: true,
           ));
         },
       );
     } catch (e) {
       emit(state.copyWith(
-        isLoading: false,
+        isLoadingWeekly: false,
         weeklyData: [],
-        error: 'Failed to load weekly data. Please retry.',
+        weeklyError: 'Failed to load weekly data. Please retry.',
       ));
     }
   }
@@ -230,7 +215,9 @@ class MonitoringBloc extends Bloc<MonitoringEvent, MonitoringState> {
   ) async {
     emit(state.copyWith(
       isLoading: false,
-      error: 'Request timed out. Pull down to retry.',
+      isLoadingWeekly: false,
+      clearError: true,
+      clearWeeklyError: true,
     ));
   }
 }

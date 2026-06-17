@@ -30,18 +30,20 @@ class HistoricalTabWidget extends StatefulWidget {
 }
 
 class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
-  int currentWeekOffset = 0; // 0 for current week, -1 for previous week, etc.
+  int currentWeekOffset = 0;
   Timer? _timer;
+  // Local loading flag: stays true from widget creation until the first BLoC
+  // loading cycle completes. This prevents stale weeklyData from a previous
+  // week/farm rendering before the fresh load finishes.
+  bool _isLoadingLocal = true;
 
   @override
   void initState() {
     super.initState();
-    // Load data after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadWeeklyData();
     });
-    // Set up periodic refresh every 30 minutes (FURTHER REDUCED for performance)
-    _timer = Timer.periodic(const Duration(minutes: 30), (timer) { // Reduced from 15 to 30 minutes
+    _timer = Timer.periodic(const Duration(minutes: 30), (timer) {
       _loadWeeklyData();
     });
   }
@@ -53,9 +55,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
   }
 
   void _loadWeeklyData() {
-    print('🔍 Loading weekly data for farm: ${widget.farmId}, field: ${widget.fieldId}, weekOffset: $currentWeekOffset');
-    
-    // Always load data when requested (remove the condition that prevents loading)
+    print('🔍 Loading weekly data: farmId=${widget.farmId} weekOffset=$currentWeekOffset');
     context.read<MonitoringBloc>().add(
       LoadWeeklyDataEvent(
         farmId: widget.farmId,
@@ -63,30 +63,17 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
         weekOffset: currentWeekOffset,
       ),
     );
-    
-    // Set a timeout to show fallback data if server is too slow
-    Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        final currentState = context.read<MonitoringBloc>().state;
-        if (currentState.isLoading) {
-          print('⚠️ Server timeout - showing fallback data');
-          context.read<MonitoringBloc>().add(ClearErrorEvent());
-        }
-      }
-    });
   }
 
   void _navigateWeek(int offset) {
-    // Don't allow navigation to future weeks
-    if (currentWeekOffset + offset > 0) {
-      return; // Cannot go to future weeks
-    }
-    
+    if (currentWeekOffset + offset > 0) return;
     setState(() {
       currentWeekOffset += offset;
+      // Force spinner immediately — BLoC event is still in the queue and the
+      // old weeklyData has dates from the wrong week, which would render as
+      // "No readings" until the new data arrives.
+      _isLoadingLocal = true;
     });
-    
-    // Load data for the new week (this will load fresh data for different weeks)
     print('🔍 Navigating to week offset: $currentWeekOffset');
     context.read<MonitoringBloc>().add(
       LoadWeeklyDataEvent(
@@ -156,9 +143,21 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MonitoringBloc, MonitoringState>(
+    return BlocConsumer<MonitoringBloc, MonitoringState>(
+      // Clear the local loading flag as soon as the BLoC finishes a weekly load
+      // (isLoadingWeekly transitions true → false).
+      listenWhen: (prev, curr) => prev.isLoadingWeekly && !curr.isLoadingWeekly,
+      listener: (context, state) {
+        if (_isLoadingLocal) {
+          setState(() => _isLoadingLocal = false);
+        }
+      },
+      buildWhen: (prev, curr) =>
+          prev.isLoadingWeekly != curr.isLoadingWeekly ||
+          prev.weeklyData != curr.weeklyData ||
+          prev.weeklyError != curr.weeklyError,
       builder: (context, state) {
-        print('🔍 HistoricalTab: State - isLoading: ${state.isLoading}, error: ${state.error}, weeklyData: ${state.weeklyData?.length ?? 0}');
+        print('🔍 HistoricalTab: isLoadingWeekly=${state.isLoadingWeekly} _isLoadingLocal=$_isLoadingLocal weeklyData=${state.weeklyData?.length ?? "null"}');
         return Container(
           margin: EdgeInsets.symmetric(horizontal: 16.w),
           child: Column(
@@ -200,7 +199,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                     SizedBox(width: 16.w),
                     IconButton(
                       icon: Icon(
-                        Icons.chevron_right, 
+                        Icons.chevron_right,
                         color: _canNavigateNext() ? MAIZE_ACCENT : Colors.grey[400],
                         size: 24.sp,
                       ),
@@ -211,16 +210,18 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                   ],
                 ),
               ),
-              
+
               verticalSpace(20.h),
-              
-              // Content based on state
-              if (state.isLoading)
+
+              // _isLoadingLocal guards against stale BLoC weeklyData showing
+              // before the first fresh load completes (or during week navigation
+              // before the new BLoC event is processed).
+              if (state.isLoadingWeekly || _isLoadingLocal)
                 _buildLoadingState()
               else if (state.weeklyData != null && state.weeklyData!.isNotEmpty)
                 _buildDataContent(state.weeklyData!)
-              else if (state.error != null)
-                _buildErrorState(state.error!)
+              else if (state.weeklyError != null)
+                _buildErrorState(state.weeklyError!)
               else
                 _buildNoDataState(),
             ],
@@ -291,7 +292,6 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
                   SizedBox(width: 12.w),
                   OutlinedButton(
                     onPressed: () {
-                      // Clear error and show no data state
                       context.read<MonitoringBloc>().add(ClearErrorEvent());
                     },
                     style: OutlinedButton.styleFrom(
@@ -309,7 +309,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
 
   Widget _buildNoDataState() {
     return Container(
-      height: 200.h,
+      height: 220.h,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -317,7 +317,7 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
             Icon(Icons.info_outline, color: Colors.grey, size: 48.sp),
             verticalSpace(16.h),
             Text(
-              'No historical data available',
+              'No data for this week',
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,
@@ -326,9 +326,22 @@ class _HistoricalTabWidgetState extends State<HistoricalTabWidget> {
             ),
             verticalSpace(8.h),
             Text(
-              'Historical data will appear here once available',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[500]),
+              currentWeekOffset == 0
+                  ? 'Sensor readings this week will appear here.\nTry a previous week or pull down to refresh.'
+                  : 'No sensor readings found for this week.\nTry navigating to a different week.',
+              style: TextStyle(fontSize: 13.sp, color: Colors.grey[500]),
               textAlign: TextAlign.center,
+            ),
+            verticalSpace(16.h),
+            ElevatedButton.icon(
+              onPressed: _loadWeeklyData,
+              icon: Icon(Icons.refresh, size: 16.sp),
+              label: Text('Retry', style: TextStyle(fontSize: 13.sp)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MAIZE_ACCENT,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+              ),
             ),
           ],
         ),

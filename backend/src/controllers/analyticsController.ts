@@ -1055,25 +1055,41 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       });
     }
 
-    // Get historical data for the requested 7-day window
-    // weekOffset = 0 means current week, -1 = last week, -2 = 2 weeks ago, etc.
+    // Get historical data for the requested calendar week (Sun–Sat, Manila time)
+    // weekOffset = 0 means current Sun-Sat week, -1 = previous week, etc.
     const weekOffsetParam = parseInt((req.query.weekOffset as string) || '0', 10);
-    const offsetDays = isNaN(weekOffsetParam) ? 0 : weekOffsetParam * 7;
+    const safeWeekOffset = isNaN(weekOffsetParam) ? 0 : weekOffsetParam;
 
     // All date arithmetic in Philippines time (UTC+8)
     const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
     const nowManila = new Date(Date.now() + MANILA_OFFSET_MS);
-    const todayManilaYear = nowManila.getUTCFullYear();
-    const todayManilaMonth = nowManila.getUTCMonth(); // 0-indexed
-    const todayManilaDay = nowManila.getUTCDate();
 
-    const endManilaDay = todayManilaDay + offsetDays;
-    // Manila 23:59:59.999 = same calendar date at 15:59:59.999 UTC
-    const endDate = new Date(Date.UTC(todayManilaYear, todayManilaMonth, endManilaDay, 15, 59, 59, 999));
-    // Manila 00:00:00 = previous UTC day at 16:00:00
-    const startDate = new Date(Date.UTC(todayManilaYear, todayManilaMonth, endManilaDay - 6, 0, 0, 0, 0) - MANILA_OFFSET_MS);
+    // Find the most recent Sunday in Manila time (getUTCDay() on Manila-shifted value)
+    const manilaDayOfWeek = nowManila.getUTCDay(); // 0=Sun, 1=Mon, ... 6=Sat
+    const daysSinceSunday = manilaDayOfWeek; // 0 on Sunday, 6 on Saturday
 
-    logger.info(`Weekly data date window: ${startDate.toISOString()} to ${endDate.toISOString()} (weekOffset: ${weekOffsetParam})`);
+    // Build the Sunday of the requested week
+    // Date.UTC using year/month/day from nowManila, then subtract days to get to Sunday, then shift by weekOffset weeks
+    const thisSundayUTCms = Date.UTC(
+      nowManila.getUTCFullYear(),
+      nowManila.getUTCMonth(),
+      nowManila.getUTCDate() - daysSinceSunday + safeWeekOffset * 7
+    );
+    const thisSaturdayUTCms = thisSundayUTCms + 6 * 24 * 60 * 60 * 1000;
+
+    // Convert Manila calendar days back to UTC query bounds
+    // Manila Sunday 00:00 = Saturday 16:00 UTC
+    const startDate = new Date(thisSundayUTCms - MANILA_OFFSET_MS);
+    // Manila Saturday 23:59:59.999 = Saturday 15:59:59.999 UTC
+    const endDate = new Date(thisSaturdayUTCms - MANILA_OFFSET_MS + 23 * 60 * 60 * 1000 + 59 * 60 * 1000 + 59 * 1000 + 999);
+
+    // Extract Manila week boundaries for day-by-day loop below
+    const weekSundayManila = new Date(thisSundayUTCms);
+    const todayManilaYear = weekSundayManila.getUTCFullYear();
+    const todayManilaMonth = weekSundayManila.getUTCMonth();
+    const endManilaDay = weekSundayManila.getUTCDate() + 6; // Saturday = Sunday + 6
+
+    logger.info(`Weekly data (calendar week Sun-Sat Manila): ${startDate.toISOString()} to ${endDate.toISOString()} (weekOffset: ${safeWeekOffset})`);
     
     // Get all sensors for the farm first
     const sensors = await sensorService.getSensorsByFarm(farmId);
@@ -1182,17 +1198,25 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
         }
         
         // Convert to aggregated format
+        // Filter nulls before averaging — ThingSpeak feeds often have null fields for
+        // entries where a sensor wasn't active; treating null as 0 would dilute averages.
+        const avgValid = (arr: any[]): number | null => {
+          const valid = arr.filter((v: any) => v !== null && v !== undefined && !isNaN(Number(v)));
+          return valid.length > 0 ? valid.reduce((a: number, b: number) => a + Number(b), 0) / valid.length : null;
+        };
+
         for (const [dayKey, values] of Object.entries(thingSpeakByDay)) {
           const [year, month, day] = dayKey.split('-').map(Number);
-          const typedValues = values as { temperature: number[], humidity: number[], soilMoisture: number[], soilPh: number[], lightIntensity: number[] };
+          const typedValues = values as { temperature: any[], humidity: any[], soilMoisture: any[], soilPh: any[], lightIntensity: any[] };
+          const validCount = typedValues.temperature.filter((v: any) => v !== null && v !== undefined && !isNaN(Number(v))).length;
           aggregatedData.push({
             _id: { year, month, day },
-            temperature: typedValues.temperature.reduce((a: number, b: number) => a + b, 0) / typedValues.temperature.length,
-            humidity: typedValues.humidity.reduce((a: number, b: number) => a + b, 0) / typedValues.humidity.length,
-            soilMoisture: typedValues.soilMoisture.reduce((a: number, b: number) => a + b, 0) / typedValues.soilMoisture.length,
-            soilPh: typedValues.soilPh.reduce((a: number, b: number) => a + b, 0) / typedValues.soilPh.length,
-            lightIntensity: typedValues.lightIntensity.reduce((a: number, b: number) => a + b, 0) / typedValues.lightIntensity.length,
-            count: typedValues.temperature.length
+            temperature: avgValid(typedValues.temperature),
+            humidity: avgValid(typedValues.humidity),
+            soilMoisture: avgValid(typedValues.soilMoisture),
+            soilPh: avgValid(typedValues.soilPh),
+            lightIntensity: avgValid(typedValues.lightIntensity),
+            count: validCount > 0 ? validCount : typedValues.temperature.length
           });
         }
       }
@@ -1265,9 +1289,11 @@ export const getWeeklyData = catchAsync(async (req: Request, res: Response) => {
       }
     };
     
-    // Cache the result for 5 minutes
-    await CacheService.set(cacheKey, result, 300);
-    
+    // Cache data for 5 minutes; empty results only 30 seconds so a sensor that
+    // just started sending data becomes visible quickly.
+    const cacheTtl = validDays.length > 0 ? 300 : 30;
+    await CacheService.set(cacheKey, result, cacheTtl);
+
     res.status(HTTP_STATUS.OK).json({
       success: true,
       data: result

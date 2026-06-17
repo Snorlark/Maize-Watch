@@ -96,8 +96,8 @@ class _ConnectivityIndicatorState extends State<ConnectivityIndicator> {
       textDirection: TextDirection.ltr,
       children: [
         widget.child,
-        // Show toast indicator at bottom when offline or when showing persistent indicator
-        if (!_isOnline || _showIndicator)
+        // Show toast indicator only while _showIndicator is true (respects close button)
+        if (_showIndicator)
           Positioned(
             bottom: 0,
             left: 16,

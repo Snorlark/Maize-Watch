@@ -255,7 +255,7 @@ class _ParameterWidgetState extends State<ParameterWidget> {
             children: [
               Expanded(
                 child: _buildValueCard(
-                  'Current',
+                  'Latest',
                   hasCurrentValue ? currentValue : null,
                   widget.unit,
                   widget.color,
@@ -341,6 +341,14 @@ class _ParameterWidgetState extends State<ParameterWidget> {
         child: Text('No sensor readings this week',
             style: TextStyle(fontSize: 14.sp, color: Colors.grey[500])),
       );
+    }
+
+    // Extend Y-scale to include the current live reading so the "Latest" card
+    // value is never outside the visible chart range.
+    final double? liveVal = getCurrentValue();
+    if (liveVal != null && !liveVal.isNaN && liveVal > 0) {
+      if (liveVal < minValue) minValue = liveVal;
+      if (liveVal > maxValue) maxValue = liveVal;
     }
 
     // Smart Y-scale: parameter-aware padding and physical floor

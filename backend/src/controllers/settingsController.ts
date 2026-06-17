@@ -215,9 +215,14 @@ export const getSensorStatus = catchAsync(async (req: Request, res: Response) =>
   try {
     // Import ThingSpeak service
     const thingSpeakService = (await import('../services/thingspeakService')).default;
-    
+
+    // Use the user's own registered prototype channel if available
+    const Prototype = (await import('../models/Prototype')).default;
+    const userPrototype = await Prototype.findOne({ registeredBy: currentUser.id, isActive: true });
+    const channelId = userPrototype?.channel_id ?? process.env.THINGSPEAK_CHANNEL_ID!;
+
     // Get latest data from ThingSpeak
-    const latestData = await thingSpeakService.fetchLatestDataFromThingSpeakChannel(process.env.THINGSPEAK_CHANNEL_ID!);
+    const latestData = await thingSpeakService.fetchLatestDataFromThingSpeakChannel(channelId);
     
     // Define 30 minutes in milliseconds
     const THIRTY_MINUTES = 30 * 60 * 1000;
