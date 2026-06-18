@@ -176,12 +176,18 @@ export const login = catchAsync(async (req: Request, res: Response) => {
         });
         
         const otp = otpService.generateOTP(emailForOTP);
-        await emailService.sendLoginOTP(
-          emailForOTP, 
-          result.user.fullName || result.user.username, 
-          otp, 
-          5
+        const emailTimeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Email service timed out after 15s')), 15000)
         );
+        await Promise.race([
+          emailService.sendLoginOTP(
+            emailForOTP,
+            result.user.fullName || result.user.username,
+            otp,
+            5
+          ),
+          emailTimeout
+        ]);
 
         // Activity Log: OTP Required
         try {
