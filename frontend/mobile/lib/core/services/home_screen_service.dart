@@ -177,58 +177,14 @@ class HomeScreenService {
     }
   }
 
-  /// Load notifications data
+  /// Load notifications data — handled locally via NotificationService, no REST endpoint
   static Future<List<Map<String, dynamic>>> _loadNotifications() async {
-    try {
-      final token = await _getAuthToken();
-      if (token == null) return [];
-      
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/notifications'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final notifications = List<Map<String, dynamic>>.from(data['data']);
-        
-        // Cache notifications
-        await OfflineCacheService.cacheNotifications(notifications);
-        
-        return notifications;
-      }
-      return [];
-    } catch (e) {
-      print('🏠 HOME: Error loading notifications: $e');
-      return [];
-    }
+    return await OfflineCacheService.getCachedNotifications() ?? [];
   }
 
-  /// Load live data
+  /// Load live data — delivered via Socket.IO, not REST
   static Future<Map<String, dynamic>?> _loadLiveData() async {
-    try {
-      final token = await _getAuthToken();
-      if (token == null) return null;
-      
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/monitoring/live'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final liveData = data['data'];
-        
-        // Cache live data
-        await OfflineCacheService.cacheLiveData(liveData);
-        
-        return liveData;
-      }
-      return null;
-    } catch (e) {
-      print('🏠 HOME: Error loading live data: $e');
-      return null;
-    }
+    return await OfflineCacheService.getCachedLiveData();
   }
 
   /// Load settings data

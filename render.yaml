@@ -2,7 +2,7 @@ services:
   - type: web
     name: maize-watch-backend
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     rootDir: backend
     envVars:
@@ -11,23 +11,23 @@ services:
       - key: FRONTEND_URL
         value: https://maize-watch-frontend.onrender.com
       - key: BACKEND_URL
-        value: https://maize-watch-backend.onrender.com
+        value: https://maize-watch-backend-uad9.onrender.com
       - key: MOBILE_APP_URL
-        value: https://maize-watch-backend.onrender.com
+        value: https://maize-watch-backend-uad9.onrender.com
       - key: MONGO_URI
-        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+        value: set-in-render-dashboard
       - key: MONGODB_URI
-        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+        value: set-in-render-dashboard
       - key: MONGO_IOT_URI
-        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
+        value: set-in-render-dashboard
       - key: MONGODB_IOT_URI
-        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
+        value: set-in-render-dashboard
       - key: MONGO_DB_NAME
         value: maize_watch
       - key: JWT_SECRET
-        value: superSecretKey123!@#
+        value: set-in-render-dashboard
       - key: JWT_REFRESH_SECRET
-        value: 32f9125cbb7ea7932d01e031717ea6c9d2a1fcb7e0d4567c98c897483a209c2b
+        value: set-in-render-dashboard
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: JWT_REFRESH_EXPIRES_IN
@@ -35,29 +35,29 @@ services:
       - key: REDIS_URL
         value: ""
       - key: THINGSPEAK_API_KEY
-        value: EA3FK5WA4X7787ZS
+        value: set-in-render-dashboard
       - key: THINGSPEAK_CHANNEL_ID
         value: "3083651"
       - key: THINGSPEAK_READ_API_KEY
-        value: I33WO1DMIHVA0EQY
+        value: set-in-render-dashboard
       - key: THINGSPEAK_WRITE_API_KEY
-        value: EA3FK5WA4X7787ZS
+        value: set-in-render-dashboard
       - key: EMAIL_HOST
         value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
       - key: EMAIL_USER
-        value: maizewatch@gmail.com
+        value: set-in-render-dashboard
       - key: EMAIL_PASS
-        value: odswqblzacdcsdsc
+        value: set-in-render-dashboard
       - key: EMAIL_FROM
         value: noreply@maizewatch.com
       - key: TWILIO_ACCOUNT_SID
-        value: ACc7280ff61bfde7398fa6f120c15372eb
+        value: set-in-render-dashboard
       - key: TWILIO_AUTH_TOKEN
-        value: b44ecef6a29f9e0d716a82a17f03107e
+        value: set-in-render-dashboard
       - key: TWILIO_VERIFY_SERVICE_ID
-        value: VA5c992aa8b161f1d8a01c09cfd19e5964
+        value: set-in-render-dashboard
       - key: UPLOAD_DIR
         value: uploads
       - key: MAX_FILE_SIZE
@@ -71,7 +71,7 @@ services:
       - key: BCRYPT_ROUNDS
         value: "12"
       - key: SESSION_SECRET
-        value: your_session_secret_here
+        value: set-in-render-dashboard
       - key: CORS_ORIGINS
         value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com
       - key: RATE_LIMIT_DISABLE
@@ -94,6 +94,12 @@ services:
         value: production
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: MONGODB_URI
+        value: set-in-render-dashboard
+      - key: THINGSPEAK_CHANNEL_ID
+        value: "3083651"
+      - key: THINGSPEAK_READ_API_KEY
+        value: set-in-render-dashboard
 
   - type: web
     name: maize-watch-frontend
@@ -103,7 +109,7 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-backend.onrender.com/api
+        value: https://maize-watch-backend-uad9.onrender.com/api
 
   - type: web
     name: maize-watch-admin
@@ -113,4 +119,4 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-backend.onrender.com/api
+        value: https://maize-watch-backend-uad9.onrender.com/api

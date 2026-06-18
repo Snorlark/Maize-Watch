@@ -6,6 +6,7 @@ import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:mobile/core/services/offline_cache_service.dart';
 import 'package:mobile/core/services/home_screen_service.dart';
+import 'package:mobile/core/config/environment.dart';
 import 'package:mobile/generated/l10n.dart';
 
 class BackgroundNotificationService {
@@ -119,9 +120,16 @@ class BackgroundNotificationService {
         return;
       }
 
+      // Get the active farm ID (persisted by home_screen_service when app is open)
+      final farmId = prefs.getString('active_farm_id');
+      if (farmId == null) {
+        print('🔄 BackgroundNotificationService: No active farm ID, skipping prescription check');
+        return;
+      }
+
       // Make API call to get prescriptions
       final response = await http.get(
-        Uri.parse('https://maize-watch-app.onrender.com/api/prescriptions'),
+        Uri.parse('${AppConfig.baseUrl}/api/prescriptions/farm/$farmId'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
