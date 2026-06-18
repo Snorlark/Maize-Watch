@@ -37,7 +37,7 @@ export default defineConfig({
                 router: ['react-router-dom'],
                 icons: ['lucide-react', 'react-icons'],
                 charts: ['recharts'],
-                utils: ['axios', 'date-fns']
+                utils: ['axios']
               }
             }
           },
