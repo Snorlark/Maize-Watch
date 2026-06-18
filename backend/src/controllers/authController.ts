@@ -156,7 +156,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
     logger.info('✅ Password validation successful', { userId: result.user._id, username: result.user.username });
 
     // Check if this is an admin user who needs email OTP verification
-    const isAdminUser = ['admin', 'regional_admin', 'super_admin'].includes(result.user.role);
+    const isAdminUser = ['super_admin'].includes(result.user.role);
     
     if (isAdminUser && deviceType === 'web' && !totpCode) {
       // For admin users on web, require email OTP as second factor
