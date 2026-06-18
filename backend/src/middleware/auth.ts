@@ -143,6 +143,8 @@ export const requireAdmin = authorize(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN);
 // Middleware to check if user is super admin
 export const requireSuperAdmin = authorize(USER_ROLES.SUPER_ADMIN);
 
+export const requireRegionalAdmin = requireAdmin;
+
 // Middleware to check if user owns the resource or is admin
 export const authorizeOwnerOrAdmin = (resourceUserIdField: string = 'userId') => {
   return (req: Request, res: Response, next: NextFunction): void => {
