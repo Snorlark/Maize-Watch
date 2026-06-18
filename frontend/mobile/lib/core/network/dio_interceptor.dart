@@ -85,10 +85,9 @@ class DioFactory {
       ),
     );
 
-    // Set default timeout - reduced for faster failure detection
-    dio.options.connectTimeout = const Duration(seconds: 10);
-    dio.options.receiveTimeout = const Duration(seconds: 10);
-    dio.options.sendTimeout = const Duration(seconds: 10);
+    dio.options.connectTimeout = const Duration(seconds: 60);
+    dio.options.receiveTimeout = const Duration(seconds: 60);
+    dio.options.sendTimeout = const Duration(seconds: 60);
 
     return dio;
   }
