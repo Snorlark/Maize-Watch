@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import SensorReading from '../models/SensorReading';
+import { getThingSpeakService } from '../config/thingspeak';
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
@@ -67,65 +68,143 @@ export const getHistoricalData = async (
 
 
 
-    // Step 3: Build aggregation pipeline based on period
-    let groupBy: any = {};
-    if (period === 'daily') {
-      groupBy = {
-        year: { $year: '$timestamp' },
-        month: { $month: '$timestamp' },
-        day: { $dayOfMonth: '$timestamp' }
-      };
-    } else if (period === 'weekly') {
-      // Use $week (Sunday-based) to align with Sunday-Saturday
-      groupBy = {
-        year: { $year: '$timestamp' },
-        week: { $week: '$timestamp' }
-      };
-    } else {
-      groupBy = {
-        year: { $year: '$timestamp' },
-        month: { $month: '$timestamp' }
-      };
+    // Step 4: Execute aggregation pipeline by querying ThingSpeak
+    const thingSpeakService = getThingSpeakService();
+    // Fetch up to 8000 feeds in the date range
+    const feeds = await thingSpeakService.readHistoricalData(
+      8000,
+      startDate.toISOString(),
+      endDate.toISOString()
+    );
+
+    // Grouping container
+    const groups = new Map<string, any>();
+
+    // Helper function to calculate Sunday-based week of the year (0-53)
+    const getSundayBasedWeek = (date: Date): number => {
+      const jan1 = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+      const days = Math.floor((date.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000));
+      return Math.floor((days + jan1.getUTCDay()) / 7);
+    };
+
+    // Iterate over feeds and group them
+    for (const feed of feeds) {
+      if (!feed.created_at) continue;
+      
+      const timestamp = new Date(feed.created_at);
+      if (isNaN(timestamp.getTime())) continue;
+
+      // Ensure timestamp is within the range
+      if (timestamp < startDate || timestamp > endDate) continue;
+
+      const year = timestamp.getUTCFullYear();
+      const month = timestamp.getUTCMonth() + 1; // 1-12
+      const day = timestamp.getUTCDate(); // 1-31
+      
+      let groupKey = '';
+      let groupKeyObj: any = {};
+
+      if (period === 'daily') {
+        groupKey = `${year}-${month}-${day}`;
+        groupKeyObj = { year, month, day };
+      } else if (period === 'weekly') {
+        const week = getSundayBasedWeek(timestamp);
+        groupKey = `${year}-${week}`;
+        groupKeyObj = { year, week };
+      } else {
+        groupKey = `${year}-${month}`;
+        groupKeyObj = { year, month };
+      }
+
+      let group = groups.get(groupKey);
+      if (!group) {
+        group = {
+          _id: groupKeyObj,
+          sumTemp: 0, countTemp: 0,
+          sumHum: 0, countHum: 0,
+          sumMoist: 0, countMoist: 0,
+          sumPh: 0, countPh: 0,
+          sumLight: 0, countLight: 0,
+          dataPoints: 0,
+          minTemp: Infinity,
+          maxTemp: -Infinity,
+          firstTimestamp: feed.created_at,
+          lastTimestamp: feed.created_at
+        };
+        groups.set(groupKey, group);
+      }
+
+      // Map ThingSpeak fields:
+      // field1: Temperature, field2: Humidity, field3: Soil Moisture, field4: Soil pH, field5: Light Intensity
+      const temp = feed.field1;
+      const humidity = feed.field2;
+      const soilMoisture = feed.field3;
+      const soilPh = feed.field4;
+      const lightIntensity = feed.field5;
+
+      if (temp !== undefined && temp !== null && !isNaN(temp)) {
+        group.sumTemp += temp;
+        group.countTemp++;
+        group.minTemp = Math.min(group.minTemp, temp);
+        group.maxTemp = Math.max(group.maxTemp, temp);
+      }
+      if (humidity !== undefined && humidity !== null && !isNaN(humidity)) {
+        group.sumHum += humidity;
+        group.countHum++;
+      }
+      if (soilMoisture !== undefined && soilMoisture !== null && !isNaN(soilMoisture)) {
+        group.sumMoist += soilMoisture;
+        group.countMoist++;
+      }
+      if (soilPh !== undefined && soilPh !== null && !isNaN(soilPh)) {
+        group.sumPh += soilPh;
+        group.countPh++;
+      }
+      if (lightIntensity !== undefined && lightIntensity !== null && !isNaN(lightIntensity)) {
+        group.sumLight += lightIntensity;
+        group.countLight++;
+      }
+
+      group.dataPoints++;
+      
+      const feedTime = timestamp.getTime();
+      if (feedTime < new Date(group.firstTimestamp).getTime()) {
+        group.firstTimestamp = feed.created_at;
+      }
+      if (feedTime > new Date(group.lastTimestamp).getTime()) {
+        group.lastTimestamp = feed.created_at;
+      }
     }
 
-    // Step 4: Execute aggregation pipeline
+    // Convert groups to array and compute averages
+    const aggregatedData = Array.from(groups.values()).map(g => ({
+      _id: g._id,
+      temperature: g.countTemp > 0 ? g.sumTemp / g.countTemp : null,
+      humidity: g.countHum > 0 ? g.sumHum / g.countHum : null,
+      soilMoisture: g.countMoist > 0 ? g.sumMoist / g.countMoist : null,
+      soilPh: g.countPh > 0 ? g.sumPh / g.countPh : null,
+      lightIntensity: g.countLight > 0 ? g.sumLight / g.countLight : null,
+      dataPoints: g.dataPoints,
+      minTemp: g.minTemp === Infinity ? null : g.minTemp,
+      maxTemp: g.maxTemp === -Infinity ? null : g.maxTemp,
+      firstTimestamp: g.firstTimestamp,
+      lastTimestamp: g.lastTimestamp
+    }));
 
-    
-    const aggregationPipeline = [
-      {
-        $match: {
-          timestamp: { $gte: startDate, $lte: endDate },
-          'metadata.quality': { $ne: 'error' },
-          'data.temperature': { $exists: true, $ne: null }
-        }
-      },
-      {
-        $group: {
-          _id: groupBy,
-          temperature: { $avg: '$data.temperature' },
-          humidity: { $avg: '$data.humidity' },
-          soilMoisture: { $avg: '$data.soilMoisture' },
-          soilPh: { $avg: '$data.pH' },
-          lightIntensity: { $avg: '$data.lightIntensity' },
-          dataPoints: { $sum: 1 },
-          minTemp: { $min: '$data.temperature' },
-          maxTemp: { $max: '$data.temperature' },
-          firstTimestamp: { $min: '$timestamp' },
-          lastTimestamp: { $max: '$timestamp' }
-        }
-      },
-      {
-        $sort: {
-          '_id.year': 1,
-          '_id.month': 1,
-          '_id.day': 1,
-          '_id.week': 1
-        } as any
-      },
-      // No $limit here; range is controlled by startDate/endDate
-    ];
-
-    const aggregatedData = await SensorReading.aggregate(aggregationPipeline);
+    // Sort aggregated data chronologically
+    aggregatedData.sort((a: any, b: any) => {
+      if (period === 'daily') {
+        return a._id.year !== b._id.year ? a._id.year - b._id.year :
+               a._id.month !== b._id.month ? a._id.month - b._id.month :
+               a._id.day - b._id.day;
+      } else if (period === 'weekly') {
+        return a._id.year !== b._id.year ? a._id.year - b._id.year :
+               a._id.week - b._id.week;
+      } else {
+        return a._id.year !== b._id.year ? a._id.year - b._id.year :
+               a._id.month - b._id.month;
+      }
+    });
 
 
     // Utilities
