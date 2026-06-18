@@ -1,21 +1,20 @@
 services:
   - type: web
-    name: maize-watch-backend
-    env: node
-    buildCommand: npm run build
-    startCommand: npm start
-    rootDir: backend
+    name: maize-watch-app
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 8080
+        value: 10000
       - key: FRONTEND_URL
         value: https://maize-watch-frontend.onrender.com
       - key: BACKEND_URL
-        value: https://maize-watch-backend.onrender.com
+        value: https://maize-watch-app.onrender.com
       - key: MOBILE_APP_URL
-        value: https://maize-watch-frontend.onrender.com
+        value: https://maize-watch-app.onrender.com
       - key: MONGODB_URI
         value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
       - key: MONGO_URI
@@ -33,11 +32,7 @@ services:
       - key: JWT_REFRESH_EXPIRES_IN
         value: 30d
       - key: REDIS_URL
-        value: redis://localhost:6379
-      - key: REDIS_PASSWORD
         value: ""
-      - key: REDIS_DB
-        value: "0"
       - key: THINGSPEAK_API_KEY
         value: EA3FK5WA4X7787ZS
       - key: THINGSPEAK_CHANNEL_ID
@@ -79,11 +74,13 @@ services:
       - key: SESSION_SECRET
         value: your_session_secret_here
       - key: CORS_ORIGINS
-        value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com
+        value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com,https://maize-watch-app.onrender.com
       - key: RATE_LIMIT_DISABLE
         value: "true"
       - key: ENABLE_PYTHON_ANALYTICS
-        value: "false"
+        value: "true"
+      - key: ANALYTICS_SERVICE_URL
+        value: http://localhost:8000
       - key: LOG_LEVEL
         value: info
 
@@ -95,7 +92,7 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-backend.onrender.com/api
+        value: https://maize-watch-app.onrender.com/api
 
   - type: web
     name: maize-watch-admin
@@ -105,4 +102,4 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-backend.onrender.com/api
+        value: https://maize-watch-app.onrender.com/api

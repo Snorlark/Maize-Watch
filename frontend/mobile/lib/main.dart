@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/features/live_monitoring/presentation/bloc/monitoring_bloc.dart';
@@ -17,9 +18,14 @@ import 'features/settings/presentation/bloc/sensor_status_bloc.dart';
 import 'features/authentication/presentation/bloc/authentication_bloc.dart';
 
 import 'app.dart';
+import 'core/config/environment.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  AppConfig.setEnvironment(
+    kReleaseMode ? Environment.production : Environment.development,
+  );
 
   // Initialize dependency injection
   await di.init();
