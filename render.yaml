@@ -1,24 +1,25 @@
 services:
   - type: web
-    name: maize-watch-app
-    env: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    name: maize-watch-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: backend
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: FRONTEND_URL
         value: https://maize-watch-frontend.onrender.com
       - key: BACKEND_URL
-        value: https://maize-watch-app.onrender.com
+        value: https://maize-watch-backend.onrender.com
       - key: MOBILE_APP_URL
-        value: https://maize-watch-app.onrender.com
-      - key: MONGODB_URI
-        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+        value: https://maize-watch-backend.onrender.com
       - key: MONGO_URI
         value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+      - key: MONGODB_URI
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+      - key: MONGO_IOT_URI
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
       - key: MONGODB_IOT_URI
         value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
       - key: MONGO_DB_NAME
@@ -37,8 +38,6 @@ services:
         value: EA3FK5WA4X7787ZS
       - key: THINGSPEAK_CHANNEL_ID
         value: "3083651"
-      - key: THINGSPEAK_URL
-        value: https://api.thingspeak.com/channels/3083651/feeds.json?api_key=EA3FK5WA4X7787ZS
       - key: THINGSPEAK_READ_API_KEY
         value: I33WO1DMIHVA0EQY
       - key: THINGSPEAK_WRITE_API_KEY
@@ -74,15 +73,27 @@ services:
       - key: SESSION_SECRET
         value: your_session_secret_here
       - key: CORS_ORIGINS
-        value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com,https://maize-watch-app.onrender.com
+        value: https://maize-watch-frontend.onrender.com,https://maize-watch-admin.onrender.com
       - key: RATE_LIMIT_DISABLE
         value: "true"
       - key: ENABLE_PYTHON_ANALYTICS
         value: "true"
       - key: ANALYTICS_SERVICE_URL
-        value: http://localhost:8000
+        value: https://maize-watch-analytics.onrender.com
       - key: LOG_LEVEL
         value: info
+
+  - type: web
+    name: maize-watch-analytics
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT app:app
+    rootDir: analytics_v2
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
   - type: web
     name: maize-watch-frontend
@@ -92,7 +103,7 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-app.onrender.com/api
+        value: https://maize-watch-backend.onrender.com/api
 
   - type: web
     name: maize-watch-admin
@@ -102,4 +113,4 @@ services:
     rootDir: .
     envVars:
       - key: VITE_API_URL
-        value: https://maize-watch-app.onrender.com/api
+        value: https://maize-watch-backend.onrender.com/api
