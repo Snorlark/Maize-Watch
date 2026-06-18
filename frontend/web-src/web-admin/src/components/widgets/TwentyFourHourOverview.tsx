@@ -48,127 +48,42 @@ const TwentyFourHourOverview: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // First try ThingSpeak historical data
-      try {
-        const result = await sensorService.getThingSpeakHistoricalData(24, 24);
-        if (result.success && result.data && result.data.length > 0) {
-          const chartData: HistoryPoint[] = result.data.map((reading: any) => {
-            let actualTimestamp = reading.created_at || reading.timestamp || new Date().toISOString();
-            return {
-              timestamp: actualTimestamp,
-              temperature: reading.temperature,
-              humidity: reading.humidity,
-              soilMoisture: reading.soilMoisture,
-              soilPh: reading.soilPh,
-              lightIntensity: reading.lightIntensity
-            };
-          });
-          const latestReading = chartData[chartData.length - 1];
-          const currentTime = new Date();
-          const dataTime = new Date(latestReading.timestamp);
-          const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
-          const timeDiffHours = timeDiffMinutes / 60;
-
-          setSeries(chartData);
-          setLastUpdated(latestReading.timestamp);
-
-          if (timeDiffHours > 1) {
-            setError(`ThingSpeak data is ${timeDiffHours.toFixed(1)} hours old`);
-          } else if (timeDiffMinutes > 30) {
-            setError(`ThingSpeak data is ${timeDiffMinutes.toFixed(0)} minutes old`);
-          } else {
-            setError(null);
-          }
-          return;
-        }
-      } catch {
-        // Ignore, fallback will be used
-      }
-
-      // Fallback to daily historical
-      const result = await apiService.fetchHistoricalData('daily', 7);
+      const result = await sensorService.getThingSpeakHistoricalData(24, 24);
       if (result.success && result.data && result.data.length > 0) {
-        const latestDay = result.data[result.data.length - 1];
-        const now = new Date();
-        const currentHour = now.getHours();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const chartData: HistoryPoint[] = result.data.map((reading: any) => {
+          let actualTimestamp = reading.created_at || reading.timestamp || new Date().toISOString();
+          return {
+            timestamp: actualTimestamp,
+            temperature: reading.temperature,
+            humidity: reading.humidity,
+            soilMoisture: reading.soilMoisture,
+            soilPh: reading.soilPh,
+            lightIntensity: reading.lightIntensity
+          };
+        });
+        const latestReading = chartData[chartData.length - 1];
+        const currentTime = new Date();
+        const dataTime = new Date(latestReading.timestamp);
+        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
+        const timeDiffHours = timeDiffMinutes / 60;
 
-        const baseValues = {
-          temperature: latestDay.avgTemperature || latestDay.temperature || 25,
-          humidity: latestDay.avgHumidity || latestDay.humidity || 65,
-          soilMoisture: latestDay.avgSoilMoisture || latestDay.soilMoisture || 45,
-          soilPh: latestDay.avgSoilPh || latestDay.soilPh || 6.5,
-          lightIntensity: latestDay.avgLightIntensity || latestDay.lightIntensity || 400,
-        };
+        setSeries(chartData);
+        setLastUpdated(latestReading.timestamp);
 
-        const simulatedHourlyData: HistoryPoint[] = [];
-        for (let hour = 0; hour <= currentHour; hour++) {
-          const hourDate = new Date(today);
-          hourDate.setHours(hour, 0, 0, 0);
-          const tempVariation = Math.sin((hour - 12) * Math.PI / 12) * 3;
-          const humidityVariation = Math.cos(hour * Math.PI / 12) * 5;
-          const lightVariation = hour >= 6 && hour <= 18 ? Math.sin((hour - 6) * Math.PI / 12) * 200 : 0;
-          simulatedHourlyData.push({
-            timestamp: hourDate.toISOString(),
-            temperature: parseFloat((baseValues.temperature + tempVariation).toFixed(1)),
-            humidity: parseFloat(Math.max(0, Math.min(100, baseValues.humidity + humidityVariation)).toFixed(1)),
-            soilMoisture: parseFloat((baseValues.soilMoisture + (Math.random() - 0.5) * 2).toFixed(1)),
-            soilPh: parseFloat((baseValues.soilPh + (Math.random() - 0.5) * 0.2).toFixed(1)),
-            lightIntensity: parseFloat((baseValues.lightIntensity + lightVariation).toFixed(1)),
-          });
-        }
-
-        setSeries(simulatedHourlyData);
-        setLastUpdated(simulatedHourlyData[simulatedHourlyData.length - 1]?.timestamp || null);
-        setError(`Showing today's data up to ${currentHour}:00 (${currentHour + 1} hours)`);
-        return;
-      }
-
-      throw new Error(result.error || 'No historical data available');
-    } catch {
-      // Fallback: latest sensor data
-      try {
-        const latestResult = await sensorService.getLatestSensorData();
-        if (latestResult.success && latestResult.data) {
-          const l = latestResult.data;
-          const currentTime = new Date();
-          let actualTimestamp = l.created_at || l.timestamp || new Date().toISOString();
-          const dataTime = new Date(actualTimestamp);
-          const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
-          const timeDiffHours = timeDiffMinutes / 60;
-
-          const fallback: HistoryPoint[] = [];
-          const now = new Date();
-          const currentHour = now.getHours();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          for (let hour = 0; hour <= currentHour; hour++) {
-            const hourDate = new Date(today);
-            hourDate.setHours(hour, 0, 0, 0);
-            fallback.push({
-              timestamp: hourDate.toISOString(),
-              temperature: parseFloat((l.temperature ?? 25).toFixed(1)),
-              humidity: parseFloat((l.humidity ?? 65).toFixed(1)),
-              soilMoisture: parseFloat((l.soilMoisture ?? 45).toFixed(1)),
-              soilPh: parseFloat((l.soilPh ?? 6.5).toFixed(1)),
-              lightIntensity: parseFloat((l.lightIntensity ?? 400).toFixed(1)),
-            });
-          }
-          setSeries(fallback);
-          setLastUpdated(actualTimestamp);
-
-          if (timeDiffHours > 1) {
-            setError(`Sensor data is ${timeDiffHours.toFixed(1)} hours old (Historical data unavailable)`);
-          } else if (timeDiffMinutes > 30) {
-            setError(`Sensor data is ${timeDiffMinutes.toFixed(0)} minutes old (Historical data unavailable)`);
-          } else {
-            setError(`Showing today's data up to ${currentHour}:00 (Historical data unavailable)`);
-          }
+        if (timeDiffHours > 1) {
+          setError(`ThingSpeak data is ${timeDiffHours.toFixed(1)} hours old`);
+        } else if (timeDiffMinutes > 30) {
+          setError(`ThingSpeak data is ${timeDiffMinutes.toFixed(0)} minutes old`);
         } else {
-          throw new Error('Latest sensor data also failed');
+          setError(null);
         }
-      } catch {
-        setError('Unable to load any sensor data');
+      } else {
+        throw new Error(result.error || 'No historical data returned from ThingSpeak');
       }
+    } catch (err: any) {
+      console.error('Error fetching 24h data:', err);
+      setError(err.message || 'Unable to load 24-hour sensor data from ThingSpeak');
+      setSeries([]);
     } finally {
       setLoading(false);
     }

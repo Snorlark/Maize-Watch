@@ -100,14 +100,9 @@ const LiveData: React.FC = () => {
     setError(null);
       
     try {
-      let result;
-      try {
-        result = await sensorService.getThingSpeakLiveData();
-        if (result.success && (!result.data || Object.keys(result.data).length === 0)) {
-          throw new Error('ThingSpeak returned empty data');
-        }
-      } catch {
-        result = await sensorService.getLatestSensorData(selectedFarm?._id);
+      const result = await sensorService.getThingSpeakLiveData();
+      if (result.success && (!result.data || Object.keys(result.data).length === 0)) {
+        throw new Error('ThingSpeak returned empty data');
       }
       
       if (result.success && result.data) {
@@ -153,38 +148,9 @@ const LiveData: React.FC = () => {
       } else {
         throw new Error(result.error || 'Failed to fetch sensor data');
       }
-    } catch {
-      if (!sensorData) {
-        const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00';
-        const mockData: SensorData = {
-          _id: 'mock-sensor-001',
-          field_id: selectedFarm?._id || 'mock-field',
-          timestamp: thingSpeakTimestamp,
-          measurements: {
-            temperature: 25.5,
-            humidity: 65,
-            soil_moisture: 45,
-            soil_ph: 6.8,
-            light_level: 750,
-          },
-        };
-        
-        const currentTime = new Date();
-        const dataTime = new Date(thingSpeakTimestamp);
-        const timeDiffMinutes = (currentTime.getTime() - dataTime.getTime()) / (1000 * 60);
-        const isDataFresh = timeDiffMinutes <= 30;
-        
-        setSensorData(mockData);
-        setSensorStatus({
-          temperature: isDataFresh,
-          humidity: isDataFresh,
-          soil_moisture: isDataFresh,
-          soil_ph: isDataFresh,
-          light_level: isDataFresh
-        });
-      }
-      
-      setError('Unable to fetch live sensor data - showing demo data');
+    } catch (err: any) {
+      console.error('Error fetching live data:', err);
+      setError(err.message || 'Unable to fetch live sensor data from ThingSpeak');
     } finally {
       setLoading(false);
       setIsRefreshing(false);

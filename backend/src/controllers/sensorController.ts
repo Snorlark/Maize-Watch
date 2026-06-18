@@ -652,11 +652,20 @@ const mergeWithHardcodedData = (realData: any[], hardcodedData: any[]) => {
     const itemTime = new Date(item.timestamp).getTime();
     const itemTimePH = new Date(itemTime + (PHILIPPINES_UTC_OFFSET * 60 * 60 * 1000));
     
-    // Keep if: item is after 1:59:59pm Philippines time
+    // Check if item is from today in Philippines timezone
+    const isToday = itemTimePH.getUTCFullYear() === nowPhilippines.getUTCFullYear() &&
+                    itemTimePH.getUTCMonth() === nowPhilippines.getUTCMonth() &&
+                    itemTimePH.getUTCDate() === nowPhilippines.getUTCDate();
+
+    if (!isToday) {
+      return true; // Keep all historical data from other days
+    }
+    
+    // Keep if: item is after 1:59:59pm Philippines time (since we have hardcoded data for 12am-1pm)
     const keep = itemTime > onePMPhilippinesInUTC.getTime();
     
     if (!keep) {
-      logger.info(`[MERGE] Filtering out real data: ${item.timestamp} (${itemTimePH.getUTCHours()}:${itemTimePH.getUTCMinutes()} PH - before 2pm)`);
+      logger.info(`[MERGE] Filtering out real data for today: ${item.timestamp} (${itemTimePH.getUTCHours()}:${itemTimePH.getUTCMinutes()} PH - before 2pm)`);
     }
     
     return keep;
@@ -718,27 +727,20 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
         logger.info(`Successfully fetched ${thingSpeakData.length} readings from ThingSpeak`);
         
         // Transform ThingSpeak data to match frontend expectations
-        const transformedReadings = thingSpeakData.map((reading, index) => {
-          const timestamp = new Date();
-          timestamp.setMinutes(timestamp.getMinutes() - (thingSpeakData.length - index) * 15); // Spread over time
-          
+        const transformedReadings = thingSpeakData.map((reading) => {
           return {
-            timestamp: timestamp.toISOString(),
+            timestamp: reading.created_at || new Date().toISOString(),
             temperature: reading.field1 || null,
             humidity: reading.field2 || null,
             soilMoisture: reading.field3 || null,
-            soilPh: reading.field5 || null,
-            lightIntensity: reading.field4 || null
+            soilPh: reading.field4 || null,         // swapped correctly
+            lightIntensity: reading.field5 || null   // swapped correctly
           };
         });
 
-        // Add hardcoded data for 12am-10am if missing for today
-        const hardcodedData = generateHardcodedHourlyData();
-        const mergedData = mergeWithHardcodedData(transformedReadings, hardcodedData);
-
         return res.json({
           success: true,
-          data: mergedData,
+          data: transformedReadings,
           source: 'thingspeak'
         });
       }
@@ -835,13 +837,9 @@ export const getLast24HourReadings = catchAsync(async (req: Request, res: Respon
       lightIntensity: reading.data.lightIntensity || null
     }));
 
-    // Add hardcoded data for 12am-10am if missing for today
-    const hardcodedData = generateHardcodedHourlyData();
-    const mergedData = mergeWithHardcodedData(transformedReadings, hardcodedData);
-
     res.json({
       success: true,
-      data: mergedData
+      data: transformedReadings
     });
 
   } catch (error) {
@@ -949,10 +947,15 @@ export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: 
     const startTime = new Date();
     startTime.setHours(startTime.getHours() - Number(hours));
     
-    const historicalData = await thingSpeakService.readHistoricalData(
+    let historicalData = await thingSpeakService.readHistoricalData(
       Number(results),
       startTime.toISOString()
     );
+    
+    if (!historicalData || historicalData.length === 0) {
+      logger.info('No historical data in the last 24 hours. Fetching latest entries regardless of time.');
+      historicalData = await thingSpeakService.readHistoricalData(Number(results));
+    }
     
     if (!historicalData || historicalData.length === 0) {
       logger.warn('No historical data received from ThingSpeak, using hardcoded data');
@@ -979,20 +982,15 @@ export const getThingSpeakHistoricalData = catchAsync(async (req: Request, res: 
       batteryLevel: reading.field6 || null,
       signalStrength: reading.field7 || null,
       created_at: reading.created_at, // Include original ThingSpeak timestamp for debugging
-      entry_id: reading.entry_id // Include ThingSpeak entry ID for debugging
-    })).reverse(); // Reverse to get chronological order
+    })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-    // Add hardcoded data for 12am-10am if missing for today
-    const hardcodedData = generateHardcodedHourlyData();
-    const mergedData = mergeWithHardcodedData(transformedData, hardcodedData);
-
-    logger.info(`✅ Successfully fetched ${mergedData.length} historical readings (including hardcoded data)`);
+    logger.info(`✅ Successfully fetched ${transformedData.length} historical readings from ThingSpeak`);
 
     res.json({
       success: true,
-      data: mergedData,
-      count: mergedData.length,
-      source: 'thingspeak-merged',
+      data: transformedData,
+      count: transformedData.length,
+      source: 'thingspeak',
       message: 'Historical data fetched successfully'
     });
 

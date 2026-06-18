@@ -93,17 +93,11 @@ const LiveDataWidget: React.FC = () => {
 
   const fetchLatest = async () => {
     try {
-      let result;
-      try {
-        result = await sensorService.getThingSpeakLiveData();
-      } catch {
-        result = await sensorService.getLatestSensorData();
-      }
+      const result = await sensorService.getThingSpeakLiveData();
 
       if (result.success && result.data) {
         const raw = result.data;
         
-
         let actualTimestamp = null;
         if (raw.created_at) {
           actualTimestamp = raw.created_at;
@@ -112,8 +106,6 @@ const LiveDataWidget: React.FC = () => {
         } else if (raw.entry_id && raw.field1) {
           actualTimestamp = new Date().toISOString();
         }
-
-
 
         const nextValues: Record<VariableKey, number> = {
           temperature: raw.temperature ?? 0,
@@ -125,28 +117,13 @@ const LiveDataWidget: React.FC = () => {
 
         setValues(nextValues);
         setLastUpdated(actualTimestamp || new Date().toISOString());
-
-        if (result.message?.includes('test data') || result.message?.includes('Test')) {
-          setError('Using test data (Demo mode)');
-        } else {
-          setError(null);
-        }
+        setError(null);
       } else {
         throw new Error(result.error || 'Failed to fetch sensor data');
       }
-    } catch {
-      const thingSpeakTimestamp = '2025-09-30T06:27:35+08:00';
-      const mockValues: Record<VariableKey, number> = {
-        temperature: 25.5,
-        humidity: 65,
-        soil_moisture: 45,
-        soil_ph: 6.8,
-        light_level: 750,
-      };
-
-      setValues(mockValues);
-      setLastUpdated(thingSpeakTimestamp);
-      setError('Using fallback data (All endpoints failed)');
+    } catch (err: any) {
+      console.error('Error fetching live data:', err);
+      setError(err.message || 'Unable to fetch live sensor data from ThingSpeak');
     } finally {
       setLoading(false);
     }
