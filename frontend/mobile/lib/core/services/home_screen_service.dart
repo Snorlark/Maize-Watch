@@ -5,6 +5,7 @@ import 'package:mobile/core/services/offline_cache_service.dart';
 import 'package:mobile/core/storage/secure_storage.dart';
 import 'package:mobile/core/config/environment.dart';
 import 'package:mobile/generated/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreenService {
   static const int _cacheValidityMinutes = 30;
@@ -84,10 +85,16 @@ class HomeScreenService {
       final authState = await _getCurrentUser();
       if (authState == null) throw Exception(S.current.user_not_authenticated);
 
+      // Persist farmId for background services
+      if (farmId != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('active_farm_id', farmId);
+      }
+
       // Load all data in parallel for faster response
       final futures = await Future.wait([
         _loadAnalytics(farmId),
-        _loadPrescriptions(),
+        _loadPrescriptions(farmId),
         _loadNotifications(),
         _loadLiveData(),
         _loadSettings(),
@@ -143,13 +150,14 @@ class HomeScreenService {
   }
 
   /// Load prescriptions data
-  static Future<List<Map<String, dynamic>>> _loadPrescriptions() async {
+  static Future<List<Map<String, dynamic>>> _loadPrescriptions(String? farmId) async {
+    if (farmId == null) return [];
     try {
       final token = await _getAuthToken();
       if (token == null) return [];
-      
+
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/prescriptions'),
+        Uri.parse('${AppConfig.baseUrl}/api/prescriptions/farm/$farmId'),
         headers: {'Authorization': 'Bearer $token'},
       );
       
@@ -344,7 +352,7 @@ class HomeScreenService {
       
       if (cachedData['prescriptions'] == null || (cachedData['prescriptions'] as List).isEmpty) {
         print('🏠 HOME: Loading missing prescriptions data...');
-        await _loadPrescriptions();
+        await _loadPrescriptions(farmId);
       }
       
       if (cachedData['notifications'] == null || (cachedData['notifications'] as List).isEmpty) {
