@@ -16,7 +16,7 @@ const dashboardApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Reduced timeout to 10 seconds for faster fallback
+  timeout: 60000, // 60 seconds to handle Render free-tier cold starts
   withCredentials: false,
 });
 

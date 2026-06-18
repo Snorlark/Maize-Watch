@@ -12,7 +12,7 @@ const API_BASE_URL = `${RAW_BASE.replace(/\/+$/, '')}/api`;
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds timeout (increased for slow backend)
+  timeout: 60000, // 60 seconds to handle Render free-tier cold starts
   headers: {
     'Content-Type': 'application/json',
   },
@@ -82,7 +82,7 @@ export const userService = {
       }
       const response = await apiClient.get('/users', {
         params: { limit: 1000, page: 1 },
-        timeout: 10000
+        timeout: 60000
       });
       if (response.data?.success && response.data?.data?.users) {
         return response.data.data.users;
