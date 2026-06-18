@@ -11,17 +11,17 @@ services:
       - key: FRONTEND_URL
         value: https://maize-watch-frontend.onrender.com
       - key: BACKEND_URL
-        value: https://maize-watch-backend-uad9.onrender.com
+        value: https://maize-watch-backend.onrender.com
       - key: MOBILE_APP_URL
-        value: https://maize-watch-backend-uad9.onrender.com
+        value: https://maize-watch-backend.onrender.com
       - key: MONGO_URI
-        value: mongodb+srv://larksigmuondbabao:NuPiHK7oCfn5Yemx@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
       - key: MONGODB_URI
-        value: mongodb+srv://larksigmuondbabao:NuPiHK7oCfn5Yemx@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/maizewatch?retryWrites=true&w=majority&appName=maizewatch-db
       - key: MONGO_IOT_URI
-        value: mongodb+srv://larksigmuondbabao:NuPiHK7oCfn5Yemx@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
       - key: MONGODB_IOT_URI
-        value: mongodb+srv://larksigmuondbabao:NuPiHK7oCfn5Yemx@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
+        value: mongodb+srv://larksigmuondbabao:REDACTED@maizewatch-db.snrxrjs.mongodb.net/iot_monitoring_db?retryWrites=true&w=majority&tls=true&appName=maizewatch-db
       - key: MONGO_DB_NAME
         value: maize_watch
       - key: JWT_SECRET
