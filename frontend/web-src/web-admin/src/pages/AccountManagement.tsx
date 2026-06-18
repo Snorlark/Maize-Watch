@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PlusCircle, Users, Sprout, MapPin, Calendar, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
+import { PlusCircle, Users, Sprout, MapPin, Calendar, Search, RefreshCw, Eye, UserCheck, Loader2, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import UserTable from "../components/UserTable";
