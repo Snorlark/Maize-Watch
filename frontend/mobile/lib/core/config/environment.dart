@@ -14,9 +14,9 @@ class AppConfig {
       case Environment.development:
         return 'http://192.168.254.103:10000';
       case Environment.staging:
-        return 'https://maize-watch-backend.onrender.com';
+        return 'https://maize-watch-backend-uad9.onrender.com';
       case Environment.production:
-        return 'https://maize-watch-backend.onrender.com';
+        return 'https://maize-watch-backend-uad9.onrender.com';
     }
   }
 
