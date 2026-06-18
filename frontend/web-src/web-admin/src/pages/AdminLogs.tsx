@@ -33,11 +33,11 @@ const AdminLogs: React.FC = () => {
         });
         
         if (!response.data.isAdmin) {
-          navigate('/dashboard');
+          navigate('/admin-portal-xyz123/dashboard');
         }
       } catch (err) {
         console.error('Admin access check failed:', err);
-        navigate('/dashboard');
+        navigate('/admin-portal-xyz123/dashboard');
       }
     };
 

@@ -40,18 +40,18 @@ const App: React.FC = () => {
         {/* Protected Routes that require authentication */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="livedata" element={<LiveData />} />
-            <Route path="datahistory" element={<DataHistory />} />
+            <Route path="admin-portal-xyz123/dashboard" element={<Dashboard />} />
+            <Route path="admin-portal-xyz123/livedata" element={<LiveData />} />
+            <Route path="admin-portal-xyz123/datahistory" element={<DataHistory />} />
           </Route>
         </Route>
 
         {/* Super Admin only: user management, activity logs */}
         <Route element={<ProtectedRoute requireSuperAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="activity-logs" element={<ActivityLogPage />} />
+            <Route path="admin-portal-xyz123/activity-logs" element={<ActivityLogPage />} />
             <Route
-              path="accountmanagement"
+              path="admin-portal-xyz123/accountmanagement"
               element={
                 <UserProvider>
                   <AccountManagement />
@@ -64,7 +64,7 @@ const App: React.FC = () => {
         {/* Admin Logs route */}
         <Route element={<ProtectedRoute requireAdmin={true} redirectPath="admin-portal-xyz123/login" />}>
           <Route element={<AuthenticatedLayout />}>
-            <Route path="logs" element={<AdminLogs />} />
+            <Route path="admin-portal-xyz123/logs" element={<AdminLogs />} />
           </Route>
         </Route>
 

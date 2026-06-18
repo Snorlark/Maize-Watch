@@ -13,7 +13,7 @@ const NotFound: React.FC = () => {
           The page you are looking for doesn't exist or has been moved.
         </p>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/admin-portal-xyz123/dashboard')}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded transition-colors"
         >
           Go to Dashboard
